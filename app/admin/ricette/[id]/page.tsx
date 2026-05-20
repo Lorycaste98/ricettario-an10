@@ -1,0 +1,74 @@
+import { redirect, notFound } from "next/navigation";
+import { db } from "@/lib/db";
+import { getSession } from "@/lib/session";
+import { RecipeForm, type RecipeFormData } from "@/components/recipe/RecipeForm";
+import { flattenRecipe } from "@/lib/api";
+import type { Metadata } from "next";
+
+type Params = { id: string };
+
+export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
+  const { id } = await params;
+  const r = await db.recipe.findUnique({ where: { id: Number(id) }, select: { name: true } });
+  return { title: r ? `Modifica: ${r.name} — Ricettario` : "Ricetta non trovata" };
+}
+
+export default async function ModificaRicettaPage({ params }: { params: Promise<Params> }) {
+  const session = await getSession();
+  if (!session) redirect("/login");
+
+  const { id } = await params;
+  const recipeId = Number(id);
+
+  const [raw, categories, tags] = await Promise.all([
+    db.recipe.findUnique({
+      where: { id: recipeId },
+      select: {
+        id: true, name: true, servings: true, prep: true, cook: true,
+        notes: true, links: true, photo: true, cookCount: true, createdAt: true, updatedAt: true,
+        categories: { select: { category: { select: { id: true, name: true, color: true } } } },
+        tags: { select: { tag: { select: { id: true, name: true } } } },
+        photos: { select: { id: true, url: true, order: true }, orderBy: { order: "asc" } },
+        ingredients: { select: { id: true, name: true, qty: true, unit: true, order: true }, orderBy: { order: "asc" } },
+        steps: { select: { id: true, text: true, mins: true, order: true }, orderBy: { order: "asc" } },
+        _count: { select: { reviews: true } },
+      },
+    }),
+    db.category.findMany({ orderBy: { name: "asc" } }),
+    db.tag.findMany({ orderBy: { name: "asc" } }),
+  ]);
+
+  if (!raw) notFound();
+
+  const recipe = flattenRecipe(raw) as ReturnType<typeof flattenRecipe> & typeof raw;
+
+  const initialData: RecipeFormData = {
+    name: recipe.name,
+    servings: recipe.servings != null ? String(recipe.servings) : "",
+    prep: recipe.prep != null ? String(recipe.prep) : "",
+    cook: recipe.cook != null ? String(recipe.cook) : "",
+    notes: recipe.notes ?? "",
+    links: recipe.links ?? "",
+    photo: recipe.photo ?? "",
+    categoryIds: recipe.categories.map((c: { id: number }) => c.id),
+    tagIds: recipe.tags.map((t: { id: number }) => t.id),
+    ingredients: recipe.ingredients.map((i: { name: string; qty: number | null; unit: string | null }) => ({
+      name: i.name,
+      qty: i.qty != null ? String(i.qty) : "",
+      unit: i.unit ?? "",
+    })),
+    steps: recipe.steps.map((s: { text: string; mins: number | null }) => ({
+      text: s.text,
+      mins: s.mins != null ? String(s.mins) : "",
+    })),
+    photos: recipe.photos.map((p: { url: string }) => ({ url: p.url })),
+  };
+
+  return (
+    <div className="mx-auto max-w-3xl">
+      <RecipeForm recipeId={recipeId} categories={categories} tags={tags} initialData={initialData} />
+    </div>
+  );
+}
+
+

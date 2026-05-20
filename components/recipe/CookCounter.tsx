@@ -1,0 +1,61 @@
+"use client";
+import { useState } from "react";
+import { Button } from "@/components/ui/Button";
+
+interface Props {
+  recipeId: number;
+  initialCount: number;
+}
+
+export function CookCounter({ recipeId, initialCount }: Props) {
+  const [count, setCount] = useState(initialCount);
+  const [loading, setLoading] = useState(false);
+
+  const increment = async () => {
+    setLoading(true);
+    const res = await fetch(`/api/recipes/${recipeId}/cook`, { method: "POST" });
+    if (res.ok) {
+      const data = await res.json();
+      setCount(data.cookCount);
+    }
+    setLoading(false);
+  };
+
+  const decrement = async () => {
+    if (count === 0) return;
+    setLoading(true);
+    const res = await fetch(`/api/recipes/${recipeId}/cook`, { method: "DELETE" });
+    if (res.ok) {
+      const data = await res.json();
+      setCount(data.cookCount);
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-orange-100 bg-orange-50 px-4 py-3">
+      <span className="text-2xl">🍳</span>
+      <div className="flex-1">
+        <p className="text-sm font-medium text-gray-700">Volte cucinata</p>
+        <p className="text-2xl font-bold text-orange-500">{count}</p>
+      </div>
+      <div className="flex items-center gap-1">
+        <button
+          onClick={decrement}
+          disabled={loading || count === 0}
+          className="h-8 w-8 rounded-full border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-40 transition-colors text-lg leading-none"
+        >
+          −
+        </button>
+        <button
+          onClick={increment}
+          disabled={loading}
+          className="h-8 w-8 rounded-full bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-40 transition-colors text-lg leading-none"
+        >
+          +
+        </button>
+      </div>
+    </div>
+  );
+}
+
