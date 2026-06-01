@@ -6,9 +6,10 @@
 
 import { type NextRequest } from "next/server";
 import { db } from "@/lib/db";
-import { Prisma } from "@prisma/client";
 import { recipeDetailSelect, flattenRecipe, ok, err } from "@/lib/api";
 import { requireAdmin } from "@/lib/session";
+
+type TxClient = Parameters<Parameters<typeof db.$transaction>[0]>[0];
 
 export async function GET(
   _req: NextRequest,
@@ -61,7 +62,7 @@ export async function PUT(
   if (!exists) return err("Ricetta non trovata", 404);
 
   // Aggiorna in una transazione: cancella le relazioni e le riscrive
-  const recipe = await db.$transaction(async (tx: Prisma.TransactionClient) => {
+  const recipe = await db.$transaction(async (tx: TxClient) => {
     // Elimina tutte le relazioni esistenti
     if (b.categoryIds !== undefined) {
       await tx.recipeCategory.deleteMany({ where: { recipeId } });
