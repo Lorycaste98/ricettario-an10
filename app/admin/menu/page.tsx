@@ -10,8 +10,20 @@ import { AdminMenuDeleteButton } from "./AdminMenuDeleteButton";
 export const metadata: Metadata = { title: "Gestione Menù — Admin" };
 export const dynamic = "force-dynamic";
 
+type MenuRow = {
+  id: number;
+  name: string;
+  description: string | null;
+  date: Date | null;
+  photo: string | null;
+  createdAt: Date;
+  _count: { reviews: number; recipes: number };
+  reviews: { rating: number }[];
+  recipes: { recipe: { photo: string | null } }[];
+};
+
 async function getMenus() {
-  const menus = await db.menu.findMany({
+  const menus: MenuRow[] = await db.menu.findMany({
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
@@ -30,8 +42,8 @@ async function getMenus() {
     },
   });
 
-  return menus.map((m) => {
-    const reviews = m.reviews as { rating: number }[];
+  return menus.map((m: MenuRow) => {
+    const reviews = m.reviews;
     const avgRating =
       reviews.length > 0
         ? Math.round(

@@ -40,8 +40,8 @@ function flattenMenu(m: {
         ) / 10
       : null;
   const previewPhotos = m.recipes
-    .map((mr) => mr.recipe.photo)
-    .filter(Boolean) as string[];
+    .map((mr: { order: number; recipe: { photo: string | null } }) => mr.recipe.photo)
+    .filter((p): p is string => p !== null);
   return { ...m, avgRating, previewPhotos };
 }
 

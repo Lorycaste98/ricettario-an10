@@ -64,7 +64,7 @@ export default async function AdminPage() {
             <p className="text-sm text-gray-400">Nessuna ricetta cucinata ancora.</p>
           ) : (
             <ul className="space-y-2">
-              {topCooked.map((r) => (
+              {topCooked.map((r: { id: number; name: string; cookCount: number }) => (
                 <li key={r.id} className="flex items-center justify-between gap-2">
                   <Link href={`/ricette/${r.id}`} className="truncate text-sm text-gray-700 hover:text-orange-500 transition-colors">
                     {r.name}
@@ -85,7 +85,7 @@ export default async function AdminPage() {
             <p className="text-sm text-gray-400">Nessuna recensione ancora.</p>
           ) : (
             <ul className="space-y-3">
-              {recentReviews.map((rev) => (
+              {recentReviews.map((rev: { id: number; nickname: string; rating: number; comment: string | null; recipe: { id: number; name: string } }) => (
                 <li key={rev.id} className="border-b border-gray-50 pb-3 last:border-0 last:pb-0">
                   <div className="flex items-baseline justify-between gap-2">
                     <Link href={`/ricette/${rev.recipe.id}`} className="truncate text-xs font-medium text-gray-500 hover:text-orange-500 transition-colors">

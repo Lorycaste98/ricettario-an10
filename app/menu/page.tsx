@@ -6,8 +6,20 @@ import { UtensilsCrossed } from "lucide-react";
 export const metadata: Metadata = { title: "Menù — Ricettario" };
 export const dynamic = "force-dynamic";
 
+type MenuRow = {
+  id: number;
+  name: string;
+  description: string | null;
+  date: Date | null;
+  photo: string | null;
+  createdAt: Date;
+  _count: { reviews: number; recipes: number };
+  reviews: { rating: number }[];
+  recipes: { order: number; recipe: { photo: string | null } }[];
+};
+
 async function getMenus() {
-  const menus = await db.menu.findMany({
+  const menus: MenuRow[] = await db.menu.findMany({
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
@@ -26,8 +38,8 @@ async function getMenus() {
     },
   });
 
-  return menus.map((m) => {
-    const reviews = m.reviews as { rating: number }[];
+  return menus.map((m: MenuRow) => {
+    const reviews = m.reviews;
     const avgRating =
       reviews.length > 0
         ? Math.round(
@@ -35,8 +47,8 @@ async function getMenus() {
           ) / 10
         : null;
     const previewPhotos = m.recipes
-      .map((mr) => mr.recipe.photo)
-      .filter(Boolean) as string[];
+      .map((mr: { order: number; recipe: { photo: string | null } }) => mr.recipe.photo)
+      .filter((p): p is string => p !== null);
     return {
       ...m,
       date: m.date ? m.date.toISOString() : null,

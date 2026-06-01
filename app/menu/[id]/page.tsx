@@ -49,7 +49,7 @@ async function getMenu(id: number) {
   const avgRating =
     reviews.length > 0
       ? Math.round(
-          (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length) * 10
+          (reviews.reduce((s: number, r: { rating: number }) => s + r.rating, 0) / reviews.length) * 10
         ) / 10
       : null;
 
@@ -60,11 +60,11 @@ async function getMenu(id: number) {
     updatedAt: menu.updatedAt.toISOString(),
     avgRating,
     _count: { reviews: menu.reviews.length, recipes: menu.recipes.length },
-    recipes: menu.recipes.map((mr) => ({
+    recipes: menu.recipes.map((mr: { order: number; recipe: unknown }) => ({
       order: mr.order,
       recipe: flattenRecipe(mr.recipe),
     })),
-    reviews: menu.reviews.map((r) => ({
+    reviews: menu.reviews.map((r: { id: number; nickname: string; rating: number; comment: string | null; createdAt: Date }) => ({
       ...r,
       createdAt: r.createdAt.toISOString(),
     })),
