@@ -47,7 +47,7 @@ export default async function ModificaMenuPage({ params }: Params) {
     description: menu.description,
     date: menu.date ? menu.date.toISOString() : null,
     photo: menu.photo,
-    recipeIds: menu.recipes.map((r) => r.recipeId),
+    recipeIds: menu.recipes.map((r: { recipeId: number }) => r.recipeId),
   };
 
   return (
