@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-import { Button } from "@/components/ui/Button";
 
 interface Props {
   recipeId: number;
@@ -33,17 +32,17 @@ export function CookCounter({ recipeId, initialCount }: Props) {
   };
 
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-orange-100 bg-orange-50 px-4 py-3">
+    <div className="flex items-center gap-3 rounded-xl border border-white/40 bg-white/60 backdrop-blur-sm px-4 py-3">
       <span className="text-2xl">🍳</span>
       <div className="flex-1">
-        <p className="text-sm font-medium text-gray-700">Volte cucinata</p>
+        <p className="text-sm font-medium text-sky-800">Volte cucinata</p>
         <p className="text-2xl font-bold text-orange-500">{count}</p>
       </div>
       <div className="flex items-center gap-1">
         <button
           onClick={decrement}
           disabled={loading || count === 0}
-          className="h-8 w-8 rounded-full border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-40 transition-colors text-lg leading-none"
+          className="h-8 w-8 rounded-full border border-white/40 bg-white/60 text-sky-800 hover:bg-white/80 disabled:opacity-40 transition-colors text-lg leading-none"
         >
           −
         </button>

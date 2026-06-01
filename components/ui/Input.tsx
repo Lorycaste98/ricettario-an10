@@ -12,14 +12,14 @@ interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
 }
 
 const baseClass =
-  "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100 disabled:bg-gray-50 disabled:cursor-not-allowed";
+  "w-full rounded-lg border border-white/40 bg-white/60 backdrop-blur-sm px-3 py-2 text-sm text-sky-950 placeholder:text-sky-700/50 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-300/30 disabled:bg-white/30 disabled:cursor-not-allowed";
 
 export function Input({ label, error, className, id, ...props }: InputProps) {
   const inputId = id ?? label?.toLowerCase().replace(/\s/g, "-");
   return (
     <div className="flex flex-col gap-1">
       {label && (
-        <label htmlFor={inputId} className="text-sm font-medium text-gray-700">
+        <label htmlFor={inputId} className="text-sm font-medium text-sky-900">
           {label}
         </label>
       )}
@@ -34,7 +34,7 @@ export function Textarea({ label, error, className, id, ...props }: TextareaProp
   return (
     <div className="flex flex-col gap-1">
       {label && (
-        <label htmlFor={inputId} className="text-sm font-medium text-gray-700">
+        <label htmlFor={inputId} className="text-sm font-medium text-sky-900">
           {label}
         </label>
       )}
@@ -43,4 +43,3 @@ export function Textarea({ label, error, className, id, ...props }: TextareaProp
     </div>
   );
 }
-

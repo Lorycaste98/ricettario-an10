@@ -21,6 +21,7 @@ export interface RecipeSummary {
   notes: string | null;
   cookCount: number;
   createdAt: string;
+  avgRating: number | null;
   categories: Category[];
   tags: Tag[];
   _count: { reviews: number };
@@ -62,6 +63,35 @@ export interface RecipeDetail extends RecipeSummary {
   ingredients: Ingredient[];
   steps: Step[];
   reviews: Review[];
+}
+
+export interface MenuReview {
+  id: number;
+  nickname: string;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+}
+
+export interface MenuSummary {
+  id: number;
+  name: string;
+  description: string | null;
+  date: string | null;
+  photo: string | null;
+  createdAt: string;
+  avgRating: number | null;
+  _count: { reviews: number; recipes: number };
+  previewPhotos: string[];
+}
+
+export interface MenuDetail extends MenuSummary {
+  updatedAt: string;
+  recipes: Array<{
+    order: number;
+    recipe: RecipeSummary;
+  }>;
+  reviews: MenuReview[];
 }
 
 // Utility

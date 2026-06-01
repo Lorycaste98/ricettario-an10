@@ -65,55 +65,55 @@ export function ReviewSection({ recipeId, initialReviews }: { recipeId: number; 
   return (
     <section className="space-y-6">
       <div className="flex items-center gap-3">
-        <h2 className="text-xl font-bold text-gray-900">Recensioni</h2>
+        <h2 className="text-xl font-bold text-sky-950">Recensioni</h2>
         {avgRating && (
-          <span className="flex items-center gap-1 rounded-full bg-orange-50 px-3 py-1 text-sm font-medium text-orange-600">
-            ⭐ {avgRating} <span className="text-gray-400">({reviews.length})</span>
+          <span className="flex items-center gap-1 rounded-full bg-orange-400/20 border border-orange-300/30 px-3 py-1 text-sm font-medium text-orange-700">
+            ⭐ {avgRating} <span className="text-sky-600">({reviews.length})</span>
           </span>
         )}
       </div>
 
       {/* Form nuova recensione */}
-      <div className="rounded-xl border border-gray-100 bg-gray-50 p-5">
-        <h3 className="mb-4 text-sm font-semibold text-gray-700">Lascia una recensione</h3>
+      <div className="rounded-xl border border-white/40 bg-white/60 backdrop-blur-sm p-5">
+        <h3 className="mb-4 text-sm font-semibold text-sky-800">Lascia una recensione</h3>
         <form onSubmit={submit} className="space-y-4">
           <Input label="Il tuo nome" value={nickname} onChange={(e) => setNickname(e.target.value)} placeholder="Es. Mario Rossi" />
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-gray-700">Voto</label>
+            <label className="text-sm font-medium text-sky-900">Voto</label>
             <StarRating value={rating} onChange={setRating} />
           </div>
           <Textarea label="Commento (opzionale)" value={comment} onChange={(e) => setComment(e.target.value)} rows={3} placeholder="Come ti è sembrata la ricetta?" />
-          {error && <p className="text-sm text-red-500">{error}</p>}
+          {error && <p className="text-sm text-red-600">{error}</p>}
           <Button type="submit" loading={submitting}>Invia recensione</Button>
         </form>
       </div>
 
       {/* Lista recensioni */}
       {reviews.length === 0 ? (
-        <p className="text-sm text-gray-400">Ancora nessuna recensione. Sii il primo!</p>
+        <p className="text-sm text-sky-700">Ancora nessuna recensione. Sii il primo!</p>
       ) : (
         <div className="space-y-4">
           {reviews.map((r) => (
-            <div key={r.id} className="flex gap-4 rounded-xl border border-gray-100 bg-white p-4">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orange-100 font-bold text-orange-600 text-sm">
+            <div key={r.id} className="flex gap-4 rounded-xl border border-white/40 bg-white/60 backdrop-blur-sm p-4">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orange-400/30 font-bold text-orange-700 text-sm">
                 {r.nickname[0].toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <span className="font-medium text-gray-900 text-sm">{r.nickname}</span>
-                    <span className="ml-2 text-xs text-gray-400">
+                    <span className="font-medium text-sky-950 text-sm">{r.nickname}</span>
+                    <span className="ml-2 text-xs text-sky-600">
                       {new Date(r.createdAt).toLocaleDateString("it-IT")}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <span className="text-sm">{"⭐".repeat(r.rating)}</span>
                     {isAdmin && (
-                      <button onClick={() => setConfirmId(r.id)} className="text-gray-300 hover:text-red-400 transition-colors text-xs">✕</button>
+                      <button onClick={() => setConfirmId(r.id)} className="text-sky-400 hover:text-red-500 transition-colors text-xs">✕</button>
                     )}
                   </div>
                 </div>
-                {r.comment && <p className="mt-1 text-sm text-gray-600">{r.comment}</p>}
+                {r.comment && <p className="mt-1 text-sm text-sky-800">{r.comment}</p>}
               </div>
             </div>
           ))}
@@ -131,4 +131,3 @@ export function ReviewSection({ recipeId, initialReviews }: { recipeId: number; 
     </section>
   );
 }
-

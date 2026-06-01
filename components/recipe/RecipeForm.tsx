@@ -99,12 +99,17 @@ function ImageUploadButton({ onUrl, label = "Carica foto", small = false }: {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm space-y-4">
-      <h2 className="text-base font-semibold text-gray-800">{title}</h2>
+    <section className="rounded-xl border border-white/40 bg-white/60 backdrop-blur-sm p-6 shadow-sm space-y-4">
+      <h2 className="text-base font-semibold text-sky-900">{title}</h2>
       {children}
     </section>
   );
 }
+
+// ─── shared inline input class ────────────────────────────────────────────────
+
+const inlineInput =
+  "rounded-lg border border-white/40 bg-white/60 backdrop-blur-sm px-2 py-2 text-sm text-sky-950 placeholder:text-sky-600/50 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-300/30";
 
 // ─── RecipeForm ───────────────────────────────────────────────────────────────
 
@@ -220,8 +225,8 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
     <form onSubmit={handleSubmit} className="space-y-6">
 
       {/* Sticky top bar */}
-      <div className="sticky top-[57px] z-30 -mx-4 flex items-center justify-between border-b border-gray-100 bg-white/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
-        <h1 className="text-lg font-bold text-gray-900">
+      <div className="sticky top-[57px] z-30 -mx-4 flex items-center justify-between border-b border-white/20 bg-white/85 backdrop-blur-md px-4 py-3 sm:-mx-6 sm:px-6">
+        <h1 className="text-lg font-bold text-sky-950">
           {isEdit ? "Modifica ricetta" : "Nuova ricetta"}
         </h1>
         <div className="flex items-center gap-2">
@@ -291,7 +296,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
                   "rounded-full border px-3 py-1.5 text-xs font-medium transition-all",
                   categoryIds.includes(c.id)
                     ? "border-transparent text-white shadow-sm"
-                    : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+                    : "border-white/40 bg-white/50 text-sky-800 hover:bg-white/70"
                 )}
                 style={categoryIds.includes(c.id) ? { backgroundColor: c.color, borderColor: c.color } : {}}>
                 {categoryIds.includes(c.id) ? "✓ " : ""}{c.name}
@@ -299,7 +304,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
             ))}
           </div>
           {categoryIds.length > 0 && (
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-sky-600">
               {categoryIds.length} categori{categoryIds.length === 1 ? "a" : "e"} selezionat{categoryIds.length === 1 ? "a" : "e"}
             </p>
           )}
@@ -315,8 +320,8 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
                 className={clsx(
                   "rounded-full border px-3 py-1.5 text-xs font-medium transition-all",
                   tagIds.includes(t.id)
-                    ? "border-orange-400 bg-orange-50 text-orange-700"
-                    : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+                    ? "border-orange-400 bg-orange-100/60 text-orange-700"
+                    : "border-white/40 bg-white/50 text-sky-800 hover:bg-white/70"
                 )}>
                 #{t.name}
               </button>
@@ -327,30 +332,43 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
 
       {/* 5. Ingredienti */}
       <Section title="Ingredienti">
-        <div className="space-y-2">
-          <div className="hidden sm:grid text-xs text-gray-400 font-medium pl-6 pr-8 gap-2"
-            style={{ gridTemplateColumns: "4rem 5rem 1fr" }}>
-            <span>Qtà</span><span>Unità</span><span>Ingrediente</span>
+        <div className="space-y-1.5">
+          {/* Header — stessa griglia delle righe */}
+          <div
+            className="hidden sm:grid items-center gap-2 px-1 text-xs font-medium text-sky-600"
+            style={{ gridTemplateColumns: "1.25rem 4rem 5rem 1fr 1.5rem" }}
+          >
+            <span />
+            <span>Qtà</span>
+            <span>Unità</span>
+            <span>Ingrediente</span>
+            <span />
           </div>
+
           {ingredients.map((ing, i) => (
-            <div key={i} className="flex gap-2 items-center">
-              <div className="flex flex-col shrink-0 gap-0">
+            <div
+              key={i}
+              className="grid items-center gap-2"
+              style={{ gridTemplateColumns: "1.25rem 4rem 5rem 1fr 1.5rem" }}
+            >
+              {/* Frecce */}
+              <div className="flex flex-col items-center gap-0">
                 <button type="button" onClick={() => moveIngredient(i, -1)} disabled={i === 0}
-                  className="text-[9px] leading-tight text-gray-300 hover:text-gray-500 disabled:opacity-20">▲</button>
+                  className="text-[9px] leading-tight text-sky-400 hover:text-sky-700 disabled:opacity-20">▲</button>
                 <button type="button" onClick={() => moveIngredient(i, 1)} disabled={i === ingredients.length - 1}
-                  className="text-[9px] leading-tight text-gray-300 hover:text-gray-500 disabled:opacity-20">▼</button>
+                  className="text-[9px] leading-tight text-sky-400 hover:text-sky-700 disabled:opacity-20">▼</button>
               </div>
               <input type="number" min={0} step="any" value={ing.qty}
                 onChange={(e) => updateIngredient(i, "qty", e.target.value)} placeholder="Qtà"
-                className="w-16 shrink-0 rounded-lg border border-gray-200 px-2 py-2 text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100" />
+                className={inlineInput + " w-full"} />
               <input type="text" value={ing.unit}
                 onChange={(e) => updateIngredient(i, "unit", e.target.value)} placeholder="g/ml…"
-                className="w-20 shrink-0 rounded-lg border border-gray-200 px-2 py-2 text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100" />
+                className={inlineInput + " w-full"} />
               <input type="text" value={ing.name}
                 onChange={(e) => updateIngredient(i, "name", e.target.value)} placeholder="Ingrediente"
-                className="flex-1 min-w-0 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100" />
+                className={inlineInput + " w-full"} />
               <button type="button" onClick={() => removeIngredient(i)}
-                className="shrink-0 rounded p-1.5 text-gray-300 hover:bg-red-50 hover:text-red-400 transition-colors">✕</button>
+                className="flex items-center justify-center rounded p-1 text-sky-300 hover:text-red-400 transition-colors">✕</button>
             </div>
           ))}
         </div>
@@ -373,8 +391,8 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
                 <div className="flex items-center gap-2">
                   <input type="number" min={0} value={step.mins}
                     onChange={(e) => updateStep(i, "mins", e.target.value)} placeholder="—"
-                    className="w-20 rounded-lg border border-gray-200 px-2 py-1.5 text-xs focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100" />
-                  <span className="text-xs text-gray-400">minuti (opzionale)</span>
+                    className={inlineInput} />
+                  <span className="text-xs text-sky-600">minuti (opzionale)</span>
                 </div>
               </div>
               <div className="flex flex-col gap-0.5 pt-2 shrink-0">
@@ -396,7 +414,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
       {/* 7. Foto extra */}
       <Section title="Foto extra (galleria)">
         {photos.length === 0 && (
-          <p className="text-sm text-gray-400">Nessuna foto extra. Aggiungine una qui sotto.</p>
+          <p className="text-sm text-sky-600">Nessuna foto extra. Aggiungine una qui sotto.</p>
         )}
         <div className="space-y-2">
           {photos.map((p, i) => (
@@ -408,7 +426,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
               )}
               <input type="text" value={p.url} onChange={(e) => updatePhoto(i, e.target.value)}
                 placeholder="https://res.cloudinary.com/..."
-                className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100" />
+                className={inlineInput} />
               <ImageUploadButton label="" small onUrl={(url) => updatePhoto(i, url)} />
               <button type="button" onClick={() => removePhoto(i)}
                 className="shrink-0 rounded p-1.5 text-gray-300 hover:bg-red-50 hover:text-red-400 transition-colors">✕</button>

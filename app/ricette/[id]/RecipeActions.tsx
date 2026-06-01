@@ -29,7 +29,7 @@ export function RecipeActions({ recipeId, cookCount }: { recipeId: number; cookC
         <div className="flex gap-2">
           <Link
             href={`/admin/ricette/${recipeId}`}
-            className="flex-1 rounded-lg border border-gray-200 bg-white px-4 py-2 text-center text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            className="flex-1 rounded-lg border border-white/40 bg-white/60 backdrop-blur-sm px-4 py-2 text-center text-sm font-medium text-sky-900 hover:bg-white/80 transition-colors"
           >
             ✏️ Modifica ricetta
           </Link>

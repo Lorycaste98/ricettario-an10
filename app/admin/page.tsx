@@ -10,10 +10,11 @@ export default async function AdminPage() {
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const [recipeCount, categoryCount, tagCount, topCooked, recentReviews] = await Promise.all([
+  const [recipeCount, categoryCount, , menuCount, topCooked, recentReviews] = await Promise.all([
     db.recipe.count(),
     db.category.count(),
     db.tag.count(),
+    db.menu.count(),
     db.recipe.findMany({
       where: { cookCount: { gt: 0 } },
       orderBy: { cookCount: "desc" },
@@ -51,8 +52,8 @@ export default async function AdminPage() {
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <StatCard label="Ricette" value={recipeCount} icon="📖" />
         <StatCard label="Volte cucinate" value={totalCooks._sum.cookCount ?? 0} icon="🍳" />
+        <StatCard label="Menù" value={menuCount} icon="🍽️" />
         <StatCard label="Categorie" value={categoryCount} icon="🏷️" />
-        <StatCard label="Tag" value={tagCount} icon="#" />
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -112,6 +113,12 @@ export default async function AdminPage() {
           </Link>
           <Link href="/admin/ricette/nuova" className="rounded-lg border border-orange-200 bg-orange-50 px-4 py-2 text-sm text-orange-700 hover:bg-orange-100 transition-colors">
             ✨ Nuova ricetta
+          </Link>
+          <Link href="/admin/menu" className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-2 text-sm text-sky-700 hover:bg-sky-100 transition-colors">
+            🍽️ Gestisci menù
+          </Link>
+          <Link href="/admin/menu/nuovo" className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-2 text-sm text-sky-700 hover:bg-sky-100 transition-colors">
+            ✨ Nuovo menù
           </Link>
         </div>
       </section>

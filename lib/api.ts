@@ -21,6 +21,7 @@ export const recipeSummarySelect = {
     },
   },
   _count: { select: { reviews: true } },
+  reviews: { select: { rating: true } },
 } as const;
 
 export const recipeDetailSelect = {
@@ -54,10 +55,16 @@ export const recipeDetailSelect = {
 // Normalizza il risultato appiattendo le junction table categories/tags
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function flattenRecipe(r: any) {
+  const reviews: { rating: number }[] = r.reviews ?? [];
+  const avgRating =
+    reviews.length > 0
+      ? Math.round((reviews.reduce((s: number, rv: { rating: number }) => s + rv.rating, 0) / reviews.length) * 10) / 10
+      : null;
   return {
     ...r,
     categories: r.categories?.map((rc: { category: unknown }) => rc.category),
     tags: r.tags?.map((rt: { tag: unknown }) => rt.tag),
+    avgRating,
   };
 }
 

@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { flattenRecipe } from "@/lib/api";
 import { Badge } from "@/components/ui/Badge";
 import { ReviewSection } from "@/components/recipe/ReviewSection";
+import { RecipeProcedure } from "@/components/recipe/RecipeProcedure";
 import { RecipeActions } from "./RecipeActions";
 import { formatMinutes } from "@/lib/types";
 import type { Metadata } from "next";
@@ -43,16 +44,16 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
     : recipe.photos.map((p: { url: string }) => p.url);
 
   return (
-    <article className="mx-auto max-w-4xl space-y-10">
+    <article className="mx-auto max-w-4xl space-y-8 sm:space-y-10">
       {/* Back */}
-      <Link href="/" className="flex items-center gap-1 text-sm text-gray-400 hover:text-orange-500 transition-colors">
+      <Link href="/" className="inline-flex items-center gap-1 text-sm font-medium text-sky-950 [text-shadow:0_1px_3px_rgba(255,255,255,0.6)] hover:opacity-70 transition-opacity">
         ← Tutte le ricette
       </Link>
 
       {/* Header */}
-      <div className="grid gap-8 lg:grid-cols-2">
-        {/* Photo */}
-        <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-orange-50">
+      <div className="grid gap-6 lg:grid-cols-2 lg:gap-8">
+        {/* Photo — slim su mobile, quadrata su desktop */}
+        <div className="relative aspect-video sm:aspect-4/3 overflow-hidden rounded-2xl bg-white/20 backdrop-blur-sm">
           {allPhotos.length > 0 ? (
             <Image src={allPhotos[0]} alt={recipe.name} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" priority />
           ) : (
@@ -68,46 +69,46 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
                 <Badge key={c.id} label={c.name} color={c.color} />
               ))}
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 leading-tight">{recipe.name}</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-sky-950 leading-tight">{recipe.name}</h1>
           </div>
 
-          {/* Meta grid */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {/* Meta grid — 2 col mobile, 4 col sm+ */}
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
             {recipe.prep && (
-              <div className="rounded-xl bg-white border border-gray-100 p-3 text-center">
-                <p className="text-xs text-gray-400 mb-1">Preparazione</p>
-                <p className="font-semibold text-gray-800 text-sm">{formatMinutes(recipe.prep)}</p>
+              <div className="rounded-xl bg-white/50 border border-white/40 backdrop-blur-sm p-3 text-center">
+                <p className="text-[11px] text-sky-600 mb-1">Preparazione</p>
+                <p className="font-semibold text-sky-950 text-sm">{formatMinutes(recipe.prep)}</p>
               </div>
             )}
             {recipe.cook && recipe.cook > 0 && (
-              <div className="rounded-xl bg-white border border-gray-100 p-3 text-center">
-                <p className="text-xs text-gray-400 mb-1">Cottura</p>
-                <p className="font-semibold text-gray-800 text-sm">{formatMinutes(recipe.cook)}</p>
+              <div className="rounded-xl bg-white/50 border border-white/40 backdrop-blur-sm p-3 text-center">
+                <p className="text-[11px] text-sky-600 mb-1">Cottura</p>
+                <p className="font-semibold text-sky-950 text-sm">{formatMinutes(recipe.cook)}</p>
               </div>
             )}
             {totalTime > 0 && (
-              <div className="rounded-xl bg-orange-50 border border-orange-100 p-3 text-center">
-                <p className="text-xs text-orange-400 mb-1">Totale</p>
-                <p className="font-semibold text-orange-600 text-sm">{formatMinutes(totalTime)}</p>
+              <div className="rounded-xl bg-orange-400/20 border border-orange-300/40 backdrop-blur-sm p-3 text-center">
+                <p className="text-[11px] text-orange-600 mb-1">Totale</p>
+                <p className="font-semibold text-orange-700 text-sm">{formatMinutes(totalTime)}</p>
               </div>
             )}
             {recipe.servings && (
-              <div className="rounded-xl bg-white border border-gray-100 p-3 text-center">
-                <p className="text-xs text-gray-400 mb-1">Porzioni</p>
-                <p className="font-semibold text-gray-800 text-sm">{recipe.servings} pers.</p>
+              <div className="rounded-xl bg-white/50 border border-white/40 backdrop-blur-sm p-3 text-center">
+                <p className="text-[11px] text-sky-600 mb-1">Porzioni</p>
+                <p className="font-semibold text-sky-950 text-sm">{recipe.servings} pers.</p>
               </div>
             )}
           </div>
 
           {recipe.notes && (
-            <p className="rounded-xl bg-amber-50 border border-amber-100 px-4 py-3 text-sm text-amber-800 leading-relaxed">
+            <p className="rounded-xl bg-amber-100/60 border border-amber-200/50 backdrop-blur-sm px-4 py-3 text-sm text-amber-900 leading-relaxed">
               📝 {recipe.notes}
             </p>
           )}
 
           {recipe.links && (
             <a href={recipe.links} target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-2 text-sm text-orange-500 hover:underline">
+              className="flex items-center gap-2 text-sm text-orange-600 hover:underline">
               🔗 Fonte / Ricetta originale
             </a>
           )}
@@ -117,51 +118,21 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
         </div>
       </div>
 
-      {/* Ingredienti + Passi */}
-      <div className="grid gap-8 md:grid-cols-2">
-        {/* Ingredienti */}
-        <section>
-          <h2 className="mb-4 text-xl font-bold text-gray-900">Ingredienti</h2>
-          <ul className="space-y-2">
-            {recipe.ingredients.map((ing: { id: number; qty: number | null; unit: string | null; name: string }) => (
-              <li key={ing.id} className="flex items-baseline gap-2 border-b border-gray-50 pb-2 last:border-0">
-                <span className="shrink-0 font-medium text-orange-500 text-sm min-w-[60px]">
-                  {ing.qty ? `${ing.qty}${ing.unit ? ` ${ing.unit}` : ""}` : ing.unit ? ing.unit : "q.b."}
-                </span>
-                <span className="text-gray-700 text-sm">{ing.name}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        {/* Procedura */}
-        <section>
-          <h2 className="mb-4 text-xl font-bold text-gray-900">Procedura</h2>
-          <ol className="space-y-4">
-            {recipe.steps.map((step: { id: number; text: string; mins: number | null; order: number }, i: number) => (
-              <li key={step.id} className="flex gap-4">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white mt-0.5">
-                  {i + 1}
-                </span>
-                <div className="flex-1">
-                  <p className="text-sm text-gray-700 leading-relaxed">{step.text}</p>
-                  {step.mins && step.mins > 0 && (
-                    <p className="mt-1 text-xs text-gray-400">⏱ {formatMinutes(step.mins)}</p>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ol>
-        </section>
-      </div>
+      {/* Ingredienti compatti + Procedura interattiva */}
+      <RecipeProcedure
+        recipeId={recipe.id}
+        defaultServings={recipe.servings ?? null}
+        ingredients={recipe.ingredients}
+        steps={recipe.steps}
+      />
 
       {/* Altre foto */}
       {allPhotos.length > 1 && (
         <section>
-          <h2 className="mb-4 text-xl font-bold text-gray-900">Foto</h2>
+          <h2 className="mb-4 text-xl font-bold text-sky-950">Foto</h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {allPhotos.slice(1).map((url: string, i: number) => (
-              <div key={i} className="relative aspect-square overflow-hidden rounded-xl bg-gray-100">
+              <div key={i} className="relative aspect-square overflow-hidden rounded-xl bg-white/20">
                 <Image src={url} alt={`${recipe.name} foto ${i + 2}`} fill className="object-cover" sizes="33vw" />
               </div>
             ))}
@@ -174,4 +145,3 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
     </article>
   );
 }
-

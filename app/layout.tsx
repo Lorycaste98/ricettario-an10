@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
@@ -9,12 +9,18 @@ const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
 export const metadata: Metadata = {
   title: "Ricettario",
   description: "Il mio ricettario personale",
+  icons: { icon: "/an10.svg", shortcut: "/an10.svg", apple: "/an10.svg" },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="it" className={`${geist.variable} h-full antialiased`}>
-      <body className="min-h-full bg-gray-50 font-sans text-gray-900">
+      <body className="min-h-screen font-sans bg-transparent">
         <AuthProvider>
           <Navbar />
           <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">

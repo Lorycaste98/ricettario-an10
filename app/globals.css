@@ -2,7 +2,7 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #042537; /* dark teal — readable on the light part of the gradient */
 }
 
 @theme inline {
@@ -12,15 +12,28 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
-  background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  min-height: 100dvh;
 }
+
+/* Gradiente fisso — funziona su mobile (iOS/Android non supportano background-attachment:fixed) */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    180deg,
+    #f0f9ff  0%,
+    #bae6fd 12%,
+    #38bdf8 30%,
+    #0284c7 48%,
+    #075985 62%,
+    #1e3a5c 74%,
+    #1e1b4b 86%,
+    #0a0714 100%
+  );
+}
+

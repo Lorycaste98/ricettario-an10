@@ -16,8 +16,8 @@ export function Badge({ label, color, className, onRemove }: Props) {
       )}
       style={
         color
-          ? { backgroundColor: color + "22", color }
-          : { backgroundColor: "#f3f4f6", color: "#374151" }
+          ? { backgroundColor: color + "33", color, border: `1px solid ${color}55` }
+          : { backgroundColor: "rgba(255,255,255,0.35)", color: "#075985", border: "1px solid rgba(255,255,255,0.5)" }
       }
     >
       {label}
@@ -34,4 +34,3 @@ export function Badge({ label, color, className, onRemove }: Props) {
     </span>
   );
 }
-

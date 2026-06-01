@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useRef } from "react";
-import { clsx } from "clsx";
 import { Button } from "./Button";
 
 interface Props {
@@ -28,7 +27,7 @@ export function Modal({ open, onClose, title, children, size = "md" }: Props) {
       ref={ref}
       onClose={onClose}
       onClick={(e) => { if (e.target === ref.current) onClose(); }}
-      className="fixed inset-0 z-50 m-auto rounded-xl border border-gray-100 p-0 shadow-2xl backdrop:bg-black/40 open:flex open:flex-col"
+      className="fixed inset-0 z-50 m-auto rounded-2xl border border-white/30 bg-white/85 backdrop-blur-xl p-0 shadow-2xl backdrop:bg-sky-950/40 open:flex open:flex-col"
       style={{
         width: size === "sm" ? "360px" : size === "lg" ? "720px" : size === "xl" ? "900px" : "560px",
         maxWidth: "calc(100vw - 2rem)",
@@ -36,9 +35,9 @@ export function Modal({ open, onClose, title, children, size = "md" }: Props) {
       }}
     >
       {title && (
-        <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
-          <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
-          <button onClick={onClose} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
+        <div className="flex items-center justify-between border-b border-white/30 px-6 py-4">
+          <h2 className="text-lg font-semibold text-sky-950">{title}</h2>
+          <button onClick={onClose} className="rounded-lg p-1.5 text-sky-600 hover:bg-white/50 hover:text-sky-900">
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -69,7 +68,7 @@ export function ConfirmModal({
 }) {
   return (
     <Modal open={open} onClose={onClose} title={title} size="sm">
-      <p className="text-sm text-gray-600">{message}</p>
+      <p className="text-sm text-sky-800">{message}</p>
       <div className="mt-6 flex justify-end gap-3">
         <Button variant="secondary" onClick={onClose} disabled={loading}>Annulla</Button>
         <Button variant="danger" onClick={onConfirm} loading={loading}>{confirmLabel}</Button>
