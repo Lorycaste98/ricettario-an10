@@ -51,9 +51,9 @@ export async function GET(_req: NextRequest, { params }: Params) {
           (reviews.reduce((s: number, r: { rating: number }) => s + r.rating, 0) / reviews.length) * 10
         ) / 10
       : null;
-  const previewPhotos = menu.recipes
-    .map((mr: { order: number; recipe: { photo?: string | null } }) => mr.recipe.photo ?? null)
-    .filter((p): p is string => p !== null);
+  const previewPhotos = (menu.recipes
+    .map((mr: { order: number; recipe: { photo?: string | null } }) => mr.recipe.photo ?? null) as (string | null)[])
+    .filter((p: string | null): p is string => p !== null);
 
   return ok({
     ...menu,
