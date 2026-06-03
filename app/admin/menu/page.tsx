@@ -22,7 +22,14 @@ type MenuRow = {
   recipes: { recipe: { photo: string | null } }[];
 };
 
-async function getMenus() {
+type MenuDisplayRow = Omit<MenuRow, "date" | "createdAt" | "reviews"> & {
+  date: string | null;
+  createdAt: string;
+  avgRating: number | null;
+  thumb: string | null;
+};
+
+async function getMenus(): Promise<MenuDisplayRow[]> {
   const menus: MenuRow[] = await db.menu.findMany({
     orderBy: { createdAt: "desc" },
     select: {

@@ -156,7 +156,7 @@ export default async function MenuDetailPage({ params }: Params) {
       <section className="space-y-4">
         <h2 className="text-lg font-bold text-sky-50">Le ricette del menù</h2>
         <div className="grid gap-3 sm:grid-cols-2">
-          {menu.recipes.map(({ order, recipe }) => {
+          {(menu.recipes as { order: number; recipe: ReturnType<typeof flattenRecipe> }[]).map(({ order, recipe }) => {
             const totalTime = (recipe.prep ?? 0) + (recipe.cook ?? 0);
             return (
               <Link
