@@ -11,7 +11,8 @@ import { type Category, type Tag } from "@/lib/types";
 
 interface IngredientRow { name: string; qty: string; unit: string }
 interface StepRow { text: string; mins: string }
-interface PhotoRow { url: string }
+/** Riga foto interna al form: url + flag per la foto principale */
+interface PhotoRow { url: string; isMain: boolean }
 
 export interface RecipeFormData {
   name: string;
@@ -20,12 +21,14 @@ export interface RecipeFormData {
   cook: string;
   notes: string;
   links: string;
+  /** URL della foto principale (mostrata nei card/lista) */
   photo: string;
   categoryIds: number[];
   tagIds: number[];
   ingredients: IngredientRow[];
   steps: StepRow[];
-  photos: PhotoRow[];
+  /** Foto extra della galleria (NON include la foto principale) */
+  photos: { url: string }[];
 }
 
 interface Props {
@@ -123,7 +126,6 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
   const [cook, setCook] = useState(initialData?.cook ?? "");
   const [notes, setNotes] = useState(initialData?.notes ?? "");
   const [links, setLinks] = useState(initialData?.links ?? "");
-  const [photo, setPhoto] = useState(initialData?.photo ?? "");
   const [categoryIds, setCategoryIds] = useState<number[]>(initialData?.categoryIds ?? []);
   const [tagIds, setTagIds] = useState<number[]>(initialData?.tagIds ?? []);
   const [ingredients, setIngredients] = useState<IngredientRow[]>(
@@ -132,7 +134,21 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
   const [steps, setSteps] = useState<StepRow[]>(
     initialData?.steps?.length ? initialData.steps : [{ text: "", mins: "" }]
   );
-  const [photos, setPhotos] = useState<PhotoRow[]>(initialData?.photos ?? []);
+  /**
+   * Tutte le foto della ricetta in un unico array.
+   * isMain = true indica la foto principale (mostrata nei card / lista).
+   * Alla creazione la prima foto caricata diventa automaticamente principale.
+   */
+  const [photos, setPhotos] = useState<PhotoRow[]>(() => {
+    const mainUrl = initialData?.photo?.trim() ?? "";
+    const gallery = (initialData?.photos ?? []).map((p) => p.url.trim()).filter(Boolean);
+    // Unifica: metti la foto principale per prima, poi le altre senza duplicati
+    const allUrls = mainUrl
+      ? [mainUrl, ...gallery.filter((u) => u !== mainUrl)]
+      : [...gallery];
+    if (allUrls.length === 0) return [];
+    return allUrls.map((url, i) => ({ url, isMain: i === 0 && !!mainUrl }));
+  });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -161,16 +177,41 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
     setSteps((p) => { const a = [...p]; [a[i], a[j]] = [a[j], a[i]]; return a; });
   };
 
-  const addPhoto = () => setPhotos((p) => [...p, { url: "" }]);
-  const removePhoto = (i: number) => setPhotos((p) => p.filter((_, j) => j !== i));
+  const addPhoto = () => setPhotos((p) => [...p, { url: "", isMain: false }]);
+  const removePhoto = (i: number) =>
+    setPhotos((prev) => {
+      const next = prev.filter((_, j) => j !== i);
+      // Se eliminata era la principale, promuovi la prima rimasta
+      const wasMain = prev[i]?.isMain;
+      if (wasMain && next.length > 0 && next[0].url) {
+        return next.map((r, j) => ({ ...r, isMain: j === 0 }));
+      }
+      return next;
+    });
   const updatePhoto = (i: number, url: string) =>
-    setPhotos((p) => p.map((r, j) => j === i ? { url } : r));
+    setPhotos((prev) =>
+      prev.map((r, j) => (j === i ? { ...r, url } : r))
+    );
+  /** Imposta la foto all'indice `i` come principale. */
+  const setPhotoAsMain = (i: number) =>
+    setPhotos((prev) => prev.map((r, j) => ({ ...r, isMain: j === i })));
+  /** Aggiunge direttamente una foto già caricata su Cloudinary. */
+  const addPhotoWithUrl = (url: string) =>
+    setPhotos((prev) => {
+      const isFirstMain = prev.length === 0;
+      return [...prev, { url, isMain: isFirstMain }];
+    });
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) { setError("Il nome è obbligatorio"); return; }
     setSaving(true);
     setError(null);
+
+    const validPhotos = photos.filter((p) => p.url.trim());
+    // La foto principale: quella marcata come main, o la prima disponibile
+    const mainPhoto =
+      validPhotos.find((p) => p.isMain) ?? validPhotos[0] ?? null;
 
     const body = {
       name: name.trim(),
@@ -179,7 +220,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
       cook: cook ? Number(cook) : null,
       notes: notes.trim() || null,
       links: links.trim() || null,
-      photo: photo.trim() || null,
+      photo: mainPhoto?.url.trim() || null,
       categoryIds,
       tagIds,
       ingredients: ingredients
@@ -188,9 +229,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
       steps: steps
         .filter((s) => s.text.trim())
         .map((s, order) => ({ text: s.text.trim(), mins: s.mins ? Number(s.mins) : null, order })),
-      photos: photos
-        .filter((p) => p.url.trim())
-        .map((p, order) => ({ url: p.url.trim(), order })),
+      photos: validPhotos.map((p, order) => ({ url: p.url.trim(), order })),
     };
 
     try {
@@ -219,7 +258,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
       setError(err instanceof Error ? err.message : "Errore sconosciuto");
       setSaving(false);
     }
-  }, [name, servings, prep, cook, notes, links, photo, categoryIds, tagIds, ingredients, steps, photos, isEdit, recipeId, router]);
+  }, [name, servings, prep, cook, notes, links, categoryIds, tagIds, ingredients, steps, photos, isEdit, recipeId, router]);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -263,27 +302,117 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
           onChange={(e) => setLinks(e.target.value)} placeholder="https://..." />
       </Section>
 
-      {/* 2. Foto principale */}
-      <Section title="Foto principale">
-        <div className="flex gap-4 items-start flex-wrap">
-          {photo && (
-            <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-xl bg-gray-100">
-              <Image src={photo} alt="Anteprima" fill className="object-cover" sizes="112px" />
-            </div>
-          )}
-          <div className="flex-1 min-w-[200px] space-y-2">
-            <Input value={photo} onChange={(e) => setPhoto(e.target.value)}
-              placeholder="https://res.cloudinary.com/..." />
-            <div className="flex gap-2 flex-wrap">
-              <ImageUploadButton onUrl={setPhoto} />
-              {photo && (
-                <Button type="button" variant="ghost" size="sm" onClick={() => setPhoto("")}>
-                  🗑 Rimuovi
-                </Button>
-              )}
-            </div>
+      {/* 2. Foto */}
+      <Section title="Foto">
+        <p className="text-xs text-sky-600">
+          Carica una o più foto. Quella contrassegnata con{" "}
+          <span className="font-semibold text-orange-500">⭐ Principale</span> viene
+          mostrata nei card e nella lista delle ricette.
+        </p>
+
+        {photos.length > 0 && (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {photos.map((p, i) => (
+              <div
+                key={i}
+                className={clsx(
+                  "relative overflow-hidden rounded-xl bg-gray-100 aspect-square",
+                  p.isMain && "ring-2 ring-orange-400"
+                )}
+              >
+                {/* Anteprima immagine */}
+                {p.url ? (
+                  <Image
+                    src={p.url}
+                    alt={`Foto ${i + 1}`}
+                    fill
+                    className="object-cover"
+                    sizes="200px"
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center text-gray-300 text-3xl">
+                    📷
+                  </div>
+                )}
+
+                {/* Badge principale */}
+                <button
+                  type="button"
+                  onClick={() => setPhotoAsMain(i)}
+                  title={p.isMain ? "Foto principale" : "Imposta come principale"}
+                  className={clsx(
+                    "absolute bottom-0 left-0 right-0 py-1 text-center text-[11px] font-semibold transition-colors",
+                    p.isMain
+                      ? "bg-orange-500/90 text-white"
+                      : "bg-black/40 text-white/80 hover:bg-orange-500/80"
+                  )}
+                >
+                  {p.isMain ? "⭐ Principale" : "Imposta principale"}
+                </button>
+
+                {/* Pulsante elimina */}
+                <button
+                  type="button"
+                  onClick={() => removePhoto(i)}
+                  title="Elimina foto"
+                  className="absolute top-1.5 right-1.5 flex items-center justify-center rounded-full bg-black/40 w-6 h-6 text-white hover:bg-red-500 transition-colors text-xs"
+                >
+                  ✕
+                </button>
+
+                {/* Sostituisci (se vuota o per aggiornare) */}
+                {!p.url && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <ImageUploadButton
+                      small
+                      label="Carica"
+                      onUrl={(url) => updatePhoto(i, url)}
+                    />
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
+        )}
+
+        <div className="flex gap-2 flex-wrap items-center">
+          {/* Carica e aggiungi direttamente */}
+          <ImageUploadButton
+            label="Aggiungi foto"
+            onUrl={addPhotoWithUrl}
+          />
+          {/* Aggiungi riga vuota (per incollare URL manualmente) */}
+          <Button type="button" variant="ghost" size="sm" onClick={addPhoto}>
+            + Inserisci URL
+          </Button>
         </div>
+
+        {/* Righe per URL manuali (foto senza immagine caricata) */}
+        {photos.some((p) => !p.url) && (
+          <div className="space-y-2 mt-1">
+            {photos.map((p, i) =>
+              !p.url ? (
+                <div key={i} className="flex gap-2 items-center">
+                  <span className="text-xs text-sky-600 w-5 shrink-0">{i + 1}.</span>
+                  <input
+                    type="text"
+                    value={p.url}
+                    onChange={(e) => updatePhoto(i, e.target.value)}
+                    placeholder="https://res.cloudinary.com/..."
+                    className={inlineInput + " flex-1"}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removePhoto(i)}
+                    className="shrink-0 rounded p-1.5 text-gray-300 hover:bg-red-50 hover:text-red-400 transition-colors"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : null
+            )}
+          </div>
+        )}
       </Section>
 
       {/* 3. Categorie */}
@@ -408,33 +537,6 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
         </div>
         <Button type="button" variant="ghost" size="sm" onClick={addStep}>
           + Aggiungi passo
-        </Button>
-      </Section>
-
-      {/* 7. Foto extra */}
-      <Section title="Foto extra (galleria)">
-        {photos.length === 0 && (
-          <p className="text-sm text-sky-600">Nessuna foto extra. Aggiungine una qui sotto.</p>
-        )}
-        <div className="space-y-2">
-          {photos.map((p, i) => (
-            <div key={i} className="flex gap-2 items-center">
-              {p.url && (
-                <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-gray-100">
-                  <Image src={p.url} alt="" fill className="object-cover" sizes="48px" />
-                </div>
-              )}
-              <input type="text" value={p.url} onChange={(e) => updatePhoto(i, e.target.value)}
-                placeholder="https://res.cloudinary.com/..."
-                className={inlineInput} />
-              <ImageUploadButton label="" small onUrl={(url) => updatePhoto(i, url)} />
-              <button type="button" onClick={() => removePhoto(i)}
-                className="shrink-0 rounded p-1.5 text-gray-300 hover:bg-red-50 hover:text-red-400 transition-colors">✕</button>
-            </div>
-          ))}
-        </div>
-        <Button type="button" variant="ghost" size="sm" onClick={addPhoto}>
-          + Aggiungi foto
         </Button>
       </Section>
 
