@@ -1,0 +1,136 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Recipe {
+  id          Int      @id @default(autoincrement())
+  name        String
+  servings    Int?
+  prep        Int?
+  cook        Int?
+  notes       String?
+  links       String?
+  photo       String?
+  cookCount   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  categories  RecipeCategory[]
+  ingredients Ingredient[]
+  steps       Step[]
+  photos      RecipePhoto[]
+  tags        RecipeTag[]
+  reviews     Review[]
+  menus       MenuRecipe[]
+}
+
+model Category {
+  id      Int              @id @default(autoincrement())
+  name    String           @unique
+  color   String
+  recipes RecipeCategory[]
+}
+
+model RecipeCategory {
+  recipeId   Int
+  categoryId Int
+  recipe     Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  @@id([recipeId, categoryId])
+}
+
+model Ingredient {
+  id       Int     @id @default(autoincrement())
+  name     String
+  qty      Float?
+  unit     String?
+  order    Int
+  recipeId Int
+  recipe   Recipe  @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+}
+
+model Step {
+  id       Int    @id @default(autoincrement())
+  text     String
+  mins     Int?
+  order    Int
+  recipeId Int
+  recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+}
+
+model RecipePhoto {
+  id       Int    @id @default(autoincrement())
+  url      String
+  order    Int    @default(0)
+  recipeId Int
+  recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+}
+
+model Tag {
+  id      Int         @id @default(autoincrement())
+  name    String      @unique
+  recipes RecipeTag[]
+}
+
+model RecipeTag {
+  recipeId Int
+  tagId    Int
+  recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  tag      Tag    @relation(fields: [tagId], references: [id])
+
+  @@id([recipeId, tagId])
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  nickname  String
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+  recipeId  Int
+  recipe    Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+}
+
+model Admin {
+  id       Int    @id @default(autoincrement())
+  username String @unique
+  password String
+}
+
+model Menu {
+  id          Int          @id @default(autoincrement())
+  name        String
+  description String?
+  date        DateTime?
+  photo       String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  recipes     MenuRecipe[]
+  reviews     MenuReview[]
+}
+
+model MenuRecipe {
+  menuId    Int
+  recipeId  Int
+  order     Int    @default(0)
+  menu      Menu   @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  recipe    Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@id([menuId, recipeId])
+}
+
+model MenuReview {
+  id        Int      @id @default(autoincrement())
+  nickname  String
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+  menuId    Int
+  menu      Menu     @relation(fields: [menuId], references: [id], onDelete: Cascade)
+}
