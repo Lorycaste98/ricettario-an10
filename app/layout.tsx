@@ -9,7 +9,7 @@ const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
 export const metadata: Metadata = {
   title: "Ricettario",
   description: "Il mio ricettario personale",
-  icons: { icon: "/an10.svg", shortcut: "/an10.svg", apple: "/an10.svg" },
+  icons: { icon: "/logo.ico", shortcut: "/logo.ico", apple: "/logo.ico" },
 };
 
 export const viewport: Viewport = {

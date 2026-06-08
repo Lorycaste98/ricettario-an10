@@ -64,7 +64,7 @@ export function Navbar() {
           <Link href="/" className="group flex items-center gap-2.5">
             <div className="relative shrink-0">
               <Image
-                src="/an10.svg" alt="AN10" width={34} height={34}
+                src="/an10.webp" alt="AN10" width={34} height={34}
                 className="rounded-xl transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3"
               />
               <div className="absolute inset-0 rounded-xl bg-sky-300/30 opacity-0 group-hover:opacity-100 blur-md transition-opacity duration-300 -z-10" />

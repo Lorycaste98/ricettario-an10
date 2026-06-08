@@ -32,7 +32,7 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
           />
         ) : (
           <div className="flex h-full items-center justify-center bg-zinc-800">
-            <Image src="/an10.svg" alt="AN10" width={56} height={56} className="opacity-60 rounded-xl" />
+            <Image src="/an10.webp" alt="AN10" width={56} height={56} className="opacity-60 rounded-xl" />
           </div>
         )}
 

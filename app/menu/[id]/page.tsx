@@ -181,7 +181,7 @@ export default async function MenuDetailPage({ params }: Params) {
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center">
-                      <Image src="/an10.svg" alt="" width={28} height={28} className="opacity-40 rounded-lg" />
+                      <Image src="/an10.webp" alt="" width={28} height={28} className="opacity-40 rounded-lg" />
                     </div>
                   )}
                 </div>
