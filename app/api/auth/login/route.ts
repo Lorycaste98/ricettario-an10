@@ -24,24 +24,30 @@ export async function POST(request: NextRequest) {
     return err("username e password sono obbligatori");
   }
 
-  const admin = await db.admin.findUnique({
-    where: { username: b.username.trim() },
-  });
+  try {
+    const admin = await db.admin.findUnique({
+      where: { username: b.username.trim() },
+    });
 
-  // Usa compare anche se l'admin non esiste (timing-safe)
-  const dummyHash =
-    "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy";
-  const passwordMatches = await compare(
-    b.password,
-    admin?.password ?? dummyHash
-  );
+    // Usa compare anche se l'admin non esiste (timing-safe)
+    const dummyHash =
+      "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy";
+    const passwordMatches = await compare(
+      b.password,
+      admin?.password ?? dummyHash
+    );
 
-  if (!admin || !passwordMatches) {
-    return err("Credenziali non valide", 401);
+    if (!admin || !passwordMatches) {
+      return err("Credenziali non valide", 401);
+    }
+
+    await createSession({ adminId: admin.id, username: admin.username });
+
+    return ok({ isAdmin: true, username: admin.username });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    console.error("[POST /api/auth/login] errore:", message);
+    return err(`Errore interno del server: ${message}`, 500);
   }
-
-  await createSession({ adminId: admin.id, username: admin.username });
-
-  return ok({ isAdmin: true, username: admin.username });
 }
 
