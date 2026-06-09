@@ -120,6 +120,9 @@ export default async function AdminPage() {
           <Link href="/admin/menu/nuovo" className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-2 text-sm text-sky-700 hover:bg-sky-100 transition-colors">
             ✨ Nuovo menù
           </Link>
+          <Link href="/admin/import" className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700 hover:bg-red-100 transition-colors">
+            📂 Importa JSON
+          </Link>
         </div>
       </section>
     </div>
