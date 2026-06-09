@@ -2,6 +2,9 @@ import { db } from "@/lib/db";
 import { RecipeGrid } from "@/components/recipe/RecipeGrid";
 import { flattenRecipe, recipeSummarySelect } from "@/lib/api";
 
+// La home legge dal DB → non va prerenderizzata staticamente durante il build
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   const [rawRecipes, categories, tags] = await Promise.all([
     db.recipe.findMany({
