@@ -113,6 +113,16 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
             </a>
           )}
 
+          {/* Data aggiunta */}
+          <p className="text-xs text-sky-700/60">
+            📅 Aggiunta il{" "}
+            {new Date(recipe.createdAt ?? "2020-01-01").toLocaleDateString("it-IT", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })}
+          </p>
+
           {/* Admin actions */}
           <RecipeActions recipeId={recipe.id} cookCount={recipe.cookCount} />
         </div>
