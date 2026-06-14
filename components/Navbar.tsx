@@ -44,12 +44,12 @@ export function Navbar() {
 
   const navLinks = [
     ...(isAdmin ? [{ href: "/admin", label: "Dashboard", icon: LayoutDashboard }] : []),
-    { href: "/", label: "Ricette", icon: BookOpen },
+    { href: "/ricette", label: "Ricette", icon: BookOpen },
     { href: "/menu", label: "Menù", icon: UtensilsCrossed },
   ];
 
   const isActive = (href: string) =>
-      href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(href + "/");
+      pathname === href || pathname.startsWith(href + "/");
 
   return (
       <>

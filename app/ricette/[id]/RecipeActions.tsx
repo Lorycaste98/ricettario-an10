@@ -16,7 +16,7 @@ export function RecipeActions({ recipeId, cookCount }: { recipeId: number; cookC
   const handleDelete = async () => {
     setDeleting(true);
     await fetch(`/api/recipes/${recipeId}`, { method: "DELETE" });
-    router.push("/");
+    router.push("/ricette");
     router.refresh();
   };
 

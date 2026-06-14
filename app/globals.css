@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+@keyframes shrink {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
 :root {
   --background: #ffffff;
   --foreground: #042537; /* dark teal — readable on the light part of the gradient */

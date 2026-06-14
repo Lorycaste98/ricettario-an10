@@ -46,7 +46,7 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
   return (
     <article className="mx-auto max-w-4xl space-y-8 sm:space-y-10">
       {/* Back */}
-      <Link href="/" className="inline-flex items-center gap-1 text-sm font-medium text-sky-950 [text-shadow:0_1px_3px_rgba(255,255,255,0.6)] hover:opacity-70 transition-opacity">
+      <Link href="/ricette" className="inline-flex items-center gap-1 text-sm font-medium text-sky-950 [text-shadow:0_1px_3px_rgba(255,255,255,0.6)] hover:opacity-70 transition-opacity">
         ← Tutte le ricette
       </Link>
 
