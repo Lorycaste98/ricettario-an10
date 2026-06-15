@@ -1,10 +1,11 @@
 "use client";
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { clsx } from "clsx";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Input";
+import { IngredientCombobox } from "@/components/ui/IngredientCombobox";
 import { type Category, type Tag } from "@/lib/types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -149,8 +150,25 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
     if (allUrls.length === 0) return [];
     return allUrls.map((url, i) => ({ url, isMain: i === 0 && !!mainUrl }));
   });
+  const [tagQuery, setTagQuery] = useState("");
+  const [allIngredients, setAllIngredients] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/ingredients")
+      .then((r) => r.json())
+      .then((data: Array<{ name: string }>) =>
+        setAllIngredients(data.map((d) => d.name))
+      )
+      .catch(() => {});
+  }, []);
+
+  const handleNewIngredient = (name: string) => {
+    setAllIngredients((prev) =>
+      [...prev, name].sort((a, b) => a.localeCompare(b, "it"))
+    );
+  };
 
   const toggleCat = (id: number) =>
     setCategoryIds((p) => p.includes(id) ? p.filter((x) => x !== id) : [...p, id]);
@@ -264,11 +282,11 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
     <form onSubmit={handleSubmit} className="space-y-6">
 
       {/* Sticky top bar */}
-      <div className="sticky top-[57px] z-30 -mx-4 flex items-center justify-between border-b border-white/20 bg-white/85 backdrop-blur-md px-4 py-3 sm:-mx-6 sm:px-6">
-        <h1 className="text-lg font-bold text-sky-950">
+      <div className="sticky top-[65px] z-30 flex items-center justify-between gap-3 rounded-b-2xl border border-white/50 bg-white/70 backdrop-blur-xl px-5 py-3 shadow-lg shadow-black/[0.07] ring-1 ring-black/[0.04]">
+        <h1 className="text-sm font-semibold text-gray-800 truncate">
           {isEdit ? "Modifica ricetta" : "Nuova ricetta"}
         </h1>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <Button type="button" variant="ghost" size="sm" onClick={() => router.back()}>
             Annulla
           </Button>
@@ -443,23 +461,41 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
       {/* 4. Tag */}
       {tags.length > 0 && (
         <Section title="Tag">
-          <div className="flex flex-wrap gap-2">
-            {tags.map((t) => (
-              <button key={t.id} type="button" onClick={() => toggleTag(t.id)}
-                className={clsx(
-                  "rounded-full border px-3 py-1.5 text-xs font-medium transition-all",
-                  tagIds.includes(t.id)
-                    ? "border-orange-400 bg-orange-100/60 text-orange-700"
-                    : "border-white/40 bg-white/50 text-sky-800 hover:bg-white/70"
-                )}>
-                #{t.name}
-              </button>
-            ))}
+          <input
+            type="text"
+            value={tagQuery}
+            onChange={(e) => setTagQuery(e.target.value)}
+            placeholder="Cerca tag…"
+            className={inlineInput + " w-full"}
+          />
+          <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto pr-1">
+            {tags
+              .filter((t) =>
+                !tagQuery.trim() ||
+                t.name.toLowerCase().includes(tagQuery.toLowerCase())
+              )
+              .map((t) => (
+                <button key={t.id} type="button" onClick={() => toggleTag(t.id)}
+                  className={clsx(
+                    "rounded-full border px-3 py-1.5 text-xs font-medium transition-all",
+                    tagIds.includes(t.id)
+                      ? "border-orange-400 bg-orange-100/60 text-orange-700"
+                      : "border-white/40 bg-white/50 text-sky-800 hover:bg-white/70"
+                  )}>
+                  #{t.name}
+                </button>
+              ))}
           </div>
+          {tagIds.length > 0 && (
+            <p className="text-xs text-sky-600">
+              {tagIds.length} tag selezionat{tagIds.length === 1 ? "o" : "i"}
+            </p>
+          )}
         </Section>
       )}
 
-      {/* 5. Ingredienti */}
+      {/* 5. Ingredienti — z-10 wrapper lifts this stacking context above the Procedura section */}
+      <div className="relative z-10">
       <Section title="Ingredienti">
         <div className="space-y-1.5">
           {/* Header — stessa griglia delle righe */}
@@ -493,9 +529,14 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
               <input type="text" value={ing.unit}
                 onChange={(e) => updateIngredient(i, "unit", e.target.value)} placeholder="g/ml…"
                 className={inlineInput + " w-full"} />
-              <input type="text" value={ing.name}
-                onChange={(e) => updateIngredient(i, "name", e.target.value)} placeholder="Ingrediente"
-                className={inlineInput + " w-full"} />
+              <IngredientCombobox
+                value={ing.name}
+                onChange={(v) => updateIngredient(i, "name", v)}
+                allIngredients={allIngredients}
+                onNewIngredient={handleNewIngredient}
+                placeholder="Ingrediente"
+                className={inlineInput + " w-full"}
+              />
               <button type="button" onClick={() => removeIngredient(i)}
                 className="flex items-center justify-center rounded p-1 text-sky-300 hover:text-red-400 transition-colors">✕</button>
             </div>
@@ -505,6 +546,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
           + Aggiungi ingrediente
         </Button>
       </Section>
+      </div>
 
       {/* 6. Procedura */}
       <Section title="Procedura">

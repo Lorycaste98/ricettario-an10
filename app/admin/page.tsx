@@ -15,36 +15,20 @@ import {
   BookMarked,
   SmilePlus,
   ShoppingBasket,
+  Carrot,
 } from "lucide-react";
 import ChartsSection from "@/components/admin/ChartsSection";
 
 export const metadata: Metadata = { title: "Admin — Ricettario" };
 
-/**
- * Ingredienti comuni da escludere dal grafico "più usati".
- * Aggiungi o rimuovi voci a piacere.
- */
-const EXCLUDED_INGREDIENTS = [
-  "sale",
-  "Sale",
-  "acqua",
-  "Acqua",
-  "olio",
-  "Olio",
-  "olio d'oliva",
-  "olio di oliva",
-  "Olio d'oliva",
-  "olio extravergine d'oliva",
-  "Olio extravergine d'oliva",
-  "pepe",
-  "Pepe",
-  "pepe nero",
-  "Pepe nero",
-];
-
 export default async function AdminPage() {
   const session = await getSession();
   if (!session) redirect("/login");
+
+  // Nomi esclusi dalla dashboard (gestibili dalla pagina admin/ingredienti)
+  const excludedNames = await db.ingredientMaster
+    .findMany({ where: { excludedFromStats: true }, select: { name: true } })
+    .then((rows) => rows.map((r) => r.name));
 
   const [recipeCount, categoryCount, , menuCount, topCookedRaw, recentReviews, topIngredientsRaw, ingredientCount] = await Promise.all([
     db.recipe.count(),
@@ -67,7 +51,7 @@ export default async function AdminPage() {
     }),
     db.ingredient.groupBy({
       by: ["name"],
-      where: { name: { notIn: EXCLUDED_INGREDIENTS } },
+      where: { name: { notIn: excludedNames } },
       _count: { name: true },
       orderBy: { _count: { name: "desc" } },
       take: 15,
@@ -125,6 +109,9 @@ export default async function AdminPage() {
           </Link>
           <Link href="/admin/vocabolario" className="rounded-lg border border-violet-200 bg-violet-50 px-4 py-2 text-sm text-violet-700 hover:bg-violet-100 transition-colors inline-flex items-center gap-2">
             <BookMarked size={15} /> Categorie &amp; Tag
+          </Link>
+          <Link href="/admin/ingredienti" className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-700 hover:bg-emerald-100 transition-colors inline-flex items-center gap-2">
+            <Carrot size={15} /> Gestisci ingredienti
           </Link>
         </div>
       </section>

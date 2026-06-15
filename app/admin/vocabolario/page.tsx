@@ -12,7 +12,7 @@ export default async function VocabolarioPage() {
 
   const [categories, tags] = await Promise.all([
     db.category.findMany({
-      orderBy: { name: "asc" },
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
       include: { _count: { select: { recipes: true } } },
     }),
     db.tag.findMany({

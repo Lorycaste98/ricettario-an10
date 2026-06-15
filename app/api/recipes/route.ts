@@ -128,6 +128,16 @@ export async function POST(request: NextRequest) {
     select: recipeSummarySelect,
   });
 
+  // Sincronizza i nuovi nomi nel catalogo ingredienti
+  const names = (b.ingredients ?? []).map((i) => i.name.trim()).filter(Boolean);
+  if (names.length > 0) {
+    await Promise.all(
+      names.map((name) =>
+        db.ingredientMaster.upsert({ where: { name }, create: { name }, update: {} })
+      )
+    );
+  }
+
   return ok(flattenRecipe(recipe), 201);
 }
 

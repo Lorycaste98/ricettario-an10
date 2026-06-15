@@ -9,6 +9,7 @@ interface Category {
   id: number;
   name: string;
   color: string;
+  sortOrder: number;
   _count: { recipes: number };
 }
 
@@ -78,7 +79,7 @@ function CategoriesPanel({
     const json = await res.json();
     setAdding(false);
     if (!res.ok) { setError(json.error ?? "Errore"); return; }
-    setCategories((prev) => [...prev, { ...json, _count: { recipes: 0 } }].sort((a, b) => a.name.localeCompare(b.name)));
+    setCategories((prev) => [...prev, { ...json, _count: { recipes: 0 } }]);
     setNewName("");
     setNewColor(PALETTE[0]);
   }
@@ -101,9 +102,22 @@ function CategoriesPanel({
     if (!res.ok) { setError(json.error ?? "Errore"); return; }
     setCategories((prev) =>
       prev.map((c) => (c.id === id ? { ...c, name: json.name, color: json.color } : c))
-        .sort((a, b) => a.name.localeCompare(b.name))
     );
     setEditId(null);
+  }
+
+  async function handleMove(id: number, direction: -1 | 1) {
+    const idx = categories.findIndex((c) => c.id === id);
+    const newIdx = idx + direction;
+    if (newIdx < 0 || newIdx >= categories.length) return;
+    const newOrder = [...categories];
+    [newOrder[idx], newOrder[newIdx]] = [newOrder[newIdx], newOrder[idx]];
+    setCategories(newOrder);
+    await fetch("/api/categories/reorder", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: newOrder.map((c) => c.id) }),
+    });
   }
 
   async function handleDelete(id: number, name: string) {
@@ -140,9 +154,15 @@ function CategoriesPanel({
 
       {/* Lista */}
       <ul className="space-y-1.5 max-h-96 overflow-y-auto pr-1">
-        {categories.map((cat) =>
+        {categories.map((cat, idx) =>
           editId === cat.id ? (
             <li key={cat.id} className="flex items-center gap-2">
+              <div className="flex flex-col gap-0 shrink-0">
+                <button type="button" onClick={() => handleMove(cat.id, -1)} disabled={idx === 0}
+                  className="text-[9px] leading-tight text-gray-300 hover:text-gray-500 disabled:opacity-20">▲</button>
+                <button type="button" onClick={() => handleMove(cat.id, 1)} disabled={idx === categories.length - 1}
+                  className="text-[9px] leading-tight text-gray-300 hover:text-gray-500 disabled:opacity-20">▼</button>
+              </div>
               <input
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
@@ -154,6 +174,12 @@ function CategoriesPanel({
             </li>
           ) : (
             <li key={cat.id} className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-gray-50 group">
+              <div className="flex flex-col gap-0 shrink-0">
+                <button type="button" onClick={() => handleMove(cat.id, -1)} disabled={idx === 0}
+                  className="text-[9px] leading-tight text-gray-300 hover:text-gray-500 disabled:opacity-20">▲</button>
+                <button type="button" onClick={() => handleMove(cat.id, 1)} disabled={idx === categories.length - 1}
+                  className="text-[9px] leading-tight text-gray-300 hover:text-gray-500 disabled:opacity-20">▼</button>
+              </div>
               <span
                 className="h-3 w-3 shrink-0 rounded-full"
                 style={{ backgroundColor: cat.color }}

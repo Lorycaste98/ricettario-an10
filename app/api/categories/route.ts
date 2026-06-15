@@ -10,7 +10,7 @@ import { requireAdmin } from "@/lib/session";
 
 export async function GET() {
   const categories = await db.category.findMany({
-    orderBy: { name: "asc" },
+    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     include: { _count: { select: { recipes: true } } },
   });
   return ok(categories);

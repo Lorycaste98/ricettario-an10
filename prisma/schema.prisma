@@ -29,10 +29,11 @@ model Recipe {
 }
 
 model Category {
-  id      Int              @id @default(autoincrement())
-  name    String           @unique
-  color   String
-  recipes RecipeCategory[]
+  id        Int              @id @default(autoincrement())
+  name      String           @unique
+  color     String
+  sortOrder Int              @default(0)
+  recipes   RecipeCategory[]
 }
 
 model RecipeCategory {
@@ -52,6 +53,12 @@ model Ingredient {
   order    Int
   recipeId Int
   recipe   Recipe  @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+}
+
+model IngredientMaster {
+  id                Int     @id @default(autoincrement())
+  name              String  @unique
+  excludedFromStats Boolean @default(false)
 }
 
 model Step {
