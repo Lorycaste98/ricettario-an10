@@ -2,13 +2,21 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2, Loader2 } from "lucide-react";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 export function AdminMenuDeleteButton({ menuId, menuName }: { menuId: number; menuName: string }) {
   const router = useRouter();
+  const confirm = useConfirm();
   const [loading, setLoading] = useState(false);
 
   const handleDelete = async () => {
-    if (!confirm(`Eliminare il menù "${menuName}"? L'azione è irreversibile.`)) return;
+    const ok = await confirm({
+      title: `Eliminare il menù "${menuName}"?`,
+      message: "L'azione è irreversibile.",
+      confirmLabel: "Elimina",
+      variant: "danger",
+    });
+    if (!ok) return;
     setLoading(true);
     await fetch(`/api/menus/${menuId}`, { method: "DELETE" });
     router.refresh();

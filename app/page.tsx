@@ -119,8 +119,15 @@ export default async function LandingPage() {
           {isAdmin ? (
             <>
               <Link
-                href="/admin/ricette/nuova"
+                href="/admin"
                 className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg hover:bg-orange-600 transition-colors"
+              >
+                <LayoutDashboard size={16} />
+                Dashboard Admin
+              </Link>
+              <Link
+                href="/admin/ricette/nuova"
+                className="inline-flex items-center gap-2 rounded-xl border border-sky-600 bg-sky-900/60 backdrop-blur-sm px-5 py-2.5 text-sm font-semibold text-sky-100 hover:bg-sky-800/80 transition-colors"
               >
                 <Plus size={16} />
                 Nuova ricetta
@@ -131,13 +138,6 @@ export default async function LandingPage() {
               >
                 <Plus size={16} />
                 Nuovo menù
-              </Link>
-              <Link
-                href="/admin"
-                className="inline-flex items-center gap-2 rounded-xl border border-sky-700/50 bg-white/5 px-5 py-2.5 text-sm font-medium text-sky-300 hover:bg-white/10 transition-colors"
-              >
-                <LayoutDashboard size={16} />
-                Dashboard
               </Link>
             </>
           ) : (

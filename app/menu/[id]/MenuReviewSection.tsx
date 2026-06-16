@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Star, Loader2, Trash2, MessageSquarePlus } from "lucide-react";
 import type { MenuReview } from "@/lib/types";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 interface Props {
   menuId: number;
@@ -48,6 +49,7 @@ function formatDate(iso: string) {
 
 export function MenuReviewSection({ menuId, reviews: initialReviews, avgRating: _initAvg, isAdmin }: Props) {
   const router = useRouter();
+  const confirm = useConfirm();
   const [reviews, setReviews] = useState<MenuReview[]>(initialReviews);
   const [nickname, setNickname] = useState("");
   const [rating, setRating] = useState(0);
@@ -93,7 +95,8 @@ export function MenuReviewSection({ menuId, reviews: initialReviews, avgRating: 
   };
 
   const handleDelete = async (reviewId: number) => {
-    if (!confirm("Eliminare questa recensione?")) return;
+    const ok = await confirm({ title: "Eliminare questa recensione?", confirmLabel: "Elimina", variant: "danger" });
+    if (!ok) return;
     await fetch(`/api/menus/${menuId}/reviews?reviewId=${reviewId}`, { method: "DELETE" });
     setReviews((prev) => prev.filter((r) => r.id !== reviewId));
     router.refresh();

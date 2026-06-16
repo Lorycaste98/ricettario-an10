@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 // ---------------------------------------------------------------------------
 // Tipi
@@ -58,6 +59,7 @@ function CategoriesPanel({
   categories: Category[];
   setCategories: React.Dispatch<React.SetStateAction<Category[]>>;
 }) {
+  const confirm = useConfirm();
   const [newName, setNewName] = useState("");
   const [newColor, setNewColor] = useState(PALETTE[0]);
   const [adding, setAdding] = useState(false);
@@ -121,7 +123,13 @@ function CategoriesPanel({
   }
 
   async function handleDelete(id: number, name: string) {
-    if (!confirm(`Eliminare la categoria "${name}"? Verrà rimossa da tutte le ricette.`)) return;
+    const ok = await confirm({
+      title: `Eliminare la categoria "${name}"?`,
+      message: "Verrà rimossa da tutte le ricette.",
+      confirmLabel: "Elimina",
+      variant: "danger",
+    });
+    if (!ok) return;
     const res = await fetch(`/api/categories/${id}`, { method: "DELETE" });
     if (!res.ok) { setError("Impossibile eliminare."); return; }
     setCategories((prev) => prev.filter((c) => c.id !== id));
@@ -206,6 +214,7 @@ function TagsPanel({
   tags: Tag[];
   setTags: React.Dispatch<React.SetStateAction<Tag[]>>;
 }) {
+  const confirm = useConfirm();
   const [newName, setNewName] = useState("");
   const [adding, setAdding] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
@@ -247,7 +256,13 @@ function TagsPanel({
   }
 
   async function handleDelete(id: number, name: string) {
-    if (!confirm(`Eliminare il tag "${name}"? Verrà rimosso da tutte le ricette.`)) return;
+    const ok = await confirm({
+      title: `Eliminare il tag "${name}"?`,
+      message: "Verrà rimosso da tutte le ricette.",
+      confirmLabel: "Elimina",
+      variant: "danger",
+    });
+    if (!ok) return;
     const res = await fetch(`/api/tags/${id}`, { method: "DELETE" });
     if (!res.ok) { setError("Impossibile eliminare."); return; }
     setTags((prev) => prev.filter((t) => t.id !== id));

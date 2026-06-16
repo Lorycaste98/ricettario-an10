@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Merge, Pencil, Check, X, EyeOff, Eye, Trash2 } from "lucide-react";
+import { Search, Merge, Pencil, Check, X, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 interface IngredientItem {
   id: number;
@@ -19,7 +20,12 @@ interface Props {
 
 export default function IngredientiClient({ initialIngredients }: Props) {
   const router = useRouter();
+  const confirm = useConfirm();
   const [ingredients, setIngredients] = useState<IngredientItem[]>(initialIngredients);
+
+  useEffect(() => {
+    setIngredients(initialIngredients);
+  }, [initialIngredients]);
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [editId, setEditId] = useState<number | null>(null);
@@ -94,7 +100,13 @@ export default function IngredientiClient({ initialIngredients }: Props) {
 
   // ── Elimina dal catalogo ───────────────────────────────────────────────────
   const handleDelete = async (item: IngredientItem) => {
-    if (!confirm(`Rimuovere "${item.name}" dal catalogo?\nL'ingrediente resterà nelle ricette esistenti.`)) return;
+    const ok = await confirm({
+      title: `Rimuovere "${item.name}" dal catalogo?`,
+      message: "L'ingrediente resterà nelle ricette esistenti.",
+      confirmLabel: "Rimuovi",
+      variant: "danger",
+    });
+    if (!ok) return;
     const res = await fetch(`/api/admin/ingredients/${item.id}`, { method: "DELETE" });
     if (!res.ok) return;
     setIngredients((prev) => prev.filter((i) => i.id !== item.id));
@@ -133,10 +145,7 @@ export default function IngredientiClient({ initialIngredients }: Props) {
           .map((i) => i.id === existing.id ? { ...i, usageCount: mergedCount } : i)
           .sort((a, b) => a.name.localeCompare(b.name, "it"));
       }
-      return [
-        ...filtered2,
-        { id: Date.now(), name: canonical.trim(), excludedFromStats: false, usageCount: mergedCount, recipes: [] },
-      ].sort((a, b) => a.name.localeCompare(b.name, "it"));
+      return filtered2.sort((a, b) => a.name.localeCompare(b.name, "it"));
     });
     setSelected(new Set());
     setMergeOpen(false);
@@ -146,7 +155,7 @@ export default function IngredientiClient({ initialIngredients }: Props) {
   const selectedItems = ingredients.filter((i) => selected.has(i.id));
 
   return (
-    <div className="space-y-4">
+    <div className={`space-y-4 ${selected.size > 0 ? "pb-20" : ""}`}>
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-48">
@@ -158,15 +167,6 @@ export default function IngredientiClient({ initialIngredients }: Props) {
             className="w-full rounded-lg border border-gray-200 bg-white pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-200"
           />
         </div>
-        {selected.size >= 2 && (
-          <Button size="sm" onClick={openMerge} className="flex items-center gap-1.5">
-            <Merge size={14} />
-            Unifica ({selected.size})
-          </Button>
-        )}
-        {selected.size > 0 && selected.size < 2 && (
-          <span className="text-xs text-gray-400">Seleziona almeno 2 per unificare</span>
-        )}
       </div>
 
       {/* Tabella */}
@@ -259,15 +259,17 @@ export default function IngredientiClient({ initialIngredients }: Props) {
                   </td>
                   <td className="px-3 py-2.5 text-center">
                     <button
+                      role="switch"
+                      aria-checked={!item.excludedFromStats}
                       onClick={() => void toggleExclude(item)}
                       title={item.excludedFromStats ? "Includi nelle statistiche" : "Escludi dalle statistiche"}
-                      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs transition-colors"
-                      style={item.excludedFromStats
-                        ? { backgroundColor: "#fee2e2", color: "#ef4444" }
-                        : { backgroundColor: "#dcfce7", color: "#16a34a" }}
+                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-1 ${
+                        item.excludedFromStats ? "bg-gray-200" : "bg-green-500"
+                      }`}
                     >
-                      {item.excludedFromStats ? <EyeOff size={11} /> : <Eye size={11} />}
-                      {item.excludedFromStats ? "Escluso" : "Incluso"}
+                      <span className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-md transition-transform duration-200 ${
+                        item.excludedFromStats ? "translate-x-0" : "translate-x-4"
+                      }`} />
                     </button>
                   </td>
                   <td className="px-3 py-2.5">
@@ -301,6 +303,31 @@ export default function IngredientiClient({ initialIngredients }: Props) {
           </tbody>
         </table>
       </div>
+
+      {/* Sticky bottom bar — selezione attiva */}
+      {selected.size > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-30 flex items-center justify-between gap-3 border-t border-gray-200 bg-white/95 backdrop-blur-sm px-4 py-3 shadow-lg sm:px-6">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-semibold text-gray-700">
+              {selected.size} selezionat{selected.size === 1 ? "o" : "i"}
+            </span>
+            <button
+              onClick={() => setSelected(new Set())}
+              className="text-xs text-gray-400 hover:text-gray-700 underline underline-offset-2 transition-colors"
+            >
+              Deseleziona tutti
+            </button>
+          </div>
+          {selected.size >= 2 ? (
+            <Button size="sm" onClick={openMerge} className="flex items-center gap-1.5">
+              <Merge size={14} />
+              Unifica ({selected.size})
+            </Button>
+          ) : (
+            <span className="text-xs text-gray-400">Seleziona almeno 2 per unificare</span>
+          )}
+        </div>
+      )}
 
       {/* Modal unifica */}
       {mergeOpen && (

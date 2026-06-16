@@ -44,13 +44,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => { refresh(); }, []);
 
-  // ── Auto-dismiss toast dopo 5s ──
-  useEffect(() => {
-    if (!autoLoggedOut) return;
-    const id = setTimeout(() => setAutoLoggedOut(false), 5000);
-    return () => clearTimeout(id);
-  }, [autoLoggedOut]);
-
   // ── Inactivity logout ──
   const resetTimer = useCallback(() => {
     clearTimeout(timerRef.current);
@@ -74,7 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [isAdmin, resetTimer]);
 
   useEffect(() => {
-    const events = ["mousemove", "keydown", "click", "scroll", "touchstart"] as const;
+    const events = ["keydown", "click", "touchstart"] as const;
     events.forEach((e) => window.addEventListener(e, resetTimer, { passive: true }));
     return () => {
       events.forEach((e) => window.removeEventListener(e, resetTimer));
@@ -82,43 +75,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [resetTimer]);
 
-  // ── Logout on window/tab close ──
-  useEffect(() => {
-    if (!isAdmin) return;
-    const handleBeforeUnload = () => {
-      navigator.sendBeacon("/api/auth/logout");
-    };
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [isAdmin]);
-
   return (
     <AuthCtx.Provider value={{ isAdmin, username, loading, refresh }}>
       {children}
 
-      {/* ── Toast logout automatico ── */}
+      {/* ── Modal logout per inattività ── */}
       {autoLoggedOut && (
-        <div className="fixed bottom-5 right-5 z-[9999] w-80 max-w-[calc(100vw-2.5rem)] rounded-2xl border border-sky-700 bg-sky-950 shadow-2xl overflow-hidden">
-          <div className="flex items-start gap-3 p-4">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-800 text-sky-300 text-sm">
-              ⏱
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white shadow-2xl overflow-hidden">
+            <div className="p-6 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-100 text-orange-500 text-lg">
+                  ⏱
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">Sessione scaduta</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Sei stato disconnesso automaticamente dopo 10 minuti di inattività.
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2 pt-1">
+                <a
+                  href="/login"
+                  className="flex-1 rounded-xl bg-orange-500 px-4 py-2.5 text-center text-sm font-medium text-white hover:bg-orange-600 transition-colors"
+                >
+                  Accedi nuovamente
+                </a>
+                <button
+                  onClick={() => setAutoLoggedOut(false)}
+                  className="rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
+                >
+                  <X size={15} />
+                </button>
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-sky-100">Disconnesso automaticamente</p>
-              <p className="mt-0.5 text-xs text-sky-400">
-                Sei stato disconnesso per inattività dopo 10 minuti.
-              </p>
-            </div>
-            <button
-              onClick={() => setAutoLoggedOut(false)}
-              className="shrink-0 text-sky-500 hover:text-sky-300 transition-colors"
-              aria-label="Chiudi"
-            >
-              <X size={16} />
-            </button>
-          </div>
-          <div className="h-1 bg-sky-800">
-            <div className="h-full bg-orange-500 animate-[shrink_5s_linear_forwards]" />
           </div>
         </div>
       )}

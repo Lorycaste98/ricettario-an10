@@ -66,7 +66,7 @@ export function Navbar() {
                 />
                 <div className="absolute inset-0 rounded-xl ring-2 ring-orange-500/0 group-hover:ring-orange-500/40 transition-all duration-300 -z-10" />
               </div>
-              <span className={`${fraunces.className} text-[19px] text-sky-100 transition-colors duration-200 group-hover:text-white`}>
+              <span className={`${fraunces.className} text-[19px] text-sky-100 transition-colors duration-200 group-hover:text-orange-400`}>
               Ricettario
             </span>
             </Link>
