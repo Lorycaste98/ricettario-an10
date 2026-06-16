@@ -28,7 +28,7 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
       categories: { select: { category: { select: { id: true, name: true, color: true } } } },
       tags: { select: { tag: { select: { id: true, name: true } } } },
       photos: { select: { id: true, url: true, order: true }, orderBy: { order: "asc" } },
-      ingredients: { select: { id: true, name: true, qty: true, unit: true, order: true }, orderBy: { order: "asc" } },
+      ingredients: { select: { id: true, name: true, qty: true, unit: true, description: true, order: true }, orderBy: { order: "asc" } },
       steps: { select: { id: true, text: true, mins: true, order: true }, orderBy: { order: "asc" } },
       reviews: { select: { id: true, nickname: true, rating: true, comment: true, createdAt: true }, orderBy: { createdAt: "desc" } },
       _count: { select: { reviews: true } },

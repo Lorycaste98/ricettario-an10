@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
     photo?: string;
     categoryIds?: number[];
     tagIds?: number[];
-    ingredients?: { name: string; qty?: number; unit?: string; order: number }[];
+    ingredients?: { name: string; qty?: number; unit?: string; description?: string; order: number }[];
     steps?: { text: string; mins?: number; order: number }[];
     photos?: { url: string; order?: number }[];
   };
@@ -108,6 +108,7 @@ export async function POST(request: NextRequest) {
           name: i.name,
           qty: i.qty ?? null,
           unit: i.unit ?? null,
+          description: i.description ?? null,
           order: i.order,
         })),
       },

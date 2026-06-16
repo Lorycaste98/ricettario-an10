@@ -29,7 +29,7 @@ export default async function ModificaRicettaPage({ params }: { params: Promise<
         categories: { select: { category: { select: { id: true, name: true, color: true } } } },
         tags: { select: { tag: { select: { id: true, name: true } } } },
         photos: { select: { id: true, url: true, order: true }, orderBy: { order: "asc" } },
-        ingredients: { select: { id: true, name: true, qty: true, unit: true, order: true }, orderBy: { order: "asc" } },
+        ingredients: { select: { id: true, name: true, qty: true, unit: true, description: true, order: true }, orderBy: { order: "asc" } },
         steps: { select: { id: true, text: true, mins: true, order: true }, orderBy: { order: "asc" } },
         _count: { select: { reviews: true } },
       },
@@ -52,10 +52,11 @@ export default async function ModificaRicettaPage({ params }: { params: Promise<
     photo: recipe.photo ?? "",
     categoryIds: recipe.categories.map((c: { id: number }) => c.id),
     tagIds: recipe.tags.map((t: { id: number }) => t.id),
-    ingredients: recipe.ingredients.map((i: { name: string; qty: number | null; unit: string | null }) => ({
+    ingredients: recipe.ingredients.map((i: { name: string; qty: number | null; unit: string | null; description: string | null }) => ({
       name: i.name,
       qty: i.qty != null ? String(i.qty) : "",
       unit: i.unit ?? "",
+      description: i.description ?? "",
     })),
     steps: recipe.steps.map((s: { text: string; mins: number | null }) => ({
       text: s.text,

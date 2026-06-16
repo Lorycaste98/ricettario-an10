@@ -10,6 +10,7 @@ interface IngredientItem {
   name: string;
   excludedFromStats: boolean;
   usageCount: number;
+  recipes: { id: number; name: string }[];
 }
 
 interface Props {
@@ -134,7 +135,7 @@ export default function IngredientiClient({ initialIngredients }: Props) {
       }
       return [
         ...filtered2,
-        { id: Date.now(), name: canonical.trim(), excludedFromStats: false, usageCount: mergedCount },
+        { id: Date.now(), name: canonical.trim(), excludedFromStats: false, usageCount: mergedCount, recipes: [] },
       ].sort((a, b) => a.name.localeCompare(b.name, "it"));
     });
     setSelected(new Set());
@@ -182,7 +183,7 @@ export default function IngredientiClient({ initialIngredients }: Props) {
                 />
               </th>
               <th className="px-3 py-3 text-left font-medium text-gray-600">Nome</th>
-              <th className="px-3 py-3 text-center font-medium text-gray-600 w-20">Utilizzi</th>
+              <th className="px-3 py-3 text-center font-medium text-gray-600 w-36">Utilizzi</th>
               <th className="px-3 py-3 text-center font-medium text-gray-600 w-28">Nelle stats</th>
               <th className="px-3 py-3 w-24" />
             </tr>
@@ -238,8 +239,23 @@ export default function IngredientiClient({ initialIngredients }: Props) {
                       {item.name}
                     </span>
                   </td>
-                  <td className="px-3 py-2.5 text-center text-gray-500">
-                    {item.usageCount}
+                  <td className="px-3 py-2.5 text-center">
+                    {item.usageCount === 0 ? (
+                      <span className="text-gray-400">0</span>
+                    ) : (
+                      <select
+                        value=""
+                        onChange={(e) => router.push(`/ricette/${e.target.value}`)}
+                        className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs text-sky-700 cursor-pointer focus:outline-none focus:ring-1 focus:ring-sky-300 w-full max-w-[120px]"
+                      >
+                        <option value="" disabled>
+                          {item.usageCount} ricett{item.usageCount === 1 ? "a" : "e"}
+                        </option>
+                        {item.recipes.map((r) => (
+                          <option key={r.id} value={r.id}>{r.name}</option>
+                        ))}
+                      </select>
+                    )}
                   </td>
                   <td className="px-3 py-2.5 text-center">
                     <button

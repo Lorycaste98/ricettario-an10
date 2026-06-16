@@ -52,7 +52,7 @@ export async function PUT(
     photo?: string | null;
     categoryIds?: number[];
     tagIds?: number[];
-    ingredients?: { name: string; qty?: number | null; unit?: string | null; order: number }[];
+    ingredients?: { name: string; qty?: number | null; unit?: string | null; description?: string | null; order: number }[];
     steps?: { text: string; mins?: number | null; order: number }[];
     photos?: { url: string; order?: number }[];
   };
@@ -103,6 +103,7 @@ export async function PUT(
                   name: i.name,
                   qty: i.qty ?? null,
                   unit: i.unit ?? null,
+                  description: i.description ?? null,
                   order: i.order,
                 })),
               },

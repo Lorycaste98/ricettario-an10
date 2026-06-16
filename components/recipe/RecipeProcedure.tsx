@@ -8,6 +8,7 @@ interface Ingredient {
   name: string;
   qty: number | null;
   unit: string | null;
+  description: string | null;
 }
 
 interface Step {
@@ -144,7 +145,12 @@ export function RecipeProcedure({ recipeId, defaultServings, ingredients, steps 
                 <span className="shrink-0 text-xs font-semibold text-orange-500 tabular-nums whitespace-nowrap">
                   {label}
                 </span>
-                <span className="truncate text-sm text-sky-900">{ing.name}</span>
+                <span className="truncate text-sm text-sky-900">
+                  {ing.name}
+                  {ing.description && (
+                    <span className="text-sky-600 font-normal"> {ing.description}</span>
+                  )}
+                </span>
               </li>
             );
           })}

@@ -15,16 +15,24 @@ export default async function IngredientiPage() {
     select: { id: true, name: true, excludedFromStats: true },
   });
 
-  const usageCounts = await db.ingredient.groupBy({
-    by: ["name"],
-    _count: { name: true },
+  const usages = await db.ingredient.findMany({
+    select: {
+      name: true,
+      recipe: { select: { id: true, name: true } },
+    },
   });
-  const countMap = new Map(usageCounts.map((r) => [r.name, r._count.name]));
 
-  const ingredients = masters.map((m) => ({
-    ...m,
-    usageCount: countMap.get(m.name) ?? 0,
-  }));
+  const usageMap = new Map<string, { id: number; name: string }[]>();
+  for (const u of usages) {
+    const list = usageMap.get(u.name) ?? [];
+    list.push(u.recipe);
+    usageMap.set(u.name, list);
+  }
+
+  const ingredients = masters.map((m) => {
+    const recipes = usageMap.get(m.name) ?? [];
+    return { ...m, usageCount: recipes.length, recipes };
+  });
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">

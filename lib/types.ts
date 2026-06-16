@@ -32,6 +32,7 @@ export interface Ingredient {
   name: string;
   qty: number | null;
   unit: string | null;
+  description: string | null;
   order: number;
 }
 

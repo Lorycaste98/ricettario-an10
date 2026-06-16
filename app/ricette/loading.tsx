@@ -13,7 +13,7 @@ export default function RicetteLoading() {
       </div>
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
         {Array.from({ length: 8 }).map((_, i) => (
-          <RecipeCardSkeleton key={i} />
+          <RecipeCardSkeleton key={i} index={i} />
         ))}
       </div>
     </div>

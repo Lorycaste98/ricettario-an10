@@ -10,7 +10,7 @@ import { type Category, type Tag } from "@/lib/types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface IngredientRow { name: string; qty: string; unit: string }
+interface IngredientRow { name: string; qty: string; unit: string; description: string }
 interface StepRow { text: string; mins: string }
 /** Riga foto interna al form: url + flag per la foto principale */
 interface PhotoRow { url: string; isMain: boolean }
@@ -130,7 +130,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
   const [categoryIds, setCategoryIds] = useState<number[]>(initialData?.categoryIds ?? []);
   const [tagIds, setTagIds] = useState<number[]>(initialData?.tagIds ?? []);
   const [ingredients, setIngredients] = useState<IngredientRow[]>(
-    initialData?.ingredients?.length ? initialData.ingredients : [{ name: "", qty: "", unit: "" }]
+    initialData?.ingredients?.length ? initialData.ingredients : [{ name: "", qty: "", unit: "", description: "" }]
   );
   const [steps, setSteps] = useState<StepRow[]>(
     initialData?.steps?.length ? initialData.steps : [{ text: "", mins: "" }]
@@ -175,7 +175,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
   const toggleTag = (id: number) =>
     setTagIds((p) => p.includes(id) ? p.filter((x) => x !== id) : [...p, id]);
 
-  const addIngredient = () => setIngredients((p) => [...p, { name: "", qty: "", unit: "" }]);
+  const addIngredient = () => setIngredients((p) => [...p, { name: "", qty: "", unit: "", description: "" }]);
   const removeIngredient = (i: number) => setIngredients((p) => p.filter((_, j) => j !== i));
   const updateIngredient = (i: number, f: keyof IngredientRow, v: string) =>
     setIngredients((p) => p.map((r, j) => j === i ? { ...r, [f]: v } : r));
@@ -243,7 +243,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
       tagIds,
       ingredients: ingredients
         .filter((i) => i.name.trim())
-        .map((i, order) => ({ name: i.name.trim(), qty: i.qty ? Number(i.qty) : null, unit: i.unit.trim() || null, order })),
+        .map((i, order) => ({ name: i.name.trim(), qty: i.qty ? Number(i.qty) : null, unit: i.unit.trim() || null, description: i.description.trim() || null, order })),
       steps: steps
         .filter((s) => s.text.trim())
         .map((s, order) => ({ text: s.text.trim(), mins: s.mins ? Number(s.mins) : null, order })),
@@ -506,18 +506,18 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
             <span />
             <span>Qtà</span>
             <span>Unità</span>
-            <span>Ingrediente</span>
+            <span>Ingrediente / Descrizione</span>
             <span />
           </div>
 
           {ingredients.map((ing, i) => (
             <div
               key={i}
-              className="grid items-center gap-2"
+              className="grid items-start gap-2"
               style={{ gridTemplateColumns: "1.25rem 4rem 5rem 1fr 1.5rem" }}
             >
               {/* Frecce */}
-              <div className="flex flex-col items-center gap-0">
+              <div className="flex flex-col items-center gap-0 pt-2">
                 <button type="button" onClick={() => moveIngredient(i, -1)} disabled={i === 0}
                   className="text-[9px] leading-tight text-sky-400 hover:text-sky-700 disabled:opacity-20">▲</button>
                 <button type="button" onClick={() => moveIngredient(i, 1)} disabled={i === ingredients.length - 1}
@@ -529,16 +529,23 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
               <input type="text" value={ing.unit}
                 onChange={(e) => updateIngredient(i, "unit", e.target.value)} placeholder="g/ml…"
                 className={inlineInput + " w-full"} />
-              <IngredientCombobox
-                value={ing.name}
-                onChange={(v) => updateIngredient(i, "name", v)}
-                allIngredients={allIngredients}
-                onNewIngredient={handleNewIngredient}
-                placeholder="Ingrediente"
-                className={inlineInput + " w-full"}
-              />
+              <div className="flex flex-col gap-1">
+                <IngredientCombobox
+                  value={ing.name}
+                  onChange={(v) => updateIngredient(i, "name", v)}
+                  allIngredients={allIngredients}
+                  onNewIngredient={handleNewIngredient}
+                  placeholder="Ingrediente"
+                  className={inlineInput + " w-full"}
+                />
+                <input type="text" value={ing.description}
+                  onChange={(e) => updateIngredient(i, "description", e.target.value)}
+                  placeholder="descrizione (es. fredda, bollente…)"
+                  className={inlineInput + " w-full text-xs opacity-80"}
+                />
+              </div>
               <button type="button" onClick={() => removeIngredient(i)}
-                className="flex items-center justify-center rounded p-1 text-sky-300 hover:text-red-400 transition-colors">✕</button>
+                className="flex items-center justify-center rounded p-1 text-sky-300 hover:text-red-400 transition-colors pt-2">✕</button>
             </div>
           ))}
         </div>

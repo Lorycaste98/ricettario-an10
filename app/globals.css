@@ -5,6 +5,11 @@
   to { width: 0%; }
 }
 
+@keyframes skeleton-reveal {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 :root {
   --background: #ffffff;
   --foreground: #042537; /* dark teal — readable on the light part of the gradient */
@@ -17,10 +22,23 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Fallback per area sotto il gradiente (overscroll su iOS) */
+html {
+  background-color: #0a0714;
+}
+
 body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
   min-height: 100dvh;
+  overscroll-behavior: none;
+}
+
+/* iOS: impedisce auto-zoom su focus degli input (font-size < 16px lo triggera) */
+@media (hover: none) and (pointer: coarse) {
+  input, select, textarea {
+    font-size: 16px;
+  }
 }
 
 /* Gradiente fisso — funziona su mobile (iOS/Android non supportano background-attachment:fixed) */

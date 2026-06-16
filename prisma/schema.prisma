@@ -46,13 +46,14 @@ model RecipeCategory {
 }
 
 model Ingredient {
-  id       Int     @id @default(autoincrement())
-  name     String
-  qty      Float?
-  unit     String?
-  order    Int
-  recipeId Int
-  recipe   Recipe  @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  id          Int     @id @default(autoincrement())
+  name        String
+  qty         Float?
+  unit        String?
+  description String?
+  order       Int
+  recipeId    Int
+  recipe      Recipe  @relation(fields: [recipeId], references: [id], onDelete: Cascade)
 }
 
 model IngredientMaster {
