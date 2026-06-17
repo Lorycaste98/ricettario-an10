@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import ReactPaginate from "react-paginate";
 import { clsx } from "clsx";
-import { SlidersHorizontal, X, Plus, ArrowUpDown } from "lucide-react";
+import { SlidersHorizontal, X, Plus, ArrowUpDown, Search, ChevronDown, Tag as TagIcon } from "lucide-react";
 import { RecipeCard } from "./RecipeCard";
 import { type RecipeSummary, type Category, type Tag } from "@/lib/types";
 import { useAuth } from "@/components/AuthProvider";
@@ -36,6 +36,8 @@ export function RecipeGrid({ recipes, categories, tags: _tags }: Props) {
   const [order, setOrder] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(0);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [catDropdownOpen, setCatDropdownOpen] = useState(false);
+  const [pendingCats, setPendingCats] = useState<number[]>([]);
 
   const resetPage = () => setPage(0);
   const isFilterActive = sort !== "createdAt" || order !== "desc";
@@ -43,6 +45,21 @@ export function RecipeGrid({ recipes, categories, tags: _tags }: Props) {
   const toggleCat = (id: number) => {
     setActiveCats((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
     resetPage();
+  };
+
+  const openCatDropdown = () => {
+    setPendingCats(activeCats);
+    setCatDropdownOpen(true);
+  };
+
+  const confirmCats = () => {
+    setActiveCats(pendingCats);
+    setCatDropdownOpen(false);
+    resetPage();
+  };
+
+  const togglePendingCat = (id: number) => {
+    setPendingCats((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
   };
 
   const filtered = useMemo(() => {
@@ -78,9 +95,7 @@ export function RecipeGrid({ recipes, categories, tags: _tags }: Props) {
       <div className="flex gap-2 items-center">
         {/* Search */}
         <div className="relative flex-1">
-          <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-sky-600 pointer-events-none z-10" />
           <input
             type="search"
             value={q}
@@ -95,20 +110,86 @@ export function RecipeGrid({ recipes, categories, tags: _tags }: Props) {
           onClick={() => setFilterOpen(true)}
           className={clsx(
             "relative sm:hidden flex h-9 w-9 items-center justify-center rounded-lg border backdrop-blur-sm transition-colors",
-            isFilterActive
+            isFilterActive || activeCats.length > 0
               ? "border-orange-400 bg-orange-100/60 text-orange-700"
               : "border-white/40 bg-white/60 text-sky-800 hover:bg-white/80"
           )}
           title="Filtri e ordinamento"
         >
           <SlidersHorizontal size={16} />
-          {isFilterActive && (
+          {(isFilterActive || activeCats.length > 0) && (
             <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-orange-500 border-2 border-white" />
           )}
         </button>
 
-        {/* Desktop: sort + order */}
+        {/* Desktop: categorie dropdown + sort + order */}
         <div className="hidden sm:flex items-center gap-2 shrink-0">
+          {/* Categorie dropdown */}
+          {categories.length > 0 && (
+            <div className="relative">
+              <button
+                onClick={openCatDropdown}
+                className={clsx(
+                  "flex items-center gap-1.5 h-9 rounded-lg border backdrop-blur-sm px-3 text-sm transition-colors",
+                  activeCats.length > 0
+                    ? "border-orange-400 bg-orange-100/60 text-orange-700"
+                    : "border-white/40 bg-white/60 text-sky-800 hover:bg-white/80"
+                )}
+              >
+                <TagIcon size={14} />
+                Categorie
+                {activeCats.length > 0 && (
+                  <span className="ml-0.5 rounded-full bg-orange-500 text-white text-[10px] font-bold px-1.5 py-0 leading-4">
+                    {activeCats.length}
+                  </span>
+                )}
+                <ChevronDown size={13} />
+              </button>
+
+              {catDropdownOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setCatDropdownOpen(false)}
+                  />
+                  <div className="absolute right-0 top-10 z-20 w-64 rounded-xl border border-white/40 bg-white/95 backdrop-blur-xl shadow-xl p-3 space-y-3">
+                    <div className="flex flex-wrap gap-1.5">
+                      {categories.map((c) => (
+                        <button
+                          key={c.id}
+                          onClick={() => togglePendingCat(c.id)}
+                          className={clsx(
+                            "shrink-0 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-all",
+                            pendingCats.includes(c.id)
+                              ? "border-transparent text-white shadow-sm"
+                              : "border-sky-200 bg-sky-50 text-sky-900 hover:bg-sky-100"
+                          )}
+                          style={pendingCats.includes(c.id) ? { backgroundColor: c.color, borderColor: c.color } : {}}
+                        >
+                          {c.name}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex gap-2 pt-1 border-t border-sky-100">
+                      <button
+                        onClick={() => { setPendingCats([]); }}
+                        className="flex-1 rounded-lg border border-sky-200 py-1.5 text-xs text-sky-700 hover:bg-sky-50 transition-colors"
+                      >
+                        Cancella
+                      </button>
+                      <button
+                        onClick={confirmCats}
+                        className="flex-1 rounded-lg bg-sky-950 py-1.5 text-xs font-semibold text-white hover:bg-sky-900 transition-colors"
+                      >
+                        Conferma
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
           <select
             value={sort}
             onChange={(e) => { setSort(e.target.value as SortKey); resetPage(); }}
@@ -137,32 +218,33 @@ export function RecipeGrid({ recipes, categories, tags: _tags }: Props) {
         )}
       </div>
 
-      {/* Category filters */}
-      {categories.length > 0 && (
-        <div className="flex gap-1.5 overflow-x-auto pb-0.5 sm:flex-wrap scrollbar-none [&::-webkit-scrollbar]:hidden">
-          {categories.map((c) => (
-            <button
-              key={c.id}
-              onClick={() => toggleCat(c.id)}
-              className={clsx(
-                "shrink-0 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-all",
-                activeCats.includes(c.id)
-                  ? "border-transparent text-white shadow-sm"
-                  : "border-white/50 bg-white/30 text-sky-950 hover:bg-white/50"
-              )}
-              style={activeCats.includes(c.id) ? { backgroundColor: c.color, borderColor: c.color } : {}}
-            >
-              {c.name}
-            </button>
-          ))}
-          {activeCats.length > 0 && (
-            <button
-              onClick={() => { setActiveCats([]); resetPage(); }}
-              className="shrink-0 whitespace-nowrap rounded-full border border-dashed border-white/50 px-2.5 py-0.5 text-[11px] text-sky-950 hover:bg-white/30"
-            >
-              × Cancella
-            </button>
-          )}
+      {/* Active category pills */}
+      {activeCats.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {categories
+            .filter((c) => activeCats.includes(c.id))
+            .map((c) => (
+              <span
+                key={c.id}
+                className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium text-white shadow-sm"
+                style={{ backgroundColor: c.color }}
+              >
+                {c.name}
+                <button
+                  onClick={() => toggleCat(c.id)}
+                  className="ml-0.5 opacity-70 hover:opacity-100"
+                  aria-label={`Rimuovi ${c.name}`}
+                >
+                  <X size={10} />
+                </button>
+              </span>
+            ))}
+          <button
+            onClick={() => { setActiveCats([]); resetPage(); }}
+            className="inline-flex items-center rounded-full border border-dashed border-white/50 px-2.5 py-0.5 text-[11px] text-sky-200 hover:bg-white/10 transition-colors"
+          >
+            × Cancella tutto
+          </button>
         </div>
       )}
 
@@ -246,6 +328,30 @@ export function RecipeGrid({ recipes, categories, tags: _tags }: Props) {
                 <X size={16} />
               </button>
             </div>
+
+            {/* Categories */}
+            {categories.length > 0 && (
+              <div className="space-y-2.5">
+                <p className="text-[11px] font-semibold text-sky-600 uppercase tracking-wider">Categorie</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {categories.map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => toggleCat(c.id)}
+                      className={clsx(
+                        "shrink-0 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-all",
+                        activeCats.includes(c.id)
+                          ? "border-transparent text-white shadow-sm"
+                          : "border-sky-200 bg-sky-50 text-sky-900"
+                      )}
+                      style={activeCats.includes(c.id) ? { backgroundColor: c.color, borderColor: c.color } : {}}
+                    >
+                      {c.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Sort */}
             <div className="space-y-2.5">

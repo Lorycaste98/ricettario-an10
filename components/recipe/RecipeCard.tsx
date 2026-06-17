@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { type RecipeSummary, formatMinutes } from "@/lib/types";
+import { FavoriteButton } from "./FavoriteButton";
 
 function StarRating({ avg, count }: { avg: number; count: number }) {
   return (
@@ -40,7 +41,7 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
         <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent" />
 
         {/* Top badges */}
-        <div className="absolute top-2.5 left-2.5 right-2.5 flex items-start justify-between">
+        <div className="absolute top-2.5 left-2.5 right-2.5 flex items-start justify-between gap-2">
           {primaryCat ? (
             <span
               className="rounded-full px-2.5 py-0.5 text-[10px] font-semibold text-white shadow backdrop-blur-sm"
@@ -50,11 +51,7 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
             </span>
           ) : <span />}
 
-          {recipe.cookCount > 0 && (
-            <span className="rounded-full bg-black/50 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">
-              🍳 ×{recipe.cookCount}
-            </span>
-          )}
+          <FavoriteButton recipeId={recipe.id} />
         </div>
 
         {/* Bottom overlay: title + meta */}
@@ -81,6 +78,9 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
             )}
             {recipe._count.reviews > 0 && recipe.avgRating !== null && (
               <StarRating avg={recipe.avgRating} count={recipe._count.reviews} />
+            )}
+            {recipe.cookCount > 0 && (
+              <span className="flex items-center gap-0.5">🍳 ×{recipe.cookCount}</span>
             )}
           </div>
         </div>
