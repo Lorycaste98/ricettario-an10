@@ -25,7 +25,7 @@ function LoginForm() {
     });
     if (res.ok) {
       await refresh();
-      router.push(searchParams.get("next") ?? "/admin");
+      router.push("/admin");
     } else {
       const d = await res.json();
       setError(d.error ?? "Credenziali non valide");

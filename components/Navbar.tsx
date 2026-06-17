@@ -5,8 +5,9 @@ import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { motion } from "motion/react";
-import { Menu, X, LogOut, ChefHat, LayoutDashboard, BookOpen, UtensilsCrossed } from "lucide-react";
+import {Menu, X, LogOut, ChefHat, LayoutDashboard, BookOpen, UtensilsCrossed, Users, Heart, LogIn} from "lucide-react";
 import { useAuth } from "./AuthProvider";
+import { useFavorites } from "@/lib/favorites";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -17,7 +18,9 @@ const fraunces = Fraunces({
 });
 
 export function Navbar() {
-  const { isAdmin, username, loading } = useAuth();
+  const { isAdmin, username, role, loading } = useAuth();
+  const { favorites, hydrated: favHydrated } = useFavorites();
+  const favCount = favHydrated ? favorites.size : 0;
   const router = useRouter();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -37,15 +40,19 @@ export function Navbar() {
   const logout = async () => {
     setMenuOpen(false);
     await fetch("/api/auth/logout", { method: "POST" });
-    router.push("/");
+    router.push("/login");
     router.refresh();
     window.location.reload();
   };
 
-  const navLinks = [
-    ...(isAdmin ? [{ href: "/admin", label: "Dashboard", icon: LayoutDashboard }] : []),
+  const navLinks: { href: string; label: string; icon: typeof BookOpen; badge?: number }[] = [
+    ...(isAdmin ? [
+      { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+      ...(role === "SUPERADMIN" ? [{ href: "/admin/utenti", label: "Utenti", icon: Users }] : []),
+    ] : []),
     { href: "/ricette", label: "Ricette", icon: BookOpen },
     { href: "/menu", label: "Menù", icon: UtensilsCrossed },
+    { href: "/preferiti", label: "Preferiti", icon: Heart, badge: favCount },
   ];
 
   const isActive = (href: string) =>
@@ -54,7 +61,10 @@ export function Navbar() {
   return (
       <>
         {/* ── Header ── */}
-        <header className="sticky top-0 z-40 bg-sky-950 border-b-[1.5px] border-sky-800">
+        <header
+            className="sticky top-0 z-40 bg-sky-950 border-b-[1.5px] border-sky-800"
+            style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+        >
           <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-2.5 sm:px-6">
 
             {/* Logo */}
@@ -73,7 +83,7 @@ export function Navbar() {
 
             {/* Desktop nav */}
             <nav className="hidden sm:flex items-center gap-0.5 p-1 rounded-xl bg-sky-900 border-[1.5px] border-sky-700">
-              {navLinks.map(({ href, label, icon: Icon }) => (
+              {navLinks.map(({ href, label, icon: Icon, badge }) => (
                   <Link
                       key={href}
                       href={href}
@@ -90,7 +100,14 @@ export function Navbar() {
                     )}
                     <span className="relative z-10 flex items-center gap-1.5">
                       <Icon size={13} />
-                      {label}
+                      <span className="relative inline-flex">
+                        {label}
+                        {badge !== undefined && badge > 0 && (
+                            <span className="absolute -top-2 -right-3.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold leading-none text-white shadow ring-1 ring-sky-950">
+                              {badge > 99 ? "99+" : badge}
+                            </span>
+                        )}
+                      </span>
                     </span>
                     {isActive(href) && (
                         <span className="absolute bottom-1 left-1/2 -translate-x-1/2 h-0.5 w-5 rounded-full bg-orange-500 z-10" />
@@ -104,10 +121,10 @@ export function Navbar() {
               {!loading && (
                   isAdmin ? (
                       <div className="hidden sm:flex items-center gap-2">
-                  <span className="flex items-center gap-1.5 rounded-lg border-[1.5px] border-sky-700 bg-sky-900 px-3 py-1.5 text-xs font-medium text-sky-300">
+                  <Link href="/admin/profilo" className="flex items-center gap-1.5 rounded-lg border-[1.5px] border-sky-700 bg-sky-900 px-3 py-1.5 text-xs font-medium text-sky-300 hover:border-orange-500/50 hover:text-orange-300 transition-all duration-150">
                     <ChefHat size={12} className="text-orange-400" />
                     {username}
-                  </span>
+                  </Link>
                         <button
                             onClick={logout}
                             className="flex items-center gap-1.5 rounded-lg border-[1.5px] border-sky-700 bg-transparent px-3 py-1.5 text-sm text-sky-300 hover:bg-red-950 hover:text-red-300 hover:border-red-800 transition-all duration-150"
@@ -119,9 +136,10 @@ export function Navbar() {
                   ) : (
                       <Link
                           href="/login"
-                          className="hidden sm:flex items-center rounded-lg border-[1.5px] border-sky-700 bg-sky-900 px-3 py-1.5 text-sm text-sky-300 hover:bg-sky-800 hover:text-sky-100 transition-all duration-150"
+                          className="hidden sm:flex items-center gap-1.5 rounded-lg border-[1.5px] border-sky-700 bg-sky-900 px-3 py-1.5 text-sm text-sky-300 hover:bg-sky-800 hover:text-sky-100 transition-all duration-150"
                       >
-                        Admin
+                        <LogIn size={13} className="opacity-50"/>
+                        Accedi
                       </Link>
                   )
               )}
@@ -161,14 +179,17 @@ export function Navbar() {
             }`}
             style={{ zIndex: 39 }}
         >
-          <div className="bg-sky-900 border-b-[1.5px] border-sky-700 pt-20 pb-7 px-4">
+          <div
+              className="bg-sky-900 border-b-[1.5px] border-sky-700 pt-20 pb-7 px-4"
+              style={{ paddingTop: "calc(5rem + env(safe-area-inset-top, 0px))" }}
+          >
 
             {/* Nav links */}
             <p className="text-[10px] text-sky-500 font-medium uppercase tracking-widest mb-2 px-1">
               Navigazione
             </p>
             <nav className="space-y-1">
-              {navLinks.map(({ href, label, icon: Icon }, i) => (
+              {navLinks.map(({ href, label, icon: Icon, badge }, i) => (
                   <Link
                       key={href}
                       href={href}
@@ -183,12 +204,17 @@ export function Navbar() {
                         opacity: menuOpen ? 1 : 0,
                       }}
                   >
-                <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-all duration-200 ${
+                <span className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-all duration-200 ${
                     isActive(href)
                         ? "bg-orange-500 border-orange-400 text-white"
                         : "bg-sky-800 border-sky-600 text-sky-400"
                 }`}>
                   <Icon size={17} />
+                  {badge !== undefined && badge > 0 && (
+                      <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold leading-none text-white shadow ring-2 ring-sky-900">
+                        {badge > 99 ? "99+" : badge}
+                      </span>
+                  )}
                 </span>
                     <span className="flex-1">{label}</span>
                     {isActive(href) && (
@@ -208,7 +234,7 @@ export function Navbar() {
             {!loading && (
                 isAdmin ? (
                     <div className="space-y-2">
-                      <div className="flex items-center gap-3 rounded-xl bg-sky-800 border border-sky-600 px-3 py-2.5">
+                      <Link href="/admin/profilo" className="flex items-center gap-3 rounded-xl bg-sky-800 border border-sky-600 px-3 py-2.5 hover:border-orange-500/50 transition-all duration-150">
                       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-500/20 border border-orange-500/40">
                         <ChefHat size={17} className="text-orange-400" />
                       </span>
@@ -216,7 +242,7 @@ export function Navbar() {
                           <p className="text-[10px] text-sky-400 font-medium uppercase tracking-wider">Connesso come</p>
                           <p className="text-sky-50 font-medium truncate text-sm">{username}</p>
                         </div>
-                      </div>
+                      </Link>
                       <button
                           onClick={logout}
                           className="flex w-full items-center gap-3 rounded-xl border border-sky-700 px-3 py-2.5 text-sm font-medium text-sky-400 hover:bg-red-950 hover:text-red-300 hover:border-red-800 transition-all duration-150"

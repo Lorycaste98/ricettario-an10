@@ -8,6 +8,7 @@
  */
 
 import { getSession } from "@/lib/session";
+import { db } from "@/lib/db";
 import { ok } from "@/lib/api";
 
 export async function GET() {
@@ -17,6 +18,17 @@ export async function GET() {
     return ok({ isAdmin: false });
   }
 
-  return ok({ isAdmin: true, username: session.username });
+  const admin = await db.admin.findUnique({
+    where: { id: session.adminId },
+    select: { firstLogin: true, dedication: true, role: true },
+  });
+
+  return ok({
+    isAdmin: true,
+    username: session.username,
+    role: admin?.role ?? session.role,
+    firstLogin: admin?.firstLogin ?? false,
+    dedication: admin?.dedication ?? null,
+  });
 }
 

@@ -6,6 +6,7 @@ import { flattenRecipe } from "@/lib/api";
 import { Badge } from "@/components/ui/Badge";
 import { ReviewSection } from "@/components/recipe/ReviewSection";
 import { RecipeProcedure } from "@/components/recipe/RecipeProcedure";
+import { FavoriteButton } from "@/components/recipe/FavoriteButton";
 import { RecipeActions } from "./RecipeActions";
 import { formatMinutes } from "@/lib/types";
 import type { Metadata } from "next";
@@ -122,6 +123,8 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
               year: "numeric",
             })}
           </p>
+
+          <FavoriteButton recipeId={recipe.id} variant="detail" />
 
           {/* Admin actions */}
           <RecipeActions recipeId={recipe.id} cookCount={recipe.cookCount} />

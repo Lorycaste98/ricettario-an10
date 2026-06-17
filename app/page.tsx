@@ -1,17 +1,17 @@
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { flattenRecipe, recipeSummarySelect } from "@/lib/api";
+import { redirect } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Fraunces } from "next/font/google";
 import { RecipeCard } from "@/components/recipe/RecipeCard";
 import { MenuCard } from "@/components/menu/MenuCard";
+import { FavoritesCta } from "@/components/home/FavoritesCta";
 import {
   BookOpen,
   UtensilsCrossed,
-  Plus,
   LogIn,
-  LayoutDashboard,
   ChevronRight,
 } from "lucide-react";
 
@@ -57,8 +57,11 @@ function processMenu(m: MenuRow) {
 }
 
 export default async function LandingPage() {
-  const [session, rawRecipes, rawMenus] = await Promise.all([
-    getSession(),
+  // Gli admin loggati hanno la loro landing dedicata: la dashboard gestionale.
+  const session = await getSession();
+  if (session) redirect("/admin");
+
+  const [rawRecipes, rawMenus] = await Promise.all([
     db.recipe.findMany({
       select: recipeSummarySelect,
       orderBy: { createdAt: "desc" },
@@ -85,14 +88,19 @@ export default async function LandingPage() {
     }),
   ]);
 
-  const isAdmin = session !== null;
   const recipes = rawRecipes.map(flattenRecipe);
   const menus = rawMenus.map(processMenu);
 
   return (
     <div className="min-h-screen flex flex-col">
+      {/* Safe-area bar — copre la zona dynamic island/notch su iPhone/iPad */}
+      <div
+        className="fixed top-0 left-0 right-0 z-50 bg-sky-950 lg:hidden pointer-events-none"
+        style={{ height: "env(safe-area-inset-top, 0px)" }}
+      />
+
       {/* ── Hero ── */}
-      <section className="flex flex-col items-center justify-center pt-24 pb-16 px-4 text-center">
+      <section className="fade-up flex flex-col items-center justify-center pt-24 pb-16 px-4 text-center">
         <div className="mb-6 relative">
           <div className="absolute inset-0 rounded-3xl bg-orange-500/20 blur-2xl scale-150" />
           <Image
@@ -116,49 +124,26 @@ export default async function LandingPage() {
 
         {/* CTA */}
         <div className="flex flex-wrap gap-3 justify-center">
-          {isAdmin ? (
-            <>
-              <Link
-                href="/admin"
-                className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg hover:bg-orange-600 transition-colors"
-              >
-                <LayoutDashboard size={16} />
-                Dashboard Admin
-              </Link>
-              <Link
-                href="/admin/ricette/nuova"
-                className="inline-flex items-center gap-2 rounded-xl border border-sky-600 bg-sky-900/60 backdrop-blur-sm px-5 py-2.5 text-sm font-semibold text-sky-100 hover:bg-sky-800/80 transition-colors"
-              >
-                <Plus size={16} />
-                Nuova ricetta
-              </Link>
-              <Link
-                href="/admin/menu/nuovo"
-                className="inline-flex items-center gap-2 rounded-xl border border-sky-600 bg-sky-900/60 backdrop-blur-sm px-5 py-2.5 text-sm font-semibold text-sky-100 hover:bg-sky-800/80 transition-colors"
-              >
-                <Plus size={16} />
-                Nuovo menù
-              </Link>
-            </>
-          ) : (
-            <Link
-              href="/login"
-              className="inline-flex items-center gap-2 rounded-xl border border-sky-600 bg-sky-900/60 backdrop-blur-sm px-6 py-2.5 text-sm font-semibold text-sky-100 hover:bg-sky-800/80 transition-colors shadow-lg"
-            >
-              <LogIn size={16} />
-              Accedi
-            </Link>
-          )}
+          <Link
+            href="/login"
+            className="inline-flex items-center gap-2 rounded-xl border border-sky-600 bg-sky-900/60 backdrop-blur-sm px-6 py-2.5 text-sm font-semibold text-sky-100 hover:bg-sky-800/80 transition-colors shadow-lg"
+          >
+            <LogIn size={16} />
+            Accedi
+          </Link>
+          <FavoritesCta />
         </div>
       </section>
 
       {/* ── Ricette ── */}
       {recipes.length > 0 && (
-        <section className="max-w-6xl mx-auto w-full px-4 pb-14">
+        <section className="fade-up max-w-6xl mx-auto w-full px-4 pb-14" style={{ animationDelay: "80ms" }}>
           <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center gap-2.5 text-sky-100">
-              <BookOpen size={18} className="text-orange-400" />
-              <h2 className="text-xl font-bold">Ultime ricette</h2>
+            <div className="flex items-center gap-3 text-sky-50">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-orange-400 to-rose-500 text-white shadow-md shadow-orange-500/30">
+                <BookOpen size={17} />
+              </span>
+              <h2 className="text-xl font-bold drop-shadow">Ultime ricette</h2>
             </div>
             <Link
               href="/ricette"
@@ -175,14 +160,14 @@ export default async function LandingPage() {
             ))}
           </div>
 
-          <div className="mt-5 text-center">
+          <div className="mt-6 text-center">
             <Link
               href="/ricette"
-              className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 backdrop-blur-sm px-6 py-2.5 text-sm font-medium text-sky-100 hover:bg-white/20 transition-colors"
+              className="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-rose-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-orange-500/30 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl active:scale-[0.98]"
             >
               <BookOpen size={15} />
               Vedi tutte le ricette
-              <ChevronRight size={15} />
+              <ChevronRight size={15} className="transition-transform duration-300 group-hover:translate-x-1" />
             </Link>
           </div>
         </section>
@@ -190,11 +175,13 @@ export default async function LandingPage() {
 
       {/* ── Menù ── */}
       {menus.length > 0 && (
-        <section className="max-w-6xl mx-auto w-full px-4 pb-20">
+        <section className="fade-up max-w-6xl mx-auto w-full px-4 pb-20" style={{ animationDelay: "140ms" }}>
           <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center gap-2.5 text-sky-100">
-              <UtensilsCrossed size={18} className="text-orange-400" />
-              <h2 className="text-xl font-bold">Menù</h2>
+            <div className="flex items-center gap-3 text-sky-50">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 to-cyan-500 text-white shadow-md shadow-sky-500/30">
+                <UtensilsCrossed size={17} />
+              </span>
+              <h2 className="text-xl font-bold drop-shadow">Menù</h2>
             </div>
             <Link
               href="/menu"
@@ -211,14 +198,14 @@ export default async function LandingPage() {
             ))}
           </div>
 
-          <div className="mt-5 text-center">
+          <div className="mt-6 text-center">
             <Link
               href="/menu"
-              className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 backdrop-blur-sm px-6 py-2.5 text-sm font-medium text-sky-100 hover:bg-white/20 transition-colors"
+              className="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-cyan-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-500/30 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl active:scale-[0.98]"
             >
               <UtensilsCrossed size={15} />
               Vedi tutti i menù
-              <ChevronRight size={15} />
+              <ChevronRight size={15} className="transition-transform duration-300 group-hover:translate-x-1" />
             </Link>
           </div>
         </section>
