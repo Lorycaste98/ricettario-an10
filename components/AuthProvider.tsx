@@ -1,12 +1,15 @@
 "use client";
 import { createContext, useContext, useEffect, useRef, useState, useCallback } from "react";
-import { X } from "lucide-react";
+import { X, Heart } from "lucide-react";
 
 const INACTIVITY_MS = 10 * 60 * 1000; // 10 minuti
 
 interface AuthState {
   isAdmin: boolean;
   username: string | null;
+  role: string | null;
+  firstLogin: boolean;
+  dedication: string | null;
   loading: boolean;
   refresh: () => Promise<void>;
 }
@@ -14,6 +17,9 @@ interface AuthState {
 const AuthCtx = createContext<AuthState>({
   isAdmin: false,
   username: null,
+  role: null,
+  firstLogin: false,
+  dedication: null,
   loading: true,
   refresh: async () => {},
 });
@@ -21,8 +27,12 @@ const AuthCtx = createContext<AuthState>({
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [username, setUsername] = useState<string | null>(null);
+  const [role, setRole] = useState<string | null>(null);
+  const [firstLogin, setFirstLogin] = useState(false);
+  const [dedication, setDedication] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [autoLoggedOut, setAutoLoggedOut] = useState(false);
+  const [showDedication, setShowDedication] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const isAdminRef = useRef(false);
 
@@ -32,10 +42,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await res.json();
       setIsAdmin(data.isAdmin ?? false);
       setUsername(data.username ?? null);
+      setRole(data.role ?? null);
+      setFirstLogin(data.firstLogin ?? false);
+      setDedication(data.dedication ?? null);
       isAdminRef.current = data.isAdmin ?? false;
+      if (data.isAdmin && data.firstLogin && data.dedication) {
+        setShowDedication(true);
+      }
     } catch {
       setIsAdmin(false);
       setUsername(null);
+      setRole(null);
+      setFirstLogin(false);
+      setDedication(null);
       isAdminRef.current = false;
     } finally {
       setLoading(false);
@@ -43,6 +62,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => { refresh(); }, []);
+
+  const closeDedication = async () => {
+    setShowDedication(false);
+    setFirstLogin(false);
+    await fetch("/api/auth/first-login", { method: "PUT" });
+  };
 
   // ── Inactivity logout ──
   const resetTimer = useCallback(() => {
@@ -76,8 +101,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [resetTimer]);
 
   return (
-    <AuthCtx.Provider value={{ isAdmin, username, loading, refresh }}>
+    <AuthCtx.Provider value={{ isAdmin, username, role, firstLogin, dedication, loading, refresh }}>
       {children}
+
+      {/* ── Modal dedica (primo accesso) ── */}
+      {showDedication && dedication && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-xl rounded-3xl bg-white shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="bg-gradient-to-br from-orange-50 to-amber-50 px-8 pt-10 pb-6 text-center flex-shrink-0">
+              <div className="flex justify-center mb-4">
+                <span className="flex h-16 w-16 items-center justify-center rounded-full bg-orange-100 text-orange-500">
+                  <Heart size={32} fill="currentColor" />
+                </span>
+              </div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-orange-400 mb-3">
+                Un messaggio per te
+              </p>
+            </div>
+            <div className="overflow-y-auto px-8 py-4 bg-gradient-to-br from-orange-50 to-amber-50">
+              <p className="text-gray-700 text-base leading-relaxed whitespace-pre-wrap text-center">
+                {dedication}
+              </p>
+            </div>
+            <div className="px-8 py-6 bg-white flex-shrink-0">
+              <p className="text-xs text-gray-400 text-center mb-4">
+                Troverai sempre questa dedica nella tua pagina profilo.
+              </p>
+              <button
+                onClick={closeDedication}
+                className="w-full rounded-xl bg-orange-500 px-4 py-3 text-sm font-semibold text-white hover:bg-orange-600 transition-colors"
+              >
+                Inizia a cucinare
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Modal logout per inattività ── */}
       {autoLoggedOut && (

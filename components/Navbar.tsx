@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { motion } from "motion/react";
-import { Menu, X, LogOut, ChefHat, LayoutDashboard, BookOpen, UtensilsCrossed } from "lucide-react";
+import { Menu, X, LogOut, ChefHat, LayoutDashboard, BookOpen, UtensilsCrossed, Users } from "lucide-react";
 import { useAuth } from "./AuthProvider";
 
 const fraunces = Fraunces({
@@ -17,7 +17,7 @@ const fraunces = Fraunces({
 });
 
 export function Navbar() {
-  const { isAdmin, username, loading } = useAuth();
+  const { isAdmin, username, role, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -43,7 +43,10 @@ export function Navbar() {
   };
 
   const navLinks = [
-    ...(isAdmin ? [{ href: "/admin", label: "Dashboard", icon: LayoutDashboard }] : []),
+    ...(isAdmin ? [
+      { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+      ...(role === "SUPERADMIN" ? [{ href: "/admin/utenti", label: "Utenti", icon: Users }] : []),
+    ] : []),
     { href: "/ricette", label: "Ricette", icon: BookOpen },
     { href: "/menu", label: "Menù", icon: UtensilsCrossed },
   ];
@@ -104,10 +107,10 @@ export function Navbar() {
               {!loading && (
                   isAdmin ? (
                       <div className="hidden sm:flex items-center gap-2">
-                  <span className="flex items-center gap-1.5 rounded-lg border-[1.5px] border-sky-700 bg-sky-900 px-3 py-1.5 text-xs font-medium text-sky-300">
+                  <Link href="/admin/profilo" className="flex items-center gap-1.5 rounded-lg border-[1.5px] border-sky-700 bg-sky-900 px-3 py-1.5 text-xs font-medium text-sky-300 hover:border-orange-500/50 hover:text-orange-300 transition-all duration-150">
                     <ChefHat size={12} className="text-orange-400" />
                     {username}
-                  </span>
+                  </Link>
                         <button
                             onClick={logout}
                             className="flex items-center gap-1.5 rounded-lg border-[1.5px] border-sky-700 bg-transparent px-3 py-1.5 text-sm text-sky-300 hover:bg-red-950 hover:text-red-300 hover:border-red-800 transition-all duration-150"
@@ -208,7 +211,7 @@ export function Navbar() {
             {!loading && (
                 isAdmin ? (
                     <div className="space-y-2">
-                      <div className="flex items-center gap-3 rounded-xl bg-sky-800 border border-sky-600 px-3 py-2.5">
+                      <Link href="/admin/profilo" className="flex items-center gap-3 rounded-xl bg-sky-800 border border-sky-600 px-3 py-2.5 hover:border-orange-500/50 transition-all duration-150">
                       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-500/20 border border-orange-500/40">
                         <ChefHat size={17} className="text-orange-400" />
                       </span>
@@ -216,7 +219,7 @@ export function Navbar() {
                           <p className="text-[10px] text-sky-400 font-medium uppercase tracking-wider">Connesso come</p>
                           <p className="text-sky-50 font-medium truncate text-sm">{username}</p>
                         </div>
-                      </div>
+                      </Link>
                       <button
                           onClick={logout}
                           className="flex w-full items-center gap-3 rounded-xl border border-sky-700 px-3 py-2.5 text-sm font-medium text-sky-400 hover:bg-red-950 hover:text-red-300 hover:border-red-800 transition-all duration-150"

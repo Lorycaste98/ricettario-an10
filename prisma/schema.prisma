@@ -105,9 +105,12 @@ model Review {
 }
 
 model Admin {
-  id       Int    @id @default(autoincrement())
-  username String @unique
-  password String
+  id         Int     @id @default(autoincrement())
+  username   String  @unique
+  password   String
+  role       String  @default("ADMIN")
+  firstLogin Boolean @default(true)
+  dedication String?
 }
 
 model Menu {

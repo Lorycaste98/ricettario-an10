@@ -13,6 +13,7 @@ import { cookies } from "next/headers";
 export interface SessionPayload {
   adminId: number;
   username: string;
+  role: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -95,6 +96,17 @@ export async function requireAdmin(): Promise<Response | null> {
   const session = await getSession();
   if (!session) {
     return Response.json({ error: "Non autorizzato" }, { status: 401 });
+  }
+  return null;
+}
+
+export async function requireSuperAdmin(): Promise<Response | null> {
+  const session = await getSession();
+  if (!session) {
+    return Response.json({ error: "Non autorizzato" }, { status: 401 });
+  }
+  if (session.role !== "SUPERADMIN") {
+    return Response.json({ error: "Accesso riservato al superadmin" }, { status: 403 });
   }
   return null;
 }

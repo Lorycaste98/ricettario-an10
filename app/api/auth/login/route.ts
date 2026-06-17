@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
   try {
     const admin = await db.admin.findUnique({
       where: { username: b.username.trim() },
+      select: { id: true, username: true, password: true, role: true, firstLogin: true, dedication: true },
     });
 
     // Usa compare anche se l'admin non esiste (timing-safe)
@@ -41,9 +42,15 @@ export async function POST(request: NextRequest) {
       return err("Credenziali non valide", 401);
     }
 
-    await createSession({ adminId: admin.id, username: admin.username });
+    await createSession({ adminId: admin.id, username: admin.username, role: admin.role });
 
-    return ok({ isAdmin: true, username: admin.username });
+    return ok({
+      isAdmin: true,
+      username: admin.username,
+      role: admin.role,
+      firstLogin: admin.firstLogin,
+      dedication: admin.dedication,
+    });
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     console.error("[POST /api/auth/login] errore:", message);
