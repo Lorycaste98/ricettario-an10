@@ -3,8 +3,10 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
-  Search, X, ChevronUp, ChevronDown, Loader2, UtensilsCrossed, CalendarDays,
+  Search, X, ChevronUp, ChevronDown, Loader2, UtensilsCrossed, CalendarDays, Info,
 } from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 import type { RecipeSummary } from "@/lib/types";
 
 interface Props {
@@ -121,6 +123,21 @@ export function MenuForm({ initialData }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Sticky top bar — stesso stile del form ricetta */}
+      <div className="sticky top-[65px] z-30 flex items-center justify-between gap-3 rounded-b-2xl border border-white/50 bg-white/70 backdrop-blur-xl px-5 py-3 shadow-lg shadow-black/[0.07] ring-1 ring-black/[0.04]">
+        <h1 className="text-sm font-semibold text-gray-800 truncate">
+          {isEditing ? "Modifica menù" : "Nuovo menù"}
+        </h1>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button type="button" variant="ghost" size="sm" onClick={() => router.back()}>
+            Annulla
+          </Button>
+          <Button type="submit" size="sm" loading={saving}>
+            {isEditing ? "Salva modifiche" : "Crea menù"}
+          </Button>
+        </div>
+      </div>
+
       {error && (
         <div className="rounded-xl border border-red-300/40 bg-red-50/60 px-4 py-3 text-sm text-red-700 backdrop-blur-sm">
           {error}
@@ -128,8 +145,8 @@ export function MenuForm({ initialData }: Props) {
       )}
 
       {/* Campi base */}
-      <div className="rounded-2xl border border-white/30 bg-white/40 backdrop-blur-sm p-5 space-y-4">
-        <h2 className="text-sm font-semibold text-sky-900 uppercase tracking-wider">Informazioni</h2>
+      <div className="rounded-2xl border border-white/50 bg-white/60 backdrop-blur-sm p-5 sm:p-6 shadow-sm space-y-4">
+        <SectionHeader title="Informazioni" icon={<Info size={18} />} tone="sky" />
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <label className="mb-1 block text-xs font-medium text-sky-800">Nome menu *</label>
@@ -177,15 +194,20 @@ export function MenuForm({ initialData }: Props) {
       </div>
 
       {/* Selezione ricette */}
-      <div className="rounded-2xl border border-white/30 bg-white/40 backdrop-blur-sm p-5 space-y-4">
-        <h2 className="text-sm font-semibold text-sky-900 uppercase tracking-wider">
-          Ricette nel menu
-          {selectedIds.length > 0 && (
-            <span className="ml-2 inline-flex items-center justify-center rounded-full bg-orange-500 px-2 py-0.5 text-[10px] font-bold text-white">
-              {selectedIds.length}
-            </span>
-          )}
-        </h2>
+      <div className="rounded-2xl border border-white/50 bg-white/60 backdrop-blur-sm p-5 sm:p-6 shadow-sm space-y-4">
+        <SectionHeader
+          title="Ricette nel menù"
+          icon={<UtensilsCrossed size={18} />}
+          tone="orange"
+          hint="Cerca e ordina le ricette che compongono il menù."
+          action={
+            selectedIds.length > 0 ? (
+              <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-orange-500 px-2 text-xs font-bold text-white">
+                {selectedIds.length}
+              </span>
+            ) : undefined
+          }
+        />
 
         {/* Lista ordinata delle selezionate */}
         {selectedRecipes.length > 0 && (

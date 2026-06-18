@@ -9,7 +9,6 @@ import {
   UtensilsCrossed,
   Tag,
   Plus,
-  Star,
   Flame,
   FileJson,
   BookMarked,
@@ -21,6 +20,8 @@ import {
   Sparkles,
 } from "lucide-react";
 import ChartsSection from "@/components/admin/ChartsSection";
+import { RecentReviews } from "@/components/admin/RecentReviews";
+import type { ReviewItem } from "@/components/admin/ReviewCard";
 
 export const metadata: Metadata = { title: "Admin — Ricettario" };
 
@@ -35,7 +36,7 @@ export default async function AdminPage() {
     .findMany({ where: { excludedFromStats: true }, select: { name: true } })
     .then((rows) => rows.map((r) => r.name));
 
-  const [recipeCount, categoryCount, tagCount, menuCount, topCookedRaw, recentReviews, topIngredientsRaw, ingredientCount] = await Promise.all([
+  const [recipeCount, categoryCount, tagCount, menuCount, topCookedRaw, recentRecipeReviews, recentMenuReviews, topIngredientsRaw, ingredientCount, categoriesRaw] = await Promise.all([
     db.recipe.count(),
     db.category.count(),
     db.tag.count(),
@@ -54,6 +55,14 @@ export default async function AdminPage() {
         recipe: { select: { id: true, name: true } },
       },
     }),
+    db.menuReview.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 5,
+      select: {
+        id: true, nickname: true, rating: true, comment: true, createdAt: true,
+        menu: { select: { id: true, name: true } },
+      },
+    }),
     db.ingredient.groupBy({
       by: ["name"],
       where: { name: { notIn: excludedNames } },
@@ -62,12 +71,35 @@ export default async function AdminPage() {
       take: 15,
     }),
     db.ingredient.count(),
+    db.category.findMany({
+      select: { name: true, color: true, _count: { select: { recipes: true } } },
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+    }),
   ]);
 
   const totalCooks = await db.recipe.aggregate({ _sum: { cookCount: true } });
 
+  // Ultime 5 recensioni indipendentemente dal tipo (ricetta o menù)
+  const recentReviews: ReviewItem[] = [
+    ...recentRecipeReviews.map((r) => ({
+      id: r.id, nickname: r.nickname, rating: r.rating, comment: r.comment, createdAt: r.createdAt,
+      source: { type: "recipe" as const, id: r.recipe.id, name: r.recipe.name },
+    })),
+    ...recentMenuReviews.map((r) => ({
+      id: r.id, nickname: r.nickname, rating: r.rating, comment: r.comment, createdAt: r.createdAt,
+      source: { type: "menu" as const, id: r.menu.id, name: r.menu.name },
+    })),
+  ]
+    .sort((a, b) => (b.createdAt as Date).getTime() - (a.createdAt as Date).getTime())
+    .slice(0, 5);
+
   const topCooked = topCookedRaw.map((r) => ({ name: r.name, value: r.cookCount }));
   const topIngredients = topIngredientsRaw.map((i) => ({ name: i.name, value: i._count.name }));
+  const topCategories = categoriesRaw
+    .map((c) => ({ name: c.name, value: c._count.recipes, color: c.color }))
+    .filter((c) => c.value > 0)
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 15);
 
   return (
     <div className="mx-auto max-w-5xl space-y-10">
@@ -117,6 +149,21 @@ export default async function AdminPage() {
         </div>
       </section>
 
+      {/* ── Gestione (azioni secondarie) ── */}
+      <section className="fade-up space-y-4" style={{ animationDelay: "180ms" }}>
+        <SectionTitle accent="from-gray-300 to-gray-400">Gestione</SectionTitle>
+        <div className="flex flex-wrap gap-2.5 *:flex-1">
+          <ManageLink href="/admin/menu" icon={<UtensilsCrossed size={15} />} label="Menù" color="sky" />
+          <ManageLink href="/admin/vocabolario" icon={<BookMarked size={15} />} label="Categorie & Tag" color="violet" />
+          <ManageLink href="/admin/ingredienti" icon={<Carrot size={15} />} label="Ingredienti" color="emerald" />
+          <ManageLink href="/admin/import" icon={<FileJson size={15} />} label="Importa JSON" color="amber" />
+          <ManageLink href="/admin/profilo" icon={<User size={15} />} label="Profilo" color="gray" />
+          {isSuperAdmin && (
+              <ManageLink href="/admin/utenti" icon={<Users size={15} />} label="Utenti" color="indigo" />
+          )}
+        </div>
+      </section>
+
       {/* ── Panoramica (informazioni per entità) ── */}
       <section className="fade-up space-y-4" style={{ animationDelay: "120ms" }}>
         <SectionTitle accent="from-sky-400 to-cyan-500">Panoramica</SectionTitle>
@@ -162,21 +209,6 @@ export default async function AdminPage() {
         </div>
       </section>
 
-      {/* ── Gestione (azioni secondarie) ── */}
-      <section className="fade-up space-y-4" style={{ animationDelay: "180ms" }}>
-        <SectionTitle accent="from-gray-300 to-gray-400">Gestione</SectionTitle>
-        <div className="flex flex-wrap gap-2.5">
-          <ManageLink href="/admin/menu" icon={<UtensilsCrossed size={15} />} label="Menù" color="sky" />
-          <ManageLink href="/admin/vocabolario" icon={<BookMarked size={15} />} label="Categorie & Tag" color="violet" />
-          <ManageLink href="/admin/ingredienti" icon={<Carrot size={15} />} label="Ingredienti" color="emerald" />
-          <ManageLink href="/admin/import" icon={<FileJson size={15} />} label="Importa JSON" color="amber" />
-          <ManageLink href="/admin/profilo" icon={<User size={15} />} label="Profilo" color="gray" />
-          {isSuperAdmin && (
-            <ManageLink href="/admin/utenti" icon={<Users size={15} />} label="Utenti" color="indigo" />
-          )}
-        </div>
-      </section>
-
       {/* ── Ultime recensioni ── */}
       <section className="fade-up rounded-2xl border border-gray-100 bg-white p-5 shadow-sm" style={{ animationDelay: "240ms" }}>
         <h2 className="mb-4 flex items-center gap-2 text-sm font-bold text-gray-700">
@@ -185,33 +217,12 @@ export default async function AdminPage() {
           </span>
           Ultime recensioni
         </h2>
-        {recentReviews.length === 0 ? (
-            <p className="text-sm text-gray-400">Nessuna recensione ancora.</p>
-        ) : (
-            <ul className="divide-y divide-gray-50">
-              {recentReviews.map((rev: { id: number; nickname: string; rating: number; comment: string | null; recipe: { id: number; name: string } }) => (
-                  <li key={rev.id} className="group py-3 first:pt-0 last:pb-0">
-                    <div className="flex items-baseline justify-between gap-2">
-                      <Link href={`/ricette/${rev.recipe.id}`} className="truncate text-xs font-semibold text-gray-600 transition-colors hover:text-orange-500">
-                        {rev.recipe.name}
-                      </Link>
-                      <span className="shrink-0 inline-flex gap-0.5 text-amber-400">
-                    {Array.from({ length: rev.rating }).map((_, i) => <Star key={i} size={12} fill="currentColor" />)}
-                  </span>
-                    </div>
-                    <p className="mt-0.5 text-xs text-gray-400">
-                      <span className="font-medium text-gray-600">{rev.nickname}</span>
-                      {rev.comment && ` — ${rev.comment.slice(0, 80)}${rev.comment.length > 80 ? "…" : ""}`}
-                    </p>
-                  </li>
-              ))}
-            </ul>
-        )}
+        <RecentReviews reviews={recentReviews} />
       </section>
 
       {/* ── Grafici ── */}
       <div className="fade-up" style={{ animationDelay: "300ms" }}>
-        <ChartsSection topCooked={topCooked} topIngredients={topIngredients} />
+        <ChartsSection topCategories={topCategories} topCooked={topCooked} topIngredients={topIngredients} />
       </div>
     </div>
   );

@@ -1,7 +1,9 @@
+"use client";
 import Link from "next/link";
 import Image from "next/image";
 import { type RecipeSummary, formatMinutes } from "@/lib/types";
 import { FavoriteButton } from "./FavoriteButton";
+import { useAuth } from "@/components/AuthProvider";
 
 function StarRating({ avg, count }: { avg: number; count: number }) {
   return (
@@ -13,6 +15,7 @@ function StarRating({ avg, count }: { avg: number; count: number }) {
 }
 
 export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
+  const { isAdmin } = useAuth();
   const totalTime = (recipe.prep ?? 0) + (recipe.cook ?? 0);
   const primaryCat = recipe.categories[0];
 
@@ -55,22 +58,22 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
         </div>
 
         {/* Bottom overlay: title + meta */}
-        <div className="absolute bottom-0 left-0 right-0 p-3">
-          <h3 className="text-sm font-bold text-white leading-snug line-clamp-2 drop-shadow group-hover:text-orange-300 transition-colors">
+        <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-3">
+          <h3 className="text-xs sm:text-sm font-bold text-white leading-snug line-clamp-2 drop-shadow group-hover:text-orange-300 transition-colors">
             {recipe.name}
           </h3>
-          <div className="mt-1.5 flex items-center gap-3 text-[11px] text-white/85">
+          <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] sm:text-[11px] text-white/85">
             {totalTime > 0 && (
-              <span className="flex items-center gap-1">
-                <svg className="h-3 w-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <span className="flex items-center gap-0.5">
+                <svg className="h-2.5 w-2.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 {formatMinutes(totalTime)}
               </span>
             )}
             {recipe.servings && (
-              <span className="flex items-center gap-1">
-                <svg className="h-3 w-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <span className="flex items-center gap-0.5">
+                <svg className="h-2.5 w-2.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
                 {recipe.servings}p
@@ -79,7 +82,7 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
             {recipe._count.reviews > 0 && recipe.avgRating !== null && (
               <StarRating avg={recipe.avgRating} count={recipe._count.reviews} />
             )}
-            {recipe.cookCount > 0 && (
+            {isAdmin && recipe.cookCount > 0 && (
               <span className="flex items-center gap-0.5">🍳 ×{recipe.cookCount}</span>
             )}
           </div>

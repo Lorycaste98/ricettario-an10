@@ -24,6 +24,32 @@
   .fade-up { animation: none; }
 }
 
+/* Riflesso dorato — recensioni a 5 stelle */
+@keyframes shimmer {
+  0%   { transform: translateX(-160%); }
+  100% { transform: translateX(160%); }
+}
+
+.shine-gold::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 38%,
+    rgba(255, 255, 255, 0.65) 50%,
+    transparent 62%
+  );
+  transform: translateX(-160%);
+  animation: shimmer 4s ease-in-out infinite;
+  animation-delay: 0.6s;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shine-gold::after { animation: none; }
+}
+
 :root {
   --background: #ffffff;
   --foreground: #042537; /* dark teal — readable on the light part of the gradient */
@@ -37,7 +63,7 @@
 }
 
 html {
-  background-color: #082f49; /* sky-950 — colore navbar, evita flash scuro nella safe-area / overscroll */
+  background-color: #0a0714; /* corrisponde al fondo del gradiente — evita bordo visibile se il gradiente non copre tutto */
   overscroll-behavior: none;
   overscroll-behavior-y: none;
 }

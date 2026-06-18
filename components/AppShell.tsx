@@ -10,9 +10,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <>
+    <div className="flex flex-col min-h-dvh">
       <Navbar />
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">{children}</main>
-    </>
+      <main className="mx-auto max-w-7xl w-full px-4 py-8 sm:px-6 flex-1">{children}</main>
+    </div>
   );
 }

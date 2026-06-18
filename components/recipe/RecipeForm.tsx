@@ -3,9 +3,13 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { clsx } from "clsx";
+import { Info, ImageIcon, Tag as TagIcon, Hash, Carrot, ListOrdered } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Input";
 import { IngredientCombobox } from "@/components/ui/IngredientCombobox";
+import { CategoryCombobox } from "@/components/ui/CategoryCombobox";
+import { TagCombobox } from "@/components/ui/TagCombobox";
+import { SectionHeader, type SectionTone } from "@/components/ui/SectionHeader";
 import { type Category, type Tag } from "@/lib/types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -101,10 +105,27 @@ function ImageUploadButton({ onUrl, label = "Carica foto", small = false }: {
 
 // ─── Section ──────────────────────────────────────────────────────────────────
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  icon,
+  tone = "sky",
+  hint,
+  delay = 0,
+  children,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  tone?: SectionTone;
+  hint?: string;
+  delay?: number;
+  children: React.ReactNode;
+}) {
   return (
-    <section className="rounded-xl border border-white/40 bg-white/60 backdrop-blur-sm p-6 shadow-sm space-y-4">
-      <h2 className="text-base font-semibold text-sky-900">{title}</h2>
+    <section
+      className="fade-up rounded-2xl border border-white/50 bg-white/60 backdrop-blur-sm p-5 sm:p-6 shadow-sm space-y-4"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <SectionHeader title={title} icon={icon} tone={tone} hint={hint} />
       {children}
     </section>
   );
@@ -120,6 +141,10 @@ const inlineInput =
 export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
   const router = useRouter();
   const isEdit = !!recipeId;
+
+  // Liste locali: le categorie/tag creati al volo dalla form appaiono subito
+  const [categoryList, setCategoryList] = useState<Category[]>(categories);
+  const [tagList, setTagList] = useState<Tag[]>(tags);
 
   const [name, setName] = useState(initialData?.name ?? "");
   const [servings, setServings] = useState(initialData?.servings ?? "");
@@ -150,7 +175,6 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
     if (allUrls.length === 0) return [];
     return allUrls.map((url, i) => ({ url, isMain: i === 0 && !!mainUrl }));
   });
-  const [tagQuery, setTagQuery] = useState("");
   const [allIngredients, setAllIngredients] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -168,6 +192,20 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
     setAllIngredients((prev) =>
       [...prev, name].sort((a, b) => a.localeCompare(b, "it"))
     );
+  };
+
+  const handleNewCategory = (cat: Category) => {
+    setCategoryList((prev) =>
+      [...prev, cat].sort((a, b) => a.name.localeCompare(b.name, "it"))
+    );
+    setCategoryIds((prev) => (prev.includes(cat.id) ? prev : [...prev, cat.id]));
+  };
+
+  const handleNewTag = (tag: Tag) => {
+    setTagList((prev) =>
+      [...prev, tag].sort((a, b) => a.name.localeCompare(b.name, "it"))
+    );
+    setTagIds((prev) => (prev.includes(tag.id) ? prev : [...prev, tag.id]));
   };
 
   const toggleCat = (id: number) =>
@@ -303,7 +341,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
       )}
 
       {/* 1. Info base */}
-      <Section title="Informazioni base">
+      <Section title="Informazioni base" icon={<Info size={18} />} tone="sky" delay={0}>
         <Input label="Nome ricetta *" value={name} onChange={(e) => setName(e.target.value)}
           placeholder="Es. Risotto allo zafferano" />
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -321,12 +359,13 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
       </Section>
 
       {/* 2. Foto */}
-      <Section title="Foto">
-        <p className="text-xs text-sky-600">
-          Carica una o più foto. Quella contrassegnata con{" "}
-          <span className="font-semibold text-orange-500">⭐ Principale</span> viene
-          mostrata nei card e nella lista delle ricette.
-        </p>
+      <Section
+        title="Foto"
+        icon={<ImageIcon size={18} />}
+        tone="violet"
+        delay={60}
+        hint="La foto ⭐ Principale è mostrata nei card e nella lista."
+      >
 
         {photos.length > 0 && (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -433,70 +472,49 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
         )}
       </Section>
 
-      {/* 3. Categorie */}
-      {categories.length > 0 && (
-        <Section title="Categorie">
-          <div className="flex flex-wrap gap-2">
-            {categories.map((c) => (
-              <button key={c.id} type="button" onClick={() => toggleCat(c.id)}
-                className={clsx(
-                  "rounded-full border px-3 py-1.5 text-xs font-medium transition-all",
-                  categoryIds.includes(c.id)
-                    ? "border-transparent text-white shadow-sm"
-                    : "border-white/40 bg-white/50 text-sky-800 hover:bg-white/70"
-                )}
-                style={categoryIds.includes(c.id) ? { backgroundColor: c.color, borderColor: c.color } : {}}>
-                {categoryIds.includes(c.id) ? "✓ " : ""}{c.name}
-              </button>
-            ))}
-          </div>
-          {categoryIds.length > 0 && (
-            <p className="text-xs text-sky-600">
-              {categoryIds.length} categori{categoryIds.length === 1 ? "a" : "e"} selezionat{categoryIds.length === 1 ? "a" : "e"}
-            </p>
-          )}
-        </Section>
-      )}
+      {/* 3. Categorie — wrapper z-20: ogni Section ha backdrop-blur (nuovo stacking
+          context), quindi il dropdown va sollevato sopra le sezioni successive.
+          Resta sotto la top bar sticky (z-30). */}
+      <div className="relative z-20">
+      <Section
+        title="Categorie"
+        icon={<TagIcon size={18} />}
+        tone="orange"
+        delay={120}
+        hint="Cerca tra quelle esistenti o creane una nuova al volo."
+      >
+        <CategoryCombobox
+          categories={categoryList}
+          selectedIds={categoryIds}
+          onToggle={toggleCat}
+          onCreated={handleNewCategory}
+          className={inlineInput + " w-full"}
+        />
+      </Section>
+      </div>
 
-      {/* 4. Tag */}
-      {tags.length > 0 && (
-        <Section title="Tag">
-          <input
-            type="text"
-            value={tagQuery}
-            onChange={(e) => setTagQuery(e.target.value)}
-            placeholder="Cerca tag…"
-            className={inlineInput + " w-full"}
-          />
-          <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto pr-1">
-            {tags
-              .filter((t) =>
-                !tagQuery.trim() ||
-                t.name.toLowerCase().includes(tagQuery.toLowerCase())
-              )
-              .map((t) => (
-                <button key={t.id} type="button" onClick={() => toggleTag(t.id)}
-                  className={clsx(
-                    "rounded-full border px-3 py-1.5 text-xs font-medium transition-all",
-                    tagIds.includes(t.id)
-                      ? "border-orange-400 bg-orange-100/60 text-orange-700"
-                      : "border-white/40 bg-white/50 text-sky-800 hover:bg-white/70"
-                  )}>
-                  #{t.name}
-                </button>
-              ))}
-          </div>
-          {tagIds.length > 0 && (
-            <p className="text-xs text-sky-600">
-              {tagIds.length} tag selezionat{tagIds.length === 1 ? "o" : "i"}
-            </p>
-          )}
-        </Section>
-      )}
+      {/* 4. Tag — wrapper z-[15] (sotto Categorie, sopra Ingredienti) */}
+      <div className="relative z-[15]">
+      <Section
+        title="Tag"
+        icon={<Hash size={18} />}
+        tone="amber"
+        delay={180}
+        hint="Cerca tra quelli esistenti o creane uno nuovo al volo."
+      >
+        <TagCombobox
+          tags={tagList}
+          selectedIds={tagIds}
+          onToggle={toggleTag}
+          onCreated={handleNewTag}
+          className={inlineInput + " w-full"}
+        />
+      </Section>
+      </div>
 
       {/* 5. Ingredienti — z-10 wrapper lifts this stacking context above the Procedura section */}
       <div className="relative z-10">
-      <Section title="Ingredienti">
+      <Section title="Ingredienti" icon={<Carrot size={18} />} tone="emerald" delay={240}>
         <div className="space-y-1.5">
           {/* Header — stessa griglia delle righe */}
           <div
@@ -556,7 +574,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
       </div>
 
       {/* 6. Procedura */}
-      <Section title="Procedura">
+      <Section title="Procedura" icon={<ListOrdered size={18} />} tone="sky" delay={300}>
         <div className="space-y-4">
           {steps.map((step, i) => (
             <div key={i} className="flex gap-3 items-start">

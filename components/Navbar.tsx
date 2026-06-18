@@ -254,9 +254,10 @@ export function Navbar() {
                 ) : (
                     <Link
                         href="/login"
-                        className="flex items-center justify-center gap-2 w-full rounded-xl border border-sky-700 bg-sky-800 px-4 py-2.5 text-sm font-medium text-sky-200 hover:bg-sky-700 hover:text-white transition-all duration-150"
+                        className="flex items-center justify-center gap-1.5 w-full rounded-xl border border-sky-700 bg-sky-800 px-4 py-2.5 text-sm font-medium text-sky-200 hover:bg-sky-700 hover:text-white transition-all duration-150"
                     >
-                      Accedi come Admin
+                      <LogIn size={13} className="opacity-50"/>
+                      Accedi
                     </Link>
                 )
             )}

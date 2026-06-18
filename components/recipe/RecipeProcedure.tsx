@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, Carrot, ListOrdered } from "lucide-react";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 import { formatMinutes } from "@/lib/types";
 
 interface Ingredient {
@@ -98,7 +99,7 @@ export function RecipeProcedure({ recipeId, defaultServings, ingredients, steps 
       {/* ── Ingredienti ── */}
       <section className="rounded-2xl bg-white/60 border border-white/40 backdrop-blur-sm p-5 sm:p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-          <h2 className="text-xl font-bold text-sky-950">Ingredienti</h2>
+          <SectionHeader title="Ingredienti" icon={<Carrot size={20} />} tone="emerald" size="lg" />
 
           {/* Controllo porzioni */}
           {defaultServings && (
@@ -159,7 +160,31 @@ export function RecipeProcedure({ recipeId, defaultServings, ingredients, steps 
 
       {/* ── Procedura interattiva ── */}
       <section className="rounded-2xl bg-white/60 border border-white/40 backdrop-blur-sm p-5 sm:p-6">
-        <h2 className="mb-5 text-xl font-bold text-sky-950">Procedura</h2>
+        {/* Header sticky: la barra di progresso resta visibile anche con tanti step */}
+        {steps.length > 0 ? (
+          <div className="sticky top-[65px] z-20 -mx-5 -mt-5 mb-5 rounded-t-2xl border-b border-white/40 bg-white/75 px-5 pt-4 pb-3 backdrop-blur-md shadow-sm shadow-black/[0.03] sm:-mx-6 sm:-mt-6 sm:px-6">
+            <SectionHeader
+              title="Procedura"
+              icon={<ListOrdered size={20} />}
+              tone="sky"
+              size="lg"
+              className="mb-2"
+              action={
+                <span className="text-xs font-medium text-sky-700 tabular-nums">
+                  {done.size}/{steps.length} passi · {Math.round((done.size / steps.length) * 100)}%
+                </span>
+              }
+            />
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/50">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-orange-400 to-orange-500 transition-all duration-500"
+                style={{ width: `${(done.size / steps.length) * 100}%` }}
+              />
+            </div>
+          </div>
+        ) : (
+          <SectionHeader title="Procedura" icon={<ListOrdered size={20} />} tone="sky" size="lg" className="mb-5" />
+        )}
         <ol className="space-y-3">
           {steps.map((step, i) => {
             const checked = done.has(step.id);
@@ -228,22 +253,6 @@ export function RecipeProcedure({ recipeId, defaultServings, ingredients, steps 
             );
           })}
         </ol>
-
-        {/* Barra di progresso */}
-        {steps.length > 0 && (
-          <div className="mt-5">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-xs text-sky-600">{done.size} / {steps.length} passi completati</span>
-              <span className="text-xs text-sky-600">{Math.round((done.size / steps.length) * 100)}%</span>
-            </div>
-            <div className="h-1.5 w-full rounded-full bg-white/40 overflow-hidden">
-              <div
-                className="h-full rounded-full bg-orange-500 transition-all duration-500"
-                style={{ width: `${(done.size / steps.length) * 100}%` }}
-              />
-            </div>
-          </div>
-        )}
       </section>
 
       {/* ── Banner completamento ── */}

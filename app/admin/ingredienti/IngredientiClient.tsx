@@ -170,8 +170,8 @@ export default function IngredientiClient({ initialIngredients }: Props) {
       </div>
 
       {/* Tabella */}
-      <div className="rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="rounded-xl border border-gray-100 bg-white shadow-sm overflow-x-auto">
+        <table className="min-w-[600px] w-full text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50">
               <th className="w-10 px-3 py-3">

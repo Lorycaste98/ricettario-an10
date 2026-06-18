@@ -68,24 +68,24 @@ export function MenuCard({ menu }: { menu: MenuSummary }) {
         </div>
 
         {/* Bottom info */}
-        <div className="absolute bottom-0 left-0 right-0 p-3">
-          <h3 className="text-sm font-bold text-white leading-snug line-clamp-2 drop-shadow group-hover:text-orange-300 transition-colors">
+        <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-3">
+          <h3 className="text-xs sm:text-sm font-bold text-white leading-snug line-clamp-2 drop-shadow group-hover:text-orange-300 transition-colors">
             {menu.name}
           </h3>
           {menu.description && (
-            <p className="mt-0.5 text-[11px] text-white/70 line-clamp-1">{menu.description}</p>
+            <p className="mt-0.5 text-[10px] sm:text-[11px] text-white/70 line-clamp-1">{menu.description}</p>
           )}
-          <div className="mt-1.5 flex items-center gap-3">
+          <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
             {menu.avgRating !== null && (
-              <span className="flex items-center gap-1 text-amber-300 text-xs">
-                <Star size={10} fill="currentColor" />
+              <span className="flex items-center gap-0.5 text-amber-300 text-[10px] sm:text-xs">
+                <Star size={9} fill="currentColor" />
                 <span className="font-semibold">{menu.avgRating.toFixed(1)}</span>
                 <span className="text-white/60">({menu._count.reviews})</span>
               </span>
             )}
             {date && (
-              <span className="flex items-center gap-1 text-[11px] text-white/70">
-                <CalendarDays size={10} />
+              <span className="flex items-center gap-0.5 text-[10px] sm:text-[11px] text-white/70">
+                <CalendarDays size={9} />
                 {date}
               </span>
             )}

@@ -5,6 +5,7 @@ import { useState } from "react";
 import {
   BarChart,
   Bar,
+  Cell,
   XAxis,
   YAxis,
   Tooltip,
@@ -14,6 +15,10 @@ import {
 interface ChartItem {
   name: string;
   value: number;
+}
+
+interface CategoryItem extends ChartItem {
+  color: string;
 }
 
 function YAxisTick({
@@ -72,12 +77,15 @@ function YAxisTick({
 function HorizontalBarChart({
   data,
   color,
+  colors,
   unit,
   yAxisWidth = 190,
   onExclude,
 }: {
   data: ChartItem[];
   color: string;
+  /** Colore per barra (override di `color`) — usato dal grafico categorie. */
+  colors?: string[];
   unit?: string;
   yAxisWidth?: number;
   onExclude?: (name: string) => void;
@@ -129,22 +137,36 @@ function HorizontalBarChart({
           radius={[0, 4, 4, 0]}
           fill={color}
           fillOpacity={0.85}
-        />
+        >
+          {colors &&
+            data.map((d, i) => <Cell key={d.name} fill={colors[i] ?? color} />)}
+        </Bar>
       </BarChart>
     </ResponsiveContainer>
     </div>
   );
 }
 
+type ChartKey = "categories" | "cooked" | "ingredients";
+
+const CHART_OPTIONS: { key: ChartKey; label: string }[] = [
+  { key: "categories", label: "Ricette per categoria" },
+  { key: "cooked", label: "Ricette più cucinate" },
+  { key: "ingredients", label: "Ingredienti più usati" },
+];
+
 export default function ChartsSection({
+  topCategories,
   topCooked,
   topIngredients,
 }: {
+  topCategories: CategoryItem[];
   topCooked: ChartItem[];
   topIngredients: ChartItem[];
 }) {
   const router = useRouter();
   const [excluding, setExcluding] = useState<string | null>(null);
+  const [active, setActive] = useState<ChartKey>("categories");
 
   const handleExclude = async (name: string) => {
     if (excluding) return;
@@ -162,40 +184,68 @@ export default function ChartsSection({
   };
 
   return (
-    <div className="grid gap-6 md:grid-cols-2">
-      <section className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
-        <h2 className="mb-5 text-sm font-semibold text-gray-700">
-          Ricette più cucinate
-        </h2>
-        {topCooked.length === 0 ? (
+    <section className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6">
+      {/* Header: titolo dinamico + select in alto a destra */}
+      <div className="mb-5 flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="h-5 w-1.5 shrink-0 rounded-full bg-gradient-to-b from-orange-400 to-rose-500" />
+          <h2 className="truncate text-base font-bold text-gray-800">
+            {CHART_OPTIONS.find((o) => o.key === active)?.label}
+          </h2>
+        </div>
+        <select
+          value={active}
+          onChange={(e) => setActive(e.target.value as ChartKey)}
+          aria-label="Scegli quale grafico mostrare"
+          className="shrink-0 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-300/30"
+        >
+          {CHART_OPTIONS.map((o) => (
+            <option key={o.key} value={o.key}>{o.label}</option>
+          ))}
+        </select>
+      </div>
+
+      {active === "categories" &&
+        (topCategories.length === 0 ? (
+          <p className="text-sm text-gray-400">Nessuna categoria con ricette associate.</p>
+        ) : (
+          <HorizontalBarChart
+            data={topCategories}
+            color="#f97316"
+            colors={topCategories.map((c) => c.color)}
+            unit="ricette"
+            yAxisWidth={170}
+          />
+        ))}
+
+      {active === "cooked" &&
+        (topCooked.length === 0 ? (
           <p className="text-sm text-gray-400">Nessuna ricetta cucinata ancora.</p>
         ) : (
           <HorizontalBarChart data={topCooked} color="#f97316" unit="volte" yAxisWidth={140} />
-        )}
-      </section>
+        ))}
 
-      <section className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
-        <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-700">
-            Ingredienti più usati
-          </h2>
-          <span className="text-xs text-gray-400">× per escludere</span>
-        </div>
-        {topIngredients.length === 0 ? (
-          <p className="text-sm text-gray-400">Nessun ingrediente trovato.</p>
-        ) : (
-          <HorizontalBarChart
-            data={topIngredients}
-            color="#6366f1"
-            unit="ricette"
-            yAxisWidth={190}
-            onExclude={handleExclude}
-          />
-        )}
-        {excluding && (
-          <p className="mt-2 text-xs text-gray-400">Esclusione di "{excluding}"…</p>
-        )}
-      </section>
-    </div>
+      {active === "ingredients" && (
+        <>
+          <div className="-mt-1 mb-3 text-right">
+            <span className="text-xs text-gray-400">× per escludere</span>
+          </div>
+          {topIngredients.length === 0 ? (
+            <p className="text-sm text-gray-400">Nessun ingrediente trovato.</p>
+          ) : (
+            <HorizontalBarChart
+              data={topIngredients}
+              color="#6366f1"
+              unit="ricette"
+              yAxisWidth={190}
+              onExclude={handleExclude}
+            />
+          )}
+          {excluding && (
+            <p className="mt-2 text-xs text-gray-400">Esclusione di «{excluding}»…</p>
+          )}
+        </>
+      )}
+    </section>
   );
 }

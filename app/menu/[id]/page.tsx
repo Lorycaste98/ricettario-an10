@@ -7,6 +7,7 @@ import { getSession } from "@/lib/session";
 import { formatMinutes } from "@/lib/types";
 import type { Metadata } from "next";
 import { CalendarDays, UtensilsCrossed, Star, Clock, Users, Pencil } from "lucide-react";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 import { MenuReviewSection } from "./MenuReviewSection";
 
 type Params = { params: Promise<{ id: string }> };
@@ -154,7 +155,13 @@ export default async function MenuDetailPage({ params }: Params) {
 
       {/* Ricette */}
       <section className="space-y-4">
-        <h2 className="text-lg font-bold text-sky-50">Le ricette del menù</h2>
+        <SectionHeader
+          title="Le ricette del menù"
+          icon={<UtensilsCrossed size={20} />}
+          tone="orange"
+          size="lg"
+          titleClassName="text-sky-50"
+        />
         <div className="grid gap-3 sm:grid-cols-2">
           {(menu.recipes as { order: number; recipe: ReturnType<typeof flattenRecipe> }[]).map(({ order, recipe }) => {
             const totalTime = (recipe.prep ?? 0) + (recipe.cook ?? 0);

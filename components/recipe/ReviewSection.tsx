@@ -1,17 +1,29 @@
 "use client";
 import { useState } from "react";
+import { Star, MessageSquareHeart } from "lucide-react";
 import { type Review } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Input";
 import { useAuth } from "@/components/AuthProvider";
 import { ConfirmModal } from "@/components/ui/Modal";
+import { DetailReviewCard } from "@/components/recipe/DetailReviewCard";
 
 function StarRating({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   return (
     <div className="flex gap-1">
       {[1, 2, 3, 4, 5].map((s) => (
-        <button key={s} type="button" onClick={() => onChange(s)} className="text-2xl transition-transform hover:scale-110">
-          {s <= value ? "⭐" : "☆"}
+        <button
+          key={s}
+          type="button"
+          onClick={() => onChange(s)}
+          className="transition-transform hover:scale-125"
+          aria-label={`${s} stelle`}
+        >
+          <Star
+            size={26}
+            className={s <= value ? "text-amber-400" : "text-sky-300/60"}
+            fill={s <= value ? "currentColor" : "none"}
+          />
         </button>
       ))}
     </div>
@@ -63,18 +75,22 @@ export function ReviewSection({ recipeId, initialReviews }: { recipeId: number; 
   };
 
   return (
-    <section className="space-y-6">
+    <section className="space-y-6 rounded-2xl border border-white/40 bg-white/60 p-5 shadow-sm backdrop-blur-sm sm:p-6">
       <div className="flex items-center gap-3">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-rose-400 to-pink-500 text-white shadow-md shadow-rose-500/30">
+          <MessageSquareHeart size={18} />
+        </span>
         <h2 className="text-xl font-bold text-sky-950">Recensioni</h2>
         {avgRating && (
-          <span className="flex items-center gap-1 rounded-full bg-orange-400/20 border border-orange-300/30 px-3 py-1 text-sm font-medium text-orange-700">
-            ⭐ {avgRating} <span className="text-sky-600">({reviews.length})</span>
+          <span className="flex items-center gap-1 rounded-full border border-amber-300/40 bg-amber-400/15 px-3 py-1 text-sm font-medium text-amber-700">
+            <Star size={14} fill="currentColor" className="text-amber-400" /> {avgRating}
+            <span className="text-sky-600">({reviews.length})</span>
           </span>
         )}
       </div>
 
       {/* Form nuova recensione */}
-      <div className="rounded-xl border border-white/40 bg-white/60 backdrop-blur-sm p-5">
+      <div className="rounded-xl border border-white/40 bg-white/40 p-5 backdrop-blur-sm">
         <h3 className="mb-4 text-sm font-semibold text-sky-800">Lascia una recensione</h3>
         <form onSubmit={submit} className="space-y-4">
           <Input label="Il tuo nome" value={nickname} onChange={(e) => setNickname(e.target.value)} placeholder="Es. Mario Rossi" />
@@ -93,29 +109,17 @@ export function ReviewSection({ recipeId, initialReviews }: { recipeId: number; 
         <p className="text-sm text-sky-700">Ancora nessuna recensione. Sii il primo!</p>
       ) : (
         <div className="space-y-4">
-          {reviews.map((r) => (
-            <div key={r.id} className="flex gap-4 rounded-xl border border-white/40 bg-white/60 backdrop-blur-sm p-4">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orange-400/30 font-bold text-orange-700 text-sm">
-                {r.nickname[0].toUpperCase()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <span className="font-medium text-sky-950 text-sm">{r.nickname}</span>
-                    <span className="ml-2 text-xs text-sky-600">
-                      {new Date(r.createdAt).toLocaleDateString("it-IT")}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-sm">{"⭐".repeat(r.rating)}</span>
-                    {isAdmin && (
-                      <button onClick={() => setConfirmId(r.id)} className="text-sky-400 hover:text-red-500 transition-colors text-xs">✕</button>
-                    )}
-                  </div>
-                </div>
-                {r.comment && <p className="mt-1 text-sm text-sky-800">{r.comment}</p>}
-              </div>
-            </div>
+          {reviews.map((r, i) => (
+            <DetailReviewCard
+              key={r.id}
+              nickname={r.nickname}
+              rating={r.rating}
+              comment={r.comment}
+              createdAt={r.createdAt}
+              index={i}
+              isAdmin={isAdmin}
+              onDelete={() => setConfirmId(r.id)}
+            />
           ))}
         </div>
       )}
