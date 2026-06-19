@@ -134,7 +134,7 @@ function Section({
 // ─── shared inline input class ────────────────────────────────────────────────
 
 const inlineInput =
-  "rounded-lg border border-white/40 bg-white/60 backdrop-blur-sm px-2 py-2 text-sm text-sky-950 placeholder:text-sky-600/50 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-300/30";
+  "rounded-lg border border-white/40 bg-white/60 backdrop-blur-sm px-2 py-2 text-sm text-sky-950 placeholder:text-sm placeholder:text-sky-600/50 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-300/30";
 
 // ─── RecipeForm ───────────────────────────────────────────────────────────────
 
@@ -344,10 +344,10 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
       <Section title="Informazioni base" icon={<Info size={18} />} tone="sky" delay={0}>
         <Input label="Nome ricetta *" value={name} onChange={(e) => setName(e.target.value)}
           placeholder="Es. Risotto allo zafferano" />
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-3 gap-3">
           <Input label="Porzioni" type="number" min={1} value={servings}
             onChange={(e) => setServings(e.target.value)} placeholder="4" />
-          <Input label="Preparazione (min)" type="number" min={0} value={prep}
+          <Input label="Prep. (min)" type="number" min={0} value={prep}
             onChange={(e) => setPrep(e.target.value)} placeholder="20" />
           <Input label="Cottura (min)" type="number" min={0} value={cook}
             onChange={(e) => setCook(e.target.value)} placeholder="30" />
@@ -515,8 +515,8 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
       {/* 5. Ingredienti — z-10 wrapper lifts this stacking context above the Procedura section */}
       <div className="relative z-10">
       <Section title="Ingredienti" icon={<Carrot size={18} />} tone="emerald" delay={240}>
-        <div className="space-y-1.5">
-          {/* Header — stessa griglia delle righe */}
+        <div className="space-y-2">
+          {/* Header colonne — solo desktop */}
           <div
             className="hidden sm:grid items-center gap-2 px-1 text-xs font-medium text-sky-600"
             style={{ gridTemplateColumns: "1.25rem 4rem 5rem 1fr 1.5rem" }}
@@ -529,25 +529,25 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
           </div>
 
           {ingredients.map((ing, i) => (
-            <div
-              key={i}
-              className="grid items-start gap-2"
-              style={{ gridTemplateColumns: "1.25rem 4rem 5rem 1fr 1.5rem" }}
-            >
-              {/* Frecce */}
-              <div className="flex flex-col items-center gap-0 pt-2">
-                <button type="button" onClick={() => moveIngredient(i, -1)} disabled={i === 0}
-                  className="text-[9px] leading-tight text-sky-400 hover:text-sky-700 disabled:opacity-20">▲</button>
-                <button type="button" onClick={() => moveIngredient(i, 1)} disabled={i === ingredients.length - 1}
-                  className="text-[9px] leading-tight text-sky-400 hover:text-sky-700 disabled:opacity-20">▼</button>
-              </div>
-              <input type="number" min={0} step="any" value={ing.qty}
-                onChange={(e) => updateIngredient(i, "qty", e.target.value)} placeholder="Qtà"
-                className={inlineInput + " w-full"} />
-              <input type="text" value={ing.unit}
-                onChange={(e) => updateIngredient(i, "unit", e.target.value)} placeholder="g/ml…"
-                className={inlineInput + " w-full"} />
-              <div className="flex flex-col gap-1">
+            <div key={i}>
+              {/* ── Card mobile ── */}
+              <div className="sm:hidden rounded-xl border border-white/30 bg-white/20 p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="flex flex-col items-center gap-0 shrink-0">
+                    <button type="button" onClick={() => moveIngredient(i, -1)} disabled={i === 0}
+                      className="text-[9px] leading-tight text-sky-400 hover:text-sky-700 disabled:opacity-20">▲</button>
+                    <button type="button" onClick={() => moveIngredient(i, 1)} disabled={i === ingredients.length - 1}
+                      className="text-[9px] leading-tight text-sky-400 hover:text-sky-700 disabled:opacity-20">▼</button>
+                  </div>
+                  <input type="number" min={0} step="any" value={ing.qty}
+                    onChange={(e) => updateIngredient(i, "qty", e.target.value)} placeholder="Qtà"
+                    className={inlineInput + " w-20 shrink-0"} />
+                  <input type="text" value={ing.unit}
+                    onChange={(e) => updateIngredient(i, "unit", e.target.value)} placeholder="g / ml…"
+                    className={inlineInput + " flex-1 min-w-0"} />
+                  <button type="button" onClick={() => removeIngredient(i)}
+                    className="shrink-0 rounded p-1.5 text-sky-300 hover:text-red-400 transition-colors">✕</button>
+                </div>
                 <IngredientCombobox
                   value={ing.name}
                   onChange={(v) => updateIngredient(i, "name", v)}
@@ -558,12 +558,46 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
                 />
                 <input type="text" value={ing.description}
                   onChange={(e) => updateIngredient(i, "description", e.target.value)}
-                  placeholder="descrizione (es. fredda, bollente…)"
-                  className={inlineInput + " w-full text-xs opacity-80"}
+                  placeholder="Descrizione (es. fredda, bollente…)"
+                  className={inlineInput + " w-full text-xs"}
                 />
               </div>
-              <button type="button" onClick={() => removeIngredient(i)}
-                className="flex items-center justify-center rounded p-1 text-sky-300 hover:text-red-400 transition-colors pt-2">✕</button>
+
+              {/* ── Grid desktop ── */}
+              <div
+                className="hidden sm:grid items-start gap-2"
+                style={{ gridTemplateColumns: "1.25rem 4rem 5rem 1fr 1.5rem" }}
+              >
+                <div className="flex flex-col items-center gap-0 pt-2">
+                  <button type="button" onClick={() => moveIngredient(i, -1)} disabled={i === 0}
+                    className="text-[9px] leading-tight text-sky-400 hover:text-sky-700 disabled:opacity-20">▲</button>
+                  <button type="button" onClick={() => moveIngredient(i, 1)} disabled={i === ingredients.length - 1}
+                    className="text-[9px] leading-tight text-sky-400 hover:text-sky-700 disabled:opacity-20">▼</button>
+                </div>
+                <input type="number" min={0} step="any" value={ing.qty}
+                  onChange={(e) => updateIngredient(i, "qty", e.target.value)} placeholder="Qtà"
+                  className={inlineInput + " w-full"} />
+                <input type="text" value={ing.unit}
+                  onChange={(e) => updateIngredient(i, "unit", e.target.value)} placeholder="g/ml…"
+                  className={inlineInput + " w-full"} />
+                <div className="flex flex-col gap-1">
+                  <IngredientCombobox
+                    value={ing.name}
+                    onChange={(v) => updateIngredient(i, "name", v)}
+                    allIngredients={allIngredients}
+                    onNewIngredient={handleNewIngredient}
+                    placeholder="Ingrediente"
+                    className={inlineInput + " w-full"}
+                  />
+                  <input type="text" value={ing.description}
+                    onChange={(e) => updateIngredient(i, "description", e.target.value)}
+                    placeholder="descrizione (es. fredda, bollente…)"
+                    className={inlineInput + " w-full text-xs opacity-80"}
+                  />
+                </div>
+                <button type="button" onClick={() => removeIngredient(i)}
+                  className="flex items-center justify-center rounded p-1 text-sky-300 hover:text-red-400 transition-colors pt-2">✕</button>
+              </div>
             </div>
           ))}
         </div>
@@ -587,8 +621,8 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
                 <div className="flex items-center gap-2">
                   <input type="number" min={0} value={step.mins}
                     onChange={(e) => updateStep(i, "mins", e.target.value)} placeholder="—"
-                    className={inlineInput} />
-                  <span className="text-xs text-sky-600">minuti (opzionale)</span>
+                    className={inlineInput + " w-20 shrink-0"} />
+                  <span className="text-xs text-sky-600">min (opz.)</span>
                 </div>
               </div>
               <div className="flex flex-col gap-0.5 pt-2 shrink-0">
