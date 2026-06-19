@@ -108,6 +108,7 @@ export default async function LandingPage() {
             alt="AN10"
             width={88}
             height={88}
+            priority
             className="relative rounded-2xl shadow-2xl ring-2 ring-white/20"
           />
         </div>
