@@ -106,7 +106,7 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
           )}
 
           {/* Data aggiunta */}
-          <p className="inline-flex items-center gap-1.5 text-xs text-sky-700/60">
+          <p className="inline-flex items-center gap-1.5 text-xs text-sky-950/60">
             <CalendarDays size={13} /> Aggiunta il{" "}
             {new Date(recipe.createdAt ?? "2020-01-01").toLocaleDateString("it-IT", {
               day: "numeric",

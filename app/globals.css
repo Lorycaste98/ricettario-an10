@@ -83,11 +83,16 @@ body {
   }
 }
 
-/* Gradiente fisso — funziona su mobile (iOS/Android non supportano background-attachment:fixed) */
+/* Gradiente fisso — funziona su mobile (iOS/Android non supportano background-attachment:fixed).
+   height: 100lvh (large viewport height) invece di inset-bottom:0 evita il resize del gradiente
+   quando compare la tastiera su iOS (il visual viewport si riduce, lvh resta costante). */
 body::before {
   content: '';
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100lvh;
   z-index: -1;
   background: linear-gradient(
     180deg,

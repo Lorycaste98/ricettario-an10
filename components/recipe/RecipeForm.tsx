@@ -320,7 +320,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
     <form onSubmit={handleSubmit} className="space-y-6">
 
       {/* Sticky top bar */}
-      <div className="sticky top-[65px] z-30 flex items-center justify-between gap-3 rounded-b-2xl border border-white/50 bg-white/70 backdrop-blur-xl px-5 py-3 shadow-lg shadow-black/[0.07] ring-1 ring-black/[0.04]">
+      <div className="sticky z-30 flex items-center justify-between gap-3 rounded-b-2xl border border-white/50 bg-white/70 backdrop-blur-xl px-5 py-3 shadow-lg shadow-black/[0.07] ring-1 ring-black/[0.04]" style={{ top: "calc(env(safe-area-inset-top, 0px) + 56px)" }}>
         <h1 className="text-sm font-semibold text-gray-800 truncate">
           {isEdit ? "Modifica ricetta" : "Nuova ricetta"}
         </h1>

@@ -162,7 +162,10 @@ export function RecipeProcedure({ recipeId, defaultServings, ingredients, steps 
       <section className="rounded-2xl bg-white/60 border border-white/40 backdrop-blur-sm p-5 sm:p-6">
         {/* Header sticky: la barra di progresso resta visibile anche con tanti step */}
         {steps.length > 0 ? (
-          <div className="sticky top-[65px] z-20 -mx-5 -mt-5 mb-5 rounded-t-2xl border-b border-white/40 bg-white/75 px-5 pt-4 pb-3 backdrop-blur-md shadow-sm shadow-black/[0.03] sm:-mx-6 sm:-mt-6 sm:px-6">
+          <div
+            className="sticky z-20 -mx-5 -mt-5 mb-5 rounded-t-2xl border-b border-white/40 bg-white/75 px-5 pt-4 pb-3 backdrop-blur-md shadow-sm shadow-black/[0.03] sm:-mx-6 sm:-mt-6 sm:px-6"
+            style={{ top: "calc(env(safe-area-inset-top, 0px) + 56px)" }}
+          >
             <SectionHeader
               title="Procedura"
               icon={<ListOrdered size={20} />}
