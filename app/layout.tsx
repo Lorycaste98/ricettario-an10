@@ -23,7 +23,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="it" className={`${geist.variable} h-full antialiased`}>
-      <body className="min-h-screen font-sans bg-transparent">
+      <body className="min-h-screen font-sans page-bg">
         <AuthProvider>
           <DialogProvider>
             <AppShell>{children}</AppShell>

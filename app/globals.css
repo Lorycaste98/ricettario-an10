@@ -63,12 +63,13 @@
 }
 
 html {
-  background-color: #0a0714; /* corrisponde al fondo del gradiente — evita bordo visibile se il gradiente non copre tutto */
+  background-color: #082f49; /* sky-950 — colore navbar; riempie safe-area (notch, barra iOS) dove body::before non arriva */
   overscroll-behavior: none;
   overscroll-behavior-y: none;
 }
 
 body {
+  background-color: transparent; /* trasparente: body::before con z-index:-1 deve emergere */
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
   min-height: 100dvh;
@@ -83,10 +84,15 @@ body {
   }
 }
 
-/* Gradiente fisso — funziona su mobile (iOS/Android non supportano background-attachment:fixed).
-   height: 100lvh (large viewport height) invece di inset-bottom:0 evita il resize del gradiente
-   quando compare la tastiera su iOS (il visual viewport si riduce, lvh resta costante). */
-body::before {
+/* Gradiente fisso per pagina — aggiungere la classe .page-bg al wrapper esterno di ogni pagina.
+   isolation:isolate crea un nuovo stacking context locale: il ::before con z-index:-1 rimane
+   dietro il contenuto ma davanti allo sfondo html/body, senza interferire con il canvas root.
+   height:100lvh = large viewport height, costante: non si ridimensiona quando appare la tastiera. */
+.page-bg {
+  isolation: isolate;
+}
+
+.page-bg::before {
   content: '';
   position: fixed;
   top: 0;
@@ -94,6 +100,7 @@ body::before {
   width: 100%;
   height: 100lvh;
   z-index: -1;
+  pointer-events: none;
   background: linear-gradient(
     180deg,
     #f0f9ff  0%,
@@ -102,8 +109,7 @@ body::before {
     #0284c7 48%,
     #075985 62%,
     #1e3a5c 74%,
-    #1e1b4b 86%,
-    #0a0714 100%
+    #1e1b4b 86%
   );
 }
 
