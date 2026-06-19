@@ -3,8 +3,9 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import ReactPaginate from "react-paginate";
 import { clsx } from "clsx";
-import { SlidersHorizontal, X, Plus, ArrowUpDown, Search, ChevronDown, Tag as TagIcon } from "lucide-react";
+import { SlidersHorizontal, X, Plus, ArrowUpDown, Search, ChevronDown, Tag as TagIcon, Hash } from "lucide-react";
 import { RecipeCard } from "./RecipeCard";
+import { TagFilterCombobox } from "./TagFilterCombobox";
 import { type RecipeSummary, type Category, type Tag } from "@/lib/types";
 import { useAuth } from "@/components/AuthProvider";
 
@@ -26,21 +27,22 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: "cookCount", label: "Volte cotta" },
 ];
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function RecipeGrid({ recipes, categories, tags: _tags }: Props) {
+export function RecipeGrid({ recipes, categories, tags }: Props) {
   const { isAdmin } = useAuth();
   const [q, setQ] = useState("");
   const [activeCats, setActiveCats] = useState<number[]>([]);
-  const [activeTags] = useState<number[]>([]);
+  const [activeTags, setActiveTags] = useState<number[]>([]);
   const [sort, setSort] = useState<SortKey>("createdAt");
   const [order, setOrder] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(0);
   const [filterOpen, setFilterOpen] = useState(false);
   const [catDropdownOpen, setCatDropdownOpen] = useState(false);
   const [pendingCats, setPendingCats] = useState<number[]>([]);
+  const [tagDropdownOpen, setTagDropdownOpen] = useState(false);
 
   const resetPage = () => setPage(0);
   const isFilterActive = sort !== "createdAt" || order !== "desc";
+  const hasActiveFilters = activeCats.length > 0 || activeTags.length > 0;
 
   const toggleCat = (id: number) => {
     setActiveCats((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
@@ -60,6 +62,11 @@ export function RecipeGrid({ recipes, categories, tags: _tags }: Props) {
 
   const togglePendingCat = (id: number) => {
     setPendingCats((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+  };
+
+  const toggleTag = (id: number) => {
+    setActiveTags((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+    resetPage();
   };
 
   const filtered = useMemo(() => {
@@ -110,14 +117,14 @@ export function RecipeGrid({ recipes, categories, tags: _tags }: Props) {
           onClick={() => setFilterOpen(true)}
           className={clsx(
             "relative sm:hidden flex h-9 w-9 items-center justify-center rounded-lg border backdrop-blur-sm transition-colors",
-            isFilterActive || activeCats.length > 0
+            isFilterActive || hasActiveFilters
               ? "border-orange-400 bg-orange-100/60 text-orange-700"
               : "border-white/40 bg-white/60 text-sky-800 hover:bg-white/80"
           )}
           title="Filtri e ordinamento"
         >
           <SlidersHorizontal size={16} />
-          {(isFilterActive || activeCats.length > 0) && (
+          {(isFilterActive || hasActiveFilters) && (
             <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-orange-500 border-2 border-white" />
           )}
         </button>
@@ -190,6 +197,55 @@ export function RecipeGrid({ recipes, categories, tags: _tags }: Props) {
             </div>
           )}
 
+          {/* Tag combobox */}
+          {tags.length > 0 && (
+            <div className="relative">
+              <button
+                onClick={() => setTagDropdownOpen((o) => !o)}
+                className={clsx(
+                  "flex items-center gap-1.5 h-9 rounded-lg border backdrop-blur-sm px-3 text-sm transition-colors",
+                  activeTags.length > 0
+                    ? "border-violet-400 bg-violet-100/60 text-violet-700"
+                    : "border-white/40 bg-white/60 text-sky-800 hover:bg-white/80"
+                )}
+              >
+                <Hash size={14} />
+                Tag
+                {activeTags.length > 0 && (
+                  <span className="ml-0.5 rounded-full bg-violet-500 text-white text-[10px] font-bold px-1.5 py-0 leading-4">
+                    {activeTags.length}
+                  </span>
+                )}
+                <ChevronDown size={13} />
+              </button>
+
+              {tagDropdownOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setTagDropdownOpen(false)}
+                  />
+                  <div className="absolute right-0 top-10 z-20 w-72 rounded-xl border border-white/40 bg-white/95 backdrop-blur-xl shadow-xl p-3 space-y-2.5">
+                    <TagFilterCombobox
+                      tags={tags}
+                      selectedIds={activeTags}
+                      onToggle={toggleTag}
+                      autoFocus
+                    />
+                    {activeTags.length > 0 && (
+                      <button
+                        onClick={() => { setActiveTags([]); resetPage(); }}
+                        className="w-full rounded-lg border border-violet-200 py-1.5 text-xs text-violet-700 hover:bg-violet-50 transition-colors"
+                      >
+                        Cancella selezione
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
           <select
             value={sort}
             onChange={(e) => { setSort(e.target.value as SortKey); resetPage(); }}
@@ -218,14 +274,14 @@ export function RecipeGrid({ recipes, categories, tags: _tags }: Props) {
         )}
       </div>
 
-      {/* Active category pills */}
-      {activeCats.length > 0 && (
+      {/* Active category + tag pills */}
+      {hasActiveFilters && (
         <div className="flex flex-wrap gap-1.5">
           {categories
             .filter((c) => activeCats.includes(c.id))
             .map((c) => (
               <span
-                key={c.id}
+                key={`cat-${c.id}`}
                 className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium text-white shadow-sm"
                 style={{ backgroundColor: c.color }}
               >
@@ -239,8 +295,25 @@ export function RecipeGrid({ recipes, categories, tags: _tags }: Props) {
                 </button>
               </span>
             ))}
+          {tags
+            .filter((t) => activeTags.includes(t.id))
+            .map((t) => (
+              <span
+                key={`tag-${t.id}`}
+                className="inline-flex items-center gap-1 rounded-full bg-violet-500 px-2.5 py-0.5 text-[11px] font-medium text-white shadow-sm"
+              >
+                {t.name}
+                <button
+                  onClick={() => toggleTag(t.id)}
+                  className="ml-0.5 opacity-70 hover:opacity-100"
+                  aria-label={`Rimuovi ${t.name}`}
+                >
+                  <X size={10} />
+                </button>
+              </span>
+            ))}
           <button
-            onClick={() => { setActiveCats([]); resetPage(); }}
+            onClick={() => { setActiveCats([]); setActiveTags([]); resetPage(); }}
             className="inline-flex items-center rounded-full border border-dashed border-white/50 px-2.5 py-0.5 text-[11px] text-sky-200 hover:bg-white/10 transition-colors"
           >
             × Cancella tutto
@@ -268,9 +341,9 @@ export function RecipeGrid({ recipes, categories, tags: _tags }: Props) {
         <div className="flex flex-col items-center gap-3 py-20 text-center">
           <span className="text-5xl">🔍</span>
           <p className="font-medium text-sky-950 [text-shadow:0_1px_3px_rgba(255,255,255,0.6)]">Nessuna ricetta trovata</p>
-          {(q || activeCats.length > 0) && (
+          {(q || hasActiveFilters) && (
             <button
-              onClick={() => { setQ(""); setActiveCats([]); resetPage(); }}
+              onClick={() => { setQ(""); setActiveCats([]); setActiveTags([]); resetPage(); }}
               className="text-sm font-semibold text-orange-700 hover:underline [text-shadow:0_1px_2px_rgba(255,255,255,0.5)]"
             >
               Rimuovi filtri
@@ -350,6 +423,24 @@ export function RecipeGrid({ recipes, categories, tags: _tags }: Props) {
                     </button>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Tags */}
+            {tags.length > 0 && (
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <p className="text-[11px] font-semibold text-violet-600 uppercase tracking-wider">Tag</p>
+                  {activeTags.length > 0 && (
+                    <button
+                      onClick={() => { setActiveTags([]); resetPage(); }}
+                      className="text-[11px] font-medium text-violet-600 hover:underline"
+                    >
+                      Cancella
+                    </button>
+                  )}
+                </div>
+                <TagFilterCombobox tags={tags} selectedIds={activeTags} onToggle={toggleTag} />
               </div>
             )}
 

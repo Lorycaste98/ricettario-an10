@@ -26,6 +26,17 @@ model Recipe {
   tags        RecipeTag[]
   reviews     Review[]
   menus       MenuRecipe[]
+  cookLogs    CookLog[]
+}
+
+model CookLog {
+  id        Int      @id @default(autoincrement())
+  cookedAt  DateTime @default(now())
+  recipeId  Int
+  recipe    Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@index([cookedAt])
+  @@index([recipeId])
 }
 
 model Category {

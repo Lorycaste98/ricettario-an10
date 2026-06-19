@@ -36,7 +36,7 @@ export default async function AdminPage() {
     .findMany({ where: { excludedFromStats: true }, select: { name: true } })
     .then((rows) => rows.map((r) => r.name));
 
-  const [recipeCount, categoryCount, tagCount, menuCount, topCookedRaw, recentRecipeReviews, recentMenuReviews, topIngredientsRaw, ingredientCount, categoriesRaw] = await Promise.all([
+  const [recipeCount, categoryCount, tagCount, menuCount, topCookedRaw, recentRecipeReviews, recentMenuReviews, topIngredientsRaw, ingredientCount, categoriesRaw, tagsRaw] = await Promise.all([
     db.recipe.count(),
     db.category.count(),
     db.tag.count(),
@@ -75,6 +75,10 @@ export default async function AdminPage() {
       select: { name: true, color: true, _count: { select: { recipes: true } } },
       orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     }),
+    db.tag.findMany({
+      select: { name: true, _count: { select: { recipes: true } } },
+      orderBy: { name: "asc" },
+    }),
   ]);
 
   const totalCooks = await db.recipe.aggregate({ _sum: { cookCount: true } });
@@ -98,6 +102,11 @@ export default async function AdminPage() {
   const topCategories = categoriesRaw
     .map((c) => ({ name: c.name, value: c._count.recipes, color: c.color }))
     .filter((c) => c.value > 0)
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 15);
+  const topTags = tagsRaw
+    .map((t) => ({ name: t.name, value: t._count.recipes }))
+    .filter((t) => t.value > 0)
     .sort((a, b) => b.value - a.value)
     .slice(0, 15);
 
@@ -222,7 +231,7 @@ export default async function AdminPage() {
 
       {/* ── Grafici ── */}
       <div className="fade-up" style={{ animationDelay: "300ms" }}>
-        <ChartsSection topCategories={topCategories} topCooked={topCooked} topIngredients={topIngredients} />
+        <ChartsSection topCategories={topCategories} topTags={topTags} topCooked={topCooked} topIngredients={topIngredients} />
       </div>
     </div>
   );

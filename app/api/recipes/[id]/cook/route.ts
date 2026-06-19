@@ -27,11 +27,15 @@ export async function POST(
   });
   if (!recipe) return err("Ricetta non trovata", 404);
 
-  const updated = await db.recipe.update({
-    where: { id: recipeId },
-    data: { cookCount: { increment: 1 } },
-    select: { id: true, name: true, cookCount: true },
-  });
+  // Incrementa il contatore e registra l'evento in CookLog (per le statistiche per periodo)
+  const [, updated] = await db.$transaction([
+    db.cookLog.create({ data: { recipeId } }),
+    db.recipe.update({
+      where: { id: recipeId },
+      data: { cookCount: { increment: 1 } },
+      select: { id: true, name: true, cookCount: true },
+    }),
+  ]);
 
   return ok(updated);
 }
@@ -53,10 +57,20 @@ export async function DELETE(
   if (!recipe) return err("Ricetta non trovata", 404);
   if (recipe.cookCount === 0) return err("Il contatore è già a 0");
 
-  const updated = await db.recipe.update({
-    where: { id: recipeId },
-    data: { cookCount: { decrement: 1 } },
-    select: { id: true, name: true, cookCount: true },
+  // Rimuove l'ultima cottura registrata (se presente) e decrementa il contatore
+  const lastLog = await db.cookLog.findFirst({
+    where: { recipeId },
+    orderBy: { cookedAt: "desc" },
+    select: { id: true },
+  });
+
+  const updated = await db.$transaction(async (tx) => {
+    if (lastLog) await tx.cookLog.delete({ where: { id: lastLog.id } });
+    return tx.recipe.update({
+      where: { id: recipeId },
+      data: { cookCount: { decrement: 1 } },
+      select: { id: true, name: true, cookCount: true },
+    });
   });
 
   return ok(updated);

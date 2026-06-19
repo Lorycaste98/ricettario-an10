@@ -10,6 +10,7 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { ReviewSection } from "@/components/recipe/ReviewSection";
 import { RecipeProcedure } from "@/components/recipe/RecipeProcedure";
 import { FavoriteButton } from "@/components/recipe/FavoriteButton";
+import { RecipePdfButton } from "@/components/recipe/RecipePdfButton";
 import { RecipeActions } from "./RecipeActions";
 import { formatMinutes } from "@/lib/types";
 import type { Metadata } from "next";
@@ -46,6 +47,22 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
   const allPhotos = recipe.photo
     ? [recipe.photo, ...recipe.photos.map((p: { url: string }) => p.url).filter((u: string) => u !== recipe.photo)]
     : recipe.photos.map((p: { url: string }) => p.url);
+
+  const pdfData = {
+    name: recipe.name,
+    servings: recipe.servings ?? null,
+    prep: recipe.prep ?? null,
+    cook: recipe.cook ?? null,
+    notes: recipe.notes ?? null,
+    links: recipe.links ?? null,
+    photo: allPhotos[0] ?? null,
+    categories: recipe.categories.map((c: { name: string; color: string }) => ({ name: c.name, color: c.color })),
+    tags: recipe.tags.map((t: { name: string }) => ({ name: t.name })),
+    ingredients: recipe.ingredients.map((i: { name: string; qty: number | null; unit: string | null; description: string | null }) => ({
+      name: i.name, qty: i.qty, unit: i.unit, description: i.description,
+    })),
+    steps: recipe.steps.map((s: { text: string; mins: number | null }) => ({ text: s.text, mins: s.mins })),
+  };
 
   return (
     <article className="mx-auto max-w-4xl space-y-8 sm:space-y-10">
@@ -115,7 +132,10 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
             })}
           </p>
 
-          <FavoriteButton recipeId={recipe.id} variant="detail" />
+          <div className="flex flex-wrap items-center gap-2">
+            <FavoriteButton recipeId={recipe.id} variant="detail" />
+            <RecipePdfButton recipe={pdfData} />
+          </div>
 
           {/* Admin actions */}
           <RecipeActions recipeId={recipe.id} cookCount={recipe.cookCount} />

@@ -30,6 +30,10 @@ npm run create-admin # crea utente admin
 | `components/admin/RecentReviews.tsx` | Dashboard: ultime 5 recensioni miste ricette+menù affiancate (scroll mobile / grid-5 desktop), Dialog |
 | `components/admin/ReviewsBrowser.tsx` | Pagina recensioni: ricerca + switcher tab animato (ricette/menù), gruppi per entità |
 | `components/recipe/DetailReviewCard.tsx` | Card recensione per pagine dettaglio ricetta **e** menù (espandibile, eliminabile da admin) |
+| `components/admin/ChartsSection.tsx` | Grafici dashboard: select grafico + period picker (preset + range custom); fa fetch su `/api/admin/stats` al cambio periodo |
+| `components/recipe/RecipePdfButton.tsx` | Tasto "Esporta in PDF" (client): import lazy di `@react-pdf/renderer`, foto→dataURL, download blob |
+| `components/recipe/RecipePdfDocument.tsx` | Layout PDF ricetta (`@react-pdf/renderer`) — importato solo dal button, mai a livello pagina |
+| `components/recipe/TagFilterCombobox.tsx` | Combobox ricerca+multi-selezione per filtrare le ricette per tag (no «#»); usato in `RecipeGrid` desktop dropdown + sheet mobile |
 | `prisma/prisma.config.ts` | Config connessione Supabase + adapter — non toccare |
 | `proxy.ts` (root) | Config proxy Vercel — non toccare |
 
@@ -46,6 +50,7 @@ app/api/auth/username/          # Cambio username self-service (conferma passwor
 app/api/auth/password/          # Cambio password self-service (conferma password attuale)
 app/api/categories/reorder/     # Riordina categorie (sortOrder)
 app/api/ingredients/            # Lista pubblica ingredienti master (autocomplete)
+app/api/admin/stats/            # Dati grafici dashboard filtrati per periodo (?from=&to=); cotture via CookLog, fallback cookCount per "Tutto"
 app/api/admin/ingredients/      # CRUD + merge + exclude IngredientMaster
 app/api/admin/utenti/           # CRUD utenti admin
 ```
@@ -70,6 +75,7 @@ app/api/admin/utenti/           # CRUD utenti admin
 - `/api/keepalive` mantiene attiva la connessione Supabase — non rimuovere
 - I preferiti sono solo localStorage — non c'è tabella DB per i preferiti utente
 - `IngredientMaster` è il catalogo canonico degli ingredienti; il merge aggiorna tutte le ricette collegate
+- `CookLog` registra ogni cottura (una riga per click su "Ho cucinato"): l'API `/api/recipes/[id]/cook` POST crea una riga + incrementa `cookCount`, DELETE rimuove l'ultima riga + decrementa. Lo storico CookLog parte dalle cotture registrate **dopo** l'introduzione della tabella; le cotture precedenti vivono solo in `cookCount` (visibili col periodo "Tutto")
 
 ## ⚠️ Next.js 16 — non nel training data
 
