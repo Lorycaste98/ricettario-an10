@@ -63,7 +63,7 @@
 }
 
 html {
-  background-color: #082f49; /* sky-950 — colore navbar; riempie safe-area (notch, barra iOS) dove body::before non arriva */
+  background-color: #1e3a5c; /* sky-950 — colore navbar; riempie safe-area (notch, barra iOS) dove body::before non arriva */
   overscroll-behavior: none;
   overscroll-behavior-y: none;
 }
