@@ -1,5 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import ReactPaginate from "react-paginate";
 import { clsx } from "clsx";
@@ -23,6 +24,7 @@ interface Props {
 
 export function MenuGrid({ menus }: Props) {
   const { isAdmin } = useAuth();
+  const reduceMotion = useReducedMotion();
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<SortKey>("createdAt");
   const [order, setOrder] = useState<"asc" | "desc">("desc");
@@ -198,100 +200,121 @@ export function MenuGrid({ menus }: Props) {
       )}
 
       {/* ── Filter Bottom Sheet (mobile only) ── */}
-      {filterOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-end sm:hidden"
-          onClick={() => setFilterOpen(false)}
-        >
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+      <AnimatePresence>
+        {filterOpen && (
           <div
-            className="relative w-full rounded-t-3xl bg-white/95 backdrop-blur-xl border-t border-white/40 p-6 space-y-6 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-50 flex items-end sm:hidden"
+            onClick={() => setFilterOpen(false)}
           >
-            <div className="absolute top-3 left-1/2 -translate-x-1/2 h-1 w-10 rounded-full bg-sky-200" />
-            <div className="flex items-center justify-between pt-2">
-              <div className="flex items-center gap-2 text-sky-950 font-bold text-lg">
-                <ArrowUpDown size={18} />
-                Ordina
-              </div>
-              <button
-                onClick={() => setFilterOpen(false)}
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-sky-100 text-sky-700 hover:bg-sky-200 transition-colors"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            <div className="space-y-2.5">
-              <p className="text-[11px] font-semibold text-sky-600 uppercase tracking-wider">
-                Ordina per
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                {SORT_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => {
-                      setSort(opt.value);
-                      resetPage();
-                    }}
-                    className={clsx(
-                      "rounded-xl border px-4 py-2.5 text-sm font-medium text-left transition-all",
-                      sort === opt.value
-                        ? "border-orange-400 bg-orange-50 text-orange-700"
-                        : "border-sky-100 bg-sky-50/50 text-sky-900"
-                    )}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-2.5">
-              <p className="text-[11px] font-semibold text-sky-600 uppercase tracking-wider">
-                Direzione
-              </p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    setOrder("desc");
-                    resetPage();
-                  }}
-                  className={clsx(
-                    "flex-1 rounded-xl border py-2.5 text-sm font-medium transition-all",
-                    order === "desc"
-                      ? "border-orange-400 bg-orange-50 text-orange-700"
-                      : "border-sky-100 bg-sky-50/50 text-sky-900"
-                  )}
-                >
-                  ↓ Decrescente
-                </button>
-                <button
-                  onClick={() => {
-                    setOrder("asc");
-                    resetPage();
-                  }}
-                  className={clsx(
-                    "flex-1 rounded-xl border py-2.5 text-sm font-medium transition-all",
-                    order === "asc"
-                      ? "border-orange-400 bg-orange-50 text-orange-700"
-                      : "border-sky-100 bg-sky-50/50 text-sky-900"
-                  )}
-                >
-                  ↑ Crescente
-                </button>
-              </div>
-            </div>
-
-            <button
-              onClick={() => setFilterOpen(false)}
-              className="w-full rounded-xl bg-sky-950 text-white py-3 font-semibold text-sm hover:bg-sky-900 transition-colors"
+            <motion.div
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+            />
+            <motion.div
+              className="relative flex max-h-[85vh] w-full flex-col rounded-t-3xl bg-white/95 backdrop-blur-xl border-t border-white/40 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+              initial={reduceMotion ? { opacity: 0 } : { y: "100%" }}
+              animate={reduceMotion ? { opacity: 1 } : { y: 0 }}
+              exit={reduceMotion ? { opacity: 0 } : { y: "100%" }}
+              transition={{ type: "tween", duration: 0.32, ease: [0.32, 0.72, 0, 1] }}
             >
-              Applica
-            </button>
+              {/* Handle + header */}
+              <div className="shrink-0 px-6 pt-6">
+                <div className="absolute top-3 left-1/2 -translate-x-1/2 h-1 w-10 rounded-full bg-sky-200" />
+                <div className="flex items-center justify-between pt-2">
+                  <div className="flex items-center gap-2 text-sky-950 font-bold text-lg">
+                    <ArrowUpDown size={18} />
+                    Ordina
+                  </div>
+                  <button
+                    onClick={() => setFilterOpen(false)}
+                    className="flex h-8 w-8 items-center justify-center rounded-full bg-sky-100 text-sky-700 hover:bg-sky-200 transition-colors"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Scrollable body */}
+              <div className="flex-1 overflow-y-auto overscroll-contain px-6 py-5 space-y-6">
+                <div className="space-y-2.5">
+                  <p className="text-[11px] font-semibold text-sky-600 uppercase tracking-wider">
+                    Ordina per
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {SORT_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        onClick={() => {
+                          setSort(opt.value);
+                          resetPage();
+                        }}
+                        className={clsx(
+                          "rounded-xl border px-4 py-2.5 text-sm font-medium text-left transition-all",
+                          sort === opt.value
+                            ? "border-orange-400 bg-orange-50 text-orange-700"
+                            : "border-sky-100 bg-sky-50/50 text-sky-900"
+                        )}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2.5">
+                  <p className="text-[11px] font-semibold text-sky-600 uppercase tracking-wider">
+                    Direzione
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setOrder("desc");
+                        resetPage();
+                      }}
+                      className={clsx(
+                        "flex-1 rounded-xl border py-2.5 text-sm font-medium transition-all",
+                        order === "desc"
+                          ? "border-orange-400 bg-orange-50 text-orange-700"
+                          : "border-sky-100 bg-sky-50/50 text-sky-900"
+                      )}
+                    >
+                      ↓ Decrescente
+                    </button>
+                    <button
+                      onClick={() => {
+                        setOrder("asc");
+                        resetPage();
+                      }}
+                      className={clsx(
+                        "flex-1 rounded-xl border py-2.5 text-sm font-medium transition-all",
+                        order === "asc"
+                          ? "border-orange-400 bg-orange-50 text-orange-700"
+                          : "border-sky-100 bg-sky-50/50 text-sky-900"
+                      )}
+                    >
+                      ↑ Crescente
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Applica */}
+              <div className="shrink-0 px-6 pb-6 pt-2">
+                <button
+                  onClick={() => setFilterOpen(false)}
+                  className="w-full rounded-xl bg-sky-950 text-white py-3 font-semibold text-sm hover:bg-sky-900 transition-colors"
+                >
+                  Applica
+                </button>
+              </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
   );
 }
