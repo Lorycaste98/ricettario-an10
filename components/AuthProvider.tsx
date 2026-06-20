@@ -1,5 +1,6 @@
 "use client";
 import { createContext, useContext, useEffect, useRef, useState, useCallback } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { X, Heart } from "lucide-react";
 
 const INACTIVITY_MS = 10 * 60 * 1000; // 10 minuti
@@ -35,6 +36,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [showDedication, setShowDedication] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const isAdminRef = useRef(false);
+  const pathname = usePathname();
+  const router = useRouter();
+
+  // Chiude il modal di logout; se sei su una pagina admin (ora non autorizzata) torna a "/"
+  const dismissAutoLogout = () => {
+    setAutoLoggedOut(false);
+    if (pathname?.startsWith("/admin")) router.push("/");
+  };
 
   const refresh = async () => {
     try {
@@ -140,8 +149,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       {/* ── Modal logout per inattività ── */}
       {autoLoggedOut && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-sm rounded-2xl bg-white shadow-2xl overflow-hidden">
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4"
+          onClick={dismissAutoLogout}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl bg-white shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="p-6 space-y-4">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-100 text-orange-500 text-lg">
@@ -162,7 +177,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   Accedi nuovamente
                 </a>
                 <button
-                  onClick={() => setAutoLoggedOut(false)}
+                  onClick={dismissAutoLogout}
                   className="rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
                 >
                   <X size={15} />

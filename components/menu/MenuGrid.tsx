@@ -1,6 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
-import { motion, AnimatePresence, useReducedMotion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import Link from "next/link";
 import ReactPaginate from "react-paginate";
 import { clsx } from "clsx";
@@ -24,7 +24,6 @@ interface Props {
 
 export function MenuGrid({ menus }: Props) {
   const { isAdmin } = useAuth();
-  const reduceMotion = useReducedMotion();
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<SortKey>("createdAt");
   const [order, setOrder] = useState<"asc" | "desc">("desc");
@@ -202,24 +201,23 @@ export function MenuGrid({ menus }: Props) {
       {/* ── Filter Bottom Sheet (mobile only) ── */}
       <AnimatePresence>
         {filterOpen && (
-          <div
-            className="fixed inset-0 z-50 flex items-end sm:hidden"
+          <motion.div
+            key="menu-filter-sheet"
+            className="fixed inset-0 z-50 flex items-end justify-center px-3 pb-5 sm:hidden"
             onClick={() => setFilterOpen(false)}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
           >
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
             <motion.div
-              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
-            />
-            <motion.div
-              className="relative flex max-h-[85vh] w-full flex-col rounded-t-3xl bg-white/95 backdrop-blur-xl border-t border-white/40 shadow-2xl"
+              className="relative flex max-h-[80vh] w-full flex-col rounded-3xl bg-white/95 backdrop-blur-xl border border-white/40 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
-              initial={reduceMotion ? { opacity: 0 } : { y: "100%" }}
-              animate={reduceMotion ? { opacity: 1 } : { y: 0 }}
-              exit={reduceMotion ? { opacity: 0 } : { y: "100%" }}
-              transition={{ type: "tween", duration: 0.32, ease: [0.32, 0.72, 0, 1] }}
+              initial={{ y: "110%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "110%" }}
+              transition={{ type: "tween", duration: 0.35, ease: [0.32, 0.72, 0, 1] }}
             >
               {/* Handle + header */}
               <div className="shrink-0 px-6 pt-6">
@@ -312,7 +310,7 @@ export function MenuGrid({ menus }: Props) {
                 </button>
               </div>
             </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
