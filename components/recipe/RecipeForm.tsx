@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { clsx } from "clsx";
@@ -10,12 +10,12 @@ import { IngredientCombobox } from "@/components/ui/IngredientCombobox";
 import { CategoryCombobox } from "@/components/ui/CategoryCombobox";
 import { TagCombobox } from "@/components/ui/TagCombobox";
 import { SectionHeader, type SectionTone } from "@/components/ui/SectionHeader";
-import { type Category, type Tag } from "@/lib/types";
+import { type Category, type Tag, type StepKind, STEP_KINDS, STEP_KIND_LABEL } from "@/lib/types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface IngredientRow { name: string; qty: string; unit: string; description: string }
-interface StepRow { text: string; mins: string }
+interface StepRow { text: string; mins: string; kind: StepKind }
 /** Riga foto interna al form: url + flag per la foto principale */
 interface PhotoRow { url: string; isMain: boolean }
 
@@ -158,7 +158,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
     initialData?.ingredients?.length ? initialData.ingredients : [{ name: "", qty: "", unit: "", description: "" }]
   );
   const [steps, setSteps] = useState<StepRow[]>(
-    initialData?.steps?.length ? initialData.steps : [{ text: "", mins: "" }]
+    initialData?.steps?.length ? initialData.steps : [{ text: "", mins: "", kind: "PREP" }]
   );
   /**
    * Tutte le foto della ricetta in un unico array.
@@ -187,6 +187,33 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
       )
       .catch(() => {});
   }, []);
+
+  // Somma i minuti degli step per tipo → suggerisce prep/cottura
+  const derived = useMemo(() => {
+    let prepM = 0, cookM = 0, waitM = 0;
+    for (const s of steps) {
+      const m = Number(s.mins);
+      if (!m || m <= 0) continue;
+      if (s.kind === "COOK") cookM += m;
+      else if (s.kind === "WAIT") waitM += m;
+      else prepM += m;
+    }
+    return { prep: prepM, cook: cookM, wait: waitM, hasAny: prepM + cookM + waitM > 0 };
+  }, [steps]);
+
+  // Auto-compila i campi VUOTI dalla derivazione (ricette nuove); non sovrascrive
+  // mai valori già presenti (incl. quelli salvati di ricette esistenti).
+  useEffect(() => {
+    if (derived.prep > 0) setPrep((cur) => (cur === "" ? String(derived.prep) : cur));
+  }, [derived.prep]);
+  useEffect(() => {
+    if (derived.cook > 0) setCook((cur) => (cur === "" ? String(derived.cook) : cur));
+  }, [derived.cook]);
+
+  const applyDerived = () => {
+    setPrep(derived.prep > 0 ? String(derived.prep) : "");
+    setCook(derived.cook > 0 ? String(derived.cook) : "");
+  };
 
   const handleNewIngredient = (name: string) => {
     setAllIngredients((prev) =>
@@ -223,7 +250,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
     setIngredients((p) => { const a = [...p]; [a[i], a[j]] = [a[j], a[i]]; return a; });
   };
 
-  const addStep = () => setSteps((p) => [...p, { text: "", mins: "" }]);
+  const addStep = () => setSteps((p) => [...p, { text: "", mins: "", kind: "PREP" }]);
   const removeStep = (i: number) => setSteps((p) => p.filter((_, j) => j !== i));
   const updateStep = (i: number, f: keyof StepRow, v: string) =>
     setSteps((p) => p.map((r, j) => j === i ? { ...r, [f]: v } : r));
@@ -284,7 +311,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
         .map((i, order) => ({ name: i.name.trim(), qty: i.qty ? Number(i.qty) : null, unit: i.unit.trim() || null, description: i.description.trim() || null, order })),
       steps: steps
         .filter((s) => s.text.trim())
-        .map((s, order) => ({ text: s.text.trim(), mins: s.mins ? Number(s.mins) : null, order })),
+        .map((s, order) => ({ text: s.text.trim(), mins: s.mins ? Number(s.mins) : null, kind: s.kind, order })),
       photos: validPhotos.map((p, order) => ({ url: p.url.trim(), order })),
     };
 
@@ -352,6 +379,21 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
           <Input label="Cottura (min)" type="number" min={0} value={cook}
             onChange={(e) => setCook(e.target.value)} placeholder="30" />
         </div>
+        {derived.hasAny && (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg bg-sky-50/60 border border-sky-100 px-3 py-2 text-xs text-sky-700">
+            <span className="font-medium">Dai passi:</span>
+            <span>Prep <strong>{derived.prep}m</strong></span>
+            <span>Cottura <strong>{derived.cook}m</strong></span>
+            {derived.wait > 0 && <span>Attesa <strong>{derived.wait}m</strong></span>}
+            <button
+              type="button"
+              onClick={applyDerived}
+              className="ml-auto rounded-md bg-sky-500 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-sky-600 transition-colors"
+            >
+              Applica a Prep/Cottura
+            </button>
+          </div>
+        )}
         <Textarea label="Note" value={notes} onChange={(e) => setNotes(e.target.value)}
           rows={3} placeholder="Consigli, varianti, sostituzioni..." />
         <Input label="Link fonte" type="url" value={links}
@@ -618,7 +660,17 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
               <div className="flex-1 space-y-1.5">
                 <Textarea value={step.text} onChange={(e) => updateStep(i, "text", e.target.value)}
                   placeholder={`Descrivi il passo ${i + 1}...`} rows={2} />
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <select
+                    value={step.kind}
+                    onChange={(e) => updateStep(i, "kind", e.target.value as StepKind)}
+                    title="Tipo di tempo di questo passo"
+                    className={inlineInput + " shrink-0"}
+                  >
+                    {STEP_KINDS.map((k) => (
+                      <option key={k} value={k}>{STEP_KIND_LABEL[k]}</option>
+                    ))}
+                  </select>
                   <input type="number" min={0} value={step.mins}
                     onChange={(e) => updateStep(i, "mins", e.target.value)} placeholder="—"
                     className={inlineInput + " w-20 shrink-0"} />

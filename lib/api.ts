@@ -37,7 +37,7 @@ export const recipeDetailSelect = {
     orderBy: { order: "asc" as const },
   },
   steps: {
-    select: { id: true, text: true, mins: true, order: true },
+    select: { id: true, text: true, mins: true, kind: true, order: true },
     orderBy: { order: "asc" as const },
   },
   reviews: {

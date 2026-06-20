@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ArrowLeft, Clock, Flame, Hourglass, Users, ExternalLink, CalendarDays, ImageIcon } from "lucide-react";
+import { ArrowLeft, Clock, Flame, Hourglass, Sigma, Users, ExternalLink, CalendarDays, ImageIcon } from "lucide-react";
 import { db } from "@/lib/db";
 import { flattenRecipe } from "@/lib/api";
 import { Badge } from "@/components/ui/Badge";
@@ -34,7 +34,7 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
       tags: { select: { tag: { select: { id: true, name: true } } } },
       photos: { select: { id: true, url: true, order: true }, orderBy: { order: "asc" } },
       ingredients: { select: { id: true, name: true, qty: true, unit: true, description: true, order: true }, orderBy: { order: "asc" } },
-      steps: { select: { id: true, text: true, mins: true, order: true }, orderBy: { order: "asc" } },
+      steps: { select: { id: true, text: true, mins: true, kind: true, order: true }, orderBy: { order: "asc" } },
       reviews: { select: { id: true, nickname: true, rating: true, comment: true, createdAt: true }, orderBy: { createdAt: "desc" } },
       _count: { select: { reviews: true } },
     },
@@ -43,7 +43,12 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
   if (!raw) notFound();
   const recipe = flattenRecipe(raw) as ReturnType<typeof flattenRecipe> & typeof raw;
 
-  const totalTime = (recipe.prep ?? 0) + (recipe.cook ?? 0);
+  // Attesa = somma dei minuti degli step di tipo WAIT; il totale le include tutte
+  const waitTime = (recipe.steps as { mins: number | null; kind: string }[]).reduce(
+    (s, st) => (st.kind === "WAIT" ? s + (st.mins ?? 0) : s),
+    0
+  );
+  const totalTime = (recipe.prep ?? 0) + (recipe.cook ?? 0) + waitTime;
   const allPhotos = recipe.photo
     ? [recipe.photo, ...recipe.photos.map((p: { url: string }) => p.url).filter((u: string) => u !== recipe.photo)]
     : recipe.photos.map((p: { url: string }) => p.url);
@@ -61,7 +66,7 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
     ingredients: recipe.ingredients.map((i: { name: string; qty: number | null; unit: string | null; description: string | null }) => ({
       name: i.name, qty: i.qty, unit: i.unit, description: i.description,
     })),
-    steps: recipe.steps.map((s: { text: string; mins: number | null }) => ({ text: s.text, mins: s.mins })),
+    steps: recipe.steps.map((s: { text: string; mins: number | null; kind: string }) => ({ text: s.text, mins: s.mins, kind: s.kind })),
   };
 
   return (
@@ -93,21 +98,29 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
             <h1 className="text-2xl sm:text-3xl font-bold text-sky-950 leading-tight">{recipe.name}</h1>
           </div>
 
-          {/* Meta grid — 2 col mobile, 4 col sm+ */}
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
-            {recipe.prep && (
-              <MetaTile icon={<Clock size={16} />} label="Preparazione" value={formatMinutes(recipe.prep)} />
-            )}
-            {recipe.cook && recipe.cook > 0 && (
-              <MetaTile icon={<Flame size={16} />} label="Cottura" value={formatMinutes(recipe.cook)} />
-            )}
-            {totalTime > 0 && (
-              <MetaTile icon={<Hourglass size={16} />} label="Totale" value={formatMinutes(totalTime)} accent />
-            )}
-            {recipe.servings && (
-              <MetaTile icon={<Users size={16} />} label="Porzioni" value={`${recipe.servings} pers.`} />
-            )}
-          </div>
+          {/* Meta grid — colonne dinamiche in base ai tile presenti */}
+          {(() => {
+            const tiles: ReactNode[] = [];
+            if (recipe.prep)
+              tiles.push(<MetaTile key="prep" icon={<Clock size={16} />} label="Preparazione" value={formatMinutes(recipe.prep)} />);
+            if (recipe.cook && recipe.cook > 0)
+              tiles.push(<MetaTile key="cook" icon={<Flame size={16} />} label="Cottura" value={formatMinutes(recipe.cook)} />);
+            if (waitTime > 0)
+              tiles.push(<MetaTile key="wait" icon={<Hourglass size={16} />} label="Attesa" value={formatMinutes(waitTime)} />);
+            if (totalTime > 0)
+              tiles.push(<MetaTile key="total" icon={<Sigma size={16} />} label="Totale" value={formatMinutes(totalTime)} accent />);
+            if (recipe.servings)
+              tiles.push(<MetaTile key="serv" icon={<Users size={16} />} label="Porzioni" value={`${recipe.servings} pers.`} />);
+            const cols: Record<number, string> = {
+              1: "sm:grid-cols-2", 2: "sm:grid-cols-2", 3: "sm:grid-cols-3",
+              4: "sm:grid-cols-4", 5: "sm:grid-cols-5",
+            };
+            return (
+              <div className={`grid grid-cols-2 gap-2 sm:gap-3 ${cols[tiles.length] ?? "sm:grid-cols-4"}`}>
+                {tiles}
+              </div>
+            );
+          })()}
 
           {recipe.notes && (
             <p className="rounded-xl bg-amber-100/60 border border-amber-200/50 backdrop-blur-sm px-4 py-3 text-sm text-amber-900 leading-relaxed">
@@ -190,15 +203,15 @@ function MetaTile({
 }) {
   return (
     <div
-      className={`flex flex-col items-center gap-1 rounded-xl border p-3 text-center backdrop-blur-sm ${
+      className={`flex flex-col items-center gap-1 rounded-xl border p-3 text-center ${
         accent
-          ? "border-orange-300/40 bg-orange-400/20"
-          : "border-white/40 bg-white/50"
+          ? "border-orange-500 bg-gradient-to-br from-orange-500 to-orange-600 shadow-md shadow-orange-500/30"
+          : "border-white/40 bg-white/50 backdrop-blur-sm"
       }`}
     >
-      <span className={accent ? "text-orange-600" : "text-sky-500"}>{icon}</span>
-      <p className={`text-[11px] ${accent ? "text-orange-600" : "text-sky-600"}`}>{label}</p>
-      <p className={`text-sm font-semibold ${accent ? "text-orange-700" : "text-sky-950"}`}>{value}</p>
+      <span className={accent ? "text-white" : "text-sky-500"}>{icon}</span>
+      <p className={`text-[11px] ${accent ? "font-medium text-orange-50" : "text-sky-600"}`}>{label}</p>
+      <p className={`text-sm font-bold ${accent ? "text-white" : "font-semibold text-sky-950"}`}>{value}</p>
     </div>
   );
 }

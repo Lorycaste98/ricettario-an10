@@ -16,6 +16,7 @@ import { type NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { recipeSummarySelect, flattenRecipe, ok, err } from "@/lib/api";
 import { requireAdmin } from "@/lib/session";
+import { toStepKind } from "@/lib/types";
 
 export async function GET(request: NextRequest) {
   const sp = request.nextUrl.searchParams;
@@ -82,7 +83,7 @@ export async function POST(request: NextRequest) {
     categoryIds?: number[];
     tagIds?: number[];
     ingredients?: { name: string; qty?: number; unit?: string; description?: string; order: number }[];
-    steps?: { text: string; mins?: number; order: number }[];
+    steps?: { text: string; mins?: number; kind?: string; order: number }[];
     photos?: { url: string; order?: number }[];
   };
 
@@ -116,6 +117,7 @@ export async function POST(request: NextRequest) {
         create: (b.steps ?? []).map((s) => ({
           text: s.text,
           mins: s.mins ?? null,
+          kind: toStepKind(s.kind),
           order: s.order,
         })),
       },

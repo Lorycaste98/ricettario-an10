@@ -2,7 +2,13 @@
 import { useState } from "react";
 import { RotateCcw, Carrot, ListOrdered } from "lucide-react";
 import { SectionHeader } from "@/components/ui/SectionHeader";
-import { formatMinutes } from "@/lib/types";
+import { formatMinutes, toStepKind, STEP_KIND_LABEL, type StepKind } from "@/lib/types";
+
+// Stile badge per tipo step (la Preparazione resta senza badge per non affollare)
+const KIND_BADGE: Partial<Record<StepKind, string>> = {
+  COOK: "bg-red-100 text-red-700",
+  WAIT: "bg-amber-100 text-amber-700",
+};
 
 interface Ingredient {
   id: number;
@@ -16,6 +22,7 @@ interface Step {
   id: number;
   text: string;
   mins: number | null;
+  kind?: string;
   order: number;
 }
 
@@ -218,11 +225,25 @@ export function RecipeProcedure({ recipeId, defaultServings, ingredients, steps 
                     }`}>
                       {step.text}
                     </p>
-                    {step.mins && step.mins > 0 && (
-                      <p className={`mt-0.5 text-xs ${checked ? "text-sky-400 opacity-50" : "text-sky-600"}`}>
-                        ⏱ {formatMinutes(step.mins)}
-                      </p>
-                    )}
+                    {(() => {
+                      const kind = toStepKind(step.kind);
+                      const badge = KIND_BADGE[kind];
+                      if (!step.mins && !badge) return null;
+                      return (
+                        <div className={`mt-0.5 flex items-center gap-2 text-xs ${checked ? "opacity-50" : ""}`}>
+                          {badge && (
+                            <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${badge}`}>
+                              {STEP_KIND_LABEL[kind]}
+                            </span>
+                          )}
+                          {step.mins && step.mins > 0 && (
+                            <span className={checked ? "text-sky-400" : "text-sky-600"}>
+                              ⏱ {formatMinutes(step.mins)}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </button>
 

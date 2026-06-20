@@ -8,6 +8,7 @@ import { type NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { recipeDetailSelect, flattenRecipe, ok, err } from "@/lib/api";
 import { requireAdmin } from "@/lib/session";
+import { toStepKind } from "@/lib/types";
 
 type TxClient = Parameters<Parameters<typeof db.$transaction>[0]>[0];
 
@@ -53,7 +54,7 @@ export async function PUT(
     categoryIds?: number[];
     tagIds?: number[];
     ingredients?: { name: string; qty?: number | null; unit?: string | null; description?: string | null; order: number }[];
-    steps?: { text: string; mins?: number | null; order: number }[];
+    steps?: { text: string; mins?: number | null; kind?: string; order: number }[];
     photos?: { url: string; order?: number }[];
   };
 
@@ -115,6 +116,7 @@ export async function PUT(
                 create: b.steps.map((s) => ({
                   text: s.text,
                   mins: s.mins ?? null,
+                  kind: toStepKind(s.kind),
                   order: s.order,
                 })),
               },

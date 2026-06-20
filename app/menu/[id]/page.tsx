@@ -5,10 +5,12 @@ import { db } from "@/lib/db";
 import { recipeSummarySelect, flattenRecipe } from "@/lib/api";
 import { getSession } from "@/lib/session";
 import { formatMinutes } from "@/lib/types";
+import { resolveServeAt, computeStart, startLabel } from "@/lib/cook-schedule";
 import type { Metadata } from "next";
-import { CalendarDays, UtensilsCrossed, Star, Clock, Users, Pencil } from "lucide-react";
+import { CalendarDays, UtensilsCrossed, Star, Clock, Users, Pencil, AlarmClock } from "lucide-react";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { MenuReviewSection } from "./MenuReviewSection";
+import { MenuPdfButton } from "@/components/menu/MenuPdfButton";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -31,6 +33,7 @@ async function getMenu(id: number) {
       name: true,
       description: true,
       date: true,
+      servingTime: true,
       photo: true,
       createdAt: true,
       updatedAt: true,
@@ -39,7 +42,10 @@ async function getMenu(id: number) {
         orderBy: { createdAt: "desc" },
       },
       recipes: {
-        select: { order: true, recipe: { select: recipeSummarySelect } },
+        select: {
+          order: true,
+          recipe: { select: { ...recipeSummarySelect, steps: { select: { mins: true } } } },
+        },
         orderBy: { order: "asc" },
       },
     },
@@ -88,6 +94,9 @@ export default async function MenuDetailPage({ params }: Params) {
       })
     : null;
 
+  // Istante di servizio (data + ora opzionale): base per il countdown "quando iniziare"
+  const serve = resolveServeAt(menu.date, menu.servingTime);
+
   return (
     <div className="mx-auto max-w-5xl space-y-8">
       {/* Hero header */}
@@ -109,9 +118,19 @@ export default async function MenuDetailPage({ params }: Params) {
           )}
           <div className="absolute inset-0 bg-linear-to-t from-sky-950/90 via-sky-950/40 to-transparent" />
 
-          {/* Admin edit button */}
-          {session && (
-            <div className="absolute top-3 right-3">
+          {/* Azioni: export PDF (tutti) + modifica (admin) */}
+          <div className="absolute top-3 right-3 flex items-center gap-2">
+            <MenuPdfButton
+              menu={{
+                name: menu.name,
+                description: menu.description,
+                date: menu.date,
+                servingTime: menu.servingTime,
+                photo: menu.photo,
+                recipeIds: (menu.recipes as { recipe: { id: number } }[]).map((mr) => mr.recipe.id),
+              }}
+            />
+            {session && (
               <Link
                 href={`/admin/menu/${menu.id}/modifica`}
                 className="flex items-center gap-1.5 rounded-xl border border-white/30 bg-black/40 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm hover:bg-black/60 transition"
@@ -119,8 +138,8 @@ export default async function MenuDetailPage({ params }: Params) {
                 <Pencil size={11} />
                 Modifica
               </Link>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Text overlay */}
           <div className="absolute bottom-0 left-0 right-0 p-5">
@@ -165,6 +184,8 @@ export default async function MenuDetailPage({ params }: Params) {
         <div className="grid gap-3 sm:grid-cols-2">
           {(menu.recipes as { order: number; recipe: ReturnType<typeof flattenRecipe> }[]).map(({ order, recipe }) => {
             const totalTime = (recipe.prep ?? 0) + (recipe.cook ?? 0);
+            // "Quando iniziare": calcolato solo se il menù ha una data
+            const startInfo = serve ? computeStart(recipe, serve.serveAt) : null;
             return (
               <Link
                 key={recipe.id}
@@ -218,6 +239,13 @@ export default async function MenuDetailPage({ params }: Params) {
                       </span>
                     )}
                   </div>
+                  {/* Quando iniziare le preparazioni */}
+                  {startInfo && serve && (
+                    <div className="mt-1.5 inline-flex items-center gap-1.5 rounded-lg bg-orange-500/10 px-2 py-1 text-[11px] font-medium text-orange-700">
+                      <AlarmClock size={11} className="shrink-0" />
+                      {startLabel(startInfo, serve.hasTime)}
+                    </div>
+                  )}
                   {/* Categories */}
                   {recipe.categories.length > 0 && (
                     <div className="mt-1 flex flex-wrap gap-1">

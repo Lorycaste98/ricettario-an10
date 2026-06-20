@@ -18,10 +18,14 @@ export default function RecipeDetailLoading() {
           </div>
           {/* Titolo */}
           <div className="h-8 w-3/4 rounded-xl bg-white/25" />
-          {/* Tile meta (prep / cottura / totale / porzioni) */}
+          {/* Tile meta (prep / cottura / attesa / totale / porzioni) —
+              il 4° (Totale) è la card piena/accentata */}
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-20 rounded-xl bg-white/20" />
+              <div
+                key={i}
+                className={`h-20 rounded-xl ${i === 3 ? "bg-orange-400/30" : "bg-white/20"}`}
+              />
             ))}
           </div>
           {/* Note */}

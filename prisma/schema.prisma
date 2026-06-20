@@ -77,6 +77,8 @@ model Step {
   id       Int    @id @default(autoincrement())
   text     String
   mins     Int?
+  /** Tipo di tempo dello step: PREP | COOK | WAIT (attesa passiva) */
+  kind     String @default("PREP")
   order    Int
   recipeId Int
   recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
@@ -129,6 +131,8 @@ model Menu {
   name        String
   description String?
   date        DateTime?
+  /** Orario di servizio "HH:mm" (opzionale); usato per il countdown "quando iniziare" */
+  servingTime String?
   photo       String?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt

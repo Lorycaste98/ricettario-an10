@@ -14,11 +14,11 @@ export interface RecipePdfData {
   categories: { name: string; color: string }[];
   tags: { name: string }[];
   ingredients: { name: string; qty: number | null; unit: string | null; description: string | null }[];
-  steps: { text: string; mins: number | null }[];
+  steps: { text: string; mins: number | null; kind?: string }[];
 }
 
 /** Scarica un'immagine remota e la converte in data URL (per includerla nel PDF in modo affidabile). */
-async function urlToDataUrl(url: string): Promise<string | undefined> {
+export async function urlToDataUrl(url: string): Promise<string | undefined> {
   try {
     const res = await fetch(url);
     if (!res.ok) return undefined;
@@ -34,9 +34,9 @@ async function urlToDataUrl(url: string): Promise<string | undefined> {
   }
 }
 
-function safeFileName(name: string): string {
+export function safeFileName(name: string, fallback = "ricetta"): string {
   const cleaned = name.replace(/[^\p{L}\p{N} _-]/gu, "").trim();
-  return (cleaned || "ricetta").slice(0, 80);
+  return (cleaned || fallback).slice(0, 80);
 }
 
 export function RecipePdfButton({ recipe }: { recipe: RecipePdfData }) {

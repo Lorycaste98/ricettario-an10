@@ -14,7 +14,7 @@ const SKY = "#0c4a6e";
 const GRAY = "#6b7280";
 const LIGHT = "#9ca3af";
 
-const styles = StyleSheet.create({
+export const pdfStyles = StyleSheet.create({
   page: {
     paddingTop: 40,
     paddingBottom: 48,
@@ -37,22 +37,30 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 22, fontFamily: "Helvetica-Bold", color: SKY, marginBottom: 8 },
   badgeRow: { flexDirection: "row", flexWrap: "wrap", gap: 4, marginBottom: 6 },
+  // Badge categoria: View contenitore + Text centrato (centratura affidabile in react-pdf)
   badge: {
+    paddingVertical: 3,
+    paddingHorizontal: 7,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  badgeText: {
     fontSize: 7.5,
     color: "#ffffff",
-    paddingVertical: 2,
-    paddingHorizontal: 6,
-    borderRadius: 10,
     fontFamily: "Helvetica-Bold",
+    lineHeight: 1,
+    textAlign: "center",
   },
   tag: {
-    fontSize: 7.5,
-    color: "#5b21b6",
-    backgroundColor: "#ede9fe",
-    paddingVertical: 2,
-    paddingHorizontal: 6,
+    paddingVertical: 3,
+    paddingHorizontal: 7,
     borderRadius: 10,
+    backgroundColor: "#ede9fe",
+    justifyContent: "center",
+    alignItems: "center",
   },
+  tagText: { fontSize: 7.5, color: "#5b21b6", lineHeight: 1, textAlign: "center" },
   metaRow: {
     flexDirection: "row",
     gap: 8,
@@ -67,8 +75,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     alignItems: "center",
   },
+  metaTileAccent: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: ORANGE,
+    backgroundColor: ORANGE,
+    borderRadius: 8,
+    paddingVertical: 7,
+    paddingHorizontal: 8,
+    alignItems: "center",
+  },
   metaLabel: { fontSize: 7, color: LIGHT, textTransform: "uppercase", letterSpacing: 0.5 },
+  metaLabelAccent: { fontSize: 7, color: "#ffedd5", textTransform: "uppercase", letterSpacing: 0.5 },
   metaValue: { fontSize: 11, fontFamily: "Helvetica-Bold", color: SKY, marginTop: 2 },
+  metaValueAccent: { fontSize: 11, fontFamily: "Helvetica-Bold", color: "#ffffff", marginTop: 2 },
   notes: {
     backgroundColor: "#fffbeb",
     borderWidth: 1,
@@ -96,17 +116,22 @@ const styles = StyleSheet.create({
   ingredientQty: { fontFamily: "Helvetica-Bold", color: SKY },
   ingredientDesc: { color: GRAY, fontSize: 8.5 },
   step: { flexDirection: "row", marginBottom: 8, alignItems: "flex-start" },
+  // Pallino numerato: View contenitore con numero centrato (flex)
   stepNum: {
     width: 16,
     height: 16,
     borderRadius: 8,
     backgroundColor: ORANGE,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 8,
+  },
+  stepNumText: {
     color: "#ffffff",
     fontSize: 8.5,
     fontFamily: "Helvetica-Bold",
+    lineHeight: 1,
     textAlign: "center",
-    paddingTop: 3,
-    marginRight: 8,
   },
   stepBody: { flex: 1 },
   stepText: { fontSize: 9.5 },
@@ -132,6 +157,162 @@ function fmtQty(qty: number | null, unit: string | null): string {
   return unit ? `${num} ${unit}` : num;
 }
 
+/** Footer fisso condiviso (Ricettario AN10 · data · pagina). */
+export function PdfFooter() {
+  const today = new Date().toLocaleDateString("it-IT", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+  return (
+    <View style={pdfStyles.footer} fixed>
+      <Text>Ricettario AN10 · {today}</Text>
+      <Text render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />
+    </View>
+  );
+}
+
+/**
+ * Contenuto di una ricetta (header + meta + note + ingredienti/procedura),
+ * senza Page/Document. Riusato dal PDF ricetta singola e dal PDF menù.
+ */
+export function RecipePdfContent({
+  recipe,
+  photoData,
+  kicker = "Ricettario AN10",
+}: {
+  recipe: RecipePdfData;
+  photoData?: string;
+  kicker?: string;
+}) {
+  const wait = (recipe.steps ?? []).reduce(
+    (s, st) => (st.kind === "WAIT" ? s + (st.mins ?? 0) : s),
+    0
+  );
+  const total = (recipe.prep ?? 0) + (recipe.cook ?? 0) + wait;
+
+  return (
+    <>
+      {/* Header */}
+      <View style={pdfStyles.headerRow}>
+        <View style={pdfStyles.headerMain}>
+          <Text style={pdfStyles.kicker}>{kicker}</Text>
+          <Text style={pdfStyles.title}>{recipe.name}</Text>
+          {recipe.categories.length > 0 && (
+            <View style={pdfStyles.badgeRow}>
+              {recipe.categories.map((c, i) => (
+                <View key={i} style={[pdfStyles.badge, { backgroundColor: c.color || ORANGE }]}>
+                  <Text style={pdfStyles.badgeText}>{c.name}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+          {recipe.tags.length > 0 && (
+            <View style={pdfStyles.badgeRow}>
+              {recipe.tags.map((t, i) => (
+                <View key={i} style={pdfStyles.tag}>
+                  <Text style={pdfStyles.tagText}>{t.name}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+        {/* eslint-disable-next-line jsx-a11y/alt-text -- componente PDF di react-pdf, non un <img> HTML */}
+        {photoData && <Image src={photoData} style={pdfStyles.photo} />}
+      </View>
+
+      {/* Meta */}
+      <View style={pdfStyles.metaRow}>
+        {recipe.prep ? (
+          <View style={pdfStyles.metaTile}>
+            <Text style={pdfStyles.metaLabel}>Preparazione</Text>
+            <Text style={pdfStyles.metaValue}>{formatMinutes(recipe.prep)}</Text>
+          </View>
+        ) : null}
+        {recipe.cook ? (
+          <View style={pdfStyles.metaTile}>
+            <Text style={pdfStyles.metaLabel}>Cottura</Text>
+            <Text style={pdfStyles.metaValue}>{formatMinutes(recipe.cook)}</Text>
+          </View>
+        ) : null}
+        {wait > 0 ? (
+          <View style={pdfStyles.metaTile}>
+            <Text style={pdfStyles.metaLabel}>Attesa</Text>
+            <Text style={pdfStyles.metaValue}>{formatMinutes(wait)}</Text>
+          </View>
+        ) : null}
+        {total > 0 ? (
+          <View style={pdfStyles.metaTileAccent}>
+            <Text style={pdfStyles.metaLabelAccent}>Totale</Text>
+            <Text style={pdfStyles.metaValueAccent}>{formatMinutes(total)}</Text>
+          </View>
+        ) : null}
+        {recipe.servings ? (
+          <View style={pdfStyles.metaTile}>
+            <Text style={pdfStyles.metaLabel}>Porzioni</Text>
+            <Text style={pdfStyles.metaValue}>{recipe.servings} pers.</Text>
+          </View>
+        ) : null}
+      </View>
+
+      {recipe.notes ? <Text style={pdfStyles.notes}>{recipe.notes}</Text> : null}
+
+      {/* Ingredienti + Procedura */}
+      <View style={pdfStyles.columns}>
+        <View style={pdfStyles.ingredientsCol}>
+          <View style={pdfStyles.sectionHeader}>
+            <View style={pdfStyles.sectionBar} />
+            <Text style={pdfStyles.sectionTitle}>Ingredienti</Text>
+          </View>
+          {recipe.ingredients.length === 0 ? (
+            <Text style={{ color: LIGHT }}>—</Text>
+          ) : (
+            recipe.ingredients.map((ing, i) => {
+              const qty = fmtQty(ing.qty, ing.unit);
+              return (
+                <View key={i} style={pdfStyles.ingredientItem}>
+                  <View style={pdfStyles.dot} />
+                  <Text style={pdfStyles.ingredientText}>
+                    {qty ? <Text style={pdfStyles.ingredientQty}>{qty} </Text> : null}
+                    {ing.name}
+                    {ing.description ? (
+                      <Text style={pdfStyles.ingredientDesc}> — {ing.description}</Text>
+                    ) : null}
+                  </Text>
+                </View>
+              );
+            })
+          )}
+        </View>
+
+        <View style={pdfStyles.stepsCol}>
+          <View style={pdfStyles.sectionHeader}>
+            <View style={pdfStyles.sectionBar} />
+            <Text style={pdfStyles.sectionTitle}>Procedimento</Text>
+          </View>
+          {recipe.steps.length === 0 ? (
+            <Text style={{ color: LIGHT }}>—</Text>
+          ) : (
+            recipe.steps.map((s, i) => (
+              <View key={i} style={pdfStyles.step}>
+                <View style={pdfStyles.stepNum}>
+                  <Text style={pdfStyles.stepNumText}>{i + 1}</Text>
+                </View>
+                <View style={pdfStyles.stepBody}>
+                  <Text style={pdfStyles.stepText}>{s.text}</Text>
+                  {s.mins ? (
+                    <Text style={pdfStyles.stepMins}>{formatMinutes(s.mins)}</Text>
+                  ) : null}
+                </View>
+              </View>
+            ))
+          )}
+        </View>
+      </View>
+    </>
+  );
+}
+
 export function RecipePdfDocument({
   recipe,
   photoData,
@@ -139,132 +320,11 @@ export function RecipePdfDocument({
   recipe: RecipePdfData;
   photoData?: string;
 }) {
-  const total = (recipe.prep ?? 0) + (recipe.cook ?? 0);
-  const today = new Date().toLocaleDateString("it-IT", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-
   return (
     <Document title={recipe.name} author="Ricettario AN10">
-      <Page size="A4" style={styles.page}>
-        {/* Header */}
-        <View style={styles.headerRow}>
-          <View style={styles.headerMain}>
-            <Text style={styles.kicker}>Ricettario AN10</Text>
-            <Text style={styles.title}>{recipe.name}</Text>
-            {recipe.categories.length > 0 && (
-              <View style={styles.badgeRow}>
-                {recipe.categories.map((c, i) => (
-                  <Text key={i} style={[styles.badge, { backgroundColor: c.color || ORANGE }]}>
-                    {c.name}
-                  </Text>
-                ))}
-              </View>
-            )}
-            {recipe.tags.length > 0 && (
-              <View style={styles.badgeRow}>
-                {recipe.tags.map((t, i) => (
-                  <Text key={i} style={styles.tag}>
-                    {t.name}
-                  </Text>
-                ))}
-              </View>
-            )}
-          </View>
-          {/* eslint-disable-next-line jsx-a11y/alt-text -- componente PDF di react-pdf, non un <img> HTML */}
-          {photoData && <Image src={photoData} style={styles.photo} />}
-        </View>
-
-        {/* Meta */}
-        <View style={styles.metaRow}>
-          {recipe.prep ? (
-            <View style={styles.metaTile}>
-              <Text style={styles.metaLabel}>Preparazione</Text>
-              <Text style={styles.metaValue}>{formatMinutes(recipe.prep)}</Text>
-            </View>
-          ) : null}
-          {recipe.cook ? (
-            <View style={styles.metaTile}>
-              <Text style={styles.metaLabel}>Cottura</Text>
-              <Text style={styles.metaValue}>{formatMinutes(recipe.cook)}</Text>
-            </View>
-          ) : null}
-          {total > 0 ? (
-            <View style={styles.metaTile}>
-              <Text style={styles.metaLabel}>Totale</Text>
-              <Text style={styles.metaValue}>{formatMinutes(total)}</Text>
-            </View>
-          ) : null}
-          {recipe.servings ? (
-            <View style={styles.metaTile}>
-              <Text style={styles.metaLabel}>Porzioni</Text>
-              <Text style={styles.metaValue}>{recipe.servings} pers.</Text>
-            </View>
-          ) : null}
-        </View>
-
-        {recipe.notes ? <Text style={styles.notes}>{recipe.notes}</Text> : null}
-
-        {/* Ingredienti + Procedura */}
-        <View style={styles.columns}>
-          <View style={styles.ingredientsCol}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionBar} />
-              <Text style={styles.sectionTitle}>Ingredienti</Text>
-            </View>
-            {recipe.ingredients.length === 0 ? (
-              <Text style={{ color: LIGHT }}>—</Text>
-            ) : (
-              recipe.ingredients.map((ing, i) => {
-                const qty = fmtQty(ing.qty, ing.unit);
-                return (
-                  <View key={i} style={styles.ingredientItem}>
-                    <View style={styles.dot} />
-                    <Text style={styles.ingredientText}>
-                      {qty ? <Text style={styles.ingredientQty}>{qty} </Text> : null}
-                      {ing.name}
-                      {ing.description ? (
-                        <Text style={styles.ingredientDesc}> — {ing.description}</Text>
-                      ) : null}
-                    </Text>
-                  </View>
-                );
-              })
-            )}
-          </View>
-
-          <View style={styles.stepsCol}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionBar} />
-              <Text style={styles.sectionTitle}>Procedimento</Text>
-            </View>
-            {recipe.steps.length === 0 ? (
-              <Text style={{ color: LIGHT }}>—</Text>
-            ) : (
-              recipe.steps.map((s, i) => (
-                <View key={i} style={styles.step}>
-                  <Text style={styles.stepNum}>{i + 1}</Text>
-                  <View style={styles.stepBody}>
-                    <Text style={styles.stepText}>{s.text}</Text>
-                    {s.mins ? (
-                      <Text style={styles.stepMins}>{formatMinutes(s.mins)}</Text>
-                    ) : null}
-                  </View>
-                </View>
-              ))
-            )}
-          </View>
-        </View>
-
-        {/* Footer */}
-        <View style={styles.footer} fixed>
-          <Text>Ricettario AN10 · {today}</Text>
-          <Text
-            render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`}
-          />
-        </View>
+      <Page size="A4" style={pdfStyles.page}>
+        <RecipePdfContent recipe={recipe} photoData={photoData} />
+        <PdfFooter />
       </Page>
     </Document>
   );

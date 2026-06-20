@@ -16,6 +16,7 @@ interface Props {
     name: string;
     description: string | null;
     date: string | null;
+    servingTime: string | null;
     photo: string | null;
     recipeIds: number[];
   };
@@ -30,6 +31,7 @@ export function MenuForm({ initialData }: Props) {
   const [date, setDate] = useState(
     initialData?.date ? initialData.date.slice(0, 10) : ""
   );
+  const [servingTime, setServingTime] = useState(initialData?.servingTime ?? "");
   const [photo, setPhoto] = useState(initialData?.photo ?? "");
 
   // Ricette selezionate (in ordine)
@@ -94,6 +96,7 @@ export function MenuForm({ initialData }: Props) {
       name: name.trim(),
       description: description.trim() || null,
       date: date || null,
+      servingTime: date && servingTime ? servingTime : null,
       photo: photo.trim() || null,
       recipeIds: selectedIds,
     };
@@ -171,14 +174,29 @@ export function MenuForm({ initialData }: Props) {
           </div>
           <div>
             <label className="mb-1 flex items-center gap-1.5 text-xs font-medium text-sky-800">
-              <CalendarDays size={12} /> Data (opzionale)
+              <CalendarDays size={12} /> Data e ora servizio (opzionale)
             </label>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className={inputCls}
-            />
+            <div className="flex gap-2">
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className={inputCls + " flex-1"}
+              />
+              <input
+                type="time"
+                value={servingTime}
+                onChange={(e) => setServingTime(e.target.value)}
+                disabled={!date}
+                title={date ? "Ora in cui i piatti vengono serviti" : "Imposta prima la data"}
+                className={inputCls + " w-28 disabled:opacity-40"}
+              />
+            </div>
+            {date && (
+              <p className="mt-1 text-[11px] text-sky-600/70">
+                L&apos;ora abilita il calcolo dell&apos;orario in cui iniziare ogni ricetta.
+              </p>
+            )}
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-sky-800">URL Foto (opzionale)</label>

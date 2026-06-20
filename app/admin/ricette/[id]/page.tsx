@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { RecipeForm, type RecipeFormData } from "@/components/recipe/RecipeForm";
 import { flattenRecipe } from "@/lib/api";
+import { toStepKind } from "@/lib/types";
 import type { Metadata } from "next";
 
 type Params = { id: string };
@@ -30,7 +31,7 @@ export default async function ModificaRicettaPage({ params }: { params: Promise<
         tags: { select: { tag: { select: { id: true, name: true } } } },
         photos: { select: { id: true, url: true, order: true }, orderBy: { order: "asc" } },
         ingredients: { select: { id: true, name: true, qty: true, unit: true, description: true, order: true }, orderBy: { order: "asc" } },
-        steps: { select: { id: true, text: true, mins: true, order: true }, orderBy: { order: "asc" } },
+        steps: { select: { id: true, text: true, mins: true, kind: true, order: true }, orderBy: { order: "asc" } },
         _count: { select: { reviews: true } },
       },
     }),
@@ -58,9 +59,10 @@ export default async function ModificaRicettaPage({ params }: { params: Promise<
       unit: i.unit ?? "",
       description: i.description ?? "",
     })),
-    steps: recipe.steps.map((s: { text: string; mins: number | null }) => ({
+    steps: recipe.steps.map((s: { text: string; mins: number | null; kind: string }) => ({
       text: s.text,
       mins: s.mins != null ? String(s.mins) : "",
+      kind: toStepKind(s.kind),
     })),
     photos: recipe.photos.map((p: { url: string }) => ({ url: p.url })),
   };

@@ -16,6 +16,7 @@ const menuDetailSelect = {
   name: true,
   description: true,
   date: true,
+  servingTime: true,
   photo: true,
   createdAt: true,
   updatedAt: true,
@@ -85,6 +86,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
     name?: string;
     description?: string;
     date?: string | null;
+    servingTime?: string | null;
     photo?: string | null;
     recipeIds?: number[];
   };
@@ -100,6 +102,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
       name: b.name.trim(),
       description: b.description?.trim() || null,
       date: b.date ? new Date(b.date) : null,
+      servingTime: b.date ? (b.servingTime?.trim() || null) : null,
       photo: b.photo?.trim() || null,
       recipes: {
         create: (b.recipeIds ?? []).map((recipeId, idx) => ({

@@ -36,10 +36,27 @@ export interface Ingredient {
   order: number;
 }
 
+/** Tipo di tempo di uno step della procedura. */
+export type StepKind = "PREP" | "COOK" | "WAIT";
+
+export const STEP_KINDS: StepKind[] = ["PREP", "COOK", "WAIT"];
+
+export const STEP_KIND_LABEL: Record<StepKind, string> = {
+  PREP: "Preparazione",
+  COOK: "Cottura",
+  WAIT: "Attesa",
+};
+
+/** Normalizza un valore arbitrario in uno StepKind valido (default PREP). */
+export function toStepKind(v: unknown): StepKind {
+  return v === "COOK" || v === "WAIT" ? v : "PREP";
+}
+
 export interface Step {
   id: number;
   text: string;
   mins: number | null;
+  kind: StepKind;
   order: number;
 }
 
@@ -79,6 +96,7 @@ export interface MenuSummary {
   name: string;
   description: string | null;
   date: string | null;
+  servingTime: string | null;
   photo: string | null;
   createdAt: string;
   avgRating: number | null;

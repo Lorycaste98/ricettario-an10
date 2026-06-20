@@ -7,13 +7,33 @@ import { DialogProvider } from "@/components/ui/ConfirmDialog";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
 
+// URL base per OG/canonical: dominio di produzione Vercel (stabile) o override esplicito
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : "http://localhost:3000");
+
+const TITLE = "Ricettario AN10";
+const DESCRIPTION = "Il ricettario di famiglia: ricette, menù e tempi di preparazione.";
+
 export const metadata: Metadata = {
-  title: "Ricettario",
-  description: "Il mio ricettario personale",
-  icons: {
-    icon: "/logo.ico",
-    shortcut: "/logo.ico",
-    apple: "/apple-icon.png",
+  metadataBase: new URL(siteUrl),
+  title: TITLE,
+  description: DESCRIPTION,
+  applicationName: TITLE,
+  openGraph: {
+    type: "website",
+    siteName: TITLE,
+    title: TITLE,
+    description: DESCRIPTION,
+    locale: "it_IT",
+    url: siteUrl,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESCRIPTION,
   },
 };
 

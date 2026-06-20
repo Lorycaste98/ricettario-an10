@@ -13,6 +13,7 @@ const menuSummarySelect = {
   name: true,
   description: true,
   date: true,
+  servingTime: true,
   photo: true,
   createdAt: true,
   _count: { select: { reviews: true, recipes: true } },
@@ -68,6 +69,7 @@ export async function POST(request: NextRequest) {
     name?: string;
     description?: string;
     date?: string;
+    servingTime?: string;
     photo?: string;
     recipeIds?: number[];
   };
@@ -79,6 +81,7 @@ export async function POST(request: NextRequest) {
       name: b.name.trim(),
       description: b.description?.trim() || null,
       date: b.date ? new Date(b.date) : null,
+      servingTime: b.date ? (b.servingTime?.trim() || null) : null,
       photo: b.photo?.trim() || null,
       recipes: {
         create: (b.recipeIds ?? []).map((recipeId, idx) => ({

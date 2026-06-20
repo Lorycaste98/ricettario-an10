@@ -29,6 +29,7 @@ type MenuRow = {
   name: string;
   description: string | null;
   date: Date | null;
+  servingTime: string | null;
   photo: string | null;
   createdAt: Date;
   _count: { reviews: number; recipes: number };
@@ -75,6 +76,7 @@ export default async function LandingPage() {
         name: true,
         description: true,
         date: true,
+        servingTime: true,
         photo: true,
         createdAt: true,
         _count: { select: { reviews: true, recipes: true } },
