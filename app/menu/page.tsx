@@ -1,68 +1,12 @@
-import { db } from "@/lib/db";
 import { MenuGrid } from "@/components/menu/MenuGrid";
+import { getMenuSummaries } from "@/lib/queries";
 import type { Metadata } from "next";
 import { UtensilsCrossed } from "lucide-react";
 
 export const metadata: Metadata = { title: "Menù — Ricettario" };
-export const dynamic = "force-dynamic";
-
-type MenuRow = {
-  id: number;
-  name: string;
-  description: string | null;
-  date: Date | null;
-  servingTime: string | null;
-  photo: string | null;
-  createdAt: Date;
-  _count: { reviews: number; recipes: number };
-  reviews: { rating: number }[];
-  recipes: { order: number; recipe: { photo: string | null } }[];
-};
-
-async function getMenus() {
-  const menus: MenuRow[] = await db.menu.findMany({
-    orderBy: { createdAt: "desc" },
-    select: {
-      id: true,
-      name: true,
-      description: true,
-      date: true,
-      servingTime: true,
-      photo: true,
-      createdAt: true,
-      _count: { select: { reviews: true, recipes: true } },
-      reviews: { select: { rating: true } },
-      recipes: {
-        select: { order: true, recipe: { select: { photo: true } } },
-        orderBy: { order: "asc" },
-        take: 4,
-      },
-    },
-  });
-
-  return menus.map((m: MenuRow) => {
-    const reviews = m.reviews;
-    const avgRating =
-      reviews.length > 0
-        ? Math.round(
-            (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length) * 10
-          ) / 10
-        : null;
-    const previewPhotos = m.recipes
-      .map((mr: { order: number; recipe: { photo: string | null } }) => mr.recipe.photo)
-      .filter((p): p is string => p !== null);
-    return {
-      ...m,
-      date: m.date ? m.date.toISOString() : null,
-      createdAt: m.createdAt.toISOString(),
-      avgRating,
-      previewPhotos,
-    };
-  });
-}
 
 export default async function MenuListPage() {
-  const menus = await getMenus();
+  const menus = await getMenuSummaries();
 
   return (
     <div className="mx-auto max-w-7xl space-y-8">

@@ -6,6 +6,7 @@
 import { type NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { ok, err } from "@/lib/api";
+import { revalidateRecipes } from "@/lib/queries";
 import { requireAdmin } from "@/lib/session";
 
 export async function GET() {
@@ -32,6 +33,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const tag = await db.tag.create({ data: { name: b.name.trim() } });
+    revalidateRecipes();
     return ok(tag, 201);
   } catch {
     return err("Esiste già un tag con questo nome", 409);

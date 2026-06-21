@@ -6,6 +6,7 @@
 import { type NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { ok, err } from "@/lib/api";
+import { revalidateMenus } from "@/lib/queries";
 import { requireAdmin } from "@/lib/session";
 
 type Params = { params: Promise<{ id: string }> };
@@ -39,6 +40,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     select: { id: true, nickname: true, rating: true, comment: true, createdAt: true },
   });
 
+  revalidateMenus();
   return ok(review, 201);
 }
 
@@ -52,6 +54,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
   if (isNaN(menuId) || isNaN(reviewId)) return err("ID non valido", 400);
 
   await db.menuReview.deleteMany({ where: { id: reviewId, menuId } });
+  revalidateMenus();
   return ok({ deleted: true });
 }
 

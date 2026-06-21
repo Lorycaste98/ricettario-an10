@@ -6,6 +6,7 @@
 import { type NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { ok, err } from "@/lib/api";
+import { revalidateRecipes } from "@/lib/queries";
 import { requireAdmin } from "@/lib/session";
 
 export async function GET() {
@@ -36,6 +37,7 @@ export async function POST(request: NextRequest) {
     const category = await db.category.create({
       data: { name: b.name.trim(), color: b.color.trim() },
     });
+    revalidateRecipes();
     return ok(category, 201);
   } catch {
     return err("Esiste già una categoria con questo nome", 409);

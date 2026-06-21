@@ -6,42 +6,47 @@
 
 import { type NextRequest } from "next/server";
 import { db } from "@/lib/db";
-import { recipeSummarySelect, flattenRecipe, ok, err } from "@/lib/api";
-import { requireAdmin } from "@/lib/session";
+import { recipeSummarySelect, ok, err } from "@/lib/api";
+import { attachRecipeRatings, revalidateMenus } from "@/lib/queries";
+import { getSession, requireAdmin } from "@/lib/session";
 
 type Params = { params: Promise<{ id: string }> };
 
-const menuDetailSelect = {
-  id: true,
-  name: true,
-  description: true,
-  date: true,
-  servingTime: true,
-  photo: true,
-  createdAt: true,
-  updatedAt: true,
-  _count: { select: { reviews: true, recipes: true } },
-  reviews: {
-    select: { id: true, nickname: true, rating: true, comment: true, createdAt: true },
-    orderBy: { createdAt: "desc" as const },
-  },
-  recipes: {
-    select: {
-      order: true,
-      recipe: { select: recipeSummarySelect },
+// Le ricette "non pronte" sono nascoste ai visitatori anche dentro un menù
+const menuDetailSelect = (isAdmin: boolean) =>
+  ({
+    id: true,
+    name: true,
+    description: true,
+    date: true,
+    servingTime: true,
+    photo: true,
+    createdAt: true,
+    updatedAt: true,
+    _count: { select: { reviews: true, recipes: true } },
+    reviews: {
+      select: { id: true, nickname: true, rating: true, comment: true, createdAt: true },
+      orderBy: { createdAt: "desc" as const },
     },
-    orderBy: { order: "asc" as const },
-  },
-} as const;
+    recipes: {
+      where: isAdmin ? {} : { recipe: { published: true } },
+      select: {
+        order: true,
+        recipe: { select: recipeSummarySelect },
+      },
+      orderBy: { order: "asc" as const },
+    },
+  }) as const;
 
 export async function GET(_req: NextRequest, { params }: Params) {
   const { id } = await params;
   const menuId = Number(id);
   if (isNaN(menuId)) return err("ID non valido", 400);
 
+  const isAdmin = !!(await getSession());
   const menu = await db.menu.findUnique({
     where: { id: menuId },
-    select: menuDetailSelect,
+    select: menuDetailSelect(isAdmin),
   });
   if (!menu) return err("Menu non trovato", 404);
 
@@ -56,13 +61,17 @@ export async function GET(_req: NextRequest, { params }: Params) {
     .map((mr: { order: number; recipe: { photo?: string | null } }) => mr.recipe.photo ?? null) as (string | null)[])
     .filter((p: string | null): p is string => p !== null);
 
+  const rated = await attachRecipeRatings(menu.recipes.map((mr) => mr.recipe));
+
   return ok({
     ...menu,
+    // Allinea il conteggio alla lista filtrata (niente ricette nascoste per i visitatori)
+    _count: { ...menu._count, recipes: menu.recipes.length },
     avgRating,
     previewPhotos,
-    recipes: menu.recipes.map((mr: { order: number; recipe: unknown }) => ({
+    recipes: menu.recipes.map((mr: { order: number }, i: number) => ({
       order: mr.order,
-      recipe: flattenRecipe(mr.recipe),
+      recipe: rated[i],
     })),
   });
 }
@@ -114,6 +123,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
     select: { id: true, name: true },
   });
 
+  revalidateMenus();
   return ok(menu);
 }
 
@@ -126,6 +136,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
   if (isNaN(menuId)) return err("ID non valido", 400);
 
   await db.menu.delete({ where: { id: menuId } });
+  revalidateMenus();
   return ok({ deleted: true });
 }
 

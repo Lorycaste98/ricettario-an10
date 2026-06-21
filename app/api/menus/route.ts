@@ -6,6 +6,7 @@
 import { type NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { ok, err } from "@/lib/api";
+import { revalidateMenus } from "@/lib/queries";
 import { requireAdmin } from "@/lib/session";
 
 const menuSummarySelect = {
@@ -93,6 +94,7 @@ export async function POST(request: NextRequest) {
     select: { id: true, name: true },
   });
 
+  revalidateMenus();
   return ok(menu, 201);
 }
 

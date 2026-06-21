@@ -6,6 +6,7 @@
 import { type NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { ok, err } from "@/lib/api";
+import { revalidateRecipes } from "@/lib/queries";
 import { requireAdmin } from "@/lib/session";
 
 export async function PUT(request: NextRequest) {
@@ -30,5 +31,6 @@ export async function PUT(request: NextRequest) {
     )
   );
 
+  revalidateRecipes();
   return ok({ ok: true });
 }

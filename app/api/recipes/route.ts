@@ -15,6 +15,7 @@
 import { type NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { recipeSummarySelect, flattenRecipe, ok, err } from "@/lib/api";
+import { attachRecipeRatings, revalidateRecipes } from "@/lib/queries";
 import { getSession, requireAdmin } from "@/lib/session";
 import { toStepKind } from "@/lib/types";
 
@@ -58,7 +59,7 @@ export async function GET(request: NextRequest) {
   ]);
 
   return ok({
-    data: recipes.map(flattenRecipe),
+    data: await attachRecipeRatings(recipes),
     meta: { total, page, limit, pages: Math.ceil(total / limit), sort, order },
   });
 }
@@ -143,6 +144,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  revalidateRecipes();
   return ok(flattenRecipe(recipe), 201);
 }
 

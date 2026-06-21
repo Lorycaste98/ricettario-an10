@@ -6,6 +6,7 @@
 import { type NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { ok, err } from "@/lib/api";
+import { revalidateRecipes } from "@/lib/queries";
 import { requireAdmin } from "@/lib/session";
 
 export async function PUT(
@@ -38,6 +39,7 @@ export async function PUT(
         ...(b.color ? { color: b.color.trim() } : {}),
       },
     });
+    revalidateRecipes();
     return ok(category);
   } catch {
     return err("Categoria non trovata", 404);
@@ -55,6 +57,7 @@ export async function DELETE(
 
   try {
     await db.category.delete({ where: { id: Number(id) } });
+    revalidateRecipes();
     return ok({ message: "Categoria eliminata" });
   } catch {
     return err("Categoria non trovata", 404);

@@ -1,28 +1,21 @@
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { RecipeGrid } from "@/components/recipe/RecipeGrid";
-import { flattenRecipe, recipeSummarySelect } from "@/lib/api";
+import { getRecipeSummaries } from "@/lib/queries";
 import { BookOpen } from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Ricette — Ricettario" };
-export const dynamic = "force-dynamic";
 
 export default async function RicettePage() {
   // Gli admin vedono tutte le ricette (anche le non pronte); i visitatori solo le pubblicate
   const isAdmin = !!(await getSession());
 
-  const [rawRecipes, categories, tags] = await Promise.all([
-    db.recipe.findMany({
-      where: isAdmin ? undefined : { published: true },
-      select: recipeSummarySelect,
-      orderBy: { createdAt: "desc" },
-    }),
+  const [recipes, categories, tags] = await Promise.all([
+    getRecipeSummaries(isAdmin),
     db.category.findMany({ orderBy: { name: "asc" } }),
     db.tag.findMany({ orderBy: { name: "asc" } }),
   ]);
-
-  const recipes = rawRecipes.map(flattenRecipe);
 
   return (
     <div>

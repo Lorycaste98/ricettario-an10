@@ -22,7 +22,9 @@ export const recipeSummarySelect = {
     },
   },
   _count: { select: { reviews: true } },
-  reviews: { select: { rating: true } },
+  // NB: nessuna `reviews` qui — la media voti per le liste si calcola lato DB
+  // con un'unica groupBy in `attachRecipeRatings` (lib/queries.ts), non trascinando
+  // ogni riga recensione. Il dettaglio (recipeDetailSelect) la ridefinisce con i campi completi.
 } as const;
 
 export const recipeDetailSelect = {

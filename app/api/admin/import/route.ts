@@ -11,6 +11,7 @@
 import { requireAdmin } from "@/lib/session";
 import { ok, err } from "@/lib/api";
 import { db } from "@/lib/db";
+import { revalidateRecipes } from "@/lib/queries";
 
 // ---------------------------------------------------------------------------
 // Tipi JSON sorgente (identici a seed.ts)
@@ -223,6 +224,7 @@ export async function POST(request: Request) {
       db.recipe.count(),
     ]);
 
+    revalidateRecipes();
     return ok({
       message: "Importazione completata con successo.",
       stats: {

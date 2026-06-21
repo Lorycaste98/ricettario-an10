@@ -7,7 +7,8 @@
 import { type NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { recipeDetailSelect, flattenRecipe, ok, err } from "@/lib/api";
-import { requireAdmin } from "@/lib/session";
+import { revalidateRecipes } from "@/lib/queries";
+import { getSession, requireAdmin } from "@/lib/session";
 import { toStepKind } from "@/lib/types";
 
 type TxClient = Parameters<Parameters<typeof db.$transaction>[0]>[0];
@@ -17,12 +18,14 @@ export async function GET(
   ctx: RouteContext<"/api/recipes/[id]">
 ) {
   const { id } = await ctx.params;
+  const isAdmin = !!(await getSession());
   const recipe = await db.recipe.findUnique({
     where: { id: Number(id) },
     select: recipeDetailSelect,
   });
 
-  if (!recipe) return err("Ricetta non trovata", 404);
+  // Le ricette "non pronte" sono nascoste ai visitatori: 404 anche via API diretta
+  if (!recipe || (!isAdmin && !recipe.published)) return err("Ricetta non trovata", 404);
   return ok(flattenRecipe(recipe));
 }
 
@@ -149,6 +152,7 @@ export async function PUT(
     }
   }
 
+  revalidateRecipes();
   return ok(flattenRecipe(recipe));
 }
 
@@ -183,6 +187,7 @@ export async function PATCH(
     data: { published },
     select: { id: true, published: true },
   });
+  revalidateRecipes();
   return ok(updated);
 }
 
@@ -200,5 +205,6 @@ export async function DELETE(
   if (!exists) return err("Ricetta non trovata", 404);
 
   await db.recipe.delete({ where: { id: recipeId } });
+  revalidateRecipes();
   return ok({ message: "Ricetta eliminata" });
 }

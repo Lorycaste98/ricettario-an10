@@ -6,6 +6,8 @@
 import { type NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { ok, err } from "@/lib/api";
+import { revalidateRecipes } from "@/lib/queries";
+import { getSession } from "@/lib/session";
 
 export async function GET(
   _req: NextRequest,
@@ -13,9 +15,11 @@ export async function GET(
 ) {
   const { id } = await ctx.params;
   const recipeId = Number(id);
+  const isAdmin = !!(await getSession());
 
-  const exists = await db.recipe.findUnique({ where: { id: recipeId }, select: { id: true } });
-  if (!exists) return err("Ricetta non trovata", 404);
+  const exists = await db.recipe.findUnique({ where: { id: recipeId }, select: { published: true } });
+  // Ricetta "non pronta": nascosta ai visitatori, niente recensioni via API diretta
+  if (!exists || (!isAdmin && !exists.published)) return err("Ricetta non trovata", 404);
 
   const reviews = await db.review.findMany({
     where: { recipeId },
@@ -31,9 +35,10 @@ export async function POST(
 ) {
   const { id } = await ctx.params;
   const recipeId = Number(id);
+  const isAdmin = !!(await getSession());
 
-  const exists = await db.recipe.findUnique({ where: { id: recipeId }, select: { id: true } });
-  if (!exists) return err("Ricetta non trovata", 404);
+  const exists = await db.recipe.findUnique({ where: { id: recipeId }, select: { published: true } });
+  if (!exists || (!isAdmin && !exists.published)) return err("Ricetta non trovata", 404);
 
   let body: unknown;
   try {
@@ -58,6 +63,7 @@ export async function POST(
     },
   });
 
+  revalidateRecipes();
   return ok(review, 201);
 }
 

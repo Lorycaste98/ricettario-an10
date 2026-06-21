@@ -12,7 +12,8 @@
 import { type NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
-import { recipeSummarySelect, flattenRecipe, ok, err } from "@/lib/api";
+import { recipeSummarySelect, ok, err } from "@/lib/api";
+import { attachRecipeRatings } from "@/lib/queries";
 
 export async function GET(request: NextRequest) {
   const q = request.nextUrl.searchParams.get("q")?.trim();
@@ -39,6 +40,6 @@ export async function GET(request: NextRequest) {
     take: limit,
   });
 
-  return ok({ data: recipes.map(flattenRecipe), total: recipes.length });
+  return ok({ data: await attachRecipeRatings(recipes), total: recipes.length });
 }
 

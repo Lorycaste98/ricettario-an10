@@ -2,7 +2,8 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { db } from "@/lib/db";
-import { recipeSummarySelect, flattenRecipe } from "@/lib/api";
+import { flattenRecipe } from "@/lib/api";
+import { getMenuDetail } from "@/lib/queries";
 import { getSession } from "@/lib/session";
 import { formatMinutes } from "@/lib/types";
 import { resolveServeAt, computeStart, startLabel } from "@/lib/cook-schedule";
@@ -23,67 +24,14 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   return { title: menu ? `${menu.name} — Ricettario` : "Menù — Ricettario" };
 }
 
-export const dynamic = "force-dynamic";
-
-async function getMenu(id: number) {
-  const menu = await db.menu.findUnique({
-    where: { id },
-    select: {
-      id: true,
-      name: true,
-      description: true,
-      date: true,
-      servingTime: true,
-      photo: true,
-      createdAt: true,
-      updatedAt: true,
-      reviews: {
-        select: { id: true, nickname: true, rating: true, comment: true, createdAt: true },
-        orderBy: { createdAt: "desc" },
-      },
-      recipes: {
-        select: {
-          order: true,
-          recipe: { select: { ...recipeSummarySelect, steps: { select: { mins: true } } } },
-        },
-        orderBy: { order: "asc" },
-      },
-    },
-  });
-  if (!menu) return null;
-
-  const reviews = menu.reviews as { rating: number }[];
-  const avgRating =
-    reviews.length > 0
-      ? Math.round(
-          (reviews.reduce((s: number, r: { rating: number }) => s + r.rating, 0) / reviews.length) * 10
-        ) / 10
-      : null;
-
-  return {
-    ...menu,
-    date: menu.date ? menu.date.toISOString() : null,
-    createdAt: menu.createdAt.toISOString(),
-    updatedAt: menu.updatedAt.toISOString(),
-    avgRating,
-    _count: { reviews: menu.reviews.length, recipes: menu.recipes.length },
-    recipes: menu.recipes.map((mr: { order: number; recipe: unknown }) => ({
-      order: mr.order,
-      recipe: flattenRecipe(mr.recipe),
-    })),
-    reviews: menu.reviews.map((r: { id: number; nickname: string; rating: number; comment: string | null; createdAt: Date }) => ({
-      ...r,
-      createdAt: r.createdAt.toISOString(),
-    })),
-  };
-}
-
 export default async function MenuDetailPage({ params }: Params) {
   const { id } = await params;
   const menuId = Number(id);
   if (isNaN(menuId)) notFound();
 
-  const [menu, session] = await Promise.all([getMenu(menuId), getSession()]);
+  const session = await getSession();
+  // Visitatore: dettaglio servito dalla cache (filtrato sulle ricette pubblicate); admin: fresco
+  const menu = await getMenuDetail(menuId, !!session);
   if (!menu) notFound();
 
   const formattedDate = menu.date

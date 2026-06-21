@@ -1,6 +1,5 @@
-import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
-import { flattenRecipe, recipeSummarySelect } from "@/lib/api";
+import { getHomeRecipes, getHomeMenus } from "@/lib/queries";
 import { redirect } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -15,8 +14,6 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-export const dynamic = "force-dynamic";
-
 const fraunces = Fraunces({
   subsets: ["latin"],
   weight: "700",
@@ -24,75 +21,13 @@ const fraunces = Fraunces({
   display: "swap",
 });
 
-type MenuRow = {
-  id: number;
-  name: string;
-  description: string | null;
-  date: Date | null;
-  servingTime: string | null;
-  photo: string | null;
-  createdAt: Date;
-  _count: { reviews: number; recipes: number };
-  reviews: { rating: number }[];
-  recipes: { order: number; recipe: { photo: string | null } }[];
-};
-
-function processMenu(m: MenuRow) {
-  const reviews = m.reviews;
-  const avgRating =
-    reviews.length > 0
-      ? Math.round(
-          (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length) * 10
-        ) / 10
-      : null;
-  const previewPhotos = m.recipes
-    .map((mr) => mr.recipe.photo)
-    .filter((p): p is string => p !== null);
-  return {
-    ...m,
-    date: m.date ? m.date.toISOString() : null,
-    createdAt: m.createdAt.toISOString(),
-    avgRating,
-    previewPhotos,
-  };
-}
-
 export default async function LandingPage() {
   // Gli admin loggati hanno la loro landing dedicata: la dashboard gestionale.
   const session = await getSession();
   if (session) redirect("/admin");
 
-  const [rawRecipes, rawMenus] = await Promise.all([
-    db.recipe.findMany({
-      where: { published: true },
-      select: recipeSummarySelect,
-      orderBy: { createdAt: "desc" },
-      take: 4,
-    }),
-    db.menu.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 4,
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        date: true,
-        servingTime: true,
-        photo: true,
-        createdAt: true,
-        _count: { select: { reviews: true, recipes: true } },
-        reviews: { select: { rating: true } },
-        recipes: {
-          select: { order: true, recipe: { select: { photo: true } } },
-          orderBy: { order: "asc" as const },
-          take: 4,
-        },
-      },
-    }),
-  ]);
-
-  const recipes = rawRecipes.map(flattenRecipe);
-  const menus = rawMenus.map(processMenu);
+  // Dati pubblici serviti dalla cache (invalidata sui mutate admin)
+  const [recipes, menus] = await Promise.all([getHomeRecipes(), getHomeMenus()]);
 
   return (
     <div className="min-h-screen flex flex-col">

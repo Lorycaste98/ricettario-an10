@@ -6,6 +6,7 @@
 import { type NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { ok, err } from "@/lib/api";
+import { revalidateRecipes } from "@/lib/queries";
 import { requireAdmin } from "@/lib/session";
 
 export async function PUT(
@@ -31,6 +32,7 @@ export async function PUT(
       where: { id: Number(id) },
       data: { name: b.name.trim() },
     });
+    revalidateRecipes();
     return ok(tag);
   } catch {
     return err("Tag non trovato o nome già esistente", 409);
@@ -48,6 +50,7 @@ export async function DELETE(
 
   try {
     await db.tag.delete({ where: { id: Number(id) } });
+    revalidateRecipes();
     return ok({ message: "Tag eliminato" });
   } catch {
     return err("Tag non trovato", 404);

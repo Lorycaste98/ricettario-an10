@@ -5,6 +5,7 @@
 import { type NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { ok, err } from "@/lib/api";
+import { revalidateRecipes } from "@/lib/queries";
 import { requireAdmin } from "@/lib/session";
 
 export async function DELETE(
@@ -18,6 +19,7 @@ export async function DELETE(
 
   try {
     await db.review.delete({ where: { id: Number(id) } });
+    revalidateRecipes();
     return ok({ message: "Recensione eliminata" });
   } catch {
     return err("Recensione non trovata", 404);
