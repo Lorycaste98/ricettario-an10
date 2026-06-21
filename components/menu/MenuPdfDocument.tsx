@@ -147,7 +147,7 @@ export function MenuPdfDocument({
             </View>
           ))}
         </View>
-        <PdfFooter logoData={logoData} />
+        <PdfFooter />
       </Page>
 
       {/* Una pagina per ricetta */}
@@ -156,9 +156,10 @@ export function MenuPdfDocument({
           <RecipePdfContent
             recipe={recipe}
             photoData={photoData}
+            logoData={logoData}
             kicker={`Menù: ${menu.name}`}
           />
-          <PdfFooter logoData={logoData} />
+          <PdfFooter />
         </Page>
       ))}
     </Document>

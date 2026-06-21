@@ -27,13 +27,15 @@ export const pdfStyles = StyleSheet.create({
   headerRow: { flexDirection: "row", gap: 16, marginBottom: 18 },
   headerMain: { flex: 1 },
   photo: { width: 130, height: 100, borderRadius: 8, objectFit: "cover" },
+  kickerRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 5 },
+  headerLogo: { width: 16, height: 16, borderRadius: 4 },
   kicker: {
     fontSize: 8,
     letterSpacing: 1.5,
     color: ORANGE,
     fontFamily: "Helvetica-Bold",
     textTransform: "uppercase",
-    marginBottom: 4,
+    lineHeight: 1,
   },
   title: { fontSize: 22, fontFamily: "Helvetica-Bold", color: SKY, marginBottom: 12 },
   badgeRow: { flexDirection: "row", flexWrap: "wrap", gap: 4, marginBottom: 6 },
@@ -150,8 +152,6 @@ export const pdfStyles = StyleSheet.create({
     fontSize: 7.5,
     color: LIGHT,
   },
-  footerLeft: { flexDirection: "row", alignItems: "center", gap: 5 },
-  footerLogo: { width: 13, height: 13, borderRadius: 3 },
 });
 
 function fmtQty(qty: number | null, unit: string | null): string {
@@ -160,8 +160,8 @@ function fmtQty(qty: number | null, unit: string | null): string {
   return unit ? `${num} ${unit}` : num;
 }
 
-/** Footer fisso condiviso (logo · Ricettario AN10 · data · pagina). */
-export function PdfFooter({ logoData }: { logoData?: string }) {
+/** Footer fisso condiviso (Ricettario AN10 · data · pagina). */
+export function PdfFooter() {
   const today = new Date().toLocaleDateString("it-IT", {
     day: "numeric",
     month: "long",
@@ -169,11 +169,7 @@ export function PdfFooter({ logoData }: { logoData?: string }) {
   });
   return (
     <View style={pdfStyles.footer} fixed>
-      <View style={pdfStyles.footerLeft}>
-        {/* eslint-disable-next-line jsx-a11y/alt-text -- componente PDF di react-pdf */}
-        {logoData && <Image src={logoData} style={pdfStyles.footerLogo} />}
-        <Text>Ricettario AN10 · {today}</Text>
-      </View>
+      <Text>Ricettario AN10 · {today}</Text>
       <Text render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />
     </View>
   );
@@ -186,10 +182,12 @@ export function PdfFooter({ logoData }: { logoData?: string }) {
 export function RecipePdfContent({
   recipe,
   photoData,
+  logoData,
   kicker = "Ricettario AN10",
 }: {
   recipe: RecipePdfData;
   photoData?: string;
+  logoData?: string;
   kicker?: string;
 }) {
   const wait = (recipe.steps ?? []).reduce(
@@ -203,7 +201,11 @@ export function RecipePdfContent({
       {/* Header */}
       <View style={pdfStyles.headerRow}>
         <View style={pdfStyles.headerMain}>
-          <Text style={pdfStyles.kicker}>{kicker}</Text>
+          <View style={pdfStyles.kickerRow}>
+            {/* eslint-disable-next-line jsx-a11y/alt-text -- componente PDF di react-pdf */}
+            {logoData && <Image src={logoData} style={pdfStyles.headerLogo} />}
+            <Text style={pdfStyles.kicker}>{kicker}</Text>
+          </View>
           <Text style={pdfStyles.title}>{recipe.name}</Text>
           {recipe.categories.length > 0 && (
             <View style={pdfStyles.badgeRow}>
@@ -332,8 +334,8 @@ export function RecipePdfDocument({
   return (
     <Document title={recipe.name} author="Ricettario AN10">
       <Page size="A4" style={pdfStyles.page}>
-        <RecipePdfContent recipe={recipe} photoData={photoData} />
-        <PdfFooter logoData={logoData} />
+        <RecipePdfContent recipe={recipe} photoData={photoData} logoData={logoData} />
+        <PdfFooter />
       </Page>
     </Document>
   );
