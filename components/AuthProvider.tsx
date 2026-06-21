@@ -121,7 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       {/* ── Modal dedica (primo accesso) ── */}
       {showDedication && dedication && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-xl rounded-3xl bg-white shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+          <div className="w-full max-w-xl rounded-3xl bg-white shadow-2xl overflow-hidden flex flex-col max-h-[calc(100dvh-2rem)]">
             <div className="bg-gradient-to-br from-orange-50 to-amber-50 px-8 pt-10 pb-6 text-center flex-shrink-0">
               <div className="flex justify-center mb-4">
                 <span className="flex h-16 w-16 items-center justify-center rounded-full bg-orange-100 text-orange-500">
