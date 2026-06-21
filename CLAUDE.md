@@ -38,6 +38,7 @@ npm run create-admin # crea utente admin
 | `components/menu/MenuPdfDocument.tsx` | Layout PDF menù: copertina/intestazione + una pagina per ricetta (riusa `RecipePdfContent`) |
 | `app/opengraph-image.tsx` | Immagine OG dinamica (`next/og`) per l'anteprima di condivisione; `metadataBase`/OG/Twitter in `app/layout.tsx`, base = `VERCEL_PROJECT_PRODUCTION_URL` o `NEXT_PUBLIC_SITE_URL` |
 | `components/recipe/TagFilterCombobox.tsx` | Combobox ricerca+multi-selezione per filtrare le ricette per tag (no «#»); usato in `RecipeGrid` desktop dropdown + sheet mobile |
+| `components/Navbar.tsx` | Navbar globale. La voce **Dashboard** (solo admin) è un trigger con sottomenu delle azioni admin (gruppi «Crea»/«Gestione»): dropdown in hover su desktop (chevron) + accordion nell'hamburger mobile. La voce «Recensioni» appare solo se `hasReviews` (da `useAuth`). «Utenti» è dentro il sottomenu (solo SUPERADMIN), non più voce a sé |
 | `prisma/prisma.config.ts` | Config connessione Supabase + adapter — non toccare |
 | `proxy.ts` (root) | Config proxy Vercel — non toccare |
 
@@ -64,7 +65,7 @@ app/api/admin/utenti/           # CRUD utenti admin
 
 - JWT httpOnly cookie, session helpers in `lib/session.ts`
 - Ruoli: `ADMIN` | `SUPERADMIN` — solo superadmin accede a `/admin/utenti/`
-- `AuthProvider.tsx` espone `{ username, role, dedication }` a tutto il client
+- `AuthProvider.tsx` espone `{ username, role, dedication, hasReviews }` a tutto il client (`hasReviews` da `/api/auth/me`: true se esiste almeno una `Review` o `MenuReview`)
 - Primo accesso: API `first-login` mostra la dedica e resetta il flag `firstLogin`
 
 ## Convenzioni

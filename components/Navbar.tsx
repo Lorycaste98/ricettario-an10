@@ -3,9 +3,26 @@ import { Fraunces } from "next/font/google";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
-import { useState, useEffect } from "react";
-import { motion } from "motion/react";
-import { Menu, X, LogOut, ChefHat, LayoutDashboard, BookOpen, UtensilsCrossed, Users, Heart, LogIn } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import {
+  Menu,
+  X,
+  LogOut,
+  ChefHat,
+  LayoutDashboard,
+  BookOpen,
+  UtensilsCrossed,
+  Users,
+  Heart,
+  LogIn,
+  ChevronDown,
+  FileJson,
+  BookMarked,
+  Carrot,
+  User,
+  MessageSquareHeart,
+} from "lucide-react";
 import { useAuth } from "./AuthProvider";
 import { useFavorites } from "@/lib/favorites";
 
@@ -17,17 +34,28 @@ const fraunces = Fraunces({
   display: "swap",
 });
 
+type IconType = typeof BookOpen;
+type SubItem = { href: string; label: string; icon: IconType };
+type SubGroup = { label: string; items: SubItem[] };
+type NavLink = { href: string; label: string; icon: IconType; badge?: number; dropdown?: boolean };
+
 export function Navbar() {
-  const { isAdmin, username, role, loading } = useAuth();
+  const { isAdmin, username, role, hasReviews, loading } = useAuth();
   const { favorites, hydrated: favHydrated } = useFavorites();
   const favCount = favHydrated ? favorites.size : 0;
   const router = useRouter();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mobileAdminOpen, setMobileAdminOpen] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   // chiudi menu al cambio pagina
   useEffect(() => {
-    const id = setTimeout(() => setMenuOpen(false), 0);
+    const id = setTimeout(() => {
+      setMenuOpen(false);
+      setOpenDropdown(null);
+    }, 0);
     return () => clearTimeout(id);
   }, [pathname]);
 
@@ -45,11 +73,38 @@ export function Navbar() {
     window.location.reload();
   };
 
-  const navLinks: { href: string; label: string; icon: typeof BookOpen; badge?: number }[] = [
-    ...(isAdmin ? [
-      { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-      ...(role === "SUPERADMIN" ? [{ href: "/admin/utenti", label: "Utenti", icon: Users }] : []),
-    ] : []),
+  // ── Sottomenu Dashboard (azioni crea/gestione) ──
+  const adminGroups: SubGroup[] | null = isAdmin
+    ? [
+        {
+          label: "Crea",
+          items: [
+            { href: "/admin/ricette/nuova", label: "Nuova ricetta", icon: BookOpen },
+            { href: "/admin/menu/nuovo", label: "Nuovo menù", icon: UtensilsCrossed },
+            { href: "/admin/import", label: "Importa da JSON", icon: FileJson },
+          ],
+        },
+        {
+          label: "Gestione",
+          items: [
+            { href: "/admin/ricette", label: "Ricette", icon: BookOpen },
+            { href: "/admin/menu", label: "Menù", icon: UtensilsCrossed },
+            { href: "/admin/vocabolario", label: "Categorie & Tag", icon: BookMarked },
+            { href: "/admin/ingredienti", label: "Ingredienti", icon: Carrot },
+            ...(hasReviews
+              ? [{ href: "/admin/recensioni", label: "Recensioni", icon: MessageSquareHeart }]
+              : []),
+            { href: "/admin/profilo", label: "Profilo", icon: User },
+            ...(role === "SUPERADMIN"
+              ? [{ href: "/admin/utenti", label: "Utenti", icon: Users }]
+              : []),
+          ],
+        },
+      ]
+    : null;
+
+  const navLinks: NavLink[] = [
+    ...(isAdmin ? [{ href: "/admin", label: "Dashboard", icon: LayoutDashboard, dropdown: true }] : []),
     { href: "/ricette", label: "Ricette", icon: BookOpen },
     { href: "/menu", label: "Menù", icon: UtensilsCrossed },
     { href: "/preferiti", label: "Preferiti", icon: Heart, badge: favCount },
@@ -57,6 +112,63 @@ export function Navbar() {
 
   const isActive = (href: string) =>
       pathname === href || pathname.startsWith(href + "/");
+
+  // dashboard "attiva" se siamo su una qualsiasi pagina admin
+  const dashActive = pathname.startsWith("/admin");
+
+  // Tra le voci del sottomenu, attiva solo l'href più specifico che combacia col
+  // path corrente (es. su /admin/ricette/nuova vince "Nuova ricetta", non "Ricette").
+  const activeSubHref =
+      (adminGroups?.flatMap((g) => g.items.map((i) => i.href)) ?? [])
+          .filter((h) => pathname === h || pathname.startsWith(h + "/"))
+          .sort((a, b) => b.length - a.length)[0] ?? null;
+
+  const openDd = (href: string) => {
+    clearTimeout(closeTimer.current);
+    setOpenDropdown(href);
+  };
+  const scheduleClose = () => {
+    clearTimeout(closeTimer.current);
+    closeTimer.current = setTimeout(() => setOpenDropdown(null), 120);
+  };
+
+  // contenuto interno della "pill" desktop (icona + badge + label + chevron)
+  const renderPillInner = (link: NavLink, active: boolean, open: boolean) => (
+      <>
+        {active && (
+            <motion.span
+                layoutId="nav-pill"
+                className="absolute inset-0 rounded-lg bg-sky-800 border border-sky-600"
+                transition={{ type: "spring", duration: 0.35, bounce: 0.15 }}
+            />
+        )}
+        <span className="relative z-10 flex items-center gap-1.5">
+          <span className="relative">
+            <link.icon size={13} />
+            {link.badge !== undefined && link.badge > 0 && (
+                <span className="absolute -top-2 -right-2.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold leading-none text-white shadow ring-1 ring-sky-950">
+                  {link.badge > 99 ? "99+" : link.badge}
+                </span>
+            )}
+          </span>
+          <span className="hidden lg:inline-flex">{link.label}</span>
+          {link.dropdown && (
+              <ChevronDown
+                  size={12}
+                  className={`hidden lg:inline-flex transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+              />
+          )}
+        </span>
+        {active && (
+            <span className="absolute bottom-1 left-1/2 -translate-x-1/2 h-0.5 w-5 rounded-full bg-orange-500 z-10" />
+        )}
+      </>
+  );
+
+  const pillClass = (active: boolean) =>
+      `relative flex items-center justify-center rounded-lg sm:size-9 sm:p-0 lg:size-auto lg:px-4 lg:py-1.5 text-sm font-medium transition-colors duration-150 ${
+          active ? "text-sky-50" : "text-sky-400 hover:text-sky-100"
+      }`;
 
   return (
       <>
@@ -83,40 +195,85 @@ export function Navbar() {
 
             {/* Nav — hidden on mobile (<sm), icons-only on sm→lg, full on lg+ */}
             <nav className="hidden sm:flex items-center gap-0.5 p-1 rounded-xl bg-sky-900 border-[1.5px] border-sky-700">
-              {navLinks.map(({ href, label, icon: Icon, badge }) => (
-                  <Link
-                      key={href}
-                      href={href}
-                      title={label}
-                      className={`relative flex items-center justify-center rounded-lg sm:size-9 sm:p-0 lg:size-auto lg:px-4 lg:py-1.5 text-sm font-medium transition-colors duration-150 ${
-                          isActive(href) ? "text-sky-50" : "text-sky-400 hover:text-sky-100"
-                      }`}
-                  >
-                    {isActive(href) && (
-                        <motion.span
-                            layoutId="nav-pill"
-                            className="absolute inset-0 rounded-lg bg-sky-800 border border-sky-600"
-                            transition={{ type: "spring", duration: 0.35, bounce: 0.15 }}
-                        />
-                    )}
-                    <span className="relative z-10 flex items-center gap-1.5">
-                      {/* Icon — always visible, badge lives here */}
-                      <span className="relative">
-                        <Icon size={13} />
-                        {badge !== undefined && badge > 0 && (
-                            <span className="absolute -top-2 -right-2.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold leading-none text-white shadow ring-1 ring-sky-950">
-                              {badge > 99 ? "99+" : badge}
-                            </span>
-                        )}
-                      </span>
-                      {/* Label — hidden on sm→lg, visible on lg+ */}
-                      <span className="hidden lg:inline-flex">{label}</span>
-                    </span>
-                    {isActive(href) && (
-                        <span className="absolute bottom-1 left-1/2 -translate-x-1/2 h-0.5 w-5 rounded-full bg-orange-500 z-10" />
-                    )}
-                  </Link>
-              ))}
+              {navLinks.map((link) => {
+                const active = link.dropdown ? dashActive : isActive(link.href);
+
+                // ── Voce con sottomenu (Dashboard) ──
+                if (link.dropdown && adminGroups) {
+                  const open = openDropdown === link.href;
+                  return (
+                      <div
+                          key={link.href}
+                          className="relative"
+                          onMouseEnter={() => openDd(link.href)}
+                          onMouseLeave={scheduleClose}
+                      >
+                        <Link href={link.href} title={link.label} className={pillClass(active)}>
+                          {renderPillInner(link, active, open)}
+                        </Link>
+
+                        <AnimatePresence>
+                          {open && (
+                              <motion.div
+                                  initial={{ opacity: 0, y: 6, scale: 0.97 }}
+                                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                                  exit={{ opacity: 0, y: 6, scale: 0.97 }}
+                                  transition={{ duration: 0.15, ease: "easeOut" }}
+                                  className="absolute left-0 top-full z-50 pt-2"
+                              >
+                                <div className="w-60 rounded-xl border border-sky-700 bg-sky-900 p-2 shadow-2xl shadow-sky-950/60">
+                                  {adminGroups.map((group, gi) => (
+                                      <div
+                                          key={group.label}
+                                          className={gi > 0 ? "mt-1 border-t border-sky-700/60 pt-1.5" : ""}
+                                      >
+                                        <p className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-widest text-sky-500">
+                                          {group.label}
+                                        </p>
+                                        <div className="space-y-0.5">
+                                          {group.items.map((item) => {
+                                            const sub = item.href === activeSubHref;
+                                            return (
+                                                <Link
+                                                    key={item.href}
+                                                    href={item.href}
+                                                    className={`group/sub flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm transition-colors duration-150 ${
+                                                        sub
+                                                            ? "bg-sky-800 text-sky-50"
+                                                            : "text-sky-300 hover:bg-sky-800/70 hover:text-sky-50"
+                                                    }`}
+                                                >
+                                                  <span
+                                                      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border transition-colors duration-150 ${
+                                                          sub
+                                                              ? "border-orange-400 bg-orange-500/90 text-white"
+                                                              : "border-sky-700 bg-sky-800 text-sky-400 group-hover/sub:text-sky-100"
+                                                      }`}
+                                                  >
+                                                    <item.icon size={13} />
+                                                  </span>
+                                                  <span className="flex-1">{item.label}</span>
+                                                </Link>
+                                            );
+                                          })}
+                                        </div>
+                                      </div>
+                                  ))}
+                                </div>
+                              </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                  );
+                }
+
+                // ── Voce normale ──
+                return (
+                    <Link key={link.href} href={link.href} title={link.label} className={pillClass(active)}>
+                      {renderPillInner(link, active, false)}
+                    </Link>
+                );
+              })}
             </nav>
 
             {/* Right side */}
@@ -191,7 +348,7 @@ export function Navbar() {
             style={{ zIndex: 39 }}
         >
           <div
-              className="bg-sky-900 border-b-[1.5px] border-sky-700 pt-20 pb-7 px-4"
+              className="bg-sky-900 border-b-[1.5px] border-sky-700 pt-20 pb-7 px-4 max-h-[100dvh] overflow-y-auto"
               style={{ paddingTop: "calc(5rem + env(safe-area-inset-top, 0px))" }}
           >
 
@@ -200,39 +357,140 @@ export function Navbar() {
               Navigazione
             </p>
             <nav className="space-y-1">
-              {navLinks.map(({ href, label, icon: Icon, badge }, i) => (
-                  <Link
-                      key={href}
-                      href={href}
-                      className={`flex items-center gap-3.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150 border ${
+              {navLinks.map((link, i) => {
+                const { href, label, icon: Icon, badge } = link;
+                const stagger = {
+                  transitionDelay: menuOpen ? `${60 + i * 40}ms` : "0ms",
+                  transform: menuOpen ? "translateX(0)" : "translateX(-12px)",
+                  opacity: menuOpen ? 1 : 0,
+                } as const;
+
+                // ── Voce Dashboard con accordion ──
+                if (link.dropdown && adminGroups) {
+                  return (
+                      <div
+                          key={href}
+                          className="transition-all duration-150"
+                          style={stagger}
+                      >
+                        <div className="flex items-stretch gap-1.5">
+                          <Link
+                              href={href}
+                              className={`flex flex-1 items-center gap-3.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150 border ${
+                                  dashActive
+                                      ? "bg-sky-800 text-sky-50 border-sky-600"
+                                      : "text-sky-400 border-transparent hover:bg-sky-800/50 hover:text-sky-100"
+                              }`}
+                          >
+                            <span className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-all duration-200 ${
+                                dashActive
+                                    ? "bg-orange-500 border-orange-400 text-white"
+                                    : "bg-sky-800 border-sky-600 text-sky-400"
+                            }`}>
+                              <Icon size={17} />
+                            </span>
+                            <span className="flex-1">{label}</span>
+                            {dashActive && (
+                                <span className="h-1.5 w-1.5 rounded-full bg-orange-400 shrink-0" />
+                            )}
+                          </Link>
+                          <button
+                              onClick={() => setMobileAdminOpen((o) => !o)}
+                              aria-label={mobileAdminOpen ? "Nascondi azioni" : "Mostra azioni"}
+                              aria-expanded={mobileAdminOpen}
+                              className="flex w-11 shrink-0 items-center justify-center rounded-xl border border-sky-700 bg-sky-800/60 text-sky-300 hover:bg-sky-800 hover:text-sky-100 transition-all duration-150"
+                          >
+                            <ChevronDown
+                                size={18}
+                                className={`transition-transform duration-200 ${mobileAdminOpen ? "rotate-180" : ""}`}
+                            />
+                          </button>
+                        </div>
+
+                        <AnimatePresence initial={false}>
+                          {mobileAdminOpen && (
+                              <motion.div
+                                  initial={{ height: 0, opacity: 0 }}
+                                  animate={{ height: "auto", opacity: 1 }}
+                                  exit={{ height: 0, opacity: 0 }}
+                                  transition={{ duration: 0.2, ease: "easeOut" }}
+                                  className="overflow-hidden"
+                              >
+                                <div className="mt-1.5 ml-3 space-y-3 border-l border-sky-700/60 pl-3 pt-0.5">
+                                  {adminGroups.map((group) => (
+                                      <div key={group.label}>
+                                        <p className="px-1 pb-1 text-[10px] font-semibold uppercase tracking-widest text-sky-500">
+                                          {group.label}
+                                        </p>
+                                        <div className="space-y-0.5">
+                                          {group.items.map((item) => {
+                                            const sub = item.href === activeSubHref;
+                                            return (
+                                                <Link
+                                                    key={item.href}
+                                                    href={item.href}
+                                                    className={`flex items-center gap-3 rounded-lg px-2 py-2 text-sm font-medium transition-colors duration-150 ${
+                                                        sub
+                                                            ? "bg-sky-800 text-sky-50"
+                                                            : "text-sky-400 hover:bg-sky-800/50 hover:text-sky-100"
+                                                    }`}
+                                                >
+                                                  <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md border transition-colors duration-150 ${
+                                                      sub
+                                                          ? "border-orange-400 bg-orange-500/90 text-white"
+                                                          : "border-sky-700 bg-sky-800 text-sky-400"
+                                                  }`}>
+                                                    <item.icon size={14} />
+                                                  </span>
+                                                  <span className="flex-1">{item.label}</span>
+                                                  {sub && (
+                                                      <span className="h-1.5 w-1.5 rounded-full bg-orange-400 shrink-0" />
+                                                  )}
+                                                </Link>
+                                            );
+                                          })}
+                                        </div>
+                                      </div>
+                                  ))}
+                                </div>
+                              </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                  );
+                }
+
+                // ── Voce normale ──
+                return (
+                    <Link
+                        key={href}
+                        href={href}
+                        className={`flex items-center gap-3.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150 border ${
+                            isActive(href)
+                                ? "bg-sky-800 text-sky-50 border-sky-600"
+                                : "text-sky-400 border-transparent hover:bg-sky-800/50 hover:text-sky-100"
+                        }`}
+                        style={stagger}
+                    >
+                      <span className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-all duration-200 ${
                           isActive(href)
-                              ? "bg-sky-800 text-sky-50 border-sky-600"
-                              : "text-sky-400 border-transparent hover:bg-sky-800/50 hover:text-sky-100"
-                      }`}
-                      style={{
-                        transitionDelay: menuOpen ? `${60 + i * 40}ms` : "0ms",
-                        transform: menuOpen ? "translateX(0)" : "translateX(-12px)",
-                        opacity: menuOpen ? 1 : 0,
-                      }}
-                  >
-                    <span className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-all duration-200 ${
-                        isActive(href)
-                            ? "bg-orange-500 border-orange-400 text-white"
-                            : "bg-sky-800 border-sky-600 text-sky-400"
-                    }`}>
-                      <Icon size={17} />
-                      {badge !== undefined && badge > 0 && (
-                          <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold leading-none text-white shadow ring-2 ring-sky-900">
-                            {badge > 99 ? "99+" : badge}
-                          </span>
+                              ? "bg-orange-500 border-orange-400 text-white"
+                              : "bg-sky-800 border-sky-600 text-sky-400"
+                      }`}>
+                        <Icon size={17} />
+                        {badge !== undefined && badge > 0 && (
+                            <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold leading-none text-white shadow ring-2 ring-sky-900">
+                              {badge > 99 ? "99+" : badge}
+                            </span>
+                        )}
+                      </span>
+                      <span className="flex-1">{label}</span>
+                      {isActive(href) && (
+                          <span className="h-1.5 w-1.5 rounded-full bg-orange-400 shrink-0" />
                       )}
-                    </span>
-                    <span className="flex-1">{label}</span>
-                    {isActive(href) && (
-                        <span className="h-1.5 w-1.5 rounded-full bg-orange-400 shrink-0" />
-                    )}
-                  </Link>
-              ))}
+                    </Link>
+                );
+              })}
             </nav>
 
             {/* Divider */}

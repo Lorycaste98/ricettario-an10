@@ -18,10 +18,14 @@ export async function GET() {
     return ok({ isAdmin: false });
   }
 
-  const admin = await db.admin.findUnique({
-    where: { id: session.adminId },
-    select: { firstLogin: true, dedication: true, role: true },
-  });
+  const [admin, recipeReview, menuReview] = await Promise.all([
+    db.admin.findUnique({
+      where: { id: session.adminId },
+      select: { firstLogin: true, dedication: true, role: true },
+    }),
+    db.review.findFirst({ select: { id: true } }),
+    db.menuReview.findFirst({ select: { id: true } }),
+  ]);
 
   return ok({
     isAdmin: true,
@@ -29,6 +33,7 @@ export async function GET() {
     role: admin?.role ?? session.role,
     firstLogin: admin?.firstLogin ?? false,
     dedication: admin?.dedication ?? null,
+    hasReviews: Boolean(recipeReview || menuReview),
   });
 }
 

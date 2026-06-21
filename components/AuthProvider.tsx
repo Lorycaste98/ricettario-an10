@@ -11,6 +11,7 @@ interface AuthState {
   role: string | null;
   firstLogin: boolean;
   dedication: string | null;
+  hasReviews: boolean;
   loading: boolean;
   refresh: () => Promise<void>;
 }
@@ -21,6 +22,7 @@ const AuthCtx = createContext<AuthState>({
   role: null,
   firstLogin: false,
   dedication: null,
+  hasReviews: false,
   loading: true,
   refresh: async () => {},
 });
@@ -31,6 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<string | null>(null);
   const [firstLogin, setFirstLogin] = useState(false);
   const [dedication, setDedication] = useState<string | null>(null);
+  const [hasReviews, setHasReviews] = useState(false);
   const [loading, setLoading] = useState(true);
   const [autoLoggedOut, setAutoLoggedOut] = useState(false);
   const [showDedication, setShowDedication] = useState(false);
@@ -54,6 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setRole(data.role ?? null);
       setFirstLogin(data.firstLogin ?? false);
       setDedication(data.dedication ?? null);
+      setHasReviews(data.hasReviews ?? false);
       isAdminRef.current = data.isAdmin ?? false;
       if (data.isAdmin && data.firstLogin && data.dedication) {
         setShowDedication(true);
@@ -64,6 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setRole(null);
       setFirstLogin(false);
       setDedication(null);
+      setHasReviews(false);
       isAdminRef.current = false;
     } finally {
       setLoading(false);
@@ -110,7 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [resetTimer]);
 
   return (
-    <AuthCtx.Provider value={{ isAdmin, username, role, firstLogin, dedication, loading, refresh }}>
+    <AuthCtx.Provider value={{ isAdmin, username, role, firstLogin, dedication, hasReviews, loading, refresh }}>
       {children}
 
       {/* ── Modal dedica (primo accesso) ── */}
