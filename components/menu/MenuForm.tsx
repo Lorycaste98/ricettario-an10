@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
-  Search, X, ChevronUp, ChevronDown, Loader2, UtensilsCrossed, CalendarDays, Info,
+  Search, X, ChevronUp, ChevronDown, Loader2, UtensilsCrossed, CalendarDays, Info, EyeOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -246,7 +246,14 @@ export function MenuForm({ initialData }: Props) {
                   )}
                 </div>
                 {/* Name */}
-                <span className="flex-1 min-w-0 text-sm font-medium text-sky-950 truncate">{r.name}</span>
+                <span className="flex-1 min-w-0 truncate text-sm font-medium text-sky-950">
+                  {r.name}
+                  {!r.published && (
+                    <span className="ml-1.5 inline-flex items-center gap-0.5 align-middle text-[10px] font-semibold text-amber-600">
+                      <EyeOff size={10} /> non pronta
+                    </span>
+                  )}
+                </span>
                 {/* Order number */}
                 <span className="shrink-0 text-[10px] font-bold text-sky-400/60">#{idx + 1}</span>
                 {/* Move buttons */}
@@ -309,7 +316,9 @@ export function MenuForm({ initialData }: Props) {
                   <button
                     type="button"
                     onClick={() => addRecipe(r.id)}
-                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-white/60 transition"
+                    disabled={!r.published}
+                    title={r.published ? undefined : "Ricetta non pronta: rendila visibile per poterla aggiungere"}
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition enabled:hover:bg-white/60 disabled:cursor-not-allowed disabled:opacity-55"
                   >
                     <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-lg bg-sky-100">
                       {r.photo ? (
@@ -321,7 +330,13 @@ export function MenuForm({ initialData }: Props) {
                       )}
                     </div>
                     <span className="flex-1 min-w-0 text-sm text-sky-950 truncate">{r.name}</span>
-                    <span className="shrink-0 text-[10px] font-semibold text-sky-400">+ Aggiungi</span>
+                    {r.published ? (
+                      <span className="shrink-0 text-[10px] font-semibold text-sky-400">+ Aggiungi</span>
+                    ) : (
+                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
+                        <EyeOff size={10} /> Non pronta
+                      </span>
+                    )}
                   </button>
                 </li>
               ))}

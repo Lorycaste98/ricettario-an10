@@ -162,6 +162,7 @@ export default async function AdminPage() {
       <section className="fade-up space-y-4" style={{ animationDelay: "180ms" }}>
         <SectionTitle accent="from-gray-300 to-gray-400">Gestione</SectionTitle>
         <div className="flex flex-wrap gap-2.5 *:flex-1">
+          <ManageLink href="/admin/ricette" icon={<BookOpen size={15} />} label="Ricette" color="orange" />
           <ManageLink href="/admin/menu" icon={<UtensilsCrossed size={15} />} label="Menù" color="sky" />
           <ManageLink href="/admin/vocabolario" icon={<BookMarked size={15} />} label="Categorie & Tag" color="violet" />
           <ManageLink href="/admin/ingredienti" icon={<Carrot size={15} />} label="Ingredienti" color="emerald" />
@@ -350,6 +351,7 @@ function EntityCard({
 }
 
 const MANAGE_COLORS = {
+  orange: "border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 hover:border-orange-300 hover:shadow-orange-500/15",
   sky: "border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:border-sky-300 hover:shadow-sky-500/15",
   violet: "border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100 hover:border-violet-300 hover:shadow-violet-500/15",
   emerald: "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300 hover:shadow-emerald-500/15",

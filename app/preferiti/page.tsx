@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { getSession } from "@/lib/session";
 import { flattenRecipe, recipeSummarySelect } from "@/lib/api";
 import { Heart } from "lucide-react";
 import { FavoritesClient } from "./FavoritesClient";
@@ -8,7 +9,9 @@ export const metadata: Metadata = { title: "Preferiti — Ricettario" };
 export const dynamic = "force-dynamic";
 
 export default async function PreferitiPage() {
+  const isAdmin = !!(await getSession());
   const raw = await db.recipe.findMany({
+    where: isAdmin ? undefined : { published: true },
     select: recipeSummarySelect,
     orderBy: { createdAt: "desc" },
   });

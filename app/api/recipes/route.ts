@@ -15,11 +15,12 @@
 import { type NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { recipeSummarySelect, flattenRecipe, ok, err } from "@/lib/api";
-import { requireAdmin } from "@/lib/session";
+import { getSession, requireAdmin } from "@/lib/session";
 import { toStepKind } from "@/lib/types";
 
 export async function GET(request: NextRequest) {
   const sp = request.nextUrl.searchParams;
+  const isAdmin = !!(await getSession());
 
   const q = sp.get("q")?.trim() || undefined;
   const categoryId = sp.get("category") ? Number(sp.get("category")) : undefined;
@@ -37,6 +38,7 @@ export async function GET(request: NextRequest) {
   const order = sp.get("order") === "asc" ? "asc" : ("desc" as const);
 
   const where = {
+    ...(isAdmin ? {} : { published: true }),
     ...(q ? { name: { contains: q, mode: "insensitive" as const } } : {}),
     ...(categoryId
       ? { categories: { some: { categoryId } } }

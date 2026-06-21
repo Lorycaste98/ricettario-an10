@@ -45,6 +45,7 @@ npm run create-admin # crea utente admin
 
 ```
 app/preferiti/          # Preferiti filtrati lato client da localStorage
+app/admin/ricette/      # Gestione ricette: lista con switch "Visibile" (Recipe.published); nuova/[id] = form
 app/admin/ingredienti/  # Catalogo IngredientMaster: rinomina, merge, escludi da stats
 app/admin/utenti/       # CRUD utenti admin, crea con ruolo ADMIN/SUPERADMIN, dedica
 app/admin/recensioni/   # Recensioni ricette + menù, due sezioni con ricerca (link da dashboard)
@@ -81,6 +82,7 @@ app/api/admin/utenti/           # CRUD utenti admin
 - `IngredientMaster` è il catalogo canonico degli ingredienti; il merge aggiorna tutte le ricette collegate
 - `CookLog` registra ogni cottura (una riga per click su "Ho cucinato"): l'API `/api/recipes/[id]/cook` POST crea una riga + incrementa `cookCount`, DELETE rimuove l'ultima riga + decrementa. Lo storico CookLog parte dalle cotture registrate **dopo** l'introduzione della tabella; le cotture precedenti vivono solo in `cookCount` (visibili col periodo "Tutto")
 - `Step.kind` (`PREP` | `COOK` | `WAIT`, default `PREP`): tipo di tempo dello step. `prep`/`cook` della ricetta **non** sono derivati a forza — il form suggerisce le somme per tipo e l'admin le applica/modifica (niente sovrascrittura silenziosa dei valori salvati). Usa `toStepKind()` per normalizzare il valore grezzo dal DB
+- `Recipe.published` (`Boolean`, default `true`): visibilità della ricetta. Le ricette `published=false` ("non pronta") sono **nascoste ai visitatori** in tutti i percorsi di lettura pubblici (`/`, `/ricette`, `/preferiti`, dettaglio `/ricette/[id]` → `notFound`, `/api/recipes` GET, `/api/search`) — il filtro `where: { published: true }` si applica solo quando **non** c'è sessione admin. Gli admin le vedono ovunque, offuscate + badge "Non pronta" nella `RecipeCard`. Toggle da `/admin/ricette` (switch) o dal dettaglio (`RecipeActions`) via `PATCH /api/recipes/[id]` con `{ published }`. Chi renderizza `RecipeCard` deve includere `published` nel select (è in `recipeSummarySelect`)
 - `Menu.servingTime` (`"HH:mm"`, opzionale): orario di servizio. Insieme a `Menu.date` alimenta il countdown "quando iniziare" mostrato sulle card ricetta nel dettaglio menù. Il lead time = somma di **tutti** i minuti degli step (prep+cottura+attesa), fallback `prep+cook` — vedi `lib/cook-schedule.ts`
 
 ## ⚠️ Next.js 16 — non nel training data

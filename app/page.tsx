@@ -64,6 +64,7 @@ export default async function LandingPage() {
 
   const [rawRecipes, rawMenus] = await Promise.all([
     db.recipe.findMany({
+      where: { published: true },
       select: recipeSummarySelect,
       orderBy: { createdAt: "desc" },
       take: 4,

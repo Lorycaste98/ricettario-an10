@@ -9,6 +9,7 @@ export const recipeSummarySelect = {
   photo: true,
   notes: true,
   cookCount: true,
+  published: true,
   createdAt: true,
   categories: {
     select: {

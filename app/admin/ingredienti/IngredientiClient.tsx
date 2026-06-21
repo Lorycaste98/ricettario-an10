@@ -273,7 +273,7 @@ export default function IngredientiClient({ initialIngredients }: Props) {
                     </button>
                   </td>
                   <td className="px-3 py-2.5">
-                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center justify-end gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
                       <button
                         onClick={() => startEdit(item)}
                         className="rounded p-1 text-gray-400 hover:text-sky-600 hover:bg-sky-50 transition-colors"

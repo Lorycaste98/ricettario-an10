@@ -152,6 +152,40 @@ export async function PUT(
   return ok(flattenRecipe(recipe));
 }
 
+// PATCH — aggiornamento parziale (al momento solo lo stato "pronta"/published)
+export async function PATCH(
+  request: NextRequest,
+  ctx: RouteContext<"/api/recipes/[id]">
+) {
+  const guard = await requireAdmin();
+  if (guard) return guard;
+
+  const { id } = await ctx.params;
+  const recipeId = Number(id);
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return err("Body JSON non valido");
+  }
+
+  const { published } = body as { published?: unknown };
+  if (typeof published !== "boolean") {
+    return err("Il campo 'published' deve essere un booleano");
+  }
+
+  const exists = await db.recipe.findUnique({ where: { id: recipeId }, select: { id: true } });
+  if (!exists) return err("Ricetta non trovata", 404);
+
+  const updated = await db.recipe.update({
+    where: { id: recipeId },
+    data: { published },
+    select: { id: true, published: true },
+  });
+  return ok(updated);
+}
+
 export async function DELETE(
   _req: NextRequest,
   ctx: RouteContext<"/api/recipes/[id]">

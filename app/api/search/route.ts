@@ -11,6 +11,7 @@
 
 import { type NextRequest } from "next/server";
 import { db } from "@/lib/db";
+import { getSession } from "@/lib/session";
 import { recipeSummarySelect, flattenRecipe, ok, err } from "@/lib/api";
 
 export async function GET(request: NextRequest) {
@@ -19,9 +20,13 @@ export async function GET(request: NextRequest) {
 
   if (!q || q.length < 2) return err("Il parametro 'q' deve avere almeno 2 caratteri");
 
+  // Gli admin cercano anche tra le ricette non pronte; i visitatori solo tra le pubblicate
+  const isAdmin = !!(await getSession());
+
   // Ricerca per nome + note + ingredienti + passi
   const recipes = await db.recipe.findMany({
     where: {
+      ...(isAdmin ? {} : { published: true }),
       OR: [
         { name: { contains: q, mode: "insensitive" } },
         { notes: { contains: q, mode: "insensitive" } },

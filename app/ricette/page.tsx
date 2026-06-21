@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { getSession } from "@/lib/session";
 import { RecipeGrid } from "@/components/recipe/RecipeGrid";
 import { flattenRecipe, recipeSummarySelect } from "@/lib/api";
 import { BookOpen } from "lucide-react";
@@ -8,8 +9,12 @@ export const metadata: Metadata = { title: "Ricette — Ricettario" };
 export const dynamic = "force-dynamic";
 
 export default async function RicettePage() {
+  // Gli admin vedono tutte le ricette (anche le non pronte); i visitatori solo le pubblicate
+  const isAdmin = !!(await getSession());
+
   const [rawRecipes, categories, tags] = await Promise.all([
     db.recipe.findMany({
+      where: isAdmin ? undefined : { published: true },
       select: recipeSummarySelect,
       orderBy: { createdAt: "desc" },
     }),

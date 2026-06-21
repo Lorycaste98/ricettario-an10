@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
+import { EyeOff } from "lucide-react";
 import { type RecipeSummary, formatMinutes } from "@/lib/types";
 import { FavoriteButton } from "./FavoriteButton";
 import { useAuth } from "@/components/AuthProvider";
@@ -18,11 +19,15 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
   const { isAdmin } = useAuth();
   const totalTime = (recipe.prep ?? 0) + (recipe.cook ?? 0);
   const primaryCat = recipe.categories[0];
+  // Solo gli admin vedono le ricette non pronte (offuscate, con badge)
+  const isHidden = isAdmin && !recipe.published;
 
   return (
     <Link
       href={`/ricette/${recipe.id}`}
-      className="group relative flex flex-col overflow-hidden rounded-2xl bg-zinc-900 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
+      className={`group relative flex flex-col overflow-hidden rounded-2xl bg-zinc-900 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 ${
+        isHidden ? "opacity-55 hover:opacity-100 ring-1 ring-dashed ring-white/30" : ""
+      }`}
     >
       {/* Image area */}
       <div className="relative aspect-4/3 overflow-hidden">
@@ -45,14 +50,21 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
 
         {/* Top badges */}
         <div className="absolute top-2.5 left-2.5 right-2.5 flex items-start justify-between gap-2">
-          {primaryCat ? (
-            <span
-              className="rounded-full px-2.5 py-0.5 text-[10px] font-semibold text-white shadow backdrop-blur-sm"
-              style={{ backgroundColor: primaryCat.color + "cc" }}
-            >
-              {primaryCat.name}
-            </span>
-          ) : <span />}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {primaryCat && (
+              <span
+                className="rounded-full px-2.5 py-0.5 text-[10px] font-semibold text-white shadow backdrop-blur-sm"
+                style={{ backgroundColor: primaryCat.color + "cc" }}
+              >
+                {primaryCat.name}
+              </span>
+            )}
+            {isHidden && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/90 px-2 py-0.5 text-[10px] font-semibold text-white shadow backdrop-blur-sm">
+                <EyeOff size={10} /> Non pronta
+              </span>
+            )}
+          </div>
 
           <FavoriteButton recipeId={recipe.id} />
         </div>

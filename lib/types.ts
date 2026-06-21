@@ -20,6 +20,7 @@ export interface RecipeSummary {
   photo: string | null;
   notes: string | null;
   cookCount: number;
+  published: boolean;
   createdAt: string;
   avgRating: number | null;
   categories: Category[];

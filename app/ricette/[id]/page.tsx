@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { ArrowLeft, Clock, Flame, Hourglass, Sigma, Users, ExternalLink, CalendarDays, ImageIcon } from "lucide-react";
 import { db } from "@/lib/db";
+import { getSession } from "@/lib/session";
 import { flattenRecipe } from "@/lib/api";
 import { Badge } from "@/components/ui/Badge";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -28,7 +29,7 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
     where: { id: Number(id) },
     select: {
       id: true, name: true, servings: true, prep: true, cook: true,
-      notes: true, links: true, photo: true, cookCount: true,
+      notes: true, links: true, photo: true, cookCount: true, published: true,
       createdAt: true, updatedAt: true,
       categories: { select: { category: { select: { id: true, name: true, color: true } } } },
       tags: { select: { tag: { select: { id: true, name: true } } } },
@@ -41,6 +42,11 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
   });
 
   if (!raw) notFound();
+
+  // Le ricette non pronte sono visibili solo agli admin
+  const isAdmin = !!(await getSession());
+  if (!raw.published && !isAdmin) notFound();
+
   const recipe = flattenRecipe(raw) as ReturnType<typeof flattenRecipe> & typeof raw;
 
   // Attesa = somma dei minuti degli step di tipo WAIT; il totale le include tutte
@@ -151,7 +157,7 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
           </div>
 
           {/* Admin actions */}
-          <RecipeActions recipeId={recipe.id} cookCount={recipe.cookCount} />
+          <RecipeActions recipeId={recipe.id} cookCount={recipe.cookCount} published={recipe.published} />
         </div>
       </div>
 
