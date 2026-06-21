@@ -77,13 +77,17 @@ export function MenuPdfButton({ menu }: MenuPdfProps) {
         })
       );
 
-      const coverPhoto = menu.photo ? await urlToDataUrl(menu.photo) : undefined;
+      const [coverPhoto, logoData] = await Promise.all([
+        menu.photo ? urlToDataUrl(menu.photo) : Promise.resolve(undefined),
+        urlToDataUrl("/apple-icon.png"),
+      ]);
 
       const blob = await pdf(
         <MenuPdfDocument
           menu={{ name: menu.name, description: menu.description, date: menu.date, servingTime: menu.servingTime }}
           recipes={recipes}
           coverPhoto={coverPhoto}
+          logoData={logoData}
         />
       ).toBlob();
 
@@ -107,7 +111,7 @@ export function MenuPdfButton({ menu }: MenuPdfProps) {
     <button
       onClick={handleExport}
       disabled={loading || menu.recipeIds.length === 0}
-      className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/30 bg-black/40 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm transition hover:bg-black/60 disabled:cursor-not-allowed disabled:opacity-60"
+      className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-white/30 bg-white/15 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm transition hover:bg-white/25 disabled:cursor-not-allowed disabled:opacity-60"
     >
       {loading ? (
         <>

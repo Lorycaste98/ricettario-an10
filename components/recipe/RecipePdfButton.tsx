@@ -51,9 +51,12 @@ export function RecipePdfButton({ recipe }: { recipe: RecipePdfData }) {
         import("@react-pdf/renderer"),
         import("./RecipePdfDocument"),
       ]);
-      const photoData = recipe.photo ? await urlToDataUrl(recipe.photo) : undefined;
+      const [photoData, logoData] = await Promise.all([
+        recipe.photo ? urlToDataUrl(recipe.photo) : Promise.resolve(undefined),
+        urlToDataUrl("/apple-icon.png"),
+      ]);
       const blob = await pdf(
-        <RecipePdfDocument recipe={recipe} photoData={photoData} />
+        <RecipePdfDocument recipe={recipe} photoData={photoData} logoData={logoData} />
       ).toBlob();
 
       const url = URL.createObjectURL(blob);

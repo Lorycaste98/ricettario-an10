@@ -15,7 +15,7 @@ const siteUrl =
     : "http://localhost:3000");
 
 const TITLE = "Ricettario AN10";
-const DESCRIPTION = "Il ricettario di famiglia: ricette, menù e tempi di preparazione.";
+const DESCRIPTION = "Il mio personale ricettario: ricette, menù e tempi di preparazione.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

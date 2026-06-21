@@ -118,19 +118,9 @@ export default async function MenuDetailPage({ params }: Params) {
           )}
           <div className="absolute inset-0 bg-linear-to-t from-sky-950/90 via-sky-950/40 to-transparent" />
 
-          {/* Azioni: export PDF (tutti) + modifica (admin) */}
-          <div className="absolute top-3 right-3 flex items-center gap-2">
-            <MenuPdfButton
-              menu={{
-                name: menu.name,
-                description: menu.description,
-                date: menu.date,
-                servingTime: menu.servingTime,
-                photo: menu.photo,
-                recipeIds: (menu.recipes as { recipe: { id: number } }[]).map((mr) => mr.recipe.id),
-              }}
-            />
-            {session && (
+          {/* Modifica (admin) */}
+          {session && (
+            <div className="absolute top-3 right-3">
               <Link
                 href={`/admin/menu/${menu.id}/modifica`}
                 className="flex items-center gap-1.5 rounded-xl border border-white/30 bg-black/40 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm hover:bg-black/60 transition"
@@ -138,8 +128,8 @@ export default async function MenuDetailPage({ params }: Params) {
                 <Pencil size={11} />
                 Modifica
               </Link>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Text overlay */}
           <div className="absolute bottom-0 left-0 right-0 p-5">
@@ -180,6 +170,18 @@ export default async function MenuDetailPage({ params }: Params) {
           tone="orange"
           size="lg"
           titleClassName="text-sky-50"
+          action={
+            <MenuPdfButton
+              menu={{
+                name: menu.name,
+                description: menu.description,
+                date: menu.date,
+                servingTime: menu.servingTime,
+                photo: menu.photo,
+                recipeIds: (menu.recipes as { recipe: { id: number } }[]).map((mr) => mr.recipe.id),
+              }}
+            />
+          }
         />
         <div className="grid gap-3 sm:grid-cols-2">
           {(menu.recipes as { order: number; recipe: ReturnType<typeof flattenRecipe> }[]).map(({ order, recipe }) => {

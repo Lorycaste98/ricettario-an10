@@ -35,7 +35,7 @@ export const pdfStyles = StyleSheet.create({
     textTransform: "uppercase",
     marginBottom: 4,
   },
-  title: { fontSize: 22, fontFamily: "Helvetica-Bold", color: SKY, marginBottom: 8 },
+  title: { fontSize: 22, fontFamily: "Helvetica-Bold", color: SKY, marginBottom: 12 },
   badgeRow: { flexDirection: "row", flexWrap: "wrap", gap: 4, marginBottom: 6 },
   // Badge categoria: View contenitore + Text centrato (centratura affidabile in react-pdf)
   badge: {
@@ -103,9 +103,9 @@ export const pdfStyles = StyleSheet.create({
     fontSize: 13,
     fontFamily: "Helvetica-Bold",
     color: SKY,
-    marginBottom: 8,
+    lineHeight: 1,
   },
-  sectionBar: { width: 4, height: 14, backgroundColor: ORANGE, borderRadius: 2, marginRight: 7 },
+  sectionBar: { width: 4, height: 13, backgroundColor: ORANGE, borderRadius: 2, marginRight: 7 },
   sectionHeader: { flexDirection: "row", alignItems: "center", marginBottom: 9 },
   columns: { flexDirection: "row", gap: 22 },
   ingredientsCol: { width: "38%" },
@@ -142,6 +142,7 @@ export const pdfStyles = StyleSheet.create({
     left: 44,
     right: 44,
     flexDirection: "row",
+    alignItems: "center",
     justifyContent: "space-between",
     borderTopWidth: 1,
     borderTopColor: "#e5e7eb",
@@ -149,6 +150,8 @@ export const pdfStyles = StyleSheet.create({
     fontSize: 7.5,
     color: LIGHT,
   },
+  footerLeft: { flexDirection: "row", alignItems: "center", gap: 5 },
+  footerLogo: { width: 13, height: 13, borderRadius: 3 },
 });
 
 function fmtQty(qty: number | null, unit: string | null): string {
@@ -157,8 +160,8 @@ function fmtQty(qty: number | null, unit: string | null): string {
   return unit ? `${num} ${unit}` : num;
 }
 
-/** Footer fisso condiviso (Ricettario AN10 · data · pagina). */
-export function PdfFooter() {
+/** Footer fisso condiviso (logo · Ricettario AN10 · data · pagina). */
+export function PdfFooter({ logoData }: { logoData?: string }) {
   const today = new Date().toLocaleDateString("it-IT", {
     day: "numeric",
     month: "long",
@@ -166,7 +169,11 @@ export function PdfFooter() {
   });
   return (
     <View style={pdfStyles.footer} fixed>
-      <Text>Ricettario AN10 · {today}</Text>
+      <View style={pdfStyles.footerLeft}>
+        {/* eslint-disable-next-line jsx-a11y/alt-text -- componente PDF di react-pdf */}
+        {logoData && <Image src={logoData} style={pdfStyles.footerLogo} />}
+        <Text>Ricettario AN10 · {today}</Text>
+      </View>
       <Text render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />
     </View>
   );
@@ -316,15 +323,17 @@ export function RecipePdfContent({
 export function RecipePdfDocument({
   recipe,
   photoData,
+  logoData,
 }: {
   recipe: RecipePdfData;
   photoData?: string;
+  logoData?: string;
 }) {
   return (
     <Document title={recipe.name} author="Ricettario AN10">
       <Page size="A4" style={pdfStyles.page}>
         <RecipePdfContent recipe={recipe} photoData={photoData} />
-        <PdfFooter />
+        <PdfFooter logoData={logoData} />
       </Page>
     </Document>
   );

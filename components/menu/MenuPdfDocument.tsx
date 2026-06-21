@@ -30,36 +30,49 @@ export interface MenuPdfRecipe {
 }
 
 const styles = StyleSheet.create({
-  cover: { flex: 1, justifyContent: "center" },
+  cover: { flex: 1, paddingTop: 8 },
   coverPhoto: {
     width: "100%",
-    height: 180,
+    height: 170,
     borderRadius: 10,
     objectFit: "cover",
-    marginBottom: 22,
+    marginBottom: 32,
   },
+  coverHeader: { flexDirection: "row", alignItems: "center", gap: 9, marginBottom: 14 },
+  coverLogo: { width: 30, height: 30, borderRadius: 7 },
   kicker: {
-    fontSize: 10,
+    fontSize: 11,
     letterSpacing: 3,
     color: ORANGE,
     fontFamily: "Helvetica-Bold",
     textTransform: "uppercase",
-    marginBottom: 8,
   },
-  title: { fontSize: 32, fontFamily: "Helvetica-Bold", color: SKY, marginBottom: 12 },
-  description: { fontSize: 11, color: GRAY, marginBottom: 18, lineHeight: 1.5 },
-  metaLine: { flexDirection: "row", gap: 18, marginBottom: 26 },
-  metaItem: { flexDirection: "row", alignItems: "baseline", gap: 4 },
-  metaItemLabel: { fontSize: 8, color: "#9ca3af", textTransform: "uppercase", letterSpacing: 0.5 },
-  metaItemValue: { fontSize: 11, fontFamily: "Helvetica-Bold", color: SKY },
+  title: {
+    fontSize: 40,
+    fontFamily: "Helvetica-Bold",
+    color: SKY,
+    lineHeight: 1.1,
+    marginBottom: 16,
+  },
+  description: {
+    fontSize: 13,
+    color: GRAY,
+    lineHeight: 1.5,
+    maxWidth: 620,
+    marginBottom: 28,
+  },
+  metaLine: { flexDirection: "row", gap: 28, marginBottom: 34 },
+  metaItem: { flexDirection: "column", gap: 4 },
+  metaItemLabel: { fontSize: 8, color: "#9ca3af", textTransform: "uppercase", letterSpacing: 0.5, lineHeight: 1 },
+  metaItemValue: { fontSize: 13, fontFamily: "Helvetica-Bold", color: SKY, lineHeight: 1 },
   tocTitle: {
     fontSize: 12,
     fontFamily: "Helvetica-Bold",
     color: SKY,
-    marginBottom: 10,
+    marginBottom: 14,
     borderTopWidth: 1,
     borderTopColor: "#e5e7eb",
-    paddingTop: 14,
+    paddingTop: 16,
   },
   tocItem: { flexDirection: "row", alignItems: "center", marginBottom: 6 },
   tocNum: {
@@ -87,10 +100,12 @@ export function MenuPdfDocument({
   menu,
   recipes,
   coverPhoto,
+  logoData,
 }: {
   menu: MenuPdfMeta;
   recipes: MenuPdfRecipe[];
   coverPhoto?: string;
+  logoData?: string;
 }) {
   const serveDate = formatServeDate(menu.date, menu.servingTime);
 
@@ -101,7 +116,11 @@ export function MenuPdfDocument({
         <View style={styles.cover}>
           {/* eslint-disable-next-line jsx-a11y/alt-text -- componente PDF di react-pdf */}
           {coverPhoto && <Image src={coverPhoto} style={styles.coverPhoto} />}
-          <Text style={styles.kicker}>Menù · Ricettario AN10</Text>
+          <View style={styles.coverHeader}>
+            {/* eslint-disable-next-line jsx-a11y/alt-text -- componente PDF di react-pdf */}
+            {logoData && <Image src={logoData} style={styles.coverLogo} />}
+            <Text style={styles.kicker}>Menù · Ricettario AN10</Text>
+          </View>
           <Text style={styles.title}>{menu.name}</Text>
           {menu.description ? <Text style={styles.description}>{menu.description}</Text> : null}
 
@@ -128,7 +147,7 @@ export function MenuPdfDocument({
             </View>
           ))}
         </View>
-        <PdfFooter />
+        <PdfFooter logoData={logoData} />
       </Page>
 
       {/* Una pagina per ricetta */}
@@ -139,7 +158,7 @@ export function MenuPdfDocument({
             photoData={photoData}
             kicker={`Menù: ${menu.name}`}
           />
-          <PdfFooter />
+          <PdfFooter logoData={logoData} />
         </Page>
       ))}
     </Document>
