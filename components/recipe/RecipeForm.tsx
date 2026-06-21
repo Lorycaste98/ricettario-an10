@@ -21,6 +21,8 @@ interface PhotoRow { url: string; isMain: boolean }
 
 export interface RecipeFormData {
   name: string;
+  /** Data della ricetta (createdAt) in formato "YYYY-MM-DD" */
+  createdAt: string;
   servings: string;
   prep: string;
   cook: string;
@@ -136,6 +138,16 @@ function Section({
 const inlineInput =
   "rounded-lg border border-white/40 bg-white/60 backdrop-blur-sm px-2 py-2 text-sm text-sky-950 placeholder:text-sm placeholder:text-sky-600/50 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-300/30";
 
+// ─── Date helper ──────────────────────────────────────────────────────────────
+
+/** Data odierna locale in formato "YYYY-MM-DD" (per <input type="date">). */
+function todayISO(): string {
+  const d = new Date();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+
 // ─── RecipeForm ───────────────────────────────────────────────────────────────
 
 export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
@@ -147,6 +159,8 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
   const [tagList, setTagList] = useState<Tag[]>(tags);
 
   const [name, setName] = useState(initialData?.name ?? "");
+  // Data della ricetta: alla creazione default = oggi, sempre modificabile dall'utente
+  const [createdAt, setCreatedAt] = useState(initialData?.createdAt ?? todayISO());
   const [servings, setServings] = useState(initialData?.servings ?? "");
   const [prep, setPrep] = useState(initialData?.prep ?? "");
   const [cook, setCook] = useState(initialData?.cook ?? "");
@@ -298,6 +312,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
 
     const body = {
       name: name.trim(),
+      createdAt: createdAt || null,
       servings: servings ? Number(servings) : null,
       prep: prep ? Number(prep) : null,
       cook: cook ? Number(cook) : null,
@@ -341,7 +356,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
       setError(err instanceof Error ? err.message : "Errore sconosciuto");
       setSaving(false);
     }
-  }, [name, servings, prep, cook, notes, links, categoryIds, tagIds, ingredients, steps, photos, isEdit, recipeId, router]);
+  }, [name, createdAt, servings, prep, cook, notes, links, categoryIds, tagIds, ingredients, steps, photos, isEdit, recipeId, router]);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -371,6 +386,8 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
       <Section title="Informazioni base" icon={<Info size={18} />} tone="sky" delay={0}>
         <Input label="Nome ricetta *" value={name} onChange={(e) => setName(e.target.value)}
           placeholder="Es. Risotto allo zafferano" />
+        <Input label="Data" type="date" value={createdAt}
+          onChange={(e) => setCreatedAt(e.target.value)} />
         <div className="grid grid-cols-3 gap-3">
           <Input label="Porzioni" type="number" min={1} value={servings}
             onChange={(e) => setServings(e.target.value)} placeholder="4" />

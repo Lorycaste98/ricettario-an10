@@ -45,6 +45,8 @@ export default async function ModificaRicettaPage({ params }: { params: Promise<
 
   const initialData: RecipeFormData = {
     name: recipe.name,
+    // createdAt salvato a mezzogiorno UTC: i componenti UTC danno la stessa data scelta
+    createdAt: recipe.createdAt.toISOString().slice(0, 10),
     servings: recipe.servings != null ? String(recipe.servings) : "",
     prep: recipe.prep != null ? String(recipe.prep) : "",
     cook: recipe.cook != null ? String(recipe.cook) : "",

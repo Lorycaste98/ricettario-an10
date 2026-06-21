@@ -14,7 +14,7 @@
 
 import { type NextRequest } from "next/server";
 import { db } from "@/lib/db";
-import { recipeSummarySelect, flattenRecipe, ok, err } from "@/lib/api";
+import { recipeSummarySelect, flattenRecipe, ok, err, parseDateOnly } from "@/lib/api";
 import { attachRecipeRatings, revalidateRecipes } from "@/lib/queries";
 import { getSession, requireAdmin } from "@/lib/session";
 import { toStepKind } from "@/lib/types";
@@ -77,6 +77,7 @@ export async function POST(request: NextRequest) {
 
   const b = body as {
     name?: string;
+    createdAt?: string;
     servings?: number;
     prep?: number;
     cook?: number;
@@ -95,6 +96,7 @@ export async function POST(request: NextRequest) {
   const recipe = await db.recipe.create({
     data: {
       name: b.name.trim(),
+      ...(parseDateOnly(b.createdAt) ? { createdAt: parseDateOnly(b.createdAt) } : {}),
       servings: b.servings ?? null,
       prep: b.prep ?? null,
       cook: b.cook ?? null,

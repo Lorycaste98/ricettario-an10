@@ -6,7 +6,7 @@
 
 import { type NextRequest } from "next/server";
 import { db } from "@/lib/db";
-import { recipeDetailSelect, flattenRecipe, ok, err } from "@/lib/api";
+import { recipeDetailSelect, flattenRecipe, ok, err, parseDateOnly } from "@/lib/api";
 import { revalidateRecipes } from "@/lib/queries";
 import { getSession, requireAdmin } from "@/lib/session";
 import { toStepKind } from "@/lib/types";
@@ -48,6 +48,7 @@ export async function PUT(
 
   const b = body as {
     name?: string;
+    createdAt?: string;
     servings?: number | null;
     prep?: number | null;
     cook?: number | null;
@@ -88,6 +89,7 @@ export async function PUT(
       where: { id: recipeId },
       data: {
         ...(b.name !== undefined ? { name: b.name.trim() } : {}),
+        ...(parseDateOnly(b.createdAt) ? { createdAt: parseDateOnly(b.createdAt) } : {}),
         ...(b.servings !== undefined ? { servings: b.servings } : {}),
         ...(b.prep !== undefined ? { prep: b.prep } : {}),
         ...(b.cook !== undefined ? { cook: b.cook } : {}),
