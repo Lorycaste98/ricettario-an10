@@ -1,17 +1,21 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import QRCode from "qrcode";
 import { db } from "@/lib/db";
 import { flattenRecipe } from "@/lib/api";
 import { getMenuDetail } from "@/lib/queries";
 import { getSession } from "@/lib/session";
+import { getSiteUrl } from "@/lib/site-url";
 import { formatMinutes } from "@/lib/types";
 import { resolveServeAt, computeStart, startLabel } from "@/lib/cook-schedule";
 import type { Metadata } from "next";
-import { CalendarDays, UtensilsCrossed, Star, Clock, Users, Pencil, AlarmClock } from "lucide-react";
+import { CalendarDays, UtensilsCrossed, Star, Clock, Users, Pencil, AlarmClock, ChefHat } from "lucide-react";
 import { SectionHeader } from "@/components/ui/SectionHeader";
-import { MenuReviewSection } from "./MenuReviewSection";
 import { MenuPdfButton } from "@/components/menu/MenuPdfButton";
+import { MenuShoppingList } from "@/components/menu/MenuShoppingList";
+import { ShareReviewLink } from "@/components/menu/ShareReviewLink";
+import { MenuReceivedReviews } from "@/components/menu/MenuReceivedReviews";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -45,6 +49,14 @@ export default async function MenuDetailPage({ params }: Params) {
   // Istante di servizio (data + ora opzionale): base per il countdown "quando iniziare"
   const serve = resolveServeAt(menu.date, menu.servingTime);
 
+  // Link + QR di recensione (solo admin): generati server-side, mai inviati ai visitatori
+  let reviewUrl: string | null = null;
+  let reviewQr: string | null = null;
+  if (session) {
+    reviewUrl = `${getSiteUrl()}/recensisci/${menu.reviewToken}`;
+    reviewQr = await QRCode.toDataURL(reviewUrl, { margin: 1, width: 400 });
+  }
+
   return (
     <div className="mx-auto max-w-5xl space-y-8">
       {/* Hero header */}
@@ -66,9 +78,17 @@ export default async function MenuDetailPage({ params }: Params) {
           )}
           <div className="absolute inset-0 bg-linear-to-t from-sky-950/90 via-sky-950/40 to-transparent" />
 
-          {/* Modifica (admin) */}
-          {session && (
-            <div className="absolute top-3 right-3">
+          {/* Azioni admin */}
+          {session && reviewUrl && reviewQr && (
+            <div className="absolute top-3 right-3 flex flex-wrap items-center justify-end gap-2">
+              <ShareReviewLink url={reviewUrl} qrDataUrl={reviewQr} />
+              <Link
+                href={`/menu/${menu.id}/cucina`}
+                className="flex items-center gap-1.5 rounded-xl border border-white/30 bg-black/40 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm hover:bg-black/60 transition"
+              >
+                <ChefHat size={11} />
+                Modalità cucina
+              </Link>
               <Link
                 href={`/admin/menu/${menu.id}/modifica`}
                 className="flex items-center gap-1.5 rounded-xl border border-white/30 bg-black/40 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm hover:bg-black/60 transition"
@@ -217,13 +237,13 @@ export default async function MenuDetailPage({ params }: Params) {
         </div>
       </section>
 
-      {/* Recensioni */}
-      <MenuReviewSection
-        menuId={menu.id}
-        reviews={menu.reviews}
-        avgRating={menu.avgRating}
-        isAdmin={!!session}
-      />
+      {/* Lista della spesa (solo admin) */}
+      {session && menu.shoppingList && (
+        <MenuShoppingList menuId={menu.id} items={menu.shoppingList} />
+      )}
+
+      {/* Recensioni ricevute tramite il link di recensione (solo admin) */}
+      {session && <MenuReceivedReviews initialReviews={menu.recipeReviews} avgRating={menu.avgRating} />}
     </div>
   );
 }

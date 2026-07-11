@@ -15,7 +15,7 @@ export function RecentReviews({ reviews }: { reviews: ReviewItem[] }) {
           pt-1 evita che il translate-y in hover venga tagliato dall'overflow. */}
       <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pt-1 pb-2 snap-x [scrollbar-width:thin] lg:mx-0 lg:grid lg:grid-cols-5 lg:overflow-visible lg:px-0 lg:pt-0 lg:pb-0">
         {reviews.map((r, i) => (
-          <div key={`${r.source?.type ?? "x"}-${r.id}`} className="w-[220px] shrink-0 snap-start lg:w-auto">
+          <div key={r.id} className="w-[220px] shrink-0 snap-start lg:w-auto">
             <ReviewCard review={r} index={i} expand="dialog" compact />
           </div>
         ))}

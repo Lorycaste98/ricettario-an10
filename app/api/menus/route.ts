@@ -4,6 +4,7 @@
  */
 
 import { type NextRequest } from "next/server";
+import crypto from "node:crypto";
 import { db } from "@/lib/db";
 import { ok, err } from "@/lib/api";
 import { revalidateMenus } from "@/lib/queries";
@@ -17,8 +18,8 @@ const menuSummarySelect = {
   servingTime: true,
   photo: true,
   createdAt: true,
-  _count: { select: { reviews: true, recipes: true } },
-  reviews: { select: { rating: true } },
+  _count: { select: { recipeReviews: true, recipes: true } },
+  recipeReviews: { select: { rating: true } },
   recipes: {
     select: {
       order: true,
@@ -30,11 +31,11 @@ const menuSummarySelect = {
 } as const;
 
 function flattenMenu(m: {
-  reviews: { rating: number }[];
+  recipeReviews: { rating: number }[];
   recipes: { order: number; recipe: { photo: string | null } }[];
   [key: string]: unknown;
 }) {
-  const reviews = m.reviews ?? [];
+  const reviews = m.recipeReviews ?? [];
   const avgRating =
     reviews.length > 0
       ? Math.round(
@@ -84,6 +85,7 @@ export async function POST(request: NextRequest) {
       date: b.date ? new Date(b.date) : null,
       servingTime: b.date ? (b.servingTime?.trim() || null) : null,
       photo: b.photo?.trim() || null,
+      reviewToken: crypto.randomUUID(),
       recipes: {
         create: (b.recipeIds ?? []).map((recipeId, idx) => ({
           recipeId,

@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
-import { Star, ChevronDown, Trash2 } from "lucide-react";
+import { ChevronDown, Trash2, Tag as TagIcon } from "lucide-react";
 import { ratingStyle } from "@/lib/review-style";
+import { RatingBadge } from "@/components/ui/Rating";
 
 const LONG_THRESHOLD = 160;
 
@@ -15,14 +17,15 @@ function formatDate(iso: string) {
 }
 
 /**
- * Card recensione per le pagine di dettaglio (ricetta e menù).
- * Colorata per voto, riflesso dorato a 5★, commenti lunghi espandibili.
+ * Card recensione per le pagine di dettaglio ricetta (e, storicamente, menù).
+ * Colorata per voto, riflesso dorato al voto massimo, commenti lunghi espandibili.
  */
 export function DetailReviewCard({
   nickname,
   rating,
   comment,
   createdAt,
+  tag,
   index = 0,
   isAdmin = false,
   onDelete,
@@ -31,6 +34,8 @@ export function DetailReviewCard({
   rating: number;
   comment: string | null;
   createdAt: string;
+  /** Chip di contesto opzionale (es. menù da cui arriva, sulla pagina ricetta; o ricetta votata, sulla pagina menù). */
+  tag?: { href: string; label: string } | null;
   index?: number;
   isAdmin?: boolean;
   onDelete?: () => void;
@@ -57,15 +62,11 @@ export function DetailReviewCard({
             <span className="ml-2 text-xs text-sky-600">{formatDate(createdAt)}</span>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <span className={`flex gap-0.5 ${s.star}`}>
-              {Array.from({ length: rating }).map((_, i) => (
-                <Star key={i} size={13} fill="currentColor" />
-              ))}
-            </span>
+            <RatingBadge rating={rating} size="sm" />
             {isAdmin && onDelete && (
               <button
                 onClick={onDelete}
-                className="flex h-7 w-7 items-center justify-center rounded-lg text-sky-400 transition-colors hover:bg-red-50 hover:text-red-500"
+                className="flex h-7 w-7 items-center justify-center rounded-lg text-sky-400 transition-colors active:bg-red-50 active:text-red-500 sm:hover:bg-red-50 sm:hover:text-red-500"
                 aria-label="Elimina recensione"
               >
                 <Trash2 size={13} />
@@ -73,6 +74,14 @@ export function DetailReviewCard({
             )}
           </div>
         </div>
+        {tag && (
+          <Link
+            href={tag.href}
+            className="mt-1 inline-flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-600 active:bg-sky-200 sm:hover:bg-sky-200 transition-colors"
+          >
+            <TagIcon size={10} /> {tag.label}
+          </Link>
+        )}
         {text && (
           <div className="mt-1">
             <p
@@ -86,7 +95,7 @@ export function DetailReviewCard({
               <button
                 type="button"
                 onClick={() => setExpanded((v) => !v)}
-                className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-orange-600 transition-colors hover:text-orange-700"
+                className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-orange-600 transition-colors active:text-orange-700 sm:hover:text-orange-700"
               >
                 {expanded ? "Mostra meno" : "Leggi tutto"}
                 <ChevronDown

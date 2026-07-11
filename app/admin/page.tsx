@@ -36,7 +36,7 @@ export default async function AdminPage() {
     .findMany({ where: { excludedFromStats: true }, select: { name: true } })
     .then((rows) => rows.map((r) => r.name));
 
-  const [recipeCount, categoryCount, tagCount, menuCount, topCookedRaw, recentRecipeReviews, recentMenuReviews, topIngredientsRaw, ingredientCount, categoriesRaw, tagsRaw] = await Promise.all([
+  const [recipeCount, categoryCount, tagCount, menuCount, topCookedRaw, recentRecipeReviews, topIngredientsRaw, ingredientCount, categoriesRaw, tagsRaw] = await Promise.all([
     db.recipe.count(),
     db.category.count(),
     db.tag.count(),
@@ -53,13 +53,6 @@ export default async function AdminPage() {
       select: {
         id: true, nickname: true, rating: true, comment: true, createdAt: true,
         recipe: { select: { id: true, name: true } },
-      },
-    }),
-    db.menuReview.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 5,
-      select: {
-        id: true, nickname: true, rating: true, comment: true, createdAt: true,
         menu: { select: { id: true, name: true } },
       },
     }),
@@ -83,19 +76,12 @@ export default async function AdminPage() {
 
   const totalCooks = await db.recipe.aggregate({ _sum: { cookCount: true } });
 
-  // Ultime 5 recensioni indipendentemente dal tipo (ricetta o menù)
-  const recentReviews: ReviewItem[] = [
-    ...recentRecipeReviews.map((r) => ({
-      id: r.id, nickname: r.nickname, rating: r.rating, comment: r.comment, createdAt: r.createdAt,
-      source: { type: "recipe" as const, id: r.recipe.id, name: r.recipe.name },
-    })),
-    ...recentMenuReviews.map((r) => ({
-      id: r.id, nickname: r.nickname, rating: r.rating, comment: r.comment, createdAt: r.createdAt,
-      source: { type: "menu" as const, id: r.menu.id, name: r.menu.name },
-    })),
-  ]
-    .sort((a, b) => (b.createdAt as Date).getTime() - (a.createdAt as Date).getTime())
-    .slice(0, 5);
+  // Ultime 5 recensioni ricetta (da menù o note personali admin)
+  const recentReviews: ReviewItem[] = recentRecipeReviews.map((r) => ({
+    id: r.id, nickname: r.nickname, rating: r.rating, comment: r.comment, createdAt: r.createdAt.toISOString(),
+    recipe: r.recipe,
+    menu: r.menu,
+  }));
 
   const topCooked = topCookedRaw.map((r) => ({ name: r.name, value: r.cookCount }));
   const topIngredients = topIngredientsRaw.map((i) => ({ name: i.name, value: i._count.name }));

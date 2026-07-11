@@ -17,16 +17,17 @@ type MenuRow = {
   date: Date | null;
   photo: string | null;
   createdAt: Date;
-  _count: { reviews: number; recipes: number };
-  reviews: { rating: number }[];
+  _count: { recipeReviews: number; recipes: number };
+  recipeReviews: { rating: number }[];
   recipes: { recipe: { photo: string | null } }[];
 };
 
-type MenuDisplayRow = Omit<MenuRow, "date" | "createdAt" | "reviews"> & {
+type MenuDisplayRow = Omit<MenuRow, "date" | "createdAt" | "recipeReviews" | "_count"> & {
   date: string | null;
   createdAt: string;
   avgRating: number | null;
   thumb: string | null;
+  _count: { reviews: number; recipes: number };
 };
 
 async function getMenus(): Promise<MenuDisplayRow[]> {
@@ -39,8 +40,8 @@ async function getMenus(): Promise<MenuDisplayRow[]> {
       date: true,
       photo: true,
       createdAt: true,
-      _count: { select: { reviews: true, recipes: true } },
-      reviews: { select: { rating: true } },
+      _count: { select: { recipeReviews: true, recipes: true } },
+      recipeReviews: { select: { rating: true } },
       recipes: {
         select: { recipe: { select: { photo: true } } },
         orderBy: { order: "asc" },
@@ -50,7 +51,7 @@ async function getMenus(): Promise<MenuDisplayRow[]> {
   });
 
   return menus.map((m: MenuRow) => {
-    const reviews = m.reviews;
+    const reviews = m.recipeReviews;
     const avgRating =
       reviews.length > 0
         ? Math.round(
@@ -59,9 +60,14 @@ async function getMenus(): Promise<MenuDisplayRow[]> {
         : null;
     const thumb = m.photo ?? m.recipes[0]?.recipe.photo ?? null;
     return {
-      ...m,
+      id: m.id,
+      name: m.name,
+      description: m.description,
+      photo: m.photo,
+      recipes: m.recipes,
       date: m.date ? m.date.toISOString() : null,
       createdAt: m.createdAt.toISOString(),
+      _count: { reviews: m._count.recipeReviews, recipes: m._count.recipes },
       avgRating,
       thumb,
     };

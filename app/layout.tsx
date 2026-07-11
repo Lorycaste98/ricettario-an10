@@ -4,15 +4,11 @@ import "./globals.css";
 import { AppShell } from "@/components/AppShell";
 import { AuthProvider } from "@/components/AuthProvider";
 import { DialogProvider } from "@/components/ui/ConfirmDialog";
+import { getSiteUrl } from "@/lib/site-url";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
 
-// URL base per OG/canonical: dominio di produzione Vercel (stabile) o override esplicito
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ??
-  (process.env.VERCEL_PROJECT_PRODUCTION_URL
-    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-    : "http://localhost:3000");
+const siteUrl = getSiteUrl();
 
 const TITLE = "Ricettario AN10";
 const DESCRIPTION = "Il mio personale ricettario: ricette, menù e tempi di preparazione.";

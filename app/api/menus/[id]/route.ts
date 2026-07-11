@@ -23,8 +23,8 @@ const menuDetailSelect = (isAdmin: boolean) =>
     photo: true,
     createdAt: true,
     updatedAt: true,
-    _count: { select: { reviews: true, recipes: true } },
-    reviews: {
+    _count: { select: { recipeReviews: true, recipes: true } },
+    recipeReviews: {
       select: { id: true, nickname: true, rating: true, comment: true, createdAt: true },
       orderBy: { createdAt: "desc" as const },
     },
@@ -50,7 +50,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
   });
   if (!menu) return err("Menu non trovato", 404);
 
-  const reviews = menu.reviews as { rating: number }[];
+  const reviews = menu.recipeReviews as { rating: number }[];
   const avgRating =
     reviews.length > 0
       ? Math.round(
@@ -66,7 +66,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
   return ok({
     ...menu,
     // Allinea il conteggio alla lista filtrata (niente ricette nascoste per i visitatori)
-    _count: { ...menu._count, recipes: menu.recipes.length },
+    _count: { reviews: menu._count.recipeReviews, recipes: menu.recipes.length },
     avgRating,
     previewPhotos,
     recipes: menu.recipes.map((mr: { order: number }, i: number) => ({

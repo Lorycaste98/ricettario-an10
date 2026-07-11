@@ -111,11 +111,15 @@ model RecipeTag {
 model Review {
   id        Int      @id @default(autoincrement())
   nickname  String
+  /** Voto 1-10. Le recensioni con menuId nullo sono note personali dell'admin (nessun voto pubblico diretto). */
   rating    Int
   comment   String?
   createdAt DateTime @default(now())
   recipeId  Int
   recipe    Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  /** Menù da cui arriva la recensione (nullo = nota personale dell'admin, non legata a un'occasione specifica). */
+  menuId    Int?
+  menu      Menu?    @relation(fields: [menuId], references: [id], onDelete: SetNull)
 }
 
 model Admin {
@@ -135,11 +139,18 @@ model Menu {
   /** Orario di servizio "HH:mm" (opzionale); usato per il countdown "quando iniziare" */
   servingTime String?
   photo       String?
+  /** Token segreto per il link pubblico "recensisci le ricette di questo menù" (/recensisci/[token]) */
+  reviewToken String       @unique
+  /** Contatore recensioni anonime di questo menù: alimenta il nickname progressivo "Ospite N" */
+  anonymousReviewCount Int @default(0)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
-  recipes     MenuRecipe[]
-  reviews     MenuReview[]
+  recipes       MenuRecipe[]
+  /** Storico: recensioni al menù nel suo complesso, formato dismesso — non se ne creano più di nuove */
+  reviews       MenuReview[]
+  /** Recensioni ricetta arrivate tramite il link di recensione di questo menù */
+  recipeReviews Review[]
 }
 
 model MenuRecipe {

@@ -18,6 +18,8 @@ npm run create-admin # crea utente admin
 | File | Scopo |
 |------|-------|
 | `lib/favorites.ts` | Hook `useFavorites` — preferiti in localStorage, nessuna persistenza server |
+| `lib/local-store.ts` | Hook generico `useLocalStore(key, fallback, parse, serialize?)` — stato persistito in localStorage via `useSyncExternalStore` (stesso pattern di `favorites.ts` ma parametrizzato); usato da lista spesa e modalità cucina |
+| `lib/shopping-list.ts` | `buildShoppingList(recipes)` — aggrega gli `Ingredient` di tutte le ricette di un menù per nome+unità normalizzati (case-insensitive), sommando le quantità e tracciando le ricette sorgente |
 | `lib/api.ts` | Fetch wrapper + `recipeSummarySelect` / `flattenRecipe` helpers |
 | `lib/cook-schedule.ts` | `totalLeadMinutes` / `resolveServeAt` / `computeStart` / `startLabel` — calcolo "quando iniziare" una ricetta dato il servizio del menù (data + `servingTime`) |
 | `components/ui/ConfirmDialog.tsx` | Dialog conferma con hook `useConfirm()` |
@@ -26,15 +28,22 @@ npm run create-admin # crea utente admin
 | `components/ui/CategoryCombobox.tsx` | Cerca/crea categoria al volo (POST `/api/categories`) con color-picker inline |
 | `components/ui/TagCombobox.tsx` | Cerca/crea tag al volo (POST `/api/tags`) |
 | `components/AppShell.tsx` | Wrapper layout comune |
-| `lib/review-style.ts` | `ratingStyle(rating)` — colori card/stelle per voto (5★ oro animato → 1★ rosa) |
-| `components/admin/ReviewCard.tsx` | Card recensione (righe: stelle+data / sorgente / autore); badge tipo via `source`; `expand="inline"` o `"dialog"` |
-| `components/admin/RecentReviews.tsx` | Dashboard: ultime 5 recensioni miste ricette+menù affiancate (scroll mobile / grid-5 desktop), Dialog |
-| `components/admin/ReviewsBrowser.tsx` | Pagina recensioni: ricerca + switcher tab animato (ricette/menù), gruppi per entità |
-| `components/recipe/DetailReviewCard.tsx` | Card recensione per pagine dettaglio ricetta **e** menù (espandibile, eliminabile da admin) |
+| `lib/review-style.ts` | `ratingStyle(rating)` — colori card/badge per voto 1-10 (9-10 oro animato → 1-2 rosa, bucket a coppie) |
+| `components/ui/Rating.tsx` | `RatingInput` (selettore 1-10 a bottoni, touch-first) + `RatingBadge` (badge sola lettura "N/10") |
+| `lib/site-url.ts` | `getSiteUrl()` — URL base del sito (prod Vercel o `NEXT_PUBLIC_SITE_URL`), usato da OG e dal link di recensione menù |
+| `components/admin/ReviewCard.tsx` | Card recensione (righe: badge voto+data / ricetta + tag menù opzionale / autore); `expand="inline"` o `"dialog"` |
+| `components/admin/RecentReviews.tsx` | Dashboard: ultime 5 recensioni ricetta affiancate (scroll mobile / grid-5 desktop), Dialog |
+| `components/admin/ReviewsBrowser.tsx` | Pagina recensioni: ricerca + switcher tab animato — "Ricette" (Review raggruppate per ricetta) / "Menù" (Review raggruppate per menù d'origine, stessa tabella vista da due angoli) |
+| `components/recipe/DetailReviewCard.tsx` | Card recensione (ricetta e menù): badge voto 1-10, chip `tag` opzionale (link a menù o ricetta collegata), eliminabile da admin |
+| `components/menu/MenuReviewForm.tsx` | Form pubblico "recensisci il menù" (`/recensisci/[token]`): nickname una volta + voto 1-10 per ricetta, nessun login |
+| `components/menu/ShareReviewLink.tsx` | Bottone admin "Recensioni ospiti" sul dettaglio menù: apre modal con link `/recensisci/[token]`, copia, QR (generato server-side con `qrcode`) |
+| `components/menu/MenuReceivedReviews.tsx` | Pannello admin sul dettaglio menù: recensioni ricetta arrivate dal link di quel menù, eliminabili |
 | `components/admin/ChartsSection.tsx` | Grafici dashboard: select grafico + period picker (preset + range custom); fa fetch su `/api/admin/stats` al cambio periodo |
 | `components/recipe/RecipePdfButton.tsx` | Tasto "Esporta in PDF" (client): import lazy di `@react-pdf/renderer`, foto→dataURL, download blob |
 | `components/recipe/RecipePdfDocument.tsx` | Layout PDF ricetta (`@react-pdf/renderer`) — importato solo dal button, mai a livello pagina. Esporta `pdfStyles` / `PdfFooter` / `RecipePdfContent` riusati dal PDF menù |
 | `components/menu/MenuPdfButton.tsx` | Tasto "Esporta PDF" del menù (client): fa fetch dei dettagli ricetta da `/api/recipes/[id]`, import lazy di `@react-pdf/renderer` |
+| `components/menu/MenuShoppingList.tsx` | Lista della spesa nel dettaglio menù (solo admin): ricerca, checkbox "comprato" persistite in localStorage per menù, collassata oltre 8 righe con "Vedi tutta la lista" |
+| `components/menu/MenuCookMode.tsx` | "Modalità cucina" (`/menu/[id]/cucina`, solo admin): una card per ricetta con stepper avanti/indietro sugli step (uno alla volta, progresso in localStorage per menù), bottone finale "Segna cucinata" → `POST /api/recipes/[id]/cook` |
 | `components/menu/MenuPdfDocument.tsx` | Layout PDF menù: copertina/intestazione + una pagina per ricetta (riusa `RecipePdfContent`) |
 | `app/opengraph-image.tsx` | Immagine OG dinamica (`next/og`) per l'anteprima di condivisione; `metadataBase`/OG/Twitter in `app/layout.tsx`, base = `VERCEL_PROJECT_PRODUCTION_URL` o `NEXT_PUBLIC_SITE_URL` |
 | `components/recipe/TagFilterCombobox.tsx` | Combobox ricerca+multi-selezione per filtrare le ricette per tag (no «#»); usato in `RecipeGrid` desktop dropdown + sheet mobile |
@@ -59,6 +68,9 @@ app/api/ingredients/            # Lista pubblica ingredienti master (autocomplet
 app/api/admin/stats/            # Dati grafici dashboard filtrati per periodo (?from=&to=); cotture via CookLog, fallback cookCount per "Tutto"
 app/api/admin/ingredients/      # CRUD + merge + exclude IngredientMaster
 app/api/admin/utenti/           # CRUD utenti admin
+app/menu/[id]/cucina/           # Modalità cucina del menù (solo admin): stepper per ricetta, vedi MenuCookMode
+app/recensisci/[token]/         # Pagina pubblica "vota le ricette del menù" (nessun login, protetta dal token)
+app/api/recensisci/[token]/     # POST — crea le Review (voto 1-10) per le ricette del menù, dato il token
 ```
 
 ## Auth e ruoli
@@ -86,6 +98,9 @@ app/api/admin/utenti/           # CRUD utenti admin
 - `Recipe.published` (`Boolean`, default `true`): visibilità della ricetta. Le ricette `published=false` ("non pronta") sono **nascoste ai visitatori** in tutti i percorsi di lettura pubblici (`/`, `/ricette`, `/preferiti`, dettaglio `/ricette/[id]` → `notFound`, `/api/recipes` GET, `/api/search`) — il filtro `where: { published: true }` si applica solo quando **non** c'è sessione admin. Gli admin le vedono ovunque, offuscate + badge "Non pronta" nella `RecipeCard`. Toggle da `/admin/ricette` (switch) o dal dettaglio (`RecipeActions`) via `PATCH /api/recipes/[id]` con `{ published }`. Chi renderizza `RecipeCard` deve includere `published` nel select (è in `recipeSummarySelect`)
 - `Recipe.createdAt` è anche la **"data della ricetta"** modificabile dall'admin nel `RecipeForm` (campo `Data`, `<input type="date">`): default = oggi alla creazione, sempre cambiabile. Il form invia `createdAt` come `"YYYY-MM-DD"`; POST/PUT `/api/recipes` lo convertono con `parseDateOnly()` (lib/api.ts) → `Date` a mezzogiorno UTC, ricostruibile con `.toISOString().slice(0, 10)`
 - `Menu.servingTime` (`"HH:mm"`, opzionale): orario di servizio. Insieme a `Menu.date` alimenta il countdown "quando iniziare" mostrato sulle card ricetta nel dettaglio menù. Il lead time = somma di **tutti** i minuti degli step (prep+cottura+attesa), fallback `prep+cook` — vedi `lib/cook-schedule.ts`
+- Lista della spesa del menù (solo admin, per ora): calcolata al volo in `queryMenuDetail` (`lib/queries.ts`) con `buildShoppingList`, nessuna tabella/snapshot salvato. Raggruppa per `Ingredient.name` normalizzato — quando gli ingredienti verranno unificati via `IngredientMaster`, il merge riscrive `Ingredient.name` in tutte le ricette (vedi `app/api/admin/ingredients/merge/route.ts`) e la lista si allinea da sola al giro successivo, nessuna modifica necessaria
+- Checkbox "comprato" (lista spesa) e avanzamento step (modalità cucina) vivono solo in `localStorage` per menù (`lib/local-store.ts`) — nessuna migrazione Prisma, nessuna persistenza server, coerente con l'approccio già usato per i preferiti
+- **Recensioni (voto 1-10, non più stelle)**: `Review` appartiene sempre a una `Recipe`; `menuId` opzionale distingue l'origine — presente = recensione arrivata dal link di quel menù (badge/tag col nome del menù sulla pagina ricetta), nullo = nota personale dell'admin (promemoria, non una recensione pubblica). Gli ospiti **non possono più** scrivere una recensione direttamente sulla pagina ricetta: l'unico modo è il link pubblico `/recensisci/[token]` (nessun login, protetto dal `Menu.reviewToken` generato alla creazione del menù), condivisibile dall'admin via bottone "Recensioni ospiti" sul dettaglio menù (link + QR, generato server-side con `qrcode`, mai esposto ai visitatori). `MenuReview` (voto al menù intero) è dismesso: nessuna nuova riga viene più creata, resta in schema solo come storico (non più mostrato in UI) perché non è ricostruibile una recensione-ricetta a partire da un voto dato all'intero menù. `Menu.avgRating`/`_count.reviews` (liste e dettaglio) sono ora calcolati aggregando `Menu.recipeReviews` (le `Review` arrivate dal link di quel menù), non più da `MenuReview`
 
 ## ⚠️ Next.js 16 — non nel training data
 

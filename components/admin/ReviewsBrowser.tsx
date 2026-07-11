@@ -43,7 +43,7 @@ function GroupSection({ group, href }: { group: ReviewGroup; href: string }) {
         </Link>
         <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
           <Star size={12} fill="currentColor" className="text-amber-400" />
-          {group.avg.toFixed(1)}
+          {group.avg.toFixed(1)}/10
           <span className="text-gray-400">
             · {group.reviews.length} recension{group.reviews.length === 1 ? "e" : "i"}
           </span>

@@ -14,6 +14,7 @@ import "server-only";
 import { unstable_cache, revalidateTag } from "next/cache";
 import { db } from "@/lib/db";
 import { recipeSummarySelect, flattenRecipe } from "@/lib/api";
+import { buildShoppingList, type ShoppingListItem } from "@/lib/shopping-list";
 
 // ---------------------------------------------------------------------------
 // Tag di cache + invalidazione
@@ -113,14 +114,16 @@ function processMenuRow(m: {
   servingTime: string | null;
   photo: string | null;
   createdAt: Date;
-  _count: { reviews: number; recipes: number };
-  reviews: { rating: number }[];
+  _count: { recipeReviews: number; recipes: number };
+  recipeReviews: { rating: number }[];
   recipes: { order: number; recipe: { photo: string | null } }[];
 }) {
+  // Media/conteggio: aggregato delle recensioni ricetta arrivate tramite il link di questo menù
+  // (le vecchie MenuReview, voto al menù intero, sono dismesse — non se ne creano più)
   const avgRating =
-    m.reviews.length > 0
+    m.recipeReviews.length > 0
       ? Math.round(
-          (m.reviews.reduce((s, r) => s + r.rating, 0) / m.reviews.length) * 10
+          (m.recipeReviews.reduce((s, r) => s + r.rating, 0) / m.recipeReviews.length) * 10
         ) / 10
       : null;
   const previewPhotos = m.recipes
@@ -134,7 +137,7 @@ function processMenuRow(m: {
     servingTime: m.servingTime,
     photo: m.photo,
     createdAt: m.createdAt.toISOString(),
-    _count: m._count,
+    _count: { reviews: m._count.recipeReviews, recipes: m._count.recipes },
     avgRating,
     previewPhotos,
   };
@@ -152,8 +155,8 @@ async function queryMenuSummaries(take?: number) {
       servingTime: true,
       photo: true,
       createdAt: true,
-      _count: { select: { reviews: true, recipes: true } },
-      reviews: { select: { rating: true } },
+      _count: { select: { recipeReviews: true, recipes: true } },
+      recipeReviews: { select: { rating: true } },
       recipes: {
         // Anteprime: solo foto di ricette pubblicate (niente leak delle non pronte)
         where: { recipe: { published: true } },
@@ -195,8 +198,13 @@ async function queryMenuDetail(id: number, isAdmin: boolean) {
       photo: true,
       createdAt: true,
       updatedAt: true,
-      reviews: {
-        select: { id: true, nickname: true, rating: true, comment: true, createdAt: true },
+      reviewToken: true,
+      // Recensioni ricetta arrivate tramite il link di questo menù (vedi /recensisci/[token])
+      recipeReviews: {
+        select: {
+          id: true, nickname: true, rating: true, comment: true, createdAt: true,
+          recipe: { select: { id: true, name: true } },
+        },
         orderBy: { createdAt: "desc" as const },
       },
       recipes: {
@@ -204,7 +212,16 @@ async function queryMenuDetail(id: number, isAdmin: boolean) {
         where: isAdmin ? {} : { recipe: { published: true } },
         select: {
           order: true,
-          recipe: { select: { ...recipeSummarySelect, steps: { select: { mins: true } } } },
+          recipe: {
+            select: {
+              ...recipeSummarySelect,
+              steps: { select: { mins: true } },
+              // Ingredienti: servono solo per la lista della spesa (solo admin, vedi sotto)
+              ...(isAdmin
+                ? { ingredients: { select: { name: true, qty: true, unit: true }, orderBy: { order: "asc" as const } } }
+                : {}),
+            },
+          },
         },
         orderBy: { order: "asc" as const },
       },
@@ -213,14 +230,24 @@ async function queryMenuDetail(id: number, isAdmin: boolean) {
   if (!menu) return null;
 
   const avgRating =
-    menu.reviews.length > 0
+    menu.recipeReviews.length > 0
       ? Math.round(
-          (menu.reviews.reduce((s, r) => s + r.rating, 0) / menu.reviews.length) * 10
+          (menu.recipeReviews.reduce((s, r) => s + r.rating, 0) / menu.recipeReviews.length) * 10
         ) / 10
       : null;
 
   const rated = await attachRecipeRatings(menu.recipes.map((mr) => mr.recipe));
   const recipes = menu.recipes.map((mr, i) => ({ order: mr.order, recipe: rated[i] }));
+
+  // Lista della spesa: solo per l'admin (vedi select condizionale sopra)
+  const shoppingList: ShoppingListItem[] | null = isAdmin
+    ? buildShoppingList(
+        recipes.map(({ recipe }) => ({
+          name: recipe.name as string,
+          ingredients: (recipe as unknown as { ingredients?: { name: string; qty: number | null; unit: string | null }[] }).ingredients ?? [],
+        }))
+      )
+    : null;
 
   return {
     id: menu.id,
@@ -231,10 +258,12 @@ async function queryMenuDetail(id: number, isAdmin: boolean) {
     photo: menu.photo,
     createdAt: menu.createdAt.toISOString(),
     updatedAt: menu.updatedAt.toISOString(),
+    reviewToken: menu.reviewToken,
     avgRating,
-    _count: { reviews: menu.reviews.length, recipes: menu.recipes.length },
+    _count: { reviews: menu.recipeReviews.length, recipes: menu.recipes.length },
     recipes,
-    reviews: menu.reviews.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() })),
+    shoppingList,
+    recipeReviews: menu.recipeReviews.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() })),
   };
 }
 

@@ -5,20 +5,11 @@ import { ArrowLeft, MessageSquareHeart, Star } from "lucide-react";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { ReviewsBrowser, type ReviewGroup } from "@/components/admin/ReviewsBrowser";
+import type { ReviewItem } from "@/components/admin/ReviewCard";
 
 export const metadata: Metadata = { title: "Recensioni — Ricettario" };
 
-interface RawReview {
-  id: number;
-  nickname: string;
-  rating: number;
-  comment: string | null;
-  createdAt: Date;
-}
-
-/** Trasforma {id, name, reviews[]} in un gruppo ordinato con media e conteggio. */
-function toGroup(entity: { id: number; name: string; reviews: RawReview[] }): ReviewGroup {
-  const reviews = entity.reviews.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() }));
+function toGroup(entity: { id: number; name: string }, reviews: ReviewItem[]): ReviewGroup {
   const count = reviews.length;
   const avg = count ? reviews.reduce((s, r) => s + r.rating, 0) / count : 0;
   return { id: entity.id, name: entity.name, avg, count, reviews };
@@ -34,31 +25,54 @@ export default async function RecensioniPage() {
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const reviewSelect = {
-    orderBy: { createdAt: "desc" as const },
-    select: { id: true, nickname: true, rating: true, comment: true, createdAt: true },
-  };
-
-  const [recipesRaw, menusRaw] = await Promise.all([
+  // Le due tab sono due raggruppamenti della stessa tabella Review (per ricetta / per menù
+  // d'origine), quindi si sovrappongono — il totale/media globali vanno calcolati a parte.
+  const [recipesRaw, menusRaw, agg] = await Promise.all([
     db.recipe.findMany({
       where: { reviews: { some: {} } },
-      select: { id: true, name: true, reviews: reviewSelect },
+      select: {
+        id: true,
+        name: true,
+        reviews: {
+          orderBy: { createdAt: "desc" },
+          select: { id: true, nickname: true, rating: true, comment: true, createdAt: true, menu: { select: { id: true, name: true } } },
+        },
+      },
     }),
     db.menu.findMany({
-      where: { reviews: { some: {} } },
-      select: { id: true, name: true, reviews: reviewSelect },
+      where: { recipeReviews: { some: {} } },
+      select: {
+        id: true,
+        name: true,
+        recipeReviews: {
+          orderBy: { createdAt: "desc" },
+          select: { id: true, nickname: true, rating: true, comment: true, createdAt: true, recipe: { select: { id: true, name: true } } },
+        },
+      },
     }),
+    db.review.aggregate({ _count: true, _avg: { rating: true } }),
   ]);
 
-  const recipeGroups = recipesRaw.map(toGroup).sort(byLatestReview);
-  const menuGroups = menusRaw.map(toGroup).sort(byLatestReview);
+  const recipeGroups = recipesRaw
+    .map((r) =>
+      toGroup(
+        r,
+        r.reviews.map((rv) => ({ ...rv, createdAt: rv.createdAt.toISOString(), recipe: { id: r.id, name: r.name } }))
+      )
+    )
+    .sort(byLatestReview);
 
-  const totalReviews =
-    recipeGroups.reduce((s, g) => s + g.count, 0) + menuGroups.reduce((s, g) => s + g.count, 0);
-  const weighted =
-    recipeGroups.reduce((s, g) => s + g.avg * g.count, 0) +
-    menuGroups.reduce((s, g) => s + g.avg * g.count, 0);
-  const globalAvg = totalReviews ? (weighted / totalReviews).toFixed(1) : null;
+  const menuGroups = menusRaw
+    .map((m) =>
+      toGroup(
+        m,
+        m.recipeReviews.map((rv) => ({ ...rv, createdAt: rv.createdAt.toISOString(), menu: { id: m.id, name: m.name } }))
+      )
+    )
+    .sort(byLatestReview);
+
+  const totalReviews = agg._count;
+  const globalAvg = agg._avg.rating != null ? agg._avg.rating.toFixed(1) : null;
 
   return (
     <div className="mx-auto max-w-5xl space-y-8">
@@ -79,14 +93,14 @@ export default async function RecensioniPage() {
           <div>
             <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Recensioni</h1>
             <p className="mt-0.5 text-sm text-gray-500">
-              {totalReviews} recension{totalReviews === 1 ? "e" : "i"} tra ricette e menù
+              {totalReviews} recension{totalReviews === 1 ? "e" : "i"} sulle ricette
             </p>
           </div>
         </div>
         {globalAvg && (
           <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300/60 bg-amber-50 px-4 py-1.5 text-sm font-bold text-amber-700 shadow-sm">
             <Star size={15} fill="currentColor" className="text-amber-400" />
-            {globalAvg} di media
+            {globalAvg}/10 di media
           </span>
         )}
       </div>

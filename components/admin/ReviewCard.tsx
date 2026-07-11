@@ -2,11 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Star, ChevronDown, Maximize2, BookOpen, UtensilsCrossed } from "lucide-react";
+import { ChevronDown, Maximize2, BookOpen, UtensilsCrossed, Trash2 } from "lucide-react";
 import { ratingStyle } from "@/lib/review-style";
+import { RatingBadge } from "@/components/ui/Rating";
 import { Modal } from "@/components/ui/Modal";
-
-export type ReviewSource = { type: "recipe" | "menu"; id: number; name: string };
 
 export interface ReviewItem {
   id: number;
@@ -14,45 +13,12 @@ export interface ReviewItem {
   rating: number;
   comment: string | null;
   createdAt: string | Date;
-  /** Entità recensita: mostrata con badge distintivo (ricetta/menù). */
-  source?: ReviewSource | null;
+  recipe: { id: number; name: string };
+  /** Menù da cui è arrivata la recensione (assente = nota personale admin). */
+  menu?: { id: number; name: string } | null;
 }
 
 const LONG_THRESHOLD = 160;
-
-const SOURCE_STYLE = {
-  recipe: { icon: <BookOpen size={11} />, chip: "bg-orange-100 text-orange-600", label: "Ricetta" },
-  menu: { icon: <UtensilsCrossed size={11} />, chip: "bg-sky-100 text-sky-600", label: "Menù" },
-} as const;
-
-function sourceHref(s: ReviewSource): string {
-  return s.type === "recipe" ? `/ricette/${s.id}` : `/menu/${s.id}`;
-}
-
-function Stars({ rating, className }: { rating: number; className?: string }) {
-  return (
-    <span className={`flex shrink-0 gap-0.5 ${className ?? ""}`}>
-      {Array.from({ length: rating }).map((_, i) => (
-        <Star key={i} size={13} fill="currentColor" />
-      ))}
-    </span>
-  );
-}
-
-function SourceLink({ source, compact = false }: { source: ReviewSource; compact?: boolean }) {
-  const st = SOURCE_STYLE[source.type];
-  return (
-    <Link href={sourceHref(source)} className="group/src flex min-w-0 items-center gap-1.5">
-      <span className={`flex shrink-0 items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${st.chip}`}>
-        {st.icon}
-        {st.label}
-      </span>
-      <span className={`truncate font-bold text-gray-700 transition-colors group-hover/src:text-orange-500 ${compact ? "text-xs" : "text-sm"}`}>
-        {source.name}
-      </span>
-    </Link>
-  );
-}
 
 /**
  * @param expand "inline" (default) → «Leggi tutto» espande nella card.
@@ -63,12 +29,19 @@ export function ReviewCard({
   index = 0,
   expand = "inline",
   compact = false,
+  hideMeta = false,
+  isAdmin = false,
+  onDelete,
 }: {
   review: ReviewItem;
   index?: number;
   expand?: "inline" | "dialog";
   /** Versione condensata (dashboard): testo più piccolo, card più quadrate. */
   compact?: boolean;
+  /** Nasconde la riga ricetta/menù — utile quando la card è già raggruppata per ricetta/menù altrove. */
+  hideMeta?: boolean;
+  isAdmin?: boolean;
+  onDelete?: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -85,16 +58,49 @@ export function ReviewCard({
         } ${s.card} ${s.shine ? "shine-gold" : ""}`}
         style={{ animationDelay: `${index * 60}ms` }}
       >
-        {/* Riga 1: stelle + data */}
+        {/* Riga 1: voto + data (+ elimina, se admin) */}
         <div className="flex items-center justify-between gap-2">
-          <Stars rating={review.rating} className={s.star} />
-          <span className="shrink-0 text-[11px] text-gray-400">
-            {new Date(review.createdAt).toLocaleDateString("it-IT")}
-          </span>
+          <RatingBadge rating={review.rating} size={compact ? "sm" : "md"} />
+          <div className="flex shrink-0 items-center gap-1.5">
+            <span className="text-[11px] text-gray-400">
+              {new Date(review.createdAt).toLocaleDateString("it-IT")}
+            </span>
+            {isAdmin && onDelete && (
+              <button
+                type="button"
+                onClick={onDelete}
+                aria-label="Elimina recensione"
+                className="flex h-6 w-6 items-center justify-center rounded-lg text-gray-400 transition-colors active:bg-red-50 active:text-red-500 sm:hover:bg-red-50 sm:hover:text-red-500"
+              >
+                <Trash2 size={12} />
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Riga 2: ricetta / menù */}
-        {review.source && <SourceLink source={review.source} compact={compact} />}
+        {/* Riga 2: ricetta + tag menù */}
+        {!hideMeta && (
+          <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+            <Link href={`/ricette/${review.recipe.id}`} className="group/src flex min-w-0 items-center gap-1.5">
+              <span className="flex shrink-0 items-center gap-1 rounded-full bg-orange-100 px-1.5 py-0.5 text-[10px] font-bold text-orange-600">
+                <BookOpen size={11} />
+                Ricetta
+              </span>
+              <span className={`truncate font-bold text-gray-700 transition-colors group-hover/src:text-orange-500 ${compact ? "text-xs" : "text-sm"}`}>
+                {review.recipe.name}
+              </span>
+            </Link>
+            {review.menu && (
+              <Link
+                href={`/menu/${review.menu.id}`}
+                className="flex shrink-0 items-center gap-1 rounded-full bg-sky-100 px-1.5 py-0.5 text-[10px] font-bold text-sky-600 transition-colors hover:bg-sky-200"
+              >
+                <UtensilsCrossed size={10} />
+                {review.menu.name}
+              </Link>
+            )}
+          </div>
+        )}
 
         {/* Riga 3: icona + nome */}
         <div className="flex items-center gap-2">
@@ -136,7 +142,16 @@ export function ReviewCard({
       {expand === "dialog" && (
         <Modal open={dialogOpen} onClose={() => setDialogOpen(false)} title="Recensione">
           <div className="space-y-3">
-            {review.source && <SourceLink source={review.source} />}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Link href={`/ricette/${review.recipe.id}`} className="flex items-center gap-1.5 text-sm font-bold text-gray-700 hover:text-orange-500">
+                <BookOpen size={13} /> {review.recipe.name}
+              </Link>
+              {review.menu && (
+                <Link href={`/menu/${review.menu.id}`} className="flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-bold text-sky-600">
+                  <UtensilsCrossed size={11} /> {review.menu.name}
+                </Link>
+              )}
+            </div>
             <div className="flex items-center justify-between gap-3">
               <p className="flex items-center gap-2 text-sm">
                 <span className="flex h-7 w-7 items-center justify-center rounded-full bg-sky-100 text-xs font-bold text-sky-700">
@@ -147,7 +162,7 @@ export function ReviewCard({
                   · {new Date(review.createdAt).toLocaleDateString("it-IT")}
                 </span>
               </p>
-              <Stars rating={review.rating} className={s.star} />
+              <RatingBadge rating={review.rating} />
             </div>
             <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700">{comment}</p>
           </div>

@@ -67,12 +67,14 @@ export interface RecipePhoto {
   order: number;
 }
 
+/** Voto 1-10. `menu` presente = recensione arrivata dal link di quel menù; assente = nota personale admin. */
 export interface Review {
   id: number;
   nickname: string;
   rating: number;
   comment: string | null;
   createdAt: string;
+  menu?: { id: number; name: string } | null;
 }
 
 export interface RecipeDetail extends RecipeSummary {
@@ -84,12 +86,14 @@ export interface RecipeDetail extends RecipeSummary {
   reviews: Review[];
 }
 
-export interface MenuReview {
+/** Recensione ricetta ricevuta tramite il link di un menù (vista lato menù). */
+export interface MenuRecipeReview {
   id: number;
   nickname: string;
   rating: number;
   comment: string | null;
   createdAt: string;
+  recipe: { id: number; name: string };
 }
 
 export interface MenuSummary {
@@ -107,11 +111,13 @@ export interface MenuSummary {
 
 export interface MenuDetail extends MenuSummary {
   updatedAt: string;
+  /** Token segreto del link "/recensisci/[token]" — presente solo nella risposta admin. */
+  reviewToken: string;
   recipes: Array<{
     order: number;
     recipe: RecipeSummary;
   }>;
-  reviews: MenuReview[];
+  recipeReviews: MenuRecipeReview[];
 }
 
 // Utility

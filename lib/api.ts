@@ -50,6 +50,7 @@ export const recipeDetailSelect = {
       rating: true,
       comment: true,
       createdAt: true,
+      menu: { select: { id: true, name: true } },
     },
     orderBy: { createdAt: "desc" as const },
   },
