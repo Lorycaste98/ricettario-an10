@@ -9,6 +9,7 @@ import { RecipeCard } from "./RecipeCard";
 import { TagFilterCombobox } from "./TagFilterCombobox";
 import { type RecipeSummary, type Category, type Tag } from "@/lib/types";
 import { useAuth } from "@/components/AuthProvider";
+import { useLocalStore } from "@/lib/local-store";
 
 const PAGE_SIZE = 20;
 
@@ -19,6 +20,20 @@ interface Props {
 }
 
 type SortKey = "createdAt" | "name" | "prep" | "cook" | "cookCount";
+type PublishedFilter = "all" | "published" | "draft";
+
+const PUBLISHED_OPTIONS: { value: PublishedFilter; label: string }[] = [
+  { value: "all", label: "Tutte" },
+  { value: "published", label: "Solo pronte" },
+  { value: "draft", label: "Solo non pronte" },
+];
+
+// Persistito in localStorage: la scelta admin resta salvata tra sessioni/navigazioni
+const PUBLISHED_FILTER_KEY = "ricettario:recipe-published-filter";
+const parsePublishedFilter = (raw: string): PublishedFilter => {
+  const v = JSON.parse(raw);
+  return v === "published" || v === "draft" ? v : "all";
+};
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: "createdAt", label: "Data" },
@@ -35,6 +50,11 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
   const [activeTags, setActiveTags] = useState<number[]>([]);
   const [sort, setSort] = useState<SortKey>("createdAt");
   const [order, setOrder] = useState<"asc" | "desc">("desc");
+  const [publishedFilter, setPublishedFilter] = useLocalStore<PublishedFilter>(
+    PUBLISHED_FILTER_KEY,
+    "all",
+    parsePublishedFilter
+  );
   const [page, setPage] = useState(0);
   const [filterOpen, setFilterOpen] = useState(false);
   const [catDropdownOpen, setCatDropdownOpen] = useState(false);
@@ -42,7 +62,8 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
   const [tagDropdownOpen, setTagDropdownOpen] = useState(false);
 
   const resetPage = () => setPage(0);
-  const isFilterActive = sort !== "createdAt" || order !== "desc";
+  const isFilterActive =
+    sort !== "createdAt" || order !== "desc" || (isAdmin && publishedFilter !== "all");
   const hasActiveFilters = activeCats.length > 0 || activeTags.length > 0;
 
   const toggleCat = (id: number) => {
@@ -80,6 +101,9 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
       list = list.filter((r) => r.categories.some((c) => activeCats.includes(c.id)));
     if (activeTags.length)
       list = list.filter((r) => r.tags.some((t) => activeTags.includes(t.id)));
+    // Visibilità (solo admin: i visitatori non ricevono mai le non pronte)
+    if (isAdmin && publishedFilter === "published") list = list.filter((r) => r.published);
+    else if (isAdmin && publishedFilter === "draft") list = list.filter((r) => !r.published);
 
     list.sort((a, b) => {
       const av = sort === "name" ? a.name : (a[sort] ?? 0);
@@ -89,7 +113,7 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
       return 0;
     });
     return list;
-  }, [recipes, q, activeCats, activeTags, sort, order]);
+  }, [recipes, q, activeCats, activeTags, sort, order, isAdmin, publishedFilter]);
 
   const pageCount = Math.ceil(filtered.length / PAGE_SIZE);
   const safePage = Math.min(page, Math.max(0, pageCount - 1));
@@ -247,6 +271,26 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
             </div>
           )}
 
+          {/* Visibilità (solo admin) */}
+          {isAdmin && (
+            <div className="flex h-9 items-center rounded-lg border border-white/40 bg-white/60 backdrop-blur-sm p-0.5">
+              {PUBLISHED_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => { setPublishedFilter(opt.value); resetPage(); }}
+                  className={clsx(
+                    "h-full rounded-md px-2.5 text-xs font-medium transition-colors whitespace-nowrap",
+                    publishedFilter === opt.value
+                      ? "bg-orange-500 text-white shadow-sm"
+                      : "text-sky-800 hover:bg-white/70"
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          )}
+
           <select
             value={sort}
             onChange={(e) => { setSort(e.target.value as SortKey); resetPage(); }}
@@ -342,9 +386,9 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
         <div className="flex flex-col items-center gap-3 py-20 text-center">
           <span className="text-5xl">🔍</span>
           <p className="font-medium text-sky-950 [text-shadow:0_1px_3px_rgba(255,255,255,0.6)]">Nessuna ricetta trovata</p>
-          {(q || hasActiveFilters) && (
+          {(q || hasActiveFilters || (isAdmin && publishedFilter !== "all")) && (
             <button
-              onClick={() => { setQ(""); setActiveCats([]); setActiveTags([]); resetPage(); }}
+              onClick={() => { setQ(""); setActiveCats([]); setActiveTags([]); setPublishedFilter("all"); resetPage(); }}
               className="text-sm font-semibold text-orange-700 hover:underline [text-shadow:0_1px_2px_rgba(255,255,255,0.5)]"
             >
               Rimuovi filtri
@@ -456,6 +500,29 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
                       )}
                     </div>
                     <TagFilterCombobox tags={tags} selectedIds={activeTags} onToggle={toggleTag} />
+                  </div>
+                )}
+
+                {/* Visibilità (solo admin) */}
+                {isAdmin && (
+                  <div className="space-y-2.5">
+                    <p className="text-[11px] font-semibold text-sky-600 uppercase tracking-wider">Visibilità</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {PUBLISHED_OPTIONS.map((opt) => (
+                        <button
+                          key={opt.value}
+                          onClick={() => { setPublishedFilter(opt.value); resetPage(); }}
+                          className={clsx(
+                            "rounded-xl border px-2 py-2.5 text-xs font-medium transition-all",
+                            publishedFilter === opt.value
+                              ? "border-orange-400 bg-orange-50 text-orange-700"
+                              : "border-sky-100 bg-sky-50/50 text-sky-900"
+                          )}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
 
