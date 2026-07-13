@@ -1,7 +1,10 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { RotateCcw, Carrot, ListOrdered } from "lucide-react";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { PriceTag } from "@/components/ui/PriceTag";
+import { useRecipeProgress } from "@/lib/recipe-progress";
 import { formatMinutes, toStepKind, STEP_KIND_LABEL, type StepKind } from "@/lib/types";
 
 // Stile badge per tipo step (la Preparazione resta senza badge per non affollare)
@@ -16,6 +19,7 @@ interface Ingredient {
   qty: number | null;
   unit: string | null;
   description: string | null;
+  optional: boolean;
 }
 
 interface Step {
@@ -29,6 +33,8 @@ interface Step {
 interface Props {
   recipeId: number;
   defaultServings: number | null;
+  /** Unità delle porzioni (es. "teglie da 28cm"); nulla = persone/porzioni */
+  servingsUnit?: string | null;
   ingredients: Ingredient[];
   steps: Step[];
 }
@@ -45,11 +51,14 @@ function formatQty(n: number): string {
 
 // ─── component ────────────────────────────────────────────────────────────────
 
-export function RecipeProcedure({ recipeId, defaultServings, ingredients, steps }: Props) {
+export function RecipeProcedure({ recipeId, defaultServings, servingsUnit, ingredients, steps }: Props) {
+  const router = useRouter();
   const [servings, setServings] = useState<number>(defaultServings ?? 4);
-  const [done, setDone] = useState<Set<number>>(new Set());
+  // Progresso per INDICE di step, persistito: admin → DB, visitatori → localStorage
+  const [done, setDone] = useRecipeProgress(recipeId, steps.length);
   const [pendingIdx, setPendingIdx] = useState<number | null>(null); // step index in attesa di conferma
-  const [cookSent, setCookSent] = useState(false);
+  const [dismissed, setDismissed] = useState(false); // ha chiuso il banner (con "No" o dopo conferma cottura)
+  const [cookConfirmed, setCookConfirmed] = useState(false); // la cottura è stata davvero registrata
   const [cookLoading, setCookLoading] = useState(false);
 
   // Scala la quantità in base alle porzioni selezionate
@@ -59,46 +68,50 @@ export function RecipeProcedure({ recipeId, defaultServings, ingredients, steps 
     return formatQty((qty * servings) / defaultServings);
   };
 
-  // Toggle di uno step
-  const handleStepClick = (stepId: number, stepIndex: number) => {
-    if (done.has(stepId)) {
+  // Toggle di uno step (per indice: gli id degli step cambiano ad ogni salvataggio ricetta)
+  const handleStepClick = (stepIndex: number) => {
+    if (done.has(stepIndex)) {
       // de-spunta questo E tutti i successivi (a cascata, senza conferma)
-      setDone((prev) => {
-        const next = new Set(prev);
-        steps.slice(stepIndex).forEach((s) => next.delete(s.id));
-        return next;
-      });
+      const next = new Set(done);
+      for (let i = stepIndex; i < steps.length; i++) next.delete(i);
+      setDone(next);
       return;
     }
-    const prevUndone = steps.slice(0, stepIndex).filter((s) => !done.has(s.id));
+    const prevUndone = [...Array(stepIndex).keys()].filter((i) => !done.has(i));
     if (prevUndone.length > 0) {
       setPendingIdx(stepIndex);
     } else {
-      setDone((prev) => { const next = new Set(prev); next.add(stepId); return next; });
+      setDone(new Set(done).add(stepIndex));
     }
   };
 
   // Conferma: segna tutti gli step fino a pendingIdx (incluso)
   const confirmUpTo = () => {
     if (pendingIdx === null) return;
-    setDone((prev) => {
-      const next = new Set(prev);
-      steps.slice(0, pendingIdx + 1).forEach((s) => next.add(s.id));
-      return next;
-    });
+    const next = new Set(done);
+    for (let i = 0; i <= pendingIdx; i++) next.add(i);
+    setDone(next);
     setPendingIdx(null);
   };
 
-  const allDone = steps.length > 0 && steps.every((s) => done.has(s.id));
+  const restart = () => {
+    setDone(new Set());
+    setPendingIdx(null);
+  };
+
+  const allDone = steps.length > 0 && steps.every((_, i) => done.has(i));
 
   const markCooked = async () => {
     setCookLoading(true);
-    await fetch(`/api/recipes/${recipeId}/cook`, { method: "POST" });
+    const res = await fetch(`/api/recipes/${recipeId}/cook`, { method: "POST" });
     setCookLoading(false);
-    setCookSent(true);
+    if (res.ok) {
+      setCookConfirmed(true);
+      router.refresh(); // aggiorna il contatore "volte cucinata" (RecipeActions è un server component)
+    }
   };
 
-  const dismiss = () => setCookSent(true);
+  const dismiss = () => setDismissed(true);
 
   return (
     <div className="space-y-8">
@@ -124,7 +137,9 @@ export function RecipeProcedure({ recipeId, defaultServings, ingredients, steps 
               </button>
 
               <div className="flex items-center gap-2 rounded-xl border border-white/40 bg-white/40 backdrop-blur-sm px-3 py-1.5">
-                <span className="text-xs text-sky-700 font-medium mr-1">Porzioni</span>
+                <span className="text-xs text-sky-700 font-medium mr-1 max-w-36 truncate">
+                  {servingsUnit?.trim() || "Porzioni"}
+                </span>
                 <button
                   type="button"
                   onClick={() => setServings((s) => Math.max(1, s - 1))}
@@ -153,8 +168,9 @@ export function RecipeProcedure({ recipeId, defaultServings, ingredients, steps 
                 <span className="shrink-0 text-xs font-semibold text-orange-500 tabular-nums whitespace-nowrap">
                   {label}
                 </span>
-                <span className="truncate text-sm text-sky-900">
+                <span className="min-w-0 text-sm text-sky-900">
                   {ing.name}
+                  {ing.optional && <PriceTag className="ml-1.5" />}
                   {ing.description && (
                     <span className="text-sky-600 font-normal"> {ing.description}</span>
                   )}
@@ -180,8 +196,20 @@ export function RecipeProcedure({ recipeId, defaultServings, ingredients, steps 
               size="lg"
               className="mb-2"
               action={
-                <span className="text-xs font-medium text-sky-700 tabular-nums">
-                  {done.size}/{steps.length} passi · {Math.round((done.size / steps.length) * 100)}%
+                <span className="flex items-center gap-2">
+                  {done.size > 0 && (
+                    <button
+                      type="button"
+                      onClick={restart}
+                      title="Ricomincia da capo"
+                      className="flex h-6 w-6 items-center justify-center rounded-full border border-white/50 bg-white/50 text-sky-700 hover:bg-white/80 hover:text-sky-950 transition-colors"
+                    >
+                      <RotateCcw className="h-3 w-3" />
+                    </button>
+                  )}
+                  <span className="text-xs font-medium text-sky-700 tabular-nums">
+                    {done.size}/{steps.length} passi · {Math.round((done.size / steps.length) * 100)}%
+                  </span>
                 </span>
               }
             />
@@ -197,13 +225,13 @@ export function RecipeProcedure({ recipeId, defaultServings, ingredients, steps 
         )}
         <ol className="space-y-3">
           {steps.map((step, i) => {
-            const checked = done.has(step.id);
+            const checked = done.has(i);
             const isPending = pendingIdx === i;
             return (
               <li key={step.id} className="space-y-2">
                 <button
                   type="button"
-                  onClick={() => handleStepClick(step.id, i)}
+                  onClick={() => handleStepClick(i)}
                   className={`w-full text-left flex gap-4 rounded-xl p-3 transition-all duration-200 ${
                     checked
                       ? "bg-green-100/60 border border-green-200/50"
@@ -252,7 +280,7 @@ export function RecipeProcedure({ recipeId, defaultServings, ingredients, steps 
                   <div className="ml-11 rounded-xl border border-amber-300/60 bg-amber-50/80 backdrop-blur-sm px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3">
                     <p className="flex-1 text-sm text-amber-900">
                       ⚠️ Anche i{" "}
-                      <strong>{steps.slice(0, i).filter((s) => !done.has(s.id)).length} passi precedenti</strong>{" "}
+                      <strong>{[...Array(i).keys()].filter((j) => !done.has(j)).length} passi precedenti</strong>{" "}
                       non completati verranno segnati come eseguiti.
                     </p>
                     <div className="flex gap-2 shrink-0">
@@ -280,7 +308,7 @@ export function RecipeProcedure({ recipeId, defaultServings, ingredients, steps 
       </section>
 
       {/* ── Banner completamento ── */}
-      {allDone && !cookSent && (
+      {allDone && !dismissed && !cookConfirmed && (
         <div className="rounded-2xl border border-green-300/50 bg-green-100/70 backdrop-blur-sm px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <span className="text-3xl">🎉</span>
           <div className="flex-1">
@@ -299,7 +327,7 @@ export function RecipeProcedure({ recipeId, defaultServings, ingredients, steps 
       )}
 
       {/* ── Conferma cottura ── */}
-      {cookSent && done.size === steps.length && (
+      {cookConfirmed && (
         <div className="rounded-2xl border border-orange-300/50 bg-orange-100/60 backdrop-blur-sm px-6 py-4 flex items-center gap-3">
           <span className="text-2xl">🍳</span>
           <p className="text-sm font-medium text-orange-900">Cottura registrata! Ottimo lavoro.</p>

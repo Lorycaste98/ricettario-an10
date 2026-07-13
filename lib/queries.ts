@@ -78,21 +78,21 @@ async function queryRecipeSummaries(where: Record<string, unknown> | undefined) 
 }
 
 const getCachedRecipeSummaries = unstable_cache(
-  () => queryRecipeSummaries({ published: true }),
+  () => queryRecipeSummaries({ published: true, quick: false }),
   ["published-recipe-summaries"],
   { tags: [RECIPES_TAG], revalidate: REVALIDATE_SECONDS }
 );
 
-/** Lista completa per /ricette e /preferiti. Admin: fresca e con le non pronte. */
+/** Lista completa per /ricette e /preferiti. Admin: fresca e con le non pronte (mai le "veloci"). */
 export function getRecipeSummaries(isAdmin: boolean) {
-  return isAdmin ? queryRecipeSummaries(undefined) : getCachedRecipeSummaries();
+  return isAdmin ? queryRecipeSummaries({ quick: false }) : getCachedRecipeSummaries();
 }
 
 /** Ultime 4 ricette pubblicate per la home (sempre visitatore). */
 export const getHomeRecipes = unstable_cache(
   async () => {
     const rows = await db.recipe.findMany({
-      where: { published: true },
+      where: { published: true, quick: false },
       select: recipeSummarySelect,
       orderBy: { createdAt: "desc" },
       take: 4,
@@ -203,7 +203,7 @@ async function queryMenuDetail(id: number, isAdmin: boolean) {
       recipeReviews: {
         select: {
           id: true, nickname: true, rating: true, comment: true, createdAt: true,
-          recipe: { select: { id: true, name: true } },
+          recipe: { select: { id: true, name: true, quick: true } },
         },
         orderBy: { createdAt: "desc" as const },
       },
@@ -218,7 +218,7 @@ async function queryMenuDetail(id: number, isAdmin: boolean) {
               steps: { select: { mins: true } },
               // Ingredienti: servono solo per la lista della spesa (solo admin, vedi sotto)
               ...(isAdmin
-                ? { ingredients: { select: { name: true, qty: true, unit: true }, orderBy: { order: "asc" as const } } }
+                ? { ingredients: { select: { name: true, qty: true, unit: true, optional: true }, orderBy: { order: "asc" as const } } }
                 : {}),
             },
           },
@@ -244,7 +244,7 @@ async function queryMenuDetail(id: number, isAdmin: boolean) {
     ? buildShoppingList(
         recipes.map(({ recipe }) => ({
           name: recipe.name as string,
-          ingredients: (recipe as unknown as { ingredients?: { name: string; qty: number | null; unit: string | null }[] }).ingredients ?? [],
+          ingredients: (recipe as unknown as { ingredients?: { name: string; qty: number | null; unit: string | null; optional: boolean }[] }).ingredients ?? [],
         }))
       )
     : null;

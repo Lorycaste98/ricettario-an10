@@ -7,10 +7,10 @@ import { flattenRecipe } from "@/lib/api";
 import { getMenuDetail } from "@/lib/queries";
 import { getSession } from "@/lib/session";
 import { getSiteUrl } from "@/lib/site-url";
-import { formatMinutes } from "@/lib/types";
+import { formatMinutes, formatServings } from "@/lib/types";
 import { resolveServeAt, computeStart, startLabel } from "@/lib/cook-schedule";
 import type { Metadata } from "next";
-import { CalendarDays, UtensilsCrossed, Star, Clock, Users, Pencil, AlarmClock, ChefHat } from "lucide-react";
+import { CalendarDays, UtensilsCrossed, Star, Clock, Users, Pencil, AlarmClock, ChefHat, Zap } from "lucide-react";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { MenuPdfButton } from "@/components/menu/MenuPdfButton";
 import { MenuShoppingList } from "@/components/menu/MenuShoppingList";
@@ -156,12 +156,12 @@ export default async function MenuDetailPage({ params }: Params) {
             const totalTime = (recipe.prep ?? 0) + (recipe.cook ?? 0);
             // "Quando iniziare": calcolato solo se il menù ha una data
             const startInfo = serve ? computeStart(recipe, serve.serveAt) : null;
-            return (
-              <Link
-                key={recipe.id}
-                href={`/ricette/${recipe.id}`}
-                className="group flex items-start gap-3 rounded-2xl border border-white/25 bg-white/30 backdrop-blur-sm p-3.5 hover:bg-white/45 hover:shadow-md transition-all duration-200"
-              >
+            // Niente "group" per le voci veloci: nessun Link, quindi niente hover cues (title/thumb) che suggeriscano cliccabilità
+            const cardClassName = `flex items-start gap-3 rounded-2xl border border-white/25 bg-white/30 backdrop-blur-sm p-3.5 transition-all duration-200 ${
+              recipe.quick ? "" : "group hover:bg-white/45 hover:shadow-md"
+            }`;
+            const cardContent = (
+              <>
                 {/* Order number */}
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-orange-500/90 text-xs font-bold text-white shadow-sm">
                   {order + 1}
@@ -199,7 +199,9 @@ export default async function MenuDetailPage({ params }: Params) {
                     {recipe.servings && (
                       <span className="flex items-center gap-1">
                         <Users size={10} />
-                        {recipe.servings}p
+                        {recipe.servingsUnit
+                          ? formatServings(recipe.servings, recipe.servingsUnit)
+                          : `${recipe.servings}p`}
                       </span>
                     )}
                     {recipe.avgRating !== null && (
@@ -230,8 +232,19 @@ export default async function MenuDetailPage({ params }: Params) {
                       ))}
                     </div>
                   )}
+                  {/* Ricetta "veloce": nessuna scheda, quindi nessun link cliccabile */}
+                  {recipe.quick && (
+                    <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-sky-500/15 px-2 py-0.5 text-[9px] font-semibold text-sky-700">
+                      <Zap size={9} /> Voce veloce
+                    </span>
+                  )}
                 </div>
-              </Link>
+              </>
+            );
+            return recipe.quick ? (
+              <div key={recipe.id} className={cardClassName}>{cardContent}</div>
+            ) : (
+              <Link key={recipe.id} href={`/ricette/${recipe.id}`} className={cardClassName}>{cardContent}</Link>
             );
           })}
         </div>

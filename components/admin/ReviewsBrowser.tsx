@@ -11,6 +11,8 @@ export interface ReviewGroup {
   avg: number;
   count: number;
   reviews: ReviewItem[];
+  /** true per le ricette "veloci": nessuna pagina di dettaglio, il gruppo non è cliccabile */
+  quick?: boolean;
 }
 
 type TabKey = "recipe" | "menu";
@@ -34,13 +36,17 @@ function countReviews(groups: ReviewGroup[]): number {
   return groups.reduce((s, g) => s + g.reviews.length, 0);
 }
 
-function GroupSection({ group, href }: { group: ReviewGroup; href: string }) {
+function GroupSection({ group, href }: { group: ReviewGroup; href: string | null }) {
   return (
     <section className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <Link href={href} className="text-base font-bold text-gray-800 transition-colors hover:text-orange-500">
-          {group.name}
-        </Link>
+        {href ? (
+          <Link href={href} className="text-base font-bold text-gray-800 transition-colors hover:text-orange-500">
+            {group.name}
+          </Link>
+        ) : (
+          <span className="text-base font-bold text-gray-800">{group.name}</span>
+        )}
         <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
           <Star size={12} fill="currentColor" className="text-amber-400" />
           {group.avg.toFixed(1)}/10
@@ -78,7 +84,7 @@ export function ReviewsBrowser({
   ];
 
   const active = tab === "recipe" ? recipes : menus;
-  const href = (id: number) => (tab === "recipe" ? `/ricette/${id}` : `/menu/${id}`);
+  const href = (g: ReviewGroup) => (tab === "recipe" ? (g.quick ? null : `/ricette/${g.id}`) : `/menu/${g.id}`);
 
   return (
     <div className="space-y-6">
@@ -132,7 +138,7 @@ export function ReviewsBrowser({
               : `Nessuna recensione ${tab === "recipe" ? "per le ricette" : "per i menù"}.`}
           </p>
         ) : (
-          active.map((g) => <GroupSection key={`${tab}-${g.id}`} group={g} href={href(g.id)} />)
+          active.map((g) => <GroupSection key={`${tab}-${g.id}`} group={g} href={href(g)} />)
         )}
       </div>
     </div>

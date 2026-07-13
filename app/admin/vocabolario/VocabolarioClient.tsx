@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { ColorPicker, PALETTE } from "@/components/ui/ColorPicker";
+import { ReorderList, ReorderRow } from "@/components/ui/ReorderList";
 
 // ---------------------------------------------------------------------------
 // Tipi
@@ -100,18 +101,19 @@ function CategoriesPanel({
     setEditId(null);
   }
 
-  async function handleMove(id: number, direction: -1 | 1) {
-    const idx = categories.findIndex((c) => c.id === id);
-    const newIdx = idx + direction;
-    if (newIdx < 0 || newIdx >= categories.length) return;
-    const newOrder = [...categories];
-    [newOrder[idx], newOrder[newIdx]] = [newOrder[newIdx], newOrder[idx]];
-    setCategories(newOrder);
-    await fetch("/api/categories/reorder", {
+  // Durante il drag onReorder aggiorna solo lo stato; il PUT parte al rilascio.
+  // Il ref si aggiorna in un effect (niente scritture ai ref durante il render)
+  // e gli effect girano comunque prima dell'evento dragEnd.
+  const categoriesRef = useRef(categories);
+  useEffect(() => {
+    categoriesRef.current = categories;
+  }, [categories]);
+  function persistOrder() {
+    fetch("/api/categories/reorder", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids: newOrder.map((c) => c.id) }),
-    });
+      body: JSON.stringify({ ids: categoriesRef.current.map((c) => c.id) }),
+    }).catch(() => {});
   }
 
   async function handleDelete(id: number, name: string) {
@@ -153,16 +155,19 @@ function CategoriesPanel({
       </form>
 
       {/* Lista */}
-      <ul className="space-y-1.5 max-h-96 overflow-y-auto pr-1">
-        {categories.map((cat, idx) =>
+      <ReorderList
+        as="ul"
+        values={categories}
+        onReorder={setCategories}
+        layoutScroll
+        className="space-y-1.5 max-h-96 overflow-y-auto pr-1"
+      >
+        {categories.map((cat) =>
           editId === cat.id ? (
-            <li key={cat.id} className="flex items-center gap-2">
-              <div className="flex flex-col gap-0 shrink-0">
-                <button type="button" onClick={() => handleMove(cat.id, -1)} disabled={idx === 0}
-                  className="text-[9px] leading-tight text-gray-300 hover:text-gray-500 disabled:opacity-20">▲</button>
-                <button type="button" onClick={() => handleMove(cat.id, 1)} disabled={idx === categories.length - 1}
-                  className="text-[9px] leading-tight text-gray-300 hover:text-gray-500 disabled:opacity-20">▼</button>
-              </div>
+            <ReorderRow as="li" key={cat.id} value={cat} onDragEnd={persistOrder} className="flex items-center gap-2">
+            {(handle) => (
+            <>
+              <div className="shrink-0 -ml-1">{handle}</div>
               <input
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
@@ -171,15 +176,14 @@ function CategoriesPanel({
               <ColorPicker value={editColor} onChange={setEditColor} compact />
               <button onClick={() => handleSaveEdit(cat.id)} className="rounded-lg bg-green-500 px-2.5 py-1.5 text-xs text-white hover:bg-green-600 transition-colors">✓</button>
               <button onClick={() => setEditId(null)} className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs text-gray-500 hover:bg-gray-50 transition-colors">✕</button>
-            </li>
+            </>
+            )}
+            </ReorderRow>
           ) : (
-            <li key={cat.id} className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-gray-50 group">
-              <div className="flex flex-col gap-0 shrink-0">
-                <button type="button" onClick={() => handleMove(cat.id, -1)} disabled={idx === 0}
-                  className="text-[9px] leading-tight text-gray-300 hover:text-gray-500 disabled:opacity-20">▲</button>
-                <button type="button" onClick={() => handleMove(cat.id, 1)} disabled={idx === categories.length - 1}
-                  className="text-[9px] leading-tight text-gray-300 hover:text-gray-500 disabled:opacity-20">▼</button>
-              </div>
+            <ReorderRow as="li" key={cat.id} value={cat} onDragEnd={persistOrder} className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-gray-50 group">
+            {(handle) => (
+            <>
+              <div className="shrink-0 -ml-1">{handle}</div>
               <span
                 className="h-3 w-3 shrink-0 rounded-full"
                 style={{ backgroundColor: cat.color }}
@@ -188,10 +192,12 @@ function CategoriesPanel({
               <span className="text-xs text-gray-400">{cat._count.recipes} ric.</span>
               <button onClick={() => startEdit(cat)} className="hidden group-hover:block text-xs text-sky-500 hover:text-sky-700 px-1">✎</button>
               <button onClick={() => handleDelete(cat.id, cat.name)} className="hidden group-hover:block text-xs text-red-400 hover:text-red-600 px-1">🗑</button>
-            </li>
+            </>
+            )}
+            </ReorderRow>
           )
         )}
-      </ul>
+      </ReorderList>
     </section>
   );
 }

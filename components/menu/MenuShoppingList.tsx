@@ -2,6 +2,7 @@
 import { useMemo, useState } from "react";
 import { Search, ShoppingCart, ChevronDown, ChevronUp } from "lucide-react";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { PriceTag } from "@/components/ui/PriceTag";
 import type { ShoppingListItem } from "@/lib/shopping-list";
 import { useLocalStore } from "@/lib/local-store";
 
@@ -106,6 +107,7 @@ export function MenuShoppingList({ menuId, items }: { menuId: number; items: Sho
                   </span>
                   <span className={`min-w-0 flex-1 text-sm ${isChecked ? "line-through text-sky-500/60" : "text-sky-900"}`}>
                     {item.name}
+                    {item.optional && <PriceTag className="ml-1.5" />}
                     {item.recipeNames.length > 0 && (
                       <span className="ml-1.5 text-[11px] font-normal text-sky-600/60">
                         ({item.recipeNames.join(", ")})

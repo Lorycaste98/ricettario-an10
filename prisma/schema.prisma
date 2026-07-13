@@ -10,6 +10,8 @@ model Recipe {
   id          Int      @id @default(autoincrement())
   name        String
   servings    Int?
+  /** Unità delle porzioni (es. "teglie da 28cm", "pirofile"); nullo = persone/porzioni */
+  servingsUnit String?
   prep        Int?
   cook        Int?
   notes       String?
@@ -17,6 +19,8 @@ model Recipe {
   photo       String?
   cookCount   Int      @default(0)
   published   Boolean  @default(true)
+  /** Ricetta "veloce": solo nome, senza scheda. Selezionabile nei menù ma esclusa da libreria/ricerca e senza pagina di dettaglio. */
+  quick       Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -28,6 +32,7 @@ model Recipe {
   reviews     Review[]
   menus       MenuRecipe[]
   cookLogs    CookLog[]
+  progress    RecipeProgress[]
 }
 
 model CookLog {
@@ -63,6 +68,8 @@ model Ingredient {
   qty         Float?
   unit        String?
   description String?
+  /** Ingrediente facoltativo: mostrato con l'etichetta "opzionale" (dettaglio, lista spesa, PDF) */
+  optional    Boolean @default(false)
   order       Int
   recipeId    Int
   recipe      Recipe  @relation(fields: [recipeId], references: [id], onDelete: Cascade)
@@ -129,6 +136,24 @@ model Admin {
   role       String  @default("ADMIN")
   firstLogin Boolean @default(true)
   dedication String?
+
+  recipeProgress RecipeProgress[]
+}
+
+/** Avanzamento passi di una ricetta per admin (persistito per account, sync tra dispositivi) */
+model RecipeProgress {
+  adminId    Int
+  recipeId   Int
+  /** Indici 0-based degli step completati — gli id degli step sono instabili (delete-recreate al PUT ricetta) */
+  doneSteps  Int[]    @default([])
+  /** Numero di step al momento del salvataggio: guardia anti-stale */
+  stepsCount Int      @default(0)
+  updatedAt  DateTime @updatedAt
+
+  admin  Admin  @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@id([adminId, recipeId])
 }
 
 model Menu {
@@ -157,6 +182,8 @@ model MenuRecipe {
   menuId    Int
   recipeId  Int
   order     Int    @default(0)
+  /** Inizio pianificato della ricetta nella modalità cucina (timeline); nullo = calcolo automatico dal servizio */
+  cookStartAt DateTime?
   menu      Menu   @relation(fields: [menuId], references: [id], onDelete: Cascade)
   recipe    Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
 

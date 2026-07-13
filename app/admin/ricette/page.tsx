@@ -12,6 +12,7 @@ export default async function RicetteGestionePage() {
   if (!session) redirect("/login");
 
   const recipes = await db.recipe.findMany({
+    where: { quick: false },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,

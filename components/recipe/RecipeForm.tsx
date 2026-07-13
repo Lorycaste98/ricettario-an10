@@ -10,12 +10,19 @@ import { IngredientCombobox } from "@/components/ui/IngredientCombobox";
 import { CategoryCombobox } from "@/components/ui/CategoryCombobox";
 import { TagCombobox } from "@/components/ui/TagCombobox";
 import { SectionHeader, type SectionTone } from "@/components/ui/SectionHeader";
+import { ReorderList, ReorderRow } from "@/components/ui/ReorderList";
 import { type Category, type Tag, type StepKind, STEP_KINDS, STEP_KIND_LABEL } from "@/lib/types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface IngredientRow { name: string; qty: string; unit: string; description: string }
-interface StepRow { text: string; mins: string; kind: StepKind }
+// `uid` = identità stabile della riga per il drag & drop (le key per indice
+// rompono il Reorder); generato client-side, mai inviato all'API.
+interface IngredientRow { uid: string; name: string; qty: string; unit: string; description: string; optional: boolean }
+interface StepRow { uid: string; text: string; mins: string; kind: StepKind }
+
+const uid = () => crypto.randomUUID();
+const emptyIngredient = (): IngredientRow => ({ uid: uid(), name: "", qty: "", unit: "", description: "", optional: false });
+const emptyStep = (): StepRow => ({ uid: uid(), text: "", mins: "", kind: "PREP" });
 /** Riga foto interna al form: url + flag per la foto principale */
 interface PhotoRow { url: string; isMain: boolean }
 
@@ -24,6 +31,8 @@ export interface RecipeFormData {
   /** Data della ricetta (createdAt) in formato "YYYY-MM-DD" */
   createdAt: string;
   servings: string;
+  /** Unità delle porzioni (es. "teglie da 28cm"); vuota = persone/porzioni */
+  servingsUnit: string;
   prep: string;
   cook: string;
   notes: string;
@@ -32,8 +41,8 @@ export interface RecipeFormData {
   photo: string;
   categoryIds: number[];
   tagIds: number[];
-  ingredients: IngredientRow[];
-  steps: StepRow[];
+  ingredients: Omit<IngredientRow, "uid">[];
+  steps: Omit<StepRow, "uid">[];
   /** Foto extra della galleria (NON include la foto principale) */
   photos: { url: string }[];
 }
@@ -113,6 +122,7 @@ function Section({
   tone = "sky",
   hint,
   delay = 0,
+  className,
   children,
 }: {
   title: string;
@@ -120,11 +130,15 @@ function Section({
   tone?: SectionTone;
   hint?: string;
   delay?: number;
+  className?: string;
   children: React.ReactNode;
 }) {
   return (
     <section
-      className="fade-up rounded-2xl border border-white/50 bg-white/60 backdrop-blur-sm p-5 sm:p-6 shadow-sm space-y-4"
+      className={clsx(
+        "fade-up rounded-2xl border border-white/50 bg-white/60 backdrop-blur-sm p-5 sm:p-6 shadow-sm space-y-4",
+        className
+      )}
       style={{ animationDelay: `${delay}ms` }}
     >
       <SectionHeader title={title} icon={icon} tone={tone} hint={hint} />
@@ -137,6 +151,27 @@ function Section({
 
 const inlineInput =
   "rounded-lg border border-white/40 bg-white/60 backdrop-blur-sm px-2 py-2 text-sm text-sky-950 placeholder:text-sm placeholder:text-sky-600/50 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-300/30";
+
+// ─── OptionalChip ─────────────────────────────────────────────────────────────
+
+/** Chip-toggle "opzionale" per la riga ingrediente (mobile e desktop). */
+function OptionalChip({ active, onToggle }: { active: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      title="Segna come ingrediente opzionale"
+      className={clsx(
+        "inline-flex items-center gap-1 self-start rounded-full border px-2 py-0.5 text-[11px] font-medium transition-colors",
+        active
+          ? "border-amber-300 bg-amber-100 text-amber-800"
+          : "border-white/40 bg-white/40 text-sky-500 hover:border-amber-200 hover:text-amber-700"
+      )}
+    >
+      <TagIcon size={10} /> opzionale
+    </button>
+  );
+}
 
 // ─── Date helper ──────────────────────────────────────────────────────────────
 
@@ -162,17 +197,22 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
   // Data della ricetta: alla creazione default = oggi, sempre modificabile dall'utente
   const [createdAt, setCreatedAt] = useState(initialData?.createdAt ?? todayISO());
   const [servings, setServings] = useState(initialData?.servings ?? "");
+  const [servingsUnit, setServingsUnit] = useState(initialData?.servingsUnit ?? "");
   const [prep, setPrep] = useState(initialData?.prep ?? "");
   const [cook, setCook] = useState(initialData?.cook ?? "");
   const [notes, setNotes] = useState(initialData?.notes ?? "");
   const [links, setLinks] = useState(initialData?.links ?? "");
   const [categoryIds, setCategoryIds] = useState<number[]>(initialData?.categoryIds ?? []);
   const [tagIds, setTagIds] = useState<number[]>(initialData?.tagIds ?? []);
-  const [ingredients, setIngredients] = useState<IngredientRow[]>(
-    initialData?.ingredients?.length ? initialData.ingredients : [{ name: "", qty: "", unit: "", description: "" }]
+  const [ingredients, setIngredients] = useState<IngredientRow[]>(() =>
+    initialData?.ingredients?.length
+      ? initialData.ingredients.map((r) => ({ ...r, uid: uid() }))
+      : [emptyIngredient()]
   );
-  const [steps, setSteps] = useState<StepRow[]>(
-    initialData?.steps?.length ? initialData.steps : [{ text: "", mins: "", kind: "PREP" }]
+  const [steps, setSteps] = useState<StepRow[]>(() =>
+    initialData?.steps?.length
+      ? initialData.steps.map((r) => ({ ...r, uid: uid() }))
+      : [emptyStep()]
   );
   /**
    * Tutte le foto della ricetta in un unico array.
@@ -254,25 +294,17 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
   const toggleTag = (id: number) =>
     setTagIds((p) => p.includes(id) ? p.filter((x) => x !== id) : [...p, id]);
 
-  const addIngredient = () => setIngredients((p) => [...p, { name: "", qty: "", unit: "", description: "" }]);
+  const addIngredient = () => setIngredients((p) => [...p, emptyIngredient()]);
   const removeIngredient = (i: number) => setIngredients((p) => p.filter((_, j) => j !== i));
   const updateIngredient = (i: number, f: keyof IngredientRow, v: string) =>
     setIngredients((p) => p.map((r, j) => j === i ? { ...r, [f]: v } : r));
-  const moveIngredient = (i: number, d: -1 | 1) => {
-    const j = i + d;
-    if (j < 0 || j >= ingredients.length) return;
-    setIngredients((p) => { const a = [...p]; [a[i], a[j]] = [a[j], a[i]]; return a; });
-  };
+  const toggleIngredientOptional = (i: number) =>
+    setIngredients((p) => p.map((r, j) => j === i ? { ...r, optional: !r.optional } : r));
 
-  const addStep = () => setSteps((p) => [...p, { text: "", mins: "", kind: "PREP" }]);
+  const addStep = () => setSteps((p) => [...p, emptyStep()]);
   const removeStep = (i: number) => setSteps((p) => p.filter((_, j) => j !== i));
   const updateStep = (i: number, f: keyof StepRow, v: string) =>
     setSteps((p) => p.map((r, j) => j === i ? { ...r, [f]: v } : r));
-  const moveStep = (i: number, d: -1 | 1) => {
-    const j = i + d;
-    if (j < 0 || j >= steps.length) return;
-    setSteps((p) => { const a = [...p]; [a[i], a[j]] = [a[j], a[i]]; return a; });
-  };
 
   const addPhoto = () => setPhotos((p) => [...p, { url: "", isMain: false }]);
   const removePhoto = (i: number) =>
@@ -314,6 +346,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
       name: name.trim(),
       createdAt: createdAt || null,
       servings: servings ? Number(servings) : null,
+      servingsUnit: servingsUnit.trim() || null,
       prep: prep ? Number(prep) : null,
       cook: cook ? Number(cook) : null,
       notes: notes.trim() || null,
@@ -323,7 +356,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
       tagIds,
       ingredients: ingredients
         .filter((i) => i.name.trim())
-        .map((i, order) => ({ name: i.name.trim(), qty: i.qty ? Number(i.qty) : null, unit: i.unit.trim() || null, description: i.description.trim() || null, order })),
+        .map((i, order) => ({ name: i.name.trim(), qty: i.qty ? Number(i.qty) : null, unit: i.unit.trim() || null, description: i.description.trim() || null, optional: i.optional, order })),
       steps: steps
         .filter((s) => s.text.trim())
         .map((s, order) => ({ text: s.text.trim(), mins: s.mins ? Number(s.mins) : null, kind: s.kind, order })),
@@ -356,7 +389,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
       setError(err instanceof Error ? err.message : "Errore sconosciuto");
       setSaving(false);
     }
-  }, [name, createdAt, servings, prep, cook, notes, links, categoryIds, tagIds, ingredients, steps, photos, isEdit, recipeId, router]);
+  }, [name, createdAt, servings, servingsUnit, prep, cook, notes, links, categoryIds, tagIds, ingredients, steps, photos, isEdit, recipeId, router]);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -388,9 +421,12 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
           placeholder="Es. Risotto allo zafferano" />
         <Input label="Data" type="date" value={createdAt}
           onChange={(e) => setCreatedAt(e.target.value)} />
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Input label="Porzioni" type="number" min={1} value={servings}
             onChange={(e) => setServings(e.target.value)} placeholder="4" />
+          <Input label="Unità" type="text" value={servingsUnit}
+            onChange={(e) => setServingsUnit(e.target.value)}
+            placeholder="porzioni" title="Es. teglie da 28cm, pirofile… Vuoto = persone" />
           <Input label="Prep. (min)" type="number" min={0} value={prep}
             onChange={(e) => setPrep(e.target.value)} placeholder="20" />
           <Input label="Cottura (min)" type="number" min={0} value={cook}
@@ -531,16 +567,19 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
         )}
       </Section>
 
-      {/* 3. Categorie — wrapper z-20: ogni Section ha backdrop-blur (nuovo stacking
-          context), quindi il dropdown va sollevato sopra le sezioni successive.
-          Resta sotto la top bar sticky (z-30). */}
-      <div className="relative z-20">
+      {/* 3-4. Categorie + Tag affiancate su desktop (meno spazio verticale).
+          Wrapper z-20/z-[15]: ogni Section ha backdrop-blur (nuovo stacking
+          context), quindi i dropdown vanno sollevati sopra le sezioni successive.
+          Restano sotto la top bar sticky (z-30). */}
+      <div className="grid gap-6 sm:grid-cols-2 sm:items-stretch">
+      <div className="relative z-20 h-full">
       <Section
         title="Categorie"
         icon={<TagIcon size={18} />}
         tone="orange"
         delay={120}
         hint="Cerca tra quelle esistenti o creane una nuova al volo."
+        className="h-full"
       >
         <CategoryCombobox
           categories={categoryList}
@@ -552,14 +591,14 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
       </Section>
       </div>
 
-      {/* 4. Tag — wrapper z-[15] (sotto Categorie, sopra Ingredienti) */}
-      <div className="relative z-[15]">
+      <div className="relative z-[15] h-full">
       <Section
         title="Tag"
         icon={<Hash size={18} />}
         tone="amber"
         delay={180}
         hint="Cerca tra quelli esistenti o creane uno nuovo al volo."
+        className="h-full"
       >
         <TagCombobox
           tags={tagList}
@@ -570,6 +609,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
         />
       </Section>
       </div>
+      </div>
 
       {/* 5. Ingredienti — z-10 wrapper lifts this stacking context above the Procedura section */}
       <div className="relative z-10">
@@ -578,7 +618,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
           {/* Header colonne — solo desktop */}
           <div
             className="hidden sm:grid items-center gap-2 px-1 text-xs font-medium text-sky-600"
-            style={{ gridTemplateColumns: "1.25rem 4rem 5rem 1fr 1.5rem" }}
+            style={{ gridTemplateColumns: "1.5rem 4rem 5rem 1fr 1.5rem" }}
           >
             <span />
             <span>Qtà</span>
@@ -587,17 +627,15 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
             <span />
           </div>
 
+          <ReorderList values={ingredients} onReorder={setIngredients} className="space-y-2">
           {ingredients.map((ing, i) => (
-            <div key={i}>
+            <ReorderRow key={ing.uid} value={ing}>
+            {(handle) => (
+            <div>
               {/* ── Card mobile ── */}
               <div className="sm:hidden rounded-xl border border-white/30 bg-white/20 p-3 space-y-2">
                 <div className="flex items-center gap-2">
-                  <div className="flex flex-col items-center gap-0 shrink-0">
-                    <button type="button" onClick={() => moveIngredient(i, -1)} disabled={i === 0}
-                      className="text-[9px] leading-tight text-sky-400 hover:text-sky-700 disabled:opacity-20">▲</button>
-                    <button type="button" onClick={() => moveIngredient(i, 1)} disabled={i === ingredients.length - 1}
-                      className="text-[9px] leading-tight text-sky-400 hover:text-sky-700 disabled:opacity-20">▼</button>
-                  </div>
+                  <div className="shrink-0 -ml-1">{handle}</div>
                   <input type="number" min={0} step="any" value={ing.qty}
                     onChange={(e) => updateIngredient(i, "qty", e.target.value)} placeholder="Qtà"
                     className={inlineInput + " w-20 shrink-0"} />
@@ -620,19 +658,15 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
                   placeholder="Descrizione (es. fredda, bollente…)"
                   className={inlineInput + " w-full text-xs"}
                 />
+                <OptionalChip active={ing.optional} onToggle={() => toggleIngredientOptional(i)} />
               </div>
 
               {/* ── Grid desktop ── */}
               <div
                 className="hidden sm:grid items-start gap-2"
-                style={{ gridTemplateColumns: "1.25rem 4rem 5rem 1fr 1.5rem" }}
+                style={{ gridTemplateColumns: "1.5rem 4rem 5rem 1fr 1.5rem" }}
               >
-                <div className="flex flex-col items-center gap-0 pt-2">
-                  <button type="button" onClick={() => moveIngredient(i, -1)} disabled={i === 0}
-                    className="text-[9px] leading-tight text-sky-400 hover:text-sky-700 disabled:opacity-20">▲</button>
-                  <button type="button" onClick={() => moveIngredient(i, 1)} disabled={i === ingredients.length - 1}
-                    className="text-[9px] leading-tight text-sky-400 hover:text-sky-700 disabled:opacity-20">▼</button>
-                </div>
+                <div className="flex items-start justify-center pt-1.5 -ml-1">{handle}</div>
                 <input type="number" min={0} step="any" value={ing.qty}
                   onChange={(e) => updateIngredient(i, "qty", e.target.value)} placeholder="Qtà"
                   className={inlineInput + " w-full"} />
@@ -653,12 +687,16 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
                     placeholder="descrizione (es. fredda, bollente…)"
                     className={inlineInput + " w-full text-xs opacity-80"}
                   />
+                  <OptionalChip active={ing.optional} onToggle={() => toggleIngredientOptional(i)} />
                 </div>
                 <button type="button" onClick={() => removeIngredient(i)}
                   className="flex items-center justify-center rounded p-1 text-sky-300 hover:text-red-400 transition-colors pt-2">✕</button>
               </div>
             </div>
+            )}
+            </ReorderRow>
           ))}
+          </ReorderList>
         </div>
         <Button type="button" variant="ghost" size="sm" onClick={addIngredient}>
           + Aggiungi ingrediente
@@ -668,9 +706,11 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
 
       {/* 6. Procedura */}
       <Section title="Procedura" icon={<ListOrdered size={18} />} tone="sky" delay={300}>
-        <div className="space-y-4">
+        <ReorderList values={steps} onReorder={setSteps} className="space-y-4">
           {steps.map((step, i) => (
-            <div key={i} className="flex gap-3 items-start">
+            <ReorderRow key={step.uid} value={step} className="flex gap-3 items-start">
+            {(handle) => (
+            <>
               <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white mt-2">
                 {i + 1}
               </span>
@@ -694,17 +734,16 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
                   <span className="text-xs text-sky-600">min (opz.)</span>
                 </div>
               </div>
-              <div className="flex flex-col gap-0.5 pt-2 shrink-0">
-                <button type="button" onClick={() => moveStep(i, -1)} disabled={i === 0}
-                  className="text-[9px] leading-tight text-gray-300 hover:text-gray-500 disabled:opacity-20">▲</button>
-                <button type="button" onClick={() => moveStep(i, 1)} disabled={i === steps.length - 1}
-                  className="text-[9px] leading-tight text-gray-300 hover:text-gray-500 disabled:opacity-20">▼</button>
+              <div className="flex flex-col items-center gap-0.5 pt-2 shrink-0">
+                {handle}
                 <button type="button" onClick={() => removeStep(i)}
                   className="rounded p-1 text-gray-300 hover:bg-red-50 hover:text-red-400 transition-colors text-xs mt-0.5">✕</button>
               </div>
-            </div>
+            </>
+            )}
+            </ReorderRow>
           ))}
-        </div>
+        </ReorderList>
         <Button type="button" variant="ghost" size="sm" onClick={addStep}>
           + Aggiungi passo
         </Button>

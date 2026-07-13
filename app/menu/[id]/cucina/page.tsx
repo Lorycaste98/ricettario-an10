@@ -3,7 +3,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { ArrowLeft, ChefHat } from "lucide-react";
-import { MenuCookMode } from "@/components/menu/MenuCookMode";
+import { CookPlanner } from "@/components/menu/CookPlanner";
 import type { Metadata } from "next";
 
 type Params = { params: Promise<{ id: string }> };
@@ -29,15 +29,22 @@ export default async function MenuCookModePage({ params }: Params) {
     select: {
       id: true,
       name: true,
+      date: true,
+      servingTime: true,
       recipes: {
         select: {
           order: true,
+          // Inizio pianificato nella timeline (drag della barra ricetta)
+          cookStartAt: true,
           recipe: {
             select: {
               id: true,
               name: true,
               photo: true,
               cookCount: true,
+              quick: true,
+              prep: true,
+              cook: true,
               steps: { select: { id: true, text: true, mins: true, kind: true, order: true }, orderBy: { order: "asc" } },
             },
           },
@@ -48,7 +55,10 @@ export default async function MenuCookModePage({ params }: Params) {
   });
   if (!menu) notFound();
 
-  const recipes = menu.recipes.map((mr) => mr.recipe);
+  const recipes = menu.recipes.map((mr) => ({
+    ...mr.recipe,
+    cookStartAt: mr.cookStartAt ? mr.cookStartAt.toISOString() : null,
+  }));
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -69,7 +79,12 @@ export default async function MenuCookModePage({ params }: Params) {
         </div>
       </div>
 
-      <MenuCookMode menuId={menu.id} recipes={recipes} />
+      <CookPlanner
+        menuId={menu.id}
+        date={menu.date ? menu.date.toISOString() : null}
+        servingTime={menu.servingTime}
+        recipes={recipes}
+      />
     </div>
   );
 }

@@ -12,9 +12,12 @@ function createPrisma() {
       "Aggiungilo nelle variabili d'ambiente di Vercel (o nel file .env in locale)."
     );
   }
-  // max:1 → ogni istanza serverless usa al massimo 1 connessione,
-  // evitando di esaurire il connection pool di Supabase (session mode, limit 15).
-  const adapter = new PrismaPg({ connectionString: url, max: 1 });
+  // max:3 → ogni istanza serverless usa al massimo 3 connessioni: abbastanza per far
+  // girare in parallelo le query Promise.all di una stessa richiesta (dashboard, dettaglio
+  // menù) senza metterle in coda su un'unica connessione, restando comunque ben sotto il
+  // limite di 15 del pool Supabase (session mode) col traffico reale di questo sito
+  // (un solo admin + picchi di pochi ospiti sul link recensioni).
+  const adapter = new PrismaPg({ connectionString: url, max: 3 });
   return new PrismaClient({ adapter });
 }
 

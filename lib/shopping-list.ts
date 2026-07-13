@@ -7,6 +7,7 @@ export interface ShoppingListIngredient {
   name: string;
   qty: number | null;
   unit: string | null;
+  optional?: boolean;
 }
 
 export interface ShoppingListRecipe {
@@ -19,6 +20,8 @@ export interface ShoppingListItem {
   name: string;
   unit: string | null;
   qty: number | null;
+  /** Opzionale solo se lo è in TUTTE le ricette che lo usano (se una lo richiede, va comprato) */
+  optional: boolean;
   recipeNames: string[];
 }
 
@@ -34,9 +37,10 @@ export function buildShoppingList(recipes: ShoppingListRecipe[]): ShoppingListIt
 
       let item = map.get(key);
       if (!item) {
-        item = { key, name, unit, qty: null, recipeNames: [] };
+        item = { key, name, unit, qty: null, optional: !!ing.optional, recipeNames: [] };
         map.set(key, item);
       }
+      item.optional = item.optional && !!ing.optional;
       if (ing.qty != null) {
         item.qty = Math.round(((item.qty ?? 0) + ing.qty) * 100) / 100;
       }

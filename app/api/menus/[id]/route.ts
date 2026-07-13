@@ -102,7 +102,13 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
   if (!b.name?.trim()) return err("Il campo 'name' è obbligatorio");
 
-  // Replace recipes if provided
+  // Replace recipes: preserva i cookStartAt pianificati (timeline modalità cucina)
+  // per le ricette che restano nel menù, altrimenti il delete-recreate li azzererebbe
+  const prev = await db.menuRecipe.findMany({
+    where: { menuId },
+    select: { recipeId: true, cookStartAt: true },
+  });
+  const prevStarts = new Map(prev.map((mr) => [mr.recipeId, mr.cookStartAt]));
   await db.menuRecipe.deleteMany({ where: { menuId } });
 
   const menu = await db.menu.update({
@@ -117,6 +123,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
         create: (b.recipeIds ?? []).map((recipeId, idx) => ({
           recipeId,
           order: idx,
+          cookStartAt: prevStarts.get(recipeId) ?? null,
         })),
       },
     },

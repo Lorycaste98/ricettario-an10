@@ -9,10 +9,10 @@ import type { ReviewItem } from "@/components/admin/ReviewCard";
 
 export const metadata: Metadata = { title: "Recensioni — Ricettario" };
 
-function toGroup(entity: { id: number; name: string }, reviews: ReviewItem[]): ReviewGroup {
+function toGroup(entity: { id: number; name: string; quick?: boolean }, reviews: ReviewItem[]): ReviewGroup {
   const count = reviews.length;
   const avg = count ? reviews.reduce((s, r) => s + r.rating, 0) / count : 0;
-  return { id: entity.id, name: entity.name, avg, count, reviews };
+  return { id: entity.id, name: entity.name, avg, count, reviews, quick: entity.quick };
 }
 
 function byLatestReview(a: ReviewGroup, b: ReviewGroup): number {
@@ -33,6 +33,7 @@ export default async function RecensioniPage() {
       select: {
         id: true,
         name: true,
+        quick: true,
         reviews: {
           orderBy: { createdAt: "desc" },
           select: { id: true, nickname: true, rating: true, comment: true, createdAt: true, menu: { select: { id: true, name: true } } },
@@ -46,7 +47,7 @@ export default async function RecensioniPage() {
         name: true,
         recipeReviews: {
           orderBy: { createdAt: "desc" },
-          select: { id: true, nickname: true, rating: true, comment: true, createdAt: true, recipe: { select: { id: true, name: true } } },
+          select: { id: true, nickname: true, rating: true, comment: true, createdAt: true, recipe: { select: { id: true, name: true, quick: true } } },
         },
       },
     }),
@@ -57,7 +58,7 @@ export default async function RecensioniPage() {
     .map((r) =>
       toGroup(
         r,
-        r.reviews.map((rv) => ({ ...rv, createdAt: rv.createdAt.toISOString(), recipe: { id: r.id, name: r.name } }))
+        r.reviews.map((rv) => ({ ...rv, createdAt: rv.createdAt.toISOString(), recipe: { id: r.id, name: r.name, quick: r.quick } }))
       )
     )
     .sort(byLatestReview);

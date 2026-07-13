@@ -4,6 +4,9 @@ import { usePathname, useRouter } from "next/navigation";
 import { X, Heart } from "lucide-react";
 
 const INACTIVITY_MS = 10 * 60 * 1000; // 10 minuti
+// Logout automatico per inattività: disattivato su richiesta (la sessione ora è stabile,
+// vedi lib/session.ts). Rimettere a true per riattivarlo: tutta la logica sotto resta intatta.
+const INACTIVITY_LOGOUT_ENABLED = false;
 
 interface AuthState {
   isAdmin: boolean;
@@ -86,7 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // ── Inactivity logout ──
   const resetTimer = useCallback(() => {
     clearTimeout(timerRef.current);
-    if (!isAdminRef.current) return;
+    if (!INACTIVITY_LOGOUT_ENABLED || !isAdminRef.current) return;
     timerRef.current = setTimeout(async () => {
       await fetch("/api/auth/logout", { method: "POST" });
       setIsAdmin(false);
@@ -106,6 +109,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [isAdmin, resetTimer]);
 
   useEffect(() => {
+    if (!INACTIVITY_LOGOUT_ENABLED) return;
     const events = ["keydown", "click", "touchstart"] as const;
     events.forEach((e) => window.addEventListener(e, resetTimer, { passive: true }));
     return () => {

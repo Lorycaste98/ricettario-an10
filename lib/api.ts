@@ -4,12 +4,14 @@ export const recipeSummarySelect = {
   id: true,
   name: true,
   servings: true,
+  servingsUnit: true,
   prep: true,
   cook: true,
   photo: true,
   notes: true,
   cookCount: true,
   published: true,
+  quick: true,
   createdAt: true,
   categories: {
     select: {
@@ -36,7 +38,7 @@ export const recipeDetailSelect = {
     orderBy: { order: "asc" as const },
   },
   ingredients: {
-    select: { id: true, name: true, qty: true, unit: true, description: true, order: true },
+    select: { id: true, name: true, qty: true, unit: true, description: true, optional: true, order: true },
     orderBy: { order: "asc" as const },
   },
   steps: {

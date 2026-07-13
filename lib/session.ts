@@ -14,7 +14,6 @@ export interface SessionPayload {
   adminId: number;
   username: string;
   role: string;
-  deployId?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -22,8 +21,9 @@ export interface SessionPayload {
 // ---------------------------------------------------------------------------
 const COOKIE_NAME = "admin_session";
 
-// Cambia ad ogni deploy Vercel; in locale è fisso a "dev"
-const DEPLOY_ID = process.env.VERCEL_DEPLOYMENT_ID ?? "dev";
+// Sessione stabile: nessuna scadenza "naturale", si esce solo con logout esplicito
+const SESSION_DURATION = "3650d";
+const SESSION_MAX_AGE_SECONDS = 3650 * 24 * 60 * 60;
 
 function getSecret(): Uint8Array {
   const secret = process.env.SESSION_SECRET;
@@ -38,7 +38,7 @@ export async function encrypt(payload: SessionPayload): Promise<string> {
   return new SignJWT({ ...payload })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime("7d")
+    .setExpirationTime(SESSION_DURATION)
     .sign(getSecret());
 }
 
@@ -57,15 +57,17 @@ export async function decrypt(token: string): Promise<SessionPayload | null> {
 // Gestione cookie
 // ---------------------------------------------------------------------------
 export async function createSession(payload: SessionPayload): Promise<void> {
-  const token = await encrypt({ ...payload, deployId: DEPLOY_ID });
+  const token = await encrypt(payload);
   const store = await cookies();
 
-  // Cookie di sessione (niente expires): il browser lo cancella alla chiusura
+  // Cookie persistente: resta valido anche dopo la chiusura del browser,
+  // l'unico modo per uscire è il logout esplicito
   store.set(COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
+    maxAge: SESSION_MAX_AGE_SECONDS,
   });
 }
 
@@ -84,8 +86,6 @@ export async function getSession(): Promise<SessionPayload | null> {
   if (!token) return null;
   const payload = await decrypt(token);
   if (!payload) return null;
-  // Sessione invalidata se il deploy è cambiato (deployId assente = sessione vecchia)
-  if (payload.deployId !== DEPLOY_ID) return null;
   return payload;
 }
 

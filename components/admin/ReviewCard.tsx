@@ -13,7 +13,7 @@ export interface ReviewItem {
   rating: number;
   comment: string | null;
   createdAt: string | Date;
-  recipe: { id: number; name: string };
+  recipe: { id: number; name: string; quick?: boolean };
   /** Menù da cui è arrivata la recensione (assente = nota personale admin). */
   menu?: { id: number; name: string } | null;
 }
@@ -81,15 +81,28 @@ export function ReviewCard({
         {/* Riga 2: ricetta + tag menù */}
         {!hideMeta && (
           <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-            <Link href={`/ricette/${review.recipe.id}`} className="group/src flex min-w-0 items-center gap-1.5">
-              <span className="flex shrink-0 items-center gap-1 rounded-full bg-orange-100 px-1.5 py-0.5 text-[10px] font-bold text-orange-600">
-                <BookOpen size={11} />
-                Ricetta
+            {review.recipe.quick ? (
+              // Ricetta "veloce": nessuna pagina di dettaglio, niente link
+              <span className="group/src flex min-w-0 items-center gap-1.5">
+                <span className="flex shrink-0 items-center gap-1 rounded-full bg-orange-100 px-1.5 py-0.5 text-[10px] font-bold text-orange-600">
+                  <BookOpen size={11} />
+                  Ricetta
+                </span>
+                <span className={`truncate font-bold text-gray-700 ${compact ? "text-xs" : "text-sm"}`}>
+                  {review.recipe.name}
+                </span>
               </span>
-              <span className={`truncate font-bold text-gray-700 transition-colors group-hover/src:text-orange-500 ${compact ? "text-xs" : "text-sm"}`}>
-                {review.recipe.name}
-              </span>
-            </Link>
+            ) : (
+              <Link href={`/ricette/${review.recipe.id}`} className="group/src flex min-w-0 items-center gap-1.5">
+                <span className="flex shrink-0 items-center gap-1 rounded-full bg-orange-100 px-1.5 py-0.5 text-[10px] font-bold text-orange-600">
+                  <BookOpen size={11} />
+                  Ricetta
+                </span>
+                <span className={`truncate font-bold text-gray-700 transition-colors group-hover/src:text-orange-500 ${compact ? "text-xs" : "text-sm"}`}>
+                  {review.recipe.name}
+                </span>
+              </Link>
+            )}
             {review.menu && (
               <Link
                 href={`/menu/${review.menu.id}`}
@@ -143,9 +156,15 @@ export function ReviewCard({
         <Modal open={dialogOpen} onClose={() => setDialogOpen(false)} title="Recensione">
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-1.5">
-              <Link href={`/ricette/${review.recipe.id}`} className="flex items-center gap-1.5 text-sm font-bold text-gray-700 hover:text-orange-500">
-                <BookOpen size={13} /> {review.recipe.name}
-              </Link>
+              {review.recipe.quick ? (
+                <span className="flex items-center gap-1.5 text-sm font-bold text-gray-700">
+                  <BookOpen size={13} /> {review.recipe.name}
+                </span>
+              ) : (
+                <Link href={`/ricette/${review.recipe.id}`} className="flex items-center gap-1.5 text-sm font-bold text-gray-700 hover:text-orange-500">
+                  <BookOpen size={13} /> {review.recipe.name}
+                </Link>
+              )}
               {review.menu && (
                 <Link href={`/menu/${review.menu.id}`} className="flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-bold text-sky-600">
                   <UtensilsCrossed size={11} /> {review.menu.name}

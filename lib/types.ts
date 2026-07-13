@@ -15,12 +15,16 @@ export interface RecipeSummary {
   id: number;
   name: string;
   servings: number | null;
+  /** Unità delle porzioni (es. "teglie da 28cm"); nulla/assente = persone. */
+  servingsUnit: string | null;
   prep: number | null;
   cook: number | null;
   photo: string | null;
   notes: string | null;
   cookCount: number;
   published: boolean;
+  /** Ricetta "veloce": solo nome, senza scheda. Esclusa da libreria/ricerca, nessuna pagina di dettaglio. */
+  quick: boolean;
   createdAt: string;
   avgRating: number | null;
   categories: Category[];
@@ -34,6 +38,8 @@ export interface Ingredient {
   qty: number | null;
   unit: string | null;
   description: string | null;
+  /** Ingrediente facoltativo: mostrato con l'etichetta "opzionale". */
+  optional: boolean;
   order: number;
 }
 
@@ -93,7 +99,7 @@ export interface MenuRecipeReview {
   rating: number;
   comment: string | null;
   createdAt: string;
-  recipe: { id: number; name: string };
+  recipe: { id: number; name: string; quick: boolean };
 }
 
 export interface MenuSummary {
@@ -121,6 +127,12 @@ export interface MenuDetail extends MenuSummary {
 }
 
 // Utility
+
+/** "4 pers." oppure "2 teglie da 28cm" — tollera `undefined` (payload cached pre-deploy). */
+export function formatServings(n: number, unit?: string | null): string {
+  return `${n} ${unit?.trim() || "pers."}`;
+}
+
 export function formatMinutes(mins: number | null): string {
   if (!mins) return "";
   if (mins < 60) return `${mins} min`;

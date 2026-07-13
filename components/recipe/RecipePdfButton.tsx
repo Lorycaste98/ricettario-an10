@@ -6,6 +6,7 @@ import { FileDown, Loader2 } from "lucide-react";
 export interface RecipePdfData {
   name: string;
   servings: number | null;
+  servingsUnit?: string | null;
   prep: number | null;
   cook: number | null;
   notes: string | null;
@@ -13,7 +14,7 @@ export interface RecipePdfData {
   photo: string | null;
   categories: { name: string; color: string }[];
   tags: { name: string }[];
-  ingredients: { name: string; qty: number | null; unit: string | null; description: string | null }[];
+  ingredients: { name: string; qty: number | null; unit: string | null; description: string | null; optional?: boolean }[];
   steps: { text: string; mins: number | null; kind?: string }[];
 }
 

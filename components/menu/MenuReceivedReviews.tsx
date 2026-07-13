@@ -8,7 +8,7 @@ import { ConfirmModal } from "@/components/ui/Modal";
 import type { MenuRecipeReview } from "@/lib/types";
 
 interface RecipeGroup {
-  recipe: { id: number; name: string };
+  recipe: { id: number; name: string; quick: boolean };
   reviews: MenuRecipeReview[];
   avg: number;
 }
@@ -59,12 +59,16 @@ export function MenuReceivedReviews({ initialReviews, avgRating }: { initialRevi
         {groups.map((group) => (
           <div key={group.recipe.id} className="space-y-2.5">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <Link
-                href={`/ricette/${group.recipe.id}`}
-                className="text-sm font-bold text-sky-950 transition-colors active:text-orange-600 sm:hover:text-orange-600"
-              >
-                {group.recipe.name}
-              </Link>
+              {group.recipe.quick ? (
+                <span className="text-sm font-bold text-sky-950">{group.recipe.name}</span>
+              ) : (
+                <Link
+                  href={`/ricette/${group.recipe.id}`}
+                  className="text-sm font-bold text-sky-950 transition-colors active:text-orange-600 sm:hover:text-orange-600"
+                >
+                  {group.recipe.name}
+                </Link>
+              )}
               <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
                 <Star size={11} fill="currentColor" className="text-amber-400" />
                 {group.avg}/10

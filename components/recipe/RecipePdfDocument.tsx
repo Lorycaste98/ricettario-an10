@@ -259,7 +259,7 @@ export function RecipePdfContent({
         {recipe.servings ? (
           <View style={pdfStyles.metaTile}>
             <Text style={pdfStyles.metaLabel}>Porzioni</Text>
-            <Text style={pdfStyles.metaValue}>{recipe.servings} pers.</Text>
+            <Text style={pdfStyles.metaValue}>{recipe.servings} {recipe.servingsUnit?.trim() || "pers."}</Text>
           </View>
         ) : null}
       </View>
@@ -284,6 +284,9 @@ export function RecipePdfContent({
                   <Text style={pdfStyles.ingredientText}>
                     {qty ? <Text style={pdfStyles.ingredientQty}>{qty} </Text> : null}
                     {ing.name}
+                    {ing.optional ? (
+                      <Text style={pdfStyles.ingredientDesc}> (opz.)</Text>
+                    ) : null}
                     {ing.description ? (
                       <Text style={pdfStyles.ingredientDesc}> — {ing.description}</Text>
                     ) : null}

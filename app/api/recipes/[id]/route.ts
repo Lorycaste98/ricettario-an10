@@ -24,8 +24,9 @@ export async function GET(
     select: recipeDetailSelect,
   });
 
-  // Le ricette "non pronte" sono nascoste ai visitatori: 404 anche via API diretta
-  if (!recipe || (!isAdmin && !recipe.published)) return err("Ricetta non trovata", 404);
+  // Le ricette "veloci" non hanno dettaglio (nemmeno per l'admin); le "non pronte"
+  // sono nascoste solo ai visitatori: 404 anche via API diretta
+  if (!recipe || recipe.quick || (!isAdmin && !recipe.published)) return err("Ricetta non trovata", 404);
   return ok(flattenRecipe(recipe));
 }
 
@@ -50,6 +51,7 @@ export async function PUT(
     name?: string;
     createdAt?: string;
     servings?: number | null;
+    servingsUnit?: string | null;
     prep?: number | null;
     cook?: number | null;
     notes?: string | null;
@@ -57,7 +59,7 @@ export async function PUT(
     photo?: string | null;
     categoryIds?: number[];
     tagIds?: number[];
-    ingredients?: { name: string; qty?: number | null; unit?: string | null; description?: string | null; order: number }[];
+    ingredients?: { name: string; qty?: number | null; unit?: string | null; description?: string | null; optional?: boolean; order: number }[];
     steps?: { text: string; mins?: number | null; kind?: string; order: number }[];
     photos?: { url: string; order?: number }[];
   };
@@ -80,6 +82,8 @@ export async function PUT(
     }
     if (b.steps !== undefined) {
       await tx.step.deleteMany({ where: { recipeId } });
+      // La procedura cambia: gli avanzamenti salvati (per indice) non hanno più senso
+      await tx.recipeProgress.deleteMany({ where: { recipeId } });
     }
     if (b.photos !== undefined) {
       await tx.recipePhoto.deleteMany({ where: { recipeId } });
@@ -91,6 +95,7 @@ export async function PUT(
         ...(b.name !== undefined ? { name: b.name.trim() } : {}),
         ...(parseDateOnly(b.createdAt) ? { createdAt: parseDateOnly(b.createdAt) } : {}),
         ...(b.servings !== undefined ? { servings: b.servings } : {}),
+        ...(b.servingsUnit !== undefined ? { servingsUnit: b.servingsUnit?.trim() || null } : {}),
         ...(b.prep !== undefined ? { prep: b.prep } : {}),
         ...(b.cook !== undefined ? { cook: b.cook } : {}),
         ...(b.notes !== undefined ? { notes: b.notes?.trim() || null } : {}),
@@ -110,6 +115,7 @@ export async function PUT(
                   qty: i.qty ?? null,
                   unit: i.unit ?? null,
                   description: i.description ?? null,
+                  optional: !!i.optional,
                   order: i.order,
                 })),
               },

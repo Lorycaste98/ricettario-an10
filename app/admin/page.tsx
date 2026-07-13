@@ -52,7 +52,7 @@ export default async function AdminPage() {
       take: 5,
       select: {
         id: true, nickname: true, rating: true, comment: true, createdAt: true,
-        recipe: { select: { id: true, name: true } },
+        recipe: { select: { id: true, name: true, quick: true } },
         menu: { select: { id: true, name: true } },
       },
     }),

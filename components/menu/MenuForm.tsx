@@ -3,10 +3,11 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
-  Search, X, ChevronUp, ChevronDown, Loader2, UtensilsCrossed, CalendarDays, Info, EyeOff,
+  Search, X, Loader2, UtensilsCrossed, CalendarDays, Info, EyeOff, Zap, Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { ReorderList, ReorderRow } from "@/components/ui/ReorderList";
 import type { RecipeSummary } from "@/lib/types";
 
 interface Props {
@@ -42,9 +43,14 @@ export function MenuForm({ initialData }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Carica tutte le ricette
+  // Ricetta "veloce" (solo nome, niente scheda) creata al volo dal picker
+  const [showQuickForm, setShowQuickForm] = useState(false);
+  const [quickName, setQuickName] = useState("");
+  const [creatingQuick, setCreatingQuick] = useState(false);
+
+  // Carica tutte le ricette (incluse le "veloci", selezionabili solo qui)
   useEffect(() => {
-    fetch("/api/recipes?limit=1000")
+    fetch("/api/recipes?limit=1000&includeQuick=1")
       .then((r) => r.json())
       .then((d) => setAllRecipes(d.data ?? []))
       .finally(() => setLoadingRecipes(false));
@@ -68,23 +74,29 @@ export function MenuForm({ initialData }: Props) {
     setSelectedIds((prev) => prev.filter((x) => x !== id));
   }, []);
 
-  const moveUp = useCallback((idx: number) => {
-    if (idx === 0) return;
-    setSelectedIds((prev) => {
-      const next = [...prev];
-      [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
-      return next;
+  const addQuickRecipe = async () => {
+    const name = quickName.trim();
+    if (!name) return;
+    setCreatingQuick(true);
+    setError(null);
+    const res = await fetch("/api/recipes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, quick: true }),
     });
-  }, []);
-
-  const moveDown = useCallback((idx: number) => {
-    setSelectedIds((prev) => {
-      if (idx >= prev.length - 1) return prev;
-      const next = [...prev];
-      [next[idx], next[idx + 1]] = [next[idx + 1], next[idx]];
-      return next;
-    });
-  }, []);
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      setError(d.error ?? "Errore nella creazione della voce veloce");
+      setCreatingQuick(false);
+      return;
+    }
+    const created: RecipeSummary = await res.json();
+    setAllRecipes((prev) => [...prev, created]);
+    addRecipe(created.id);
+    setQuickName("");
+    setShowQuickForm(false);
+    setCreatingQuick(false);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -229,12 +241,16 @@ export function MenuForm({ initialData }: Props) {
 
         {/* Lista ordinata delle selezionate */}
         {selectedRecipes.length > 0 && (
-          <ul className="space-y-2">
+          <ReorderList as="ul" values={selectedIds} onReorder={setSelectedIds} className="space-y-2">
             {selectedRecipes.map((r, idx) => (
-              <li
+              <ReorderRow
+                as="li"
                 key={r.id}
+                value={r.id}
                 className="flex items-center gap-3 rounded-xl border border-white/30 bg-white/50 px-3 py-2"
               >
+              {(handle) => (
+              <>
                 {/* Thumb */}
                 <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg bg-sky-100">
                   {r.photo ? (
@@ -248,6 +264,11 @@ export function MenuForm({ initialData }: Props) {
                 {/* Name */}
                 <span className="flex-1 min-w-0 truncate text-sm font-medium text-sky-950">
                   {r.name}
+                  {r.quick && (
+                    <span className="ml-1.5 inline-flex items-center gap-0.5 align-middle text-[10px] font-semibold text-sky-600">
+                      <Zap size={10} /> veloce
+                    </span>
+                  )}
                   {!r.published && (
                     <span className="ml-1.5 inline-flex items-center gap-0.5 align-middle text-[10px] font-semibold text-amber-600">
                       <EyeOff size={10} /> non pronta
@@ -256,25 +277,8 @@ export function MenuForm({ initialData }: Props) {
                 </span>
                 {/* Order number */}
                 <span className="shrink-0 text-[10px] font-bold text-sky-400/60">#{idx + 1}</span>
-                {/* Move buttons */}
-                <div className="flex flex-col gap-0.5 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => moveUp(idx)}
-                    disabled={idx === 0}
-                    className="flex h-5 w-5 items-center justify-center rounded text-sky-600 hover:bg-sky-100 disabled:opacity-25 transition"
-                  >
-                    <ChevronUp size={12} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => moveDown(idx)}
-                    disabled={idx === selectedRecipes.length - 1}
-                    className="flex h-5 w-5 items-center justify-center rounded text-sky-600 hover:bg-sky-100 disabled:opacity-25 transition"
-                  >
-                    <ChevronDown size={12} />
-                  </button>
-                </div>
+                {/* Drag handle */}
+                <div className="shrink-0">{handle}</div>
                 {/* Remove */}
                 <button
                   type="button"
@@ -283,23 +287,54 @@ export function MenuForm({ initialData }: Props) {
                 >
                   <X size={13} />
                 </button>
-              </li>
+              </>
+              )}
+              </ReorderRow>
             ))}
-          </ul>
+          </ReorderList>
         )}
 
         {/* Cerca e aggiungi */}
         <div>
-          <div className="relative mb-2">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-sky-500/60" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Cerca ricette da aggiungere…"
-              className={inputCls + " pl-8"}
-            />
+          <div className="relative mb-2 flex gap-2">
+            <div className="relative flex-1">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-sky-500/60" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Cerca ricette da aggiungere…"
+                className={inputCls + " pl-8"}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowQuickForm((v) => !v)}
+              title="Aggiungi una voce veloce: solo un nome, senza scheda (es. «Arrosticini»)"
+              className="flex shrink-0 items-center gap-1.5 rounded-xl border border-sky-300/50 bg-sky-50/60 px-3 py-2.5 text-xs font-semibold text-sky-700 transition hover:bg-sky-100/70"
+            >
+              <Zap size={13} /> Voce veloce
+            </button>
           </div>
+
+          {showQuickForm && (
+            <div className="mb-2 flex items-center gap-2 rounded-xl border border-sky-200/60 bg-sky-50/50 p-2">
+              <input
+                type="text"
+                value={quickName}
+                onChange={(e) => setQuickName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") { e.preventDefault(); addQuickRecipe(); }
+                }}
+                placeholder="Nome (es. Arrosticini, Insalata…)"
+                autoFocus
+                className={inputCls}
+              />
+              <Button type="button" size="sm" onClick={addQuickRecipe} loading={creatingQuick} disabled={!quickName.trim()}>
+                <Plus size={14} />
+              </Button>
+            </div>
+          )}
 
           {loadingRecipes ? (
             <div className="flex items-center gap-2 py-4 text-sm text-sky-600">
@@ -329,7 +364,14 @@ export function MenuForm({ initialData }: Props) {
                         </div>
                       )}
                     </div>
-                    <span className="flex-1 min-w-0 text-sm text-sky-950 truncate">{r.name}</span>
+                    <span className="flex-1 min-w-0 text-sm text-sky-950 truncate">
+                      {r.name}
+                      {r.quick && (
+                        <span className="ml-1.5 inline-flex items-center gap-0.5 align-middle text-[10px] font-semibold text-sky-600">
+                          <Zap size={10} /> veloce
+                        </span>
+                      )}
+                    </span>
                     {r.published ? (
                       <span className="shrink-0 text-[10px] font-semibold text-sky-400">+ Aggiungi</span>
                     ) : (

@@ -17,6 +17,7 @@ export interface MenuPdfProps {
 interface RecipeDetailResponse {
   name: string;
   servings: number | null;
+  servingsUnit?: string | null;
   prep: number | null;
   cook: number | null;
   notes: string | null;
@@ -24,7 +25,7 @@ interface RecipeDetailResponse {
   photo: string | null;
   categories: { name: string; color: string }[];
   tags: { name: string }[];
-  ingredients: { name: string; qty: number | null; unit: string | null; description: string | null }[];
+  ingredients: { name: string; qty: number | null; unit: string | null; description: string | null; optional?: boolean }[];
   steps: { text: string; mins: number | null; kind?: string }[];
 }
 
@@ -32,6 +33,7 @@ function toPdfData(r: RecipeDetailResponse): RecipePdfData {
   return {
     name: r.name,
     servings: r.servings,
+    servingsUnit: r.servingsUnit ?? null,
     prep: r.prep,
     cook: r.cook,
     notes: r.notes,
@@ -40,7 +42,7 @@ function toPdfData(r: RecipeDetailResponse): RecipePdfData {
     categories: r.categories.map((c) => ({ name: c.name, color: c.color })),
     tags: r.tags.map((t) => ({ name: t.name })),
     ingredients: r.ingredients.map((i) => ({
-      name: i.name, qty: i.qty, unit: i.unit, description: i.description,
+      name: i.name, qty: i.qty, unit: i.unit, description: i.description, optional: i.optional,
     })),
     steps: r.steps.map((s) => ({ text: s.text, mins: s.mins, kind: s.kind })),
   };

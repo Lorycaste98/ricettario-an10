@@ -28,6 +28,8 @@ export async function GET(request: NextRequest) {
   const recipes = await db.recipe.findMany({
     where: {
       ...(isAdmin ? {} : { published: true }),
+      // Le ricette "veloci" (solo nome, senza scheda) non compaiono mai in ricerca
+      quick: false,
       OR: [
         { name: { contains: q, mode: "insensitive" } },
         { notes: { contains: q, mode: "insensitive" } },

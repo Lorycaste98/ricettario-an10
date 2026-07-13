@@ -37,9 +37,13 @@ export async function GET(request: NextRequest) {
     ? (sortRaw as SortField)
     : "createdAt";
   const order = sp.get("order") === "asc" ? "asc" : ("desc" as const);
+  // Le ricette "veloci" non compaiono in libreria: eccezione solo per il picker
+  // ricette del form menù (admin), che le vuole selezionabili.
+  const includeQuick = isAdmin && sp.get("includeQuick") === "1";
 
   const where = {
     ...(isAdmin ? {} : { published: true }),
+    ...(includeQuick ? {} : { quick: false }),
     ...(q ? { name: { contains: q, mode: "insensitive" as const } } : {}),
     ...(categoryId
       ? { categories: { some: { categoryId } } }
@@ -79,14 +83,17 @@ export async function POST(request: NextRequest) {
     name?: string;
     createdAt?: string;
     servings?: number;
+    servingsUnit?: string | null;
     prep?: number;
     cook?: number;
     notes?: string;
     links?: string;
     photo?: string;
+    /** Ricetta "veloce": solo nome, senza scheda (vedi lib/api.ts recipeSummarySelect) */
+    quick?: boolean;
     categoryIds?: number[];
     tagIds?: number[];
-    ingredients?: { name: string; qty?: number; unit?: string; description?: string; order: number }[];
+    ingredients?: { name: string; qty?: number; unit?: string; description?: string; optional?: boolean; order: number }[];
     steps?: { text: string; mins?: number; kind?: string; order: number }[];
     photos?: { url: string; order?: number }[];
   };
@@ -98,11 +105,13 @@ export async function POST(request: NextRequest) {
       name: b.name.trim(),
       ...(parseDateOnly(b.createdAt) ? { createdAt: parseDateOnly(b.createdAt) } : {}),
       servings: b.servings ?? null,
+      servingsUnit: b.servingsUnit?.trim() || null,
       prep: b.prep ?? null,
       cook: b.cook ?? null,
       notes: b.notes?.trim() || null,
       links: b.links?.trim() || null,
       photo: b.photo ?? null,
+      quick: !!b.quick,
       categories: {
         create: (b.categoryIds ?? []).map((id) => ({ categoryId: id })),
       },
@@ -115,6 +124,7 @@ export async function POST(request: NextRequest) {
           qty: i.qty ?? null,
           unit: i.unit ?? null,
           description: i.description ?? null,
+          optional: !!i.optional,
           order: i.order,
         })),
       },
