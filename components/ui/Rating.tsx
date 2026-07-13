@@ -1,5 +1,5 @@
 "use client";
-import { Star } from "lucide-react";
+import { Star, Sparkles } from "lucide-react";
 import { ratingStyle } from "@/lib/review-style";
 
 /** Selettore voto 1-10 touch-friendly: niente hover richiesto, un tap imposta il valore. */
@@ -39,12 +39,22 @@ export function RatingInput({
 export function RatingBadge({ rating, size = "md" }: { rating: number; size?: "sm" | "md" }) {
   const s = ratingStyle(rating);
   const small = size === "sm";
+  const pad = small ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-0.5 text-xs";
+
+  // Voto 10 — badge "top del top": gradiente smeraldo→teal + scintilla animata
+  if (s.top) {
+    return (
+      <span
+        className={`inline-flex shrink-0 items-center gap-1 rounded-full border border-emerald-600 bg-gradient-to-r from-emerald-500 to-teal-500 font-extrabold text-white shadow-sm shadow-emerald-500/30 [text-shadow:0_1px_2px_rgba(0,0,0,0.28)] ${pad}`}
+      >
+        <Sparkles size={small ? 10 : 12} fill="currentColor" className="rating-twinkle" />
+        {rating}/10
+      </span>
+    );
+  }
+
   return (
-    <span
-      className={`inline-flex shrink-0 items-center gap-1 rounded-full border font-bold ${s.accent} ${
-        small ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-0.5 text-xs"
-      }`}
-    >
+    <span className={`inline-flex shrink-0 items-center gap-1 rounded-full border font-bold ${s.accent} ${pad}`}>
       <Star size={small ? 10 : 12} fill="currentColor" />
       {rating}/10
     </span>

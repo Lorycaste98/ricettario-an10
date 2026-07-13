@@ -172,7 +172,7 @@ export function RecipeProcedure({ recipeId, defaultServings, servingsUnit, ingre
                   {ing.name}
                   {ing.optional && <PriceTag className="ml-1.5" />}
                   {ing.description && (
-                    <span className="text-sky-600 font-normal"> {ing.description}</span>
+                    <span className="block text-sky-600 font-normal">{ing.description}</span>
                   )}
                 </span>
               </li>

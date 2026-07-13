@@ -2,10 +2,11 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, RotateCcw, PartyPopper, Zap } from "lucide-react";
+import { ChevronLeft, ChevronRight, RotateCcw, PartyPopper } from "lucide-react";
 import { formatMinutes, toStepKind, STEP_KIND_LABEL, type StepKind } from "@/lib/types";
 import { formatClock } from "@/lib/cook-timeline";
 import { useLocalStore } from "@/lib/local-store";
+import { QuickTag } from "@/components/ui/QuickTag";
 
 const KIND_BADGE: Partial<Record<StepKind, string>> = {
   COOK: "bg-red-100 text-red-700",
@@ -134,9 +135,7 @@ function QuickRecipeCookCard({
       </div>
       <div className="min-w-0 flex-1">
         <span className="block truncate text-sm font-semibold text-sky-950">{recipe.name}</span>
-        <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-sky-500/15 px-2 py-0.5 text-[9px] font-semibold text-sky-700">
-          <Zap size={9} /> Voce veloce — nessuna procedura
-        </span>
+        <QuickTag label="Voce veloce — nessuna procedura" className="mt-1" />
       </div>
       {cooked ? (
         <button

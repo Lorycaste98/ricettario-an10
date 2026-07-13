@@ -10,8 +10,9 @@ import { getSiteUrl } from "@/lib/site-url";
 import { formatMinutes, formatServings } from "@/lib/types";
 import { resolveServeAt, computeStart, startLabel } from "@/lib/cook-schedule";
 import type { Metadata } from "next";
-import { CalendarDays, UtensilsCrossed, Star, Clock, Users, Pencil, AlarmClock, ChefHat, Zap } from "lucide-react";
+import { CalendarDays, UtensilsCrossed, Star, Clock, Users, Pencil, AlarmClock, ChefHat } from "lucide-react";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { QuickTag } from "@/components/ui/QuickTag";
 import { MenuPdfButton } from "@/components/menu/MenuPdfButton";
 import { MenuShoppingList } from "@/components/menu/MenuShoppingList";
 import { ShareReviewLink } from "@/components/menu/ShareReviewLink";
@@ -233,11 +234,7 @@ export default async function MenuDetailPage({ params }: Params) {
                     </div>
                   )}
                   {/* Ricetta "veloce": nessuna scheda, quindi nessun link cliccabile */}
-                  {recipe.quick && (
-                    <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-sky-500/15 px-2 py-0.5 text-[9px] font-semibold text-sky-700">
-                      <Zap size={9} /> Voce veloce
-                    </span>
-                  )}
+                  {recipe.quick && <QuickTag label="Voce veloce" className="mt-1" />}
                 </div>
               </>
             );

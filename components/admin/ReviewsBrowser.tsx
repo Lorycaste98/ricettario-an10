@@ -2,145 +2,309 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Search, Star, BookOpen, UtensilsCrossed } from "lucide-react";
-import { ReviewCard, type ReviewItem } from "./ReviewCard";
+import { Search, Star, BookOpen, UtensilsCrossed, CalendarDays, ChevronRight, NotebookPen } from "lucide-react";
+import { SearchableSelect, type SelectOption } from "@/components/ui/SearchableSelect";
+import { ConfirmModal } from "@/components/ui/Modal";
+import { ReviewMiniCard, type AdminReview } from "@/components/admin/ReviewMiniCard";
 
-export interface ReviewGroup {
-  id: number;
-  name: string;
-  avg: number;
-  count: number;
-  reviews: ReviewItem[];
-  /** true per le ricette "veloci": nessuna pagina di dettaglio, il gruppo non è cliccabile */
-  quick?: boolean;
+type GroupBy = "recipe" | "menu" | "date" | "none";
+
+const NO_MENU = "__none__"; // chiave gruppo/opzione per le note personali (menu null)
+
+// Giorno locale YYYY-MM-DD (le card sono client-side: coerente con ciò che vede l'admin)
+function dayKey(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-type TabKey = "recipe" | "menu";
-
-function filterGroups(groups: ReviewGroup[], q: string): ReviewGroup[] {
-  if (!q) return groups;
-  return groups
-    .map((g) => {
-      if (g.name.toLowerCase().includes(q)) return g; // match sul nome → tutte le recensioni
-      const reviews = g.reviews.filter(
-        (r) =>
-          r.nickname.toLowerCase().includes(q) ||
-          (r.comment?.toLowerCase().includes(q) ?? false)
-      );
-      return reviews.length ? { ...g, reviews } : null;
-    })
-    .filter((g): g is ReviewGroup => g !== null);
+function dayLabel(iso: string): string {
+  return new Date(iso).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" });
 }
 
-function countReviews(groups: ReviewGroup[]): number {
-  return groups.reduce((s, g) => s + g.reviews.length, 0);
+function avgOf(reviews: AdminReview[]): number {
+  return reviews.length ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : 0;
 }
 
-function GroupSection({ group, href }: { group: ReviewGroup; href: string | null }) {
-  return (
-    <section className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        {href ? (
-          <Link href={href} className="text-base font-bold text-gray-800 transition-colors hover:text-orange-500">
-            {group.name}
-          </Link>
-        ) : (
-          <span className="text-base font-bold text-gray-800">{group.name}</span>
-        )}
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
-          <Star size={12} fill="currentColor" className="text-amber-400" />
-          {group.avg.toFixed(1)}/10
-          <span className="text-gray-400">
-            · {group.reviews.length} recension{group.reviews.length === 1 ? "e" : "i"}
-          </span>
-        </span>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {group.reviews.map((rev, i) => (
-          <ReviewCard key={rev.id} review={rev} index={i} />
-        ))}
-      </div>
-    </section>
+interface Group {
+  key: string;
+  title: string;
+  href: string | null;
+  /** Icona del tipo di gruppo. */
+  kind: GroupBy;
+  reviews: AdminReview[];
+}
+
+function buildGroups(reviews: AdminReview[], groupBy: GroupBy): Group[] {
+  if (groupBy === "none") {
+    return reviews.length ? [{ key: "all", title: "", href: null, kind: "none", reviews }] : [];
+  }
+  const map = new Map<string, Group>();
+  for (const r of reviews) {
+    let key: string, title: string, href: string | null, kind: GroupBy;
+    if (groupBy === "recipe") {
+      key = `r${r.recipe.id}`;
+      title = r.recipe.name;
+      href = r.recipe.quick ? null : `/ricette/${r.recipe.id}`;
+      kind = "recipe";
+    } else if (groupBy === "menu") {
+      key = r.menu ? `m${r.menu.id}` : NO_MENU;
+      title = r.menu ? r.menu.name : "Note personali";
+      href = r.menu ? `/menu/${r.menu.id}` : null;
+      kind = "menu";
+    } else {
+      key = dayKey(r.createdAt);
+      title = dayLabel(r.createdAt);
+      href = null;
+      kind = "date";
+    }
+    let g = map.get(key);
+    if (!g) {
+      g = { key, title, href, kind, reviews: [] };
+      map.set(key, g);
+    }
+    g.reviews.push(r);
+  }
+  // Ordina i gruppi per recensione più recente (le review dentro sono già desc)
+  return Array.from(map.values()).sort(
+    (a, b) => new Date(b.reviews[0].createdAt).getTime() - new Date(a.reviews[0].createdAt).getTime()
   );
 }
 
-export function ReviewsBrowser({
-  recipeGroups,
-  menuGroups,
-}: {
-  recipeGroups: ReviewGroup[];
-  menuGroups: ReviewGroup[];
-}) {
-  const [tab, setTab] = useState<TabKey>("recipe");
-  const [query, setQuery] = useState("");
-  const q = query.trim().toLowerCase();
+const GROUP_LABELS: { key: GroupBy; label: string }[] = [
+  { key: "recipe", label: "Ricetta" },
+  { key: "menu", label: "Menù" },
+  { key: "date", label: "Data" },
+  { key: "none", label: "Nessuno" },
+];
 
-  const recipes = useMemo(() => filterGroups(recipeGroups, q), [recipeGroups, q]);
-  const menus = useMemo(() => filterGroups(menuGroups, q), [menuGroups, q]);
+export function ReviewsBrowser({ reviews: allReviews }: { reviews: AdminReview[] }) {
+  const [reviews, setReviews] = useState(allReviews);
+  const [search, setSearch] = useState("");
+  const [recipeId, setRecipeId] = useState<string | null>(null);
+  const [menuId, setMenuId] = useState<string | null>(null);
+  const [dateFilter, setDateFilter] = useState<string | null>(null);
+  const [groupBy, setGroupBy] = useState<GroupBy>("recipe");
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [confirmId, setConfirmId] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
-  const tabs: { key: TabKey; label: string; icon: React.ReactNode; count: number }[] = [
-    { key: "recipe", label: "Ricette", icon: <BookOpen size={15} />, count: countReviews(recipes) },
-    { key: "menu", label: "Menù", icon: <UtensilsCrossed size={15} />, count: countReviews(menus) },
-  ];
+  // Opzioni dei filtri, derivate dalla lista completa (con conteggi)
+  const { recipeOptions, menuOptions, dateOptions } = useMemo(() => {
+    const recipes = new Map<string, SelectOption>();
+    const menus = new Map<string, SelectOption>();
+    const dates = new Map<string, { label: string; count: number; iso: string }>();
+    for (const r of reviews) {
+      const rk = String(r.recipe.id);
+      recipes.set(rk, { value: rk, label: r.recipe.name, count: (recipes.get(rk)?.count ?? 0) + 1 });
+      const mk = r.menu ? String(r.menu.id) : NO_MENU;
+      const mlabel = r.menu ? r.menu.name : "Note personali (senza menù)";
+      menus.set(mk, { value: mk, label: mlabel, count: (menus.get(mk)?.count ?? 0) + 1 });
+      const dk = dayKey(r.createdAt);
+      const prev = dates.get(dk);
+      dates.set(dk, { label: dayLabel(r.createdAt), count: (prev?.count ?? 0) + 1, iso: r.createdAt });
+    }
+    const byLabel = (a: SelectOption, b: SelectOption) => a.label.localeCompare(b.label, "it");
+    return {
+      recipeOptions: Array.from(recipes.values()).sort(byLabel),
+      menuOptions: Array.from(menus.values()).sort(byLabel),
+      dateOptions: Array.from(dates.entries())
+        .sort((a, b) => new Date(b[1].iso).getTime() - new Date(a[1].iso).getTime())
+        .map(([value, d]): SelectOption => ({ value, label: `${d.label} · ${d.count}` })),
+    };
+  }, [reviews]);
 
-  const active = tab === "recipe" ? recipes : menus;
-  const href = (g: ReviewGroup) => (tab === "recipe" ? (g.quick ? null : `/ricette/${g.id}`) : `/menu/${g.id}`);
+  const q = search.trim().toLowerCase();
+  const filtered = useMemo(
+    () =>
+      reviews.filter((r) => {
+        if (recipeId && String(r.recipe.id) !== recipeId) return false;
+        if (menuId && (r.menu ? String(r.menu.id) : NO_MENU) !== menuId) return false;
+        if (dateFilter && dayKey(r.createdAt) !== dateFilter) return false;
+        if (q) {
+          const hay = `${r.nickname} ${r.comment ?? ""} ${r.recipe.name} ${r.menu?.name ?? ""}`.toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      }),
+    [reviews, recipeId, menuId, dateFilter, q]
+  );
+
+  const groups = useMemo(() => buildGroups(filtered, groupBy), [filtered, groupBy]);
+  const hasFilters = !!(q || recipeId || menuId || dateFilter);
+
+  const deleteReview = async (id: number) => {
+    setDeleting(true);
+    const res = await fetch(`/api/reviews/${id}`, { method: "DELETE" });
+    if (res.ok) setReviews((prev) => prev.filter((r) => r.id !== id));
+    setDeleting(false);
+    setConfirmId(null);
+  };
+
+  const toggle = (key: string) =>
+    setCollapsed((c) => {
+      const next = new Set(c);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+
+  const resetFilters = () => {
+    setSearch("");
+    setRecipeId(null);
+    setMenuId(null);
+    setDateFilter(null);
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Switcher animato ricette / menù */}
-      <div className="relative grid grid-cols-2 gap-1 rounded-2xl border border-gray-100 bg-white p-1 shadow-sm">
-        {/* indicatore scorrevole */}
-        <span
-          className="absolute inset-y-1 left-1 rounded-xl bg-gradient-to-br from-rose-400 to-pink-500 shadow-sm shadow-rose-500/30 transition-transform duration-300 ease-out"
-          style={{ width: "calc(50% - 0.375rem)", transform: tab === "menu" ? "translateX(calc(100% + 0.25rem))" : "translateX(0)" }}
-        />
-        {tabs.map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            onClick={() => setTab(t.key)}
-            className={`relative z-10 flex items-center justify-center gap-2 rounded-xl py-2 text-sm font-bold transition-colors duration-200 ${
-              tab === t.key ? "text-white" : "text-gray-500 hover:text-gray-800"
-            }`}
-          >
-            {t.icon}
-            {t.label}
-            <span
-              className={`rounded-full px-1.5 py-0.5 text-[11px] font-semibold transition-colors duration-200 ${
-                tab === t.key ? "bg-white/25 text-white" : "bg-gray-100 text-gray-500"
-              }`}
+    <div className="space-y-5">
+      {/* Toolbar filtri */}
+      <div className="space-y-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+        <div className="relative">
+          <Search size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Cerca per autore o testo del commento…"
+            className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-10 pr-3 text-sm text-gray-800 shadow-sm placeholder:text-gray-400 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-300/30"
+          />
+        </div>
+
+        <div className="grid gap-2 sm:grid-cols-3">
+          <SearchableSelect
+            options={recipeOptions}
+            value={recipeId}
+            onChange={setRecipeId}
+            placeholder="Tutte le ricette"
+            searchPlaceholder="Cerca ricetta…"
+            icon={<BookOpen size={15} />}
+          />
+          <SearchableSelect
+            options={menuOptions}
+            value={menuId}
+            onChange={setMenuId}
+            placeholder="Tutti i menù"
+            searchPlaceholder="Cerca menù…"
+            icon={<UtensilsCrossed size={15} />}
+          />
+          <SearchableSelect
+            options={dateOptions}
+            value={dateFilter}
+            onChange={setDateFilter}
+            placeholder="Tutte le date"
+            searchPlaceholder="Cerca data…"
+            icon={<CalendarDays size={15} />}
+          />
+        </div>
+
+        {/* Raggruppa per */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-gray-500">Raggruppa per:</span>
+          <div className="flex gap-1 rounded-lg border border-gray-100 bg-gray-50 p-1">
+            {GROUP_LABELS.map((g) => (
+              <button
+                key={g.key}
+                type="button"
+                onClick={() => setGroupBy(g.key)}
+                className={`rounded-md px-2.5 py-1 text-xs font-semibold transition-colors ${
+                  groupBy === g.key ? "bg-white text-orange-600 shadow-sm" : "text-gray-500 hover:text-gray-800"
+                }`}
+              >
+                {g.label}
+              </button>
+            ))}
+          </div>
+          {hasFilters && (
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="ml-auto text-xs font-semibold text-gray-400 transition-colors hover:text-orange-600"
             >
-              {t.count}
-            </span>
-          </button>
-        ))}
+              Azzera filtri
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Barra di ricerca */}
-      <div className="relative">
-        <Search size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Cerca per nome, autore o testo…"
-          className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-10 pr-3 text-sm text-gray-800 shadow-sm placeholder:text-gray-400 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-300/30"
-        />
-      </div>
+      {/* Risultati */}
+      <p className="text-xs text-gray-400">
+        {filtered.length} recension{filtered.length === 1 ? "e" : "i"}
+        {hasFilters ? " (filtrate)" : ""}
+      </p>
 
-      {/* Contenuto della tab attiva — `key` forza il replay dell'animazione al cambio */}
-      <div key={`${tab}-${q}`} className="fade-up space-y-6">
-        {active.length === 0 ? (
-          <p className="text-sm text-gray-400">
-            {q
-              ? `Nessuna recensione corrisponde a «${query.trim()}».`
-              : `Nessuna recensione ${tab === "recipe" ? "per le ricette" : "per i menù"}.`}
-          </p>
-        ) : (
-          active.map((g) => <GroupSection key={`${tab}-${g.id}`} group={g} href={href(g)} />)
-        )}
-      </div>
+      {groups.length === 0 ? (
+        <p className="text-sm text-gray-400">Nessuna recensione corrisponde ai filtri.</p>
+      ) : (
+        <div className="space-y-4">
+          {groups.map((g) => {
+            const isCollapsed = collapsed.has(g.key);
+            const avg = avgOf(g.reviews);
+            return (
+              <section key={g.key} className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-5">
+                {groupBy !== "none" && (
+                  <button
+                    type="button"
+                    onClick={() => toggle(g.key)}
+                    className="mb-3 flex w-full items-center gap-2 text-left"
+                  >
+                    <ChevronRight
+                      size={16}
+                      className={`shrink-0 text-gray-400 transition-transform ${isCollapsed ? "" : "rotate-90"}`}
+                    />
+                    <GroupIcon kind={g.kind} hasMenu={g.key !== NO_MENU} />
+                    {g.href ? (
+                      <Link
+                        href={g.href}
+                        onClick={(e) => e.stopPropagation()}
+                        className="min-w-0 truncate text-base font-bold text-gray-800 transition-colors hover:text-orange-500"
+                      >
+                        {g.title}
+                      </Link>
+                    ) : (
+                      <span className="min-w-0 truncate text-base font-bold text-gray-800">{g.title}</span>
+                    )}
+                    <span className="ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
+                      <Star size={12} fill="currentColor" className="text-amber-400" />
+                      {avg.toFixed(1)}/10
+                      <span className="text-gray-400">· {g.reviews.length}</span>
+                    </span>
+                  </button>
+                )}
+                {!isCollapsed && (
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {g.reviews.map((r) => (
+                      <ReviewMiniCard
+                        key={r.id}
+                        review={r}
+                        showRecipe={groupBy !== "recipe"}
+                        showMenu={groupBy !== "menu"}
+                        onDelete={() => setConfirmId(r.id)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </section>
+            );
+          })}
+        </div>
+      )}
+
+      <ConfirmModal
+        open={confirmId !== null}
+        onClose={() => setConfirmId(null)}
+        onConfirm={() => confirmId !== null && deleteReview(confirmId)}
+        title="Elimina recensione"
+        message="Sei sicuro di voler eliminare questa recensione?"
+        loading={deleting}
+      />
     </div>
   );
+}
+
+function GroupIcon({ kind, hasMenu }: { kind: GroupBy; hasMenu: boolean }) {
+  const cls = "shrink-0 text-gray-400";
+  if (kind === "recipe") return <BookOpen size={15} className={cls} />;
+  if (kind === "date") return <CalendarDays size={15} className={cls} />;
+  if (kind === "menu") return hasMenu ? <UtensilsCrossed size={15} className={cls} /> : <NotebookPen size={15} className={cls} />;
+  return null;
 }

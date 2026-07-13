@@ -8,6 +8,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { ReorderList, ReorderRow } from "@/components/ui/ReorderList";
+import { QuickTag } from "@/components/ui/QuickTag";
 import type { RecipeSummary } from "@/lib/types";
 
 interface Props {
@@ -264,11 +265,7 @@ export function MenuForm({ initialData }: Props) {
                 {/* Name */}
                 <span className="flex-1 min-w-0 truncate text-sm font-medium text-sky-950">
                   {r.name}
-                  {r.quick && (
-                    <span className="ml-1.5 inline-flex items-center gap-0.5 align-middle text-[10px] font-semibold text-sky-600">
-                      <Zap size={10} /> veloce
-                    </span>
-                  )}
+                  {r.quick && <QuickTag className="ml-1.5" />}
                   {!r.published && (
                     <span className="ml-1.5 inline-flex items-center gap-0.5 align-middle text-[10px] font-semibold text-amber-600">
                       <EyeOff size={10} /> non pronta
@@ -366,11 +363,7 @@ export function MenuForm({ initialData }: Props) {
                     </div>
                     <span className="flex-1 min-w-0 text-sm text-sky-950 truncate">
                       {r.name}
-                      {r.quick && (
-                        <span className="ml-1.5 inline-flex items-center gap-0.5 align-middle text-[10px] font-semibold text-sky-600">
-                          <Zap size={10} /> veloce
-                        </span>
-                      )}
+                      {r.quick && <QuickTag className="ml-1.5" />}
                     </span>
                     {r.published ? (
                       <span className="shrink-0 text-[10px] font-semibold text-sky-400">+ Aggiungi</span>

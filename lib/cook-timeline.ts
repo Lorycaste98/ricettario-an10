@@ -20,6 +20,8 @@ export interface TimelineRecipe {
   photo: string | null;
   prep: number | null;
   cook: number | null;
+  /** Ricetta veloce (senza step): esclusa dal Gantt, mostrata come chip */
+  quick: boolean;
   /** Inizio pianificato (ISO) salvato su MenuRecipe; null = automatico */
   cookStartAt: string | null;
   steps: TimelineStep[];

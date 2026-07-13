@@ -3,7 +3,8 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { MessageSquareHeart, Star } from "lucide-react";
 import { SectionHeader } from "@/components/ui/SectionHeader";
-import { ReviewCard } from "@/components/admin/ReviewCard";
+import { ReviewBubble } from "@/components/recipe/ReviewBubble";
+import { ReviewCarousel } from "@/components/recipe/ReviewCarousel";
 import { ConfirmModal } from "@/components/ui/Modal";
 import type { MenuRecipeReview } from "@/lib/types";
 
@@ -78,22 +79,21 @@ export function MenuReceivedReviews({ initialReviews, avgRating }: { initialRevi
               </span>
             </div>
 
-            {/* Orizzontale: scroll su mobile, griglia da lg (come l'anteprima recensioni della dashboard) */}
-            <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pt-1 pb-2 snap-x [scrollbar-width:thin] lg:mx-0 lg:grid lg:grid-cols-4 lg:overflow-visible lg:px-0 lg:pt-0 lg:pb-0">
-              {group.reviews.map((r, i) => (
-                <div key={r.id} className="w-[200px] shrink-0 snap-start lg:w-auto">
-                  <ReviewCard
-                    review={r}
-                    index={i}
-                    expand="dialog"
-                    compact
-                    hideMeta
+            {/* Recensioni della ricetta in carosello (frecce + sfumature ai bordi) */}
+            <ReviewCarousel>
+              {group.reviews.map((r) => (
+                <div key={r.id} className="w-[230px] shrink-0 snap-start sm:w-[250px]">
+                  <ReviewBubble
+                    nickname={r.nickname}
+                    rating={r.rating}
+                    comment={r.comment}
+                    createdAt={r.createdAt}
                     isAdmin
                     onDelete={() => setConfirmId(r.id)}
                   />
                 </div>
               ))}
-            </div>
+            </ReviewCarousel>
           </div>
         ))}
       </div>

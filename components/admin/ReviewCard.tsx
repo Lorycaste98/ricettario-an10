@@ -55,7 +55,7 @@ export function ReviewCard({
       <div
         className={`fade-up group relative flex h-full flex-col overflow-hidden rounded-xl border shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md ${
           compact ? "gap-1.5 p-3" : "gap-2 p-4"
-        } ${s.card} ${s.shine ? "shine-gold" : ""}`}
+        } ${s.card} ${s.top ? "rating-top" : ""}`}
         style={{ animationDelay: `${index * 60}ms` }}
       >
         {/* Riga 1: voto + data (+ elimina, se admin) */}
