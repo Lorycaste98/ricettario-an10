@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, useMotionValue } from "motion/react";
-import { ZoomIn, ZoomOut, RotateCcw, AlarmClock, X } from "lucide-react";
+import { ZoomIn, ZoomOut, RotateCcw, AlarmClock, X, Timer, ArrowRight } from "lucide-react";
 import {
   formatClock,
   formatDayShort,
@@ -247,9 +247,9 @@ export function CookTimeline({
               {selected.recipeName} · passo {selected.segment.stepIdx + 1} · {STEP_KIND_LABEL[selected.segment.kind]}
             </p>
             <p className="mt-0.5 text-sm leading-relaxed text-sky-900">{selected.segment.text}</p>
-            <p className="mt-1 text-xs font-medium text-orange-700">
-              🕒 Inizia alle {formatClock(selected.segment.startsAt)}
-              {selected.segment.mins > 0 && <span className="text-sky-600 font-normal"> · ⏱ {formatMinutes(selected.segment.mins)}</span>}
+            <p className="mt-1 flex flex-wrap items-center gap-1 text-xs font-medium text-orange-700">
+              <AlarmClock size={12} /> Inizia alle {formatClock(selected.segment.startsAt)}
+              {selected.segment.mins > 0 && <span className="inline-flex items-center gap-1 text-sky-600 font-normal"> · <Timer size={12} /> {formatMinutes(selected.segment.mins)}</span>}
             </p>
           </div>
           <button
@@ -311,8 +311,8 @@ function TimelineLane({
       <div className="sticky left-1 z-[5] flex w-max max-w-[85vw] items-center gap-2 pb-0.5">
         <span className="h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-white/60" style={{ backgroundColor: color }} />
         <span className="truncate text-xs font-semibold text-sky-950">{recipe.name}</span>
-        <span className={`text-[10px] tabular-nums ${dragMins != null ? "font-bold text-orange-700" : "text-sky-700/70"}`}>
-          {formatClock(liveStart)} → {formatClock(new Date(liveStart.getTime() + schedule.leadMins * 60_000))}
+        <span className={`inline-flex items-center gap-1 text-[10px] tabular-nums ${dragMins != null ? "font-bold text-orange-700" : "text-sky-700/70"}`}>
+          {formatClock(liveStart)} <ArrowRight size={10} /> {formatClock(new Date(liveStart.getTime() + schedule.leadMins * 60_000))}
         </span>
         {schedule.isCustom && (
           <button

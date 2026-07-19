@@ -5,7 +5,7 @@ import { useFavorites } from "@/lib/favorites";
 
 interface Props {
   recipeId: number;
-  variant?: "card" | "detail";
+  variant?: "card" | "detail" | "overlay";
 }
 
 export function FavoriteButton({ recipeId, variant = "card" }: Props) {
@@ -17,6 +17,26 @@ export function FavoriteButton({ recipeId, variant = "card" }: Props) {
     e.stopPropagation();
     toggle(recipeId);
   };
+
+  if (variant === "overlay") {
+    // Badge in sovrimpressione sulla foto: vetro scuro leggibile su qualsiasi
+    // immagine; icona sempre, etichetta breve solo da desktop (lg).
+    return (
+      <button
+        onClick={handleClick}
+        aria-label={active ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti"}
+        aria-pressed={active}
+        title={active ? "Rimuovi dai preferiti" : "Salva tra i preferiti"}
+        className={clsx(
+          "inline-flex items-center gap-1.5 rounded-full px-2.5 py-2 text-xs font-medium text-white shadow-sm backdrop-blur-md transition-colors lg:px-3",
+          active ? "bg-rose-500/85 hover:bg-rose-500" : "bg-black/45 hover:bg-black/65"
+        )}
+      >
+        <Heart size={16} className={clsx(active && "fill-current")} />
+        <span className="hidden lg:inline">{active ? "Salvata" : "Preferiti"}</span>
+      </button>
+    );
+  }
 
   if (variant === "detail") {
     return (

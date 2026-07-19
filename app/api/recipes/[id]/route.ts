@@ -57,6 +57,7 @@ export async function PUT(
     notes?: string | null;
     links?: string | null;
     photo?: string | null;
+    published?: boolean;
     categoryIds?: number[];
     tagIds?: number[];
     ingredients?: { name: string; qty?: number | null; unit?: string | null; description?: string | null; optional?: boolean; order: number }[];
@@ -101,6 +102,7 @@ export async function PUT(
         ...(b.notes !== undefined ? { notes: b.notes?.trim() || null } : {}),
         ...(b.links !== undefined ? { links: b.links?.trim() || null } : {}),
         ...(b.photo !== undefined ? { photo: b.photo } : {}),
+        ...(b.published !== undefined ? { published: b.published } : {}),
         ...(b.categoryIds
           ? { categories: { create: b.categoryIds.map((cid) => ({ categoryId: cid })) } }
           : {}),

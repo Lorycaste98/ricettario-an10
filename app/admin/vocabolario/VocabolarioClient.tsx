@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Tag as TagIcon, Bookmark, Check, X, Pencil, Trash2 } from "lucide-react";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { ColorPicker, PALETTE } from "@/components/ui/ColorPicker";
 import { ReorderList, ReorderRow } from "@/components/ui/ReorderList";
@@ -131,7 +132,7 @@ function CategoriesPanel({
 
   return (
     <section className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm space-y-4">
-      <h2 className="text-sm font-semibold text-gray-700">🏷️ Categorie ({categories.length})</h2>
+      <h2 className="flex items-center gap-1.5 text-sm font-semibold text-gray-700"><TagIcon size={15} /> Categorie ({categories.length})</h2>
 
       {/* Form aggiunta */}
       <form onSubmit={handleAdd} className="flex flex-col gap-2">
@@ -174,8 +175,8 @@ function CategoriesPanel({
                 className="flex-1 rounded-lg border border-orange-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
               />
               <ColorPicker value={editColor} onChange={setEditColor} compact />
-              <button onClick={() => handleSaveEdit(cat.id)} className="rounded-lg bg-green-500 px-2.5 py-1.5 text-xs text-white hover:bg-green-600 transition-colors">✓</button>
-              <button onClick={() => setEditId(null)} className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs text-gray-500 hover:bg-gray-50 transition-colors">✕</button>
+              <button onClick={() => handleSaveEdit(cat.id)} className="rounded-lg bg-green-500 px-2.5 py-1.5 text-xs text-white hover:bg-green-600 transition-colors"><Check size={14} /></button>
+              <button onClick={() => setEditId(null)} className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs text-gray-500 hover:bg-gray-50 transition-colors"><X size={14} /></button>
             </>
             )}
             </ReorderRow>
@@ -190,8 +191,8 @@ function CategoriesPanel({
               />
               <span className="flex-1 truncate text-sm text-gray-700">{cat.name}</span>
               <span className="text-xs text-gray-400">{cat._count.recipes} ric.</span>
-              <button onClick={() => startEdit(cat)} className="hidden group-hover:block text-xs text-sky-500 hover:text-sky-700 px-1">✎</button>
-              <button onClick={() => handleDelete(cat.id, cat.name)} className="hidden group-hover:block text-xs text-red-400 hover:text-red-600 px-1">🗑</button>
+              <button onClick={() => startEdit(cat)} className="hidden group-hover:block text-sky-500 hover:text-sky-700 px-1"><Pencil size={14} /></button>
+              <button onClick={() => handleDelete(cat.id, cat.name)} className="hidden group-hover:block text-red-400 hover:text-red-600 px-1"><Trash2 size={14} /></button>
             </>
             )}
             </ReorderRow>
@@ -268,7 +269,7 @@ function TagsPanel({
 
   return (
     <section className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm space-y-4">
-      <h2 className="text-sm font-semibold text-gray-700">🔖 Tag ingredienti ({tags.length})</h2>
+      <h2 className="flex items-center gap-1.5 text-sm font-semibold text-gray-700"><Bookmark size={15} /> Tag ingredienti ({tags.length})</h2>
 
       {/* Form aggiunta */}
       <form onSubmit={handleAdd} className="flex flex-col gap-2">
@@ -332,15 +333,15 @@ function TagSearch({
                 onKeyDown={(e) => { if (e.key === "Enter") onSaveEdit(tag.id); if (e.key === "Escape") onCancelEdit(); }}
                 autoFocus
               />
-              <button onClick={() => onSaveEdit(tag.id)} className="rounded-lg bg-green-500 px-2.5 py-1.5 text-xs text-white hover:bg-green-600 transition-colors">✓</button>
-              <button onClick={onCancelEdit} className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs text-gray-500 hover:bg-gray-50 transition-colors">✕</button>
+              <button onClick={() => onSaveEdit(tag.id)} className="rounded-lg bg-green-500 px-2.5 py-1.5 text-xs text-white hover:bg-green-600 transition-colors"><Check size={14} /></button>
+              <button onClick={onCancelEdit} className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs text-gray-500 hover:bg-gray-50 transition-colors"><X size={14} /></button>
             </li>
           ) : (
             <li key={tag.id} className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-gray-50 group">
               <span className="flex-1 truncate text-sm text-gray-700">{tag.name}</span>
               <span className="text-xs text-gray-400">{tag._count.recipes} ric.</span>
-              <button onClick={() => onEdit(tag)} className="hidden group-hover:block text-xs text-sky-500 hover:text-sky-700 px-1">✎</button>
-              <button onClick={() => onDelete(tag.id, tag.name)} className="hidden group-hover:block text-xs text-red-400 hover:text-red-600 px-1">🗑</button>
+              <button onClick={() => onEdit(tag)} className="hidden group-hover:block text-sky-500 hover:text-sky-700 px-1"><Pencil size={14} /></button>
+              <button onClick={() => onDelete(tag.id, tag.name)} className="hidden group-hover:block text-red-400 hover:text-red-600 px-1"><Trash2 size={14} /></button>
             </li>
           )
         )}

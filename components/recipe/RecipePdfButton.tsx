@@ -40,7 +40,7 @@ export function safeFileName(name: string, fallback = "ricetta"): string {
   return (cleaned || fallback).slice(0, 80);
 }
 
-export function RecipePdfButton({ recipe }: { recipe: RecipePdfData }) {
+export function RecipePdfButton({ recipe, overlay = false }: { recipe: RecipePdfData; overlay?: boolean }) {
   const [loading, setLoading] = useState(false);
 
   const handleExport = async () => {
@@ -74,6 +74,21 @@ export function RecipePdfButton({ recipe }: { recipe: RecipePdfData }) {
       setLoading(false);
     }
   };
+
+  // Badge in sovrimpressione sulla foto: vetro scuro, icona sempre + "PDF" da desktop
+  if (overlay) {
+    return (
+      <button
+        onClick={handleExport}
+        disabled={loading}
+        title="Esporta in PDF"
+        className="inline-flex items-center gap-1.5 rounded-full bg-black/45 px-2.5 py-2 text-xs font-medium text-white shadow-sm backdrop-blur-md transition-colors hover:bg-black/65 disabled:cursor-not-allowed disabled:opacity-60 lg:px-3"
+      >
+        {loading ? <Loader2 size={16} className="animate-spin" /> : <FileDown size={16} />}
+        <span className="hidden lg:inline">{loading ? "PDF…" : "PDF"}</span>
+      </button>
+    );
+  }
 
   return (
     <button

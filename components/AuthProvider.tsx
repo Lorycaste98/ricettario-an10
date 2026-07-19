@@ -1,7 +1,7 @@
 "use client";
 import { createContext, useContext, useEffect, useRef, useState, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { X, Heart } from "lucide-react";
+import { X, Heart, Timer } from "lucide-react";
 
 const INACTIVITY_MS = 10 * 60 * 1000; // 10 minuti
 // Logout automatico per inattività: disattivato su richiesta (la sessione ora è stabile,
@@ -168,8 +168,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           >
             <div className="p-6 space-y-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-100 text-orange-500 text-lg">
-                  ⏱
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-100 text-orange-500">
+                  <Timer size={20} />
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-gray-900">Sessione scaduta</p>

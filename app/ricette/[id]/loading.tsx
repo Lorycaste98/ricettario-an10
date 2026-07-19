@@ -6,8 +6,14 @@ export default function RecipeDetailLoading() {
 
       {/* Header grid — foto sinistra, info destra */}
       <div className="grid gap-6 lg:grid-cols-2 lg:gap-8">
-        {/* Foto */}
-        <div className="aspect-video sm:aspect-4/3 rounded-2xl bg-white/20" />
+        {/* Foto — con badge azioni (alto-dx) e data (basso-sx) in sovrimpressione */}
+        <div className="relative aspect-video sm:aspect-4/3 rounded-2xl bg-white/20">
+          <div className="absolute right-2 top-2 flex gap-2">
+            <div className="h-9 w-9 rounded-full bg-white/25" />
+            <div className="h-9 w-9 rounded-full bg-white/25" />
+          </div>
+          <div className="absolute bottom-2 left-2 h-6 w-28 rounded-full bg-white/25" />
+        </div>
 
         {/* Info */}
         <div className="flex flex-col gap-4">
@@ -28,12 +34,10 @@ export default function RecipeDetailLoading() {
               />
             ))}
           </div>
+          {/* Chip fonte */}
+          <div className="h-9 w-40 rounded-full bg-white/20" />
           {/* Note */}
           <div className="h-14 rounded-xl bg-white/15" />
-          {/* Data aggiunta */}
-          <div className="h-3 w-40 rounded bg-white/15" />
-          {/* Pulsante preferiti */}
-          <div className="h-9 w-48 rounded-lg bg-white/20" />
         </div>
       </div>
 

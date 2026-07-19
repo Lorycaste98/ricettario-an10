@@ -26,7 +26,7 @@ export default async function ModificaRicettaPage({ params }: { params: Promise<
       where: { id: recipeId },
       select: {
         id: true, name: true, servings: true, servingsUnit: true, prep: true, cook: true,
-        notes: true, links: true, photo: true, cookCount: true, createdAt: true, updatedAt: true,
+        notes: true, links: true, photo: true, published: true, cookCount: true, createdAt: true, updatedAt: true,
         categories: { select: { category: { select: { id: true, name: true, color: true } } } },
         tags: { select: { tag: { select: { id: true, name: true } } } },
         photos: { select: { id: true, url: true, order: true }, orderBy: { order: "asc" } },
@@ -54,6 +54,7 @@ export default async function ModificaRicettaPage({ params }: { params: Promise<
     notes: recipe.notes ?? "",
     links: recipe.links ?? "",
     photo: recipe.photo ?? "",
+    published: recipe.published,
     categoryIds: recipe.categories.map((c: { id: number }) => c.id),
     tagIds: recipe.tags.map((t: { id: number }) => t.id),
     ingredients: recipe.ingredients.map((i: { name: string; qty: number | null; unit: string | null; description: string | null; optional: boolean }) => ({

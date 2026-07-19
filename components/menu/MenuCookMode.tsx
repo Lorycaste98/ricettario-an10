@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, RotateCcw, PartyPopper } from "lucide-react";
+import { ChevronLeft, ChevronRight, RotateCcw, PartyPopper, UtensilsCrossed, Check, CookingPot, AlarmClock, Timer } from "lucide-react";
 import { formatMinutes, toStepKind, STEP_KIND_LABEL, type StepKind } from "@/lib/types";
 import { formatClock } from "@/lib/cook-timeline";
 import { useLocalStore } from "@/lib/local-store";
@@ -130,7 +130,7 @@ function QuickRecipeCookCard({
         {recipe.photo ? (
           <Image src={recipe.photo} alt={recipe.name} fill className="object-cover" sizes="44px" />
         ) : (
-          <div className="flex h-full items-center justify-center text-lg">🍽️</div>
+          <div className="flex h-full items-center justify-center text-sky-300"><UtensilsCrossed size={18} /></div>
         )}
       </div>
       <div className="min-w-0 flex-1">
@@ -142,9 +142,9 @@ function QuickRecipeCookCard({
           type="button"
           onClick={undoCooked}
           disabled={cookLoading}
-          className="shrink-0 rounded-lg border border-green-400/50 bg-green-100/60 px-3 py-1.5 text-xs font-medium text-green-800 hover:bg-green-100 disabled:opacity-50 transition-colors"
+          className="shrink-0 inline-flex items-center gap-1 rounded-lg border border-green-400/50 bg-green-100/60 px-3 py-1.5 text-xs font-medium text-green-800 hover:bg-green-100 disabled:opacity-50 transition-colors"
         >
-          ✓ Cucinata
+          <Check size={13} /> Cucinata
         </button>
       ) : (
         <button
@@ -153,7 +153,7 @@ function QuickRecipeCookCard({
           disabled={cookLoading}
           className="shrink-0 rounded-lg bg-orange-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-orange-600 disabled:opacity-50 transition-colors"
         >
-          {cookLoading ? "…" : "🍳 Segna cucinata"}
+          {cookLoading ? "…" : <span className="inline-flex items-center gap-1"><CookingPot size={13} /> Segna cucinata</span>}
         </button>
       )}
     </div>
@@ -205,7 +205,7 @@ function RecipeCookCard({
           {recipe.photo ? (
             <Image src={recipe.photo} alt={recipe.name} fill className="object-cover" sizes="44px" />
           ) : (
-            <div className="flex h-full items-center justify-center text-lg">🍽️</div>
+            <div className="flex h-full items-center justify-center text-sky-300"><UtensilsCrossed size={18} /></div>
           )}
         </div>
         <div className="min-w-0 flex-1">
@@ -251,12 +251,12 @@ function RecipeCookCard({
             return (
               <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
                 {stepAt && (
-                  <span className="rounded-full bg-orange-100 px-1.5 py-0.5 text-[10px] font-semibold text-orange-700">
-                    🕒 inizia alle {formatClock(stepAt)}
+                  <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-1.5 py-0.5 text-[10px] font-semibold text-orange-700">
+                    <AlarmClock size={11} /> inizia alle {formatClock(stepAt)}
                   </span>
                 )}
                 {badge && <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${badge}`}>{STEP_KIND_LABEL[kind]}</span>}
-                {step.mins && step.mins > 0 && <span className="text-sky-600">⏱ {formatMinutes(step.mins)}</span>}
+                {step.mins && step.mins > 0 && <span className="inline-flex items-center gap-1 text-sky-600"><Timer size={11} /> {formatMinutes(step.mins)}</span>}
               </div>
             );
           })()}
@@ -291,7 +291,7 @@ function RecipeCookCard({
               disabled={cookLoading}
               className="shrink-0 rounded-lg bg-orange-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-orange-600 disabled:opacity-50 transition-colors"
             >
-              {cookLoading ? "…" : "🍳 Segna cucinata"}
+              {cookLoading ? "…" : <span className="inline-flex items-center gap-1"><CookingPot size={13} /> Segna cucinata</span>}
             </button>
           )}
         </div>

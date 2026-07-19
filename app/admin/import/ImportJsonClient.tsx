@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { FolderOpen, ClipboardList, TriangleAlert, CircleCheck } from "lucide-react";
 
 interface ImportStats {
   categories: number;
@@ -96,7 +97,7 @@ export default function ImportJsonClient() {
       {/* File picker — sempre visibile finché non si importa */}
       {(status === "idle" || status === "error") && (
         <div className="rounded-xl border-2 border-dashed border-gray-200 bg-white p-8 text-center">
-          <p className="mb-1 text-2xl">📂</p>
+          <FolderOpen size={28} className="mx-auto mb-1 text-gray-400" />
           <p className="mb-4 text-sm text-gray-500">
             Seleziona il file <code className="font-mono text-orange-600">ricettario.json</code> da
             importare
@@ -121,7 +122,7 @@ export default function ImportJsonClient() {
       {(status === "preview" || status === "confirm") && preview && (
         <div className="space-y-4">
           <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
-            <h2 className="mb-4 text-sm font-semibold text-gray-700">📋 Anteprima file</h2>
+            <h2 className="mb-4 flex items-center gap-1.5 text-sm font-semibold text-gray-700"><ClipboardList size={15} /> Anteprima file</h2>
             <dl className="grid grid-cols-3 gap-4 text-center">
               <PreviewStat label="Categorie" value={preview.categories} />
               <PreviewStat label="Tag" value={preview.tags} />
@@ -130,7 +131,7 @@ export default function ImportJsonClient() {
           </div>
 
           <div className="rounded-xl border border-red-200 bg-red-50 p-4">
-            <p className="text-sm font-semibold text-red-700">⚠️ Attenzione — operazione irreversibile</p>
+            <p className="flex items-center gap-1.5 text-sm font-semibold text-red-700"><TriangleAlert size={15} /> Attenzione — operazione irreversibile</p>
             <p className="mt-1 text-xs text-red-600">
               Tutti i dati esistenti (ricette, categorie, tag e menù) verranno{" "}
               <strong>eliminati definitivamente</strong> e sostituiti con quelli del file
@@ -166,7 +167,7 @@ export default function ImportJsonClient() {
       {/* Success */}
       {status === "success" && stats && (
         <div className="rounded-xl border border-green-200 bg-green-50 p-6 shadow-sm">
-          <p className="mb-4 text-sm font-semibold text-green-700">✅ Importazione completata!</p>
+          <p className="mb-4 flex items-center gap-1.5 text-sm font-semibold text-green-700"><CircleCheck size={15} /> Importazione completata!</p>
           <dl className="grid grid-cols-3 gap-4 text-center">
             <PreviewStat label="Categorie" value={stats.categories} color="green" />
             <PreviewStat label="Tag" value={stats.tags} color="green" />

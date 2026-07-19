@@ -106,7 +106,7 @@ export function MenuReviewForm({ token, recipes }: { token: string; recipes: Rec
                   {recipe.photo ? (
                     <Image src={recipe.photo} alt={recipe.name} fill className="object-cover" sizes="44px" />
                   ) : (
-                    <div className="flex h-full items-center justify-center text-lg">🍽️</div>
+                    <div className="flex h-full items-center justify-center text-sky-300"><UtensilsCrossed size={18} /></div>
                   )}
                 </div>
                 <h3 className="min-w-0 flex-1 truncate text-sm font-semibold text-sky-950">{recipe.name}</h3>

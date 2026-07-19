@@ -3,6 +3,7 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { ChefHat } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 
 function LoginForm() {
@@ -36,7 +37,7 @@ function LoginForm() {
   return (
     <>
       <div className="mb-8 text-center">
-        <span className="text-5xl">🍳</span>
+        <ChefHat size={48} className="mx-auto text-orange-500" />
         <h1 className="mt-3 text-2xl font-bold text-sky-950">Accesso Admin</h1>
         <p className="mt-1 text-sm text-sky-700">Inserisci le tue credenziali</p>
       </div>

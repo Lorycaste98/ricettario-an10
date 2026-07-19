@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
-import { EyeOff } from "lucide-react";
+import { EyeOff, Star, CookingPot } from "lucide-react";
 import { type RecipeSummary, formatMinutes, formatServings } from "@/lib/types";
 import { FavoriteButton } from "./FavoriteButton";
 import { useAuth } from "@/components/AuthProvider";
@@ -9,7 +9,7 @@ import { useAuth } from "@/components/AuthProvider";
 function StarRating({ avg, count }: { avg: number; count: number }) {
   return (
     <span className="flex items-center gap-1 text-amber-300 text-xs">
-      ★ <span className="font-semibold">{avg.toFixed(1)}</span>
+      <Star size={11} className="fill-current" /> <span className="font-semibold">{avg.toFixed(1)}</span>
       <span className="text-white/70">({count})</span>
     </span>
   );
@@ -99,7 +99,7 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
               <StarRating avg={recipe.avgRating} count={recipe._count.reviews} />
             )}
             {isAdmin && recipe.cookCount > 0 && (
-              <span className="flex items-center gap-0.5">🍳 ×{recipe.cookCount}</span>
+              <span className="flex items-center gap-0.5"><CookingPot size={11} /> ×{recipe.cookCount}</span>
             )}
           </div>
         </div>

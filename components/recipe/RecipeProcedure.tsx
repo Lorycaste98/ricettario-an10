@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { RotateCcw, Carrot, ListOrdered } from "lucide-react";
+import { RotateCcw, Carrot, ListOrdered, Check, TriangleAlert, PartyPopper, CookingPot, Timer } from "lucide-react";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { PriceTag } from "@/components/ui/PriceTag";
 import { useRecipeProgress } from "@/lib/recipe-progress";
@@ -245,7 +245,7 @@ export function RecipeProcedure({ recipeId, defaultServings, servingsUnit, ingre
                       checked ? "bg-green-500 text-white" : "bg-orange-500 text-white"
                     }`}
                   >
-                    {checked ? "✓" : i + 1}
+                    {checked ? <Check size={14} /> : i + 1}
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className={`text-sm leading-relaxed transition-all duration-200 ${
@@ -265,8 +265,8 @@ export function RecipeProcedure({ recipeId, defaultServings, servingsUnit, ingre
                             </span>
                           )}
                           {step.mins && step.mins > 0 && (
-                            <span className={checked ? "text-sky-400" : "text-sky-600"}>
-                              ⏱ {formatMinutes(step.mins)}
+                            <span className={`inline-flex items-center gap-1 ${checked ? "text-sky-400" : "text-sky-600"}`}>
+                              <Timer size={12} /> {formatMinutes(step.mins)}
                             </span>
                           )}
                         </div>
@@ -279,7 +279,7 @@ export function RecipeProcedure({ recipeId, defaultServings, servingsUnit, ingre
                 {isPending && (
                   <div className="ml-11 rounded-xl border border-amber-300/60 bg-amber-50/80 backdrop-blur-sm px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3">
                     <p className="flex-1 text-sm text-amber-900">
-                      ⚠️ Anche i{" "}
+                      <TriangleAlert size={14} className="mr-1 inline-block align-text-bottom" /> Anche i{" "}
                       <strong>{[...Array(i).keys()].filter((j) => !done.has(j)).length} passi precedenti</strong>{" "}
                       non completati verranno segnati come eseguiti.
                     </p>
@@ -310,7 +310,7 @@ export function RecipeProcedure({ recipeId, defaultServings, servingsUnit, ingre
       {/* ── Banner completamento ── */}
       {allDone && !dismissed && !cookConfirmed && (
         <div className="rounded-2xl border border-green-300/50 bg-green-100/70 backdrop-blur-sm px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-          <span className="text-3xl">🎉</span>
+          <PartyPopper size={30} className="text-green-600" />
           <div className="flex-1">
             <p className="font-bold text-green-900">Hai completato la ricetta!</p>
             <p className="text-sm text-green-800 mt-0.5">Vuoi segnare una cottura?</p>
@@ -320,7 +320,7 @@ export function RecipeProcedure({ recipeId, defaultServings, servingsUnit, ingre
               No, grazie
             </button>
             <button onClick={markCooked} disabled={cookLoading} className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600 disabled:opacity-50 transition-colors">
-              {cookLoading ? "…" : "🍳 Sì, segna!"}
+              {cookLoading ? "…" : <span className="inline-flex items-center gap-1.5"><CookingPot size={15} /> Sì, segna!</span>}
             </button>
           </div>
         </div>
@@ -329,7 +329,7 @@ export function RecipeProcedure({ recipeId, defaultServings, servingsUnit, ingre
       {/* ── Conferma cottura ── */}
       {cookConfirmed && (
         <div className="rounded-2xl border border-orange-300/50 bg-orange-100/60 backdrop-blur-sm px-6 py-4 flex items-center gap-3">
-          <span className="text-2xl">🍳</span>
+          <CookingPot size={22} className="text-orange-600" />
           <p className="text-sm font-medium text-orange-900">Cottura registrata! Ottimo lavoro.</p>
         </div>
       )}

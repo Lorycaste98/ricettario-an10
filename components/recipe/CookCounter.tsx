@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { CookingPot } from "lucide-react";
 
 interface Props {
   recipeId: number;
@@ -33,7 +34,7 @@ export function CookCounter({ recipeId, initialCount }: Props) {
 
   return (
     <div className="flex items-center gap-3 rounded-xl border border-white/40 bg-white/60 backdrop-blur-sm px-4 py-3">
-      <span className="text-2xl">🍳</span>
+      <CookingPot size={24} className="text-orange-500" />
       <div className="flex-1">
         <p className="text-sm font-medium text-sky-800">Volte cucinata</p>
         <p className="text-2xl font-bold text-orange-500">{count}</p>

@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ArrowLeft, Clock, Flame, Hourglass, Sigma, Users, ExternalLink, CalendarDays, ImageIcon } from "lucide-react";
+import { ArrowLeft, Clock, Flame, Hourglass, Sigma, Users, ExternalLink, CalendarDays, ImageIcon, UtensilsCrossed, StickyNote, Link2 } from "lucide-react";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { flattenRecipe } from "@/lib/api";
@@ -13,6 +13,7 @@ import { RecipeProcedure } from "@/components/recipe/RecipeProcedure";
 import { FavoriteButton } from "@/components/recipe/FavoriteButton";
 import { RecipePdfButton } from "@/components/recipe/RecipePdfButton";
 import { RecipeActions } from "./RecipeActions";
+import { RecipeAdminBar } from "./RecipeAdminBar";
 import { formatMinutes, formatServings } from "@/lib/types";
 import type { Metadata } from "next";
 
@@ -89,6 +90,9 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
         <ArrowLeft size={16} /> Tutte le ricette
       </Link>
 
+      {/* Azioni admin (solo admin): pronta/non pronta + modifica + elimina, in cima */}
+      <RecipeAdminBar recipeId={recipe.id} published={recipe.published} />
+
       {/* Header */}
       <div className="fade-up grid gap-6 lg:grid-cols-2 lg:gap-8" style={{ animationDelay: "0ms" }}>
         {/* Photo — slim su mobile, quadrata su desktop */}
@@ -96,8 +100,24 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
           {allPhotos.length > 0 ? (
             <Image src={allPhotos[0]} alt={recipe.name} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" priority />
           ) : (
-            <div className="flex h-full items-center justify-center text-7xl">🍽️</div>
+            <div className="flex h-full items-center justify-center text-sky-300"><UtensilsCrossed size={72} /></div>
           )}
+
+          {/* Azioni rapide in alto a destra: preferiti + esporta PDF */}
+          <div className="absolute right-2 top-2 flex items-center gap-2">
+            <FavoriteButton recipeId={recipe.id} variant="overlay" />
+            <RecipePdfButton recipe={pdfData} overlay />
+          </div>
+
+          {/* Data in basso a sinistra */}
+          <div className="absolute bottom-2 left-2 inline-flex items-center gap-1.5 rounded-full bg-black/45 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm backdrop-blur-md">
+            <CalendarDays size={13} className="shrink-0" />
+            {new Date(recipe.createdAt ?? "2020-01-01").toLocaleDateString("it-IT", {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            })}
+          </div>
         </div>
 
         {/* Info */}
@@ -135,36 +155,22 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
             );
           })()}
 
-          {recipe.notes && (
-            <p className="rounded-xl bg-amber-100/60 border border-amber-200/50 backdrop-blur-sm px-4 py-3 text-sm text-amber-900 leading-relaxed">
-              📝 {recipe.notes}
-            </p>
-          )}
-
           {recipe.links && (
             <a href={recipe.links} target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-sm font-medium text-orange-600 hover:underline">
-              <ExternalLink size={15} /> Fonte / Ricetta originale
+              className="inline-flex w-fit items-center gap-2 rounded-full border border-orange-200/70 bg-orange-50/70 px-3.5 py-2 text-sm font-medium text-orange-700 backdrop-blur-sm transition-colors hover:bg-orange-100/80">
+              <Link2 size={15} className="shrink-0" /> Ricetta originale
+              <ExternalLink size={13} className="opacity-70" />
             </a>
           )}
 
-          {/* Data aggiunta */}
-          <p className="inline-flex items-center gap-1.5 text-xs text-sky-950/60">
-            <CalendarDays size={13} /> Aggiunta il{" "}
-            {new Date(recipe.createdAt ?? "2020-01-01").toLocaleDateString("it-IT", {
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-            })}
-          </p>
+          {recipe.notes && (
+            <p className="flex items-start gap-2 rounded-xl bg-amber-100/60 border border-amber-200/50 backdrop-blur-sm px-4 py-3 text-sm text-amber-900 leading-relaxed">
+              <StickyNote size={16} className="mt-0.5 shrink-0" /> <span>{recipe.notes}</span>
+            </p>
+          )}
 
-          <div className="flex flex-wrap items-center gap-2">
-            <FavoriteButton recipeId={recipe.id} variant="detail" />
-            <RecipePdfButton recipe={pdfData} />
-          </div>
-
-          {/* Admin actions */}
-          <RecipeActions recipeId={recipe.id} cookCount={recipe.cookCount} published={recipe.published} />
+          {/* Volte cucinata (solo admin) */}
+          <RecipeActions recipeId={recipe.id} cookCount={recipe.cookCount} />
         </div>
       </div>
 

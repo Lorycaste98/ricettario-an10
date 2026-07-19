@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "motion/react";
 import Link from "next/link";
 import ReactPaginate from "react-paginate";
 import { clsx } from "clsx";
-import { Search, Plus, ArrowUpDown, X } from "lucide-react";
+import { Search, Plus, ArrowUpDown, ArrowUp, ArrowDown, X } from "lucide-react";
 import { MenuCard } from "./MenuCard";
 import { type MenuSummary } from "@/lib/types";
 import { useAuth } from "@/components/AuthProvider";
@@ -117,10 +117,10 @@ export function MenuGrid({ menus }: Props) {
           </select>
           <button
             onClick={toggleOrder}
-            className="h-9 w-9 rounded-lg border border-white/40 bg-white/60 backdrop-blur-sm text-sky-800 hover:bg-white/80 transition-colors"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/40 bg-white/60 backdrop-blur-sm text-sky-800 hover:bg-white/80 transition-colors"
             title={order === "asc" ? "Crescente" : "Decrescente"}
           >
-            {order === "asc" ? "↑" : "↓"}
+            {order === "asc" ? <ArrowUp size={16} /> : <ArrowDown size={16} />}
           </button>
         </div>
 
@@ -156,7 +156,7 @@ export function MenuGrid({ menus }: Props) {
         </div>
       ) : (
         <div className="flex flex-col items-center gap-4 rounded-2xl border border-white/20 bg-white/20 backdrop-blur-sm py-20">
-          <span className="text-5xl">🔍</span>
+          <Search size={48} className="text-sky-400" />
           <p className="font-medium text-sky-950 [text-shadow:0_1px_3px_rgba(255,255,255,0.6)]">
             Nessun menù trovato
           </p>
@@ -280,7 +280,7 @@ export function MenuGrid({ menus }: Props) {
                           : "border-sky-100 bg-sky-50/50 text-sky-900"
                       )}
                     >
-                      ↓ Decrescente
+                      <span className="inline-flex items-center justify-center gap-1.5"><ArrowDown size={15} /> Decrescente</span>
                     </button>
                     <button
                       onClick={() => {
@@ -294,7 +294,7 @@ export function MenuGrid({ menus }: Props) {
                           : "border-sky-100 bg-sky-50/50 text-sky-900"
                       )}
                     >
-                      ↑ Crescente
+                      <span className="inline-flex items-center justify-center gap-1.5"><ArrowUp size={15} /> Crescente</span>
                     </button>
                   </div>
                 </div>

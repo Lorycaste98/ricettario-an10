@@ -1,6 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
-import { Search, ShoppingCart, ChevronDown, ChevronUp } from "lucide-react";
+import { Search, ShoppingCart, ChevronDown, ChevronUp, Check } from "lucide-react";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { PriceTag } from "@/components/ui/PriceTag";
 import type { ShoppingListItem } from "@/lib/shopping-list";
@@ -100,7 +100,7 @@ export function MenuShoppingList({ menuId, items }: { menuId: number; items: Sho
                       isChecked ? "border-green-500 bg-green-500 text-white" : "border-sky-400/50 bg-white/60"
                     }`}
                   >
-                    {isChecked ? "✓" : ""}
+                    {isChecked ? <Check size={11} /> : ""}
                   </span>
                   <span className="shrink-0 text-xs font-semibold text-orange-600 tabular-nums whitespace-nowrap">
                     {label}

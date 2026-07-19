@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "motion/react";
 import Link from "next/link";
 import ReactPaginate from "react-paginate";
 import { clsx } from "clsx";
-import { SlidersHorizontal, X, Plus, ArrowUpDown, Search, ChevronDown, Tag as TagIcon, Hash } from "lucide-react";
+import { SlidersHorizontal, X, Plus, ArrowUpDown, ArrowUp, ArrowDown, Search, ChevronDown, Tag as TagIcon, Hash } from "lucide-react";
 import { RecipeCard } from "./RecipeCard";
 import { TagFilterCombobox } from "./TagFilterCombobox";
 import { type RecipeSummary, type Category, type Tag } from "@/lib/types";
@@ -300,10 +300,10 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
           </select>
           <button
             onClick={toggleOrder}
-            className="h-9 w-9 rounded-lg border border-white/40 bg-white/60 backdrop-blur-sm text-sky-800 hover:bg-white/80 transition-colors"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/40 bg-white/60 backdrop-blur-sm text-sky-800 hover:bg-white/80 transition-colors"
             title={order === "asc" ? "Crescente" : "Decrescente"}
           >
-            {order === "asc" ? "↑" : "↓"}
+            {order === "asc" ? <ArrowUp size={16} /> : <ArrowDown size={16} />}
           </button>
         </div>
 
@@ -384,7 +384,7 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
         </div>
       ) : (
         <div className="flex flex-col items-center gap-3 py-20 text-center">
-          <span className="text-5xl">🔍</span>
+          <Search size={48} className="text-sky-400" />
           <p className="font-medium text-sky-950 [text-shadow:0_1px_3px_rgba(255,255,255,0.6)]">Nessuna ricetta trovata</p>
           {(q || hasActiveFilters || (isAdmin && publishedFilter !== "all")) && (
             <button
@@ -560,7 +560,7 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
                           : "border-sky-100 bg-sky-50/50 text-sky-900"
                       )}
                     >
-                      ↓ Decrescente
+                      <span className="inline-flex items-center justify-center gap-1.5"><ArrowDown size={15} /> Decrescente</span>
                     </button>
                     <button
                       onClick={() => { setOrder("asc"); resetPage(); }}
@@ -571,7 +571,7 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
                           : "border-sky-100 bg-sky-50/50 text-sky-900"
                       )}
                     >
-                      ↑ Crescente
+                      <span className="inline-flex items-center justify-center gap-1.5"><ArrowUp size={15} /> Crescente</span>
                     </button>
                   </div>
                 </div>

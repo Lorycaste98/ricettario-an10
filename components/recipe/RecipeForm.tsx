@@ -3,13 +3,14 @@ import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { clsx } from "clsx";
-import { Info, ImageIcon, Tag as TagIcon, Hash, Carrot, ListOrdered } from "lucide-react";
+import { Info, ImageIcon, Tag as TagIcon, Hash, Carrot, ListOrdered, Camera, Star, X, TriangleAlert, Save, CircleCheck } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Input";
 import { IngredientCombobox } from "@/components/ui/IngredientCombobox";
 import { CategoryCombobox } from "@/components/ui/CategoryCombobox";
 import { TagCombobox } from "@/components/ui/TagCombobox";
 import { SectionHeader, type SectionTone } from "@/components/ui/SectionHeader";
+import { PublishSwitch } from "@/components/ui/PublishSwitch";
 import { ReorderList, ReorderRow } from "@/components/ui/ReorderList";
 import { type Category, type Tag, type StepKind, STEP_KINDS, STEP_KIND_LABEL } from "@/lib/types";
 
@@ -39,6 +40,8 @@ export interface RecipeFormData {
   links: string;
   /** URL della foto principale (mostrata nei card/lista) */
   photo: string;
+  /** Ricetta pronta (visibile ai visitatori). false = "non pronta", nascosta */
+  published: boolean;
   categoryIds: number[];
   tagIds: number[];
   ingredients: Omit<IngredientRow, "uid">[];
@@ -107,7 +110,7 @@ function ImageUploadButton({ onUrl, label = "Carica foto", small = false }: {
       <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleChange} />
       <Button type="button" variant="secondary" size={small ? "sm" : "md"} loading={uploading}
         onClick={() => inputRef.current?.click()}>
-        📷 {label}
+        <Camera size={15} /> {label}
       </Button>
       {uploadError && <p className="text-xs text-red-500">{uploadError}</p>}
     </div>
@@ -202,6 +205,8 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
   const [cook, setCook] = useState(initialData?.cook ?? "");
   const [notes, setNotes] = useState(initialData?.notes ?? "");
   const [links, setLinks] = useState(initialData?.links ?? "");
+  // Ricette nuove: pronte di default; in modifica riflette lo stato salvato
+  const [published, setPublished] = useState(initialData?.published ?? true);
   const [categoryIds, setCategoryIds] = useState<number[]>(initialData?.categoryIds ?? []);
   const [tagIds, setTagIds] = useState<number[]>(initialData?.tagIds ?? []);
   const [ingredients, setIngredients] = useState<IngredientRow[]>(() =>
@@ -352,6 +357,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
       notes: notes.trim() || null,
       links: links.trim() || null,
       photo: mainPhoto?.url.trim() || null,
+      published,
       categoryIds,
       tagIds,
       ingredients: ingredients
@@ -389,7 +395,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
       setError(err instanceof Error ? err.message : "Errore sconosciuto");
       setSaving(false);
     }
-  }, [name, createdAt, servings, servingsUnit, prep, cook, notes, links, categoryIds, tagIds, ingredients, steps, photos, isEdit, recipeId, router]);
+  }, [name, createdAt, servings, servingsUnit, prep, cook, notes, links, published, categoryIds, tagIds, ingredients, steps, photos, isEdit, recipeId, router]);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -400,6 +406,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
           {isEdit ? "Modifica ricetta" : "Nuova ricetta"}
         </h1>
         <div className="flex items-center gap-2 shrink-0">
+          <PublishSwitch published={published} onToggle={() => setPublished((p) => !p)} />
           <Button type="button" variant="ghost" size="sm" onClick={() => router.back()}>
             Annulla
           </Button>
@@ -410,8 +417,8 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
       </div>
 
       {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-          ⚠️ {error}
+        <div className="flex items-center gap-2 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+          <TriangleAlert size={16} className="shrink-0" /> <span>{error}</span>
         </div>
       )}
 
@@ -459,7 +466,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
         icon={<ImageIcon size={18} />}
         tone="violet"
         delay={60}
-        hint="La foto ⭐ Principale è mostrata nei card e nella lista."
+        hint="La foto contrassegnata come Principale è mostrata nei card e nella lista."
       >
 
         {photos.length > 0 && (
@@ -482,8 +489,8 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
                     sizes="200px"
                   />
                 ) : (
-                  <div className="flex h-full items-center justify-center text-gray-300 text-3xl">
-                    📷
+                  <div className="flex h-full items-center justify-center text-gray-300">
+                    <ImageIcon size={30} />
                   </div>
                 )}
 
@@ -499,7 +506,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
                       : "bg-black/40 text-white/80 hover:bg-orange-500/80"
                   )}
                 >
-                  {p.isMain ? "⭐ Principale" : "Imposta principale"}
+                  {p.isMain ? <span className="inline-flex items-center gap-1"><Star size={11} className="fill-current" /> Principale</span> : "Imposta principale"}
                 </button>
 
                 {/* Pulsante elimina */}
@@ -507,9 +514,9 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
                   type="button"
                   onClick={() => removePhoto(i)}
                   title="Elimina foto"
-                  className="absolute top-1.5 right-1.5 flex items-center justify-center rounded-full bg-black/40 w-6 h-6 text-white hover:bg-red-500 transition-colors text-xs"
+                  className="absolute top-1.5 right-1.5 flex items-center justify-center rounded-full bg-black/40 w-6 h-6 text-white hover:bg-red-500 transition-colors"
                 >
-                  ✕
+                  <X size={14} />
                 </button>
 
                 {/* Sostituisci (se vuota o per aggiornare) */}
@@ -558,7 +565,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
                     onClick={() => removePhoto(i)}
                     className="shrink-0 rounded p-1.5 text-gray-300 hover:bg-red-50 hover:text-red-400 transition-colors"
                   >
-                    ✕
+                    <X size={14} />
                   </button>
                 </div>
               ) : null
@@ -643,7 +650,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
                     onChange={(e) => updateIngredient(i, "unit", e.target.value)} placeholder="g / ml…"
                     className={inlineInput + " flex-1 min-w-0"} />
                   <button type="button" onClick={() => removeIngredient(i)}
-                    className="shrink-0 rounded p-1.5 text-sky-300 hover:text-red-400 transition-colors">✕</button>
+                    className="shrink-0 rounded p-1.5 text-sky-300 hover:text-red-400 transition-colors"><X size={14} /></button>
                 </div>
                 <IngredientCombobox
                   value={ing.name}
@@ -690,7 +697,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
                   <OptionalChip active={ing.optional} onToggle={() => toggleIngredientOptional(i)} />
                 </div>
                 <button type="button" onClick={() => removeIngredient(i)}
-                  className="flex items-center justify-center rounded p-1 text-sky-300 hover:text-red-400 transition-colors pt-2">✕</button>
+                  className="flex items-center justify-center rounded p-1 text-sky-300 hover:text-red-400 transition-colors pt-2"><X size={14} /></button>
               </div>
             </div>
             )}
@@ -737,7 +744,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
               <div className="flex flex-col items-center gap-0.5 pt-2 shrink-0">
                 {handle}
                 <button type="button" onClick={() => removeStep(i)}
-                  className="rounded p-1 text-gray-300 hover:bg-red-50 hover:text-red-400 transition-colors text-xs mt-0.5">✕</button>
+                  className="rounded p-1 text-gray-300 hover:bg-red-50 hover:text-red-400 transition-colors mt-0.5"><X size={14} /></button>
               </div>
             </>
             )}
@@ -755,7 +762,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
           Annulla
         </Button>
         <Button type="submit" size="lg" loading={saving}>
-          {isEdit ? "💾 Salva modifiche" : "✅ Crea ricetta"}
+          {isEdit ? <span className="inline-flex items-center gap-1.5"><Save size={16} /> Salva modifiche</span> : <span className="inline-flex items-center gap-1.5"><CircleCheck size={16} /> Crea ricetta</span>}
         </Button>
       </div>
     </form>

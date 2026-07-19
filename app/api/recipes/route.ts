@@ -89,6 +89,8 @@ export async function POST(request: NextRequest) {
     notes?: string;
     links?: string;
     photo?: string;
+    /** Ricetta pronta (visibile ai visitatori); default true */
+    published?: boolean;
     /** Ricetta "veloce": solo nome, senza scheda (vedi lib/api.ts recipeSummarySelect) */
     quick?: boolean;
     categoryIds?: number[];
@@ -111,6 +113,7 @@ export async function POST(request: NextRequest) {
       notes: b.notes?.trim() || null,
       links: b.links?.trim() || null,
       photo: b.photo ?? null,
+      published: b.published ?? true,
       quick: !!b.quick,
       categories: {
         create: (b.categoryIds ?? []).map((id) => ({ categoryId: id })),
