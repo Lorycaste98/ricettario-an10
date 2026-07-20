@@ -78,7 +78,7 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
           <div className="flex items-start justify-between gap-2">
             <h3
               title={recipe.name}
-              className="text-xs sm:text-sm font-bold text-white leading-snug truncate drop-shadow group-hover:text-orange-300 transition-colors"
+              className="min-h-[2.75em] text-xs sm:text-sm font-bold text-white leading-snug line-clamp-2 drop-shadow group-hover:text-orange-300 transition-colors"
             >
               {recipe.name}
             </h3>
