@@ -60,10 +60,25 @@ export function useFavorites() {
 
   const isFavorite = useCallback((id: number) => favorites.has(id), [favorites]);
 
+  // Rimuove i preferiti "orfani" (ID di ricette non più esistenti, es. eliminate):
+  // senza pulizia resterebbero in localStorage e gonfierebbero il badge mentre la
+  // pagina preferiti non ha nulla da mostrare. `validIds` = ricette esistenti.
+  const reconcile = useCallback((validIds: ReadonlySet<number>) => {
+    const current = snapshot ?? read();
+    if (current.size === 0) return;
+    const next = new Set<number>();
+    let changed = false;
+    for (const id of current) {
+      if (validIds.has(id)) next.add(id);
+      else changed = true;
+    }
+    if (changed) write(next);
+  }, []);
+
   // EMPTY is the server/hydration snapshot — once useSyncExternalStore
   // commits the client snapshot, the reference changes (even for an
   // empty localStorage) and we know hydration is done.
   const hydrated = favorites !== EMPTY;
 
-  return { favorites, isFavorite, toggle, hydrated };
+  return { favorites, isFavorite, toggle, reconcile, hydrated };
 }

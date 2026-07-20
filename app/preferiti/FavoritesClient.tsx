@@ -1,5 +1,5 @@
 "use client";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import Link from "next/link";
 import { Heart } from "lucide-react";
 import { RecipeCard } from "@/components/recipe/RecipeCard";
@@ -7,7 +7,15 @@ import { useFavorites } from "@/lib/favorites";
 import type { RecipeSummary } from "@/lib/types";
 
 export function FavoritesClient({ recipes }: { recipes: RecipeSummary[] }) {
-  const { favorites, hydrated } = useFavorites();
+  const { favorites, hydrated, reconcile } = useFavorites();
+
+  const validIds = useMemo(() => new Set(recipes.map((r) => r.id)), [recipes]);
+
+  // Ripulisce i preferiti orfani (ricette eliminate) allineando badge e pagina.
+  // Guardia: solo se ci sono ricette, per non azzerare tutto su un fetch vuoto.
+  useEffect(() => {
+    if (hydrated && recipes.length > 0) reconcile(validIds);
+  }, [hydrated, recipes.length, validIds, reconcile]);
 
   const filtered = useMemo(
     () => recipes.filter((r) => favorites.has(r.id)),
