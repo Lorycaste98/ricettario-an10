@@ -3,17 +3,19 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { clsx } from "clsx";
-import { EyeOff, Pencil, Trash2 } from "lucide-react";
+import { Eye, EyeOff, Pencil, Trash2 } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
-import { PublishSwitch } from "@/components/ui/PublishSwitch";
 import { ConfirmModal } from "@/components/ui/Modal";
 
 /**
- * Barra azioni admin in cima al dettaglio ricetta (solo admin): un'unica riga
- * con le tre azioni sulla ricetta — toggle pronta/non pronta, Modifica, Elimina.
- * Lo sfondo riflette lo stato (verde = pronta, ambra = non pronta) e in stato
- * "non pronta" compare una riga extra "nascosta ai visitatori". Su mobile i
- * bottoni sono solo-icona per non svilupparsi in verticale.
+ * Barra azioni admin in cima al dettaglio ricetta (solo admin): tre contenitori
+ * della stessa forma/altezza.
+ * - Badge stato pronta/non pronta: occupa tutto lo spazio (flex-1), icona +
+ *   stato + descrizione del significato + switch visivo; l'intero badge cambia
+ *   lo stato al click (PATCH ottimistico + refresh). Colorato per stato.
+ * - Modifica ed Elimina: due bottoni identici a seguire.
+ * Su mobile le etichette dei bottoni e la descrizione dello stato si nascondono
+ * se non c'è spazio; restano icone e stato.
  */
 export function RecipeAdminBar({ recipeId, published }: { recipeId: number; published: boolean }) {
   const { isAdmin } = useAuth();
@@ -46,41 +48,93 @@ export function RecipeAdminBar({ recipeId, published }: { recipeId: number; publ
 
   if (!isAdmin) return null;
 
+  const actionBtn =
+    "flex shrink-0 items-center justify-center gap-1.5 rounded-xl border border-white/50 bg-white/70 px-3 text-sm font-medium backdrop-blur-sm transition-colors";
+
   return (
     <>
-      <div
-        className={clsx(
-          "rounded-2xl border px-3 py-2.5 backdrop-blur-sm transition-colors sm:px-4",
-          isPublished
-            ? "border-emerald-200/70 bg-emerald-50/70"
-            : "border-amber-300/80 bg-amber-50/80 shadow-sm shadow-amber-500/10"
-        )}
-      >
-        <div className="flex items-center gap-2">
-          <PublishSwitch published={isPublished} onToggle={() => void togglePublished()} disabled={toggling} />
-          <div className="ml-auto flex items-center gap-2">
-            <Link
-              href={`/admin/ricette/${recipeId}`}
-              title="Modifica ricetta"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-white/50 bg-white/70 px-2.5 py-1.5 text-sm font-medium text-sky-900 backdrop-blur-sm transition-colors hover:bg-white/90"
+      <div className="flex items-stretch gap-2">
+        {/* Stato pronta/non pronta — occupa tutto lo spazio disponibile */}
+        <button
+          type="button"
+          role="switch"
+          aria-checked={isPublished}
+          disabled={toggling}
+          onClick={() => void togglePublished()}
+          title={
+            isPublished
+              ? "Pronta — tocca per nasconderla ai visitatori"
+              : "Non pronta — tocca per pubblicarla"
+          }
+          className={clsx(
+            "flex flex-1 items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left transition-colors disabled:opacity-60",
+            isPublished
+              ? "border-emerald-200/70 bg-emerald-50/80 hover:bg-emerald-100/80"
+              : "border-amber-300/80 bg-amber-50/90 shadow-sm shadow-amber-500/10 hover:bg-amber-100/80"
+          )}
+        >
+          <span
+            className={clsx(
+              "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
+              isPublished ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
+            )}
+          >
+            {isPublished ? <Eye size={16} /> : <EyeOff size={16} />}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span
+              className={clsx(
+                "block text-sm font-semibold leading-tight",
+                isPublished ? "text-emerald-800" : "text-amber-900"
+              )}
             >
-              <Pencil size={15} /> <span className="hidden sm:inline">Modifica</span>
-            </Link>
-            <button
-              type="button"
-              onClick={() => setConfirmDelete(true)}
-              title="Elimina ricetta"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200/70 bg-rose-50/80 px-2.5 py-1.5 text-sm font-medium text-rose-600 backdrop-blur-sm transition-colors hover:bg-rose-100/80"
+              {isPublished ? "Pronta" : "Non pronta"}
+            </span>
+            <span
+              className={clsx(
+                "mt-0.5 hidden truncate text-xs leading-tight sm:block",
+                isPublished ? "text-emerald-700/80" : "text-amber-700"
+              )}
             >
-              <Trash2 size={15} /> <span className="hidden sm:inline">Elimina</span>
-            </button>
-          </div>
-        </div>
-        {!isPublished && (
-          <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-amber-700">
-            <EyeOff size={13} className="shrink-0" /> Questa ricetta è nascosta ai visitatori — la vedi solo tu
-          </p>
-        )}
+              {isPublished
+                ? "Visibile a tutti i visitatori"
+                : "Nascosta ai visitatori — la vedi solo tu"}
+            </span>
+          </span>
+          {/* Switch visivo */}
+          <span
+            className={clsx(
+              "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors",
+              isPublished ? "bg-emerald-500" : "bg-gray-300"
+            )}
+          >
+            <span
+              className={clsx(
+                "inline-block h-4 w-4 rounded-full bg-white shadow transition-transform",
+                isPublished ? "translate-x-4" : "translate-x-0.5"
+              )}
+            />
+          </span>
+        </button>
+
+        {/* Modifica */}
+        <Link
+          href={`/admin/ricette/${recipeId}`}
+          title="Modifica ricetta"
+          className={clsx(actionBtn, "text-sky-900 hover:bg-white/90")}
+        >
+          <Pencil size={16} className="shrink-0" /> <span className="hidden sm:inline">Modifica</span>
+        </Link>
+
+        {/* Elimina */}
+        <button
+          type="button"
+          onClick={() => setConfirmDelete(true)}
+          title="Elimina ricetta"
+          className={clsx(actionBtn, "text-rose-600 hover:bg-rose-50")}
+        >
+          <Trash2 size={16} className="shrink-0" /> <span className="hidden sm:inline">Elimina</span>
+        </button>
       </div>
 
       <ConfirmModal

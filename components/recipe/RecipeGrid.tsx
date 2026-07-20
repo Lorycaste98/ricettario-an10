@@ -19,7 +19,7 @@ interface Props {
   tags: Tag[];
 }
 
-type SortKey = "createdAt" | "name" | "prep" | "cook" | "cookCount";
+type SortKey = "createdAt" | "name" | "prep" | "cook" | "cookCount" | "avgRating" | "reviews";
 type PublishedFilter = "all" | "published" | "draft";
 
 const PUBLISHED_OPTIONS: { value: PublishedFilter; label: string }[] = [
@@ -36,6 +36,8 @@ const parsePublishedFilter = (raw: string): PublishedFilter => {
 };
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: "avgRating", label: "Valutazione" },
+  { value: "reviews", label: "Recensioni" },
   { value: "createdAt", label: "Data" },
   { value: "name", label: "Nome" },
   { value: "prep", label: "Tempo prep" },
@@ -48,7 +50,7 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
   const [q, setQ] = useState("");
   const [activeCats, setActiveCats] = useState<number[]>([]);
   const [activeTags, setActiveTags] = useState<number[]>([]);
-  const [sort, setSort] = useState<SortKey>("createdAt");
+  const [sort, setSort] = useState<SortKey>("avgRating");
   const [order, setOrder] = useState<"asc" | "desc">("desc");
   const [publishedFilter, setPublishedFilter] = useLocalStore<PublishedFilter>(
     PUBLISHED_FILTER_KEY,
@@ -63,7 +65,7 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
 
   const resetPage = () => setPage(0);
   const isFilterActive =
-    sort !== "createdAt" || order !== "desc" || (isAdmin && publishedFilter !== "all");
+    sort !== "avgRating" || order !== "desc" || (isAdmin && publishedFilter !== "all");
   const hasActiveFilters = activeCats.length > 0 || activeTags.length > 0;
 
   const toggleCat = (id: number) => {
@@ -105,9 +107,17 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
     if (isAdmin && publishedFilter === "published") list = list.filter((r) => r.published);
     else if (isAdmin && publishedFilter === "draft") list = list.filter((r) => !r.published);
 
+    // Valore ordinabile: avgRating/recensioni non sono campi diretti/scalari semplici
+    // (null → 0, così le ricette senza voti/recensioni finiscono in fondo su "desc")
+    const valueFor = (r: RecipeSummary): string | number => {
+      if (sort === "name") return r.name;
+      if (sort === "avgRating") return r.avgRating ?? 0;
+      if (sort === "reviews") return r._count.reviews;
+      return r[sort] ?? 0;
+    };
     list.sort((a, b) => {
-      const av = sort === "name" ? a.name : (a[sort] ?? 0);
-      const bv = sort === "name" ? b.name : (b[sort] ?? 0);
+      const av = valueFor(a);
+      const bv = valueFor(b);
       if (av < bv) return order === "asc" ? -1 : 1;
       if (av > bv) return order === "asc" ? 1 : -1;
       return 0;

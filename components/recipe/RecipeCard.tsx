@@ -1,16 +1,18 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
-import { EyeOff, Star, CookingPot } from "lucide-react";
+import { EyeOff, Star, CookingPot, Clock, Users } from "lucide-react";
 import { type RecipeSummary, formatMinutes, formatServings } from "@/lib/types";
 import { FavoriteButton } from "./FavoriteButton";
 import { useAuth } from "@/components/AuthProvider";
 
-function StarRating({ avg, count }: { avg: number; count: number }) {
+/** Pill voto (oro) — elemento in evidenza, coerente con l'ordinamento per valutazione. */
+function RatingPill({ avg, count }: { avg: number; count: number }) {
   return (
-    <span className="flex items-center gap-1 text-amber-300 text-xs">
-      <Star size={11} className="fill-current" /> <span className="font-semibold">{avg.toFixed(1)}</span>
-      <span className="text-white/70">({count})</span>
+    <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-amber-400/20 px-1.5 py-0.5 text-amber-300 shadow-sm">
+      <Star size={11} className="fill-current" />
+      <span className="text-xs font-bold leading-none">{avg.toFixed(1)}</span>
+      <span className="text-[10px] leading-none text-amber-200/70">({count})</span>
     </span>
   );
 }
@@ -19,6 +21,8 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
   const { isAdmin } = useAuth();
   const totalTime = (recipe.prep ?? 0) + (recipe.cook ?? 0);
   const primaryCat = recipe.categories[0];
+  const hasRating = recipe._count.reviews > 0 && recipe.avgRating !== null;
+  const hasMeta = totalTime > 0 || !!recipe.servings || (isAdmin && recipe.cookCount > 0);
   // Solo gli admin vedono le ricette non pronte (offuscate, con badge)
   const isHidden = isAdmin && !recipe.published;
 
@@ -29,7 +33,7 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
         isHidden ? "opacity-55 hover:opacity-100 ring-1 ring-dashed ring-white/30" : ""
       }`}
     >
-      {/* Image area */}
+      {/* Image area — l'aspect ratio fisso rende tutte le card della stessa altezza */}
       <div className="relative aspect-4/3 overflow-hidden">
         {recipe.photo ? (
           <Image
@@ -45,8 +49,8 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
           </div>
         )}
 
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent" />
+        {/* Sottile sfumatura in alto per la leggibilità dei badge */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-linear-to-b from-black/45 to-transparent" />
 
         {/* Top badges */}
         <div className="absolute top-2.5 left-2.5 right-2.5 flex items-start justify-between gap-2">
@@ -69,39 +73,42 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
           <FavoriteButton recipeId={recipe.id} />
         </div>
 
-        {/* Bottom overlay: title + meta */}
-        <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-3">
-          <h3 className="text-xs sm:text-sm font-bold text-white leading-snug line-clamp-2 drop-shadow group-hover:text-orange-300 transition-colors">
-            {recipe.name}
-          </h3>
-          <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] sm:text-[11px] text-white/85">
-            {totalTime > 0 && (
-              <span className="flex items-center gap-0.5">
-                <svg className="h-2.5 w-2.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                {formatMinutes(totalTime)}
-              </span>
-            )}
-            {recipe.servings && (
-              <span className="flex items-center gap-0.5">
-                <svg className="h-2.5 w-2.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                <span className="truncate max-w-28">
-                  {recipe.servingsUnit
-                    ? formatServings(recipe.servings, recipe.servingsUnit)
-                    : `${recipe.servings}p`}
-                </span>
-              </span>
-            )}
-            {recipe._count.reviews > 0 && recipe.avgRating !== null && (
-              <StarRating avg={recipe.avgRating} count={recipe._count.reviews} />
-            )}
-            {isAdmin && recipe.cookCount > 0 && (
-              <span className="flex items-center gap-0.5"><CookingPot size={11} /> ×{recipe.cookCount}</span>
-            )}
+        {/* Pannello info frosted: sopra la foto, ma la foto resta visibile (blur) */}
+        <div className="absolute inset-x-0 bottom-0 flex flex-col gap-1 border-t border-white/10 bg-black/30 px-2.5 py-2 backdrop-blur-md sm:px-3">
+          <div className="flex items-start justify-between gap-2">
+            <h3
+              title={recipe.name}
+              className="text-xs sm:text-sm font-bold text-white leading-snug truncate drop-shadow group-hover:text-orange-300 transition-colors"
+            >
+              {recipe.name}
+            </h3>
+            {hasRating && <RatingPill avg={recipe.avgRating!} count={recipe._count.reviews} />}
           </div>
+
+          {hasMeta && (
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[10px] sm:text-[11px] text-white/85">
+              {totalTime > 0 && (
+                <span className="flex items-center gap-1">
+                  <Clock size={12} className="shrink-0" /> {formatMinutes(totalTime)}
+                </span>
+              )}
+              {recipe.servings && (
+                <span className="flex items-center gap-1">
+                  <Users size={12} className="shrink-0" />
+                  <span className="truncate max-w-28">
+                    {recipe.servingsUnit
+                      ? formatServings(recipe.servings, recipe.servingsUnit)
+                      : `${recipe.servings}p`}
+                  </span>
+                </span>
+              )}
+              {isAdmin && recipe.cookCount > 0 && (
+                <span className="flex items-center gap-1">
+                  <CookingPot size={12} className="shrink-0" /> ×{recipe.cookCount}
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </Link>
