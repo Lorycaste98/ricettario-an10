@@ -73,17 +73,20 @@ const parsePage = (raw: string): number => {
 
 export function RecipeGrid({ recipes, categories, tags }: Props) {
   const { isAdmin } = useAuth();
-  const [q, setQ] = useLocalStore<string>(RK + "q", "", parseStr);
-  const [activeCats, setActiveCats] = useLocalStore<number[]>(RK + "cats", [], parseNumArr);
-  const [activeTags, setActiveTags] = useLocalStore<number[]>(RK + "tags", [], parseNumArr);
-  const [sortPref, setSort] = useLocalStore<SortKey | null>(RK + "sort", null, parseSortPref);
-  const [order, setOrder] = useLocalStore<"asc" | "desc">(RK + "order", "desc", parseOrder);
+  // Filtri per-scheda: persistono durante la navigazione ma si azzerano alla chiusura scheda
+  const [q, setQ] = useLocalStore<string>(RK + "q", "", parseStr, undefined, "session");
+  const [activeCats, setActiveCats] = useLocalStore<number[]>(RK + "cats", [], parseNumArr, undefined, "session");
+  const [activeTags, setActiveTags] = useLocalStore<number[]>(RK + "tags", [], parseNumArr, undefined, "session");
+  const [sortPref, setSort] = useLocalStore<SortKey | null>(RK + "sort", null, parseSortPref, undefined, "session");
+  const [order, setOrder] = useLocalStore<"asc" | "desc">(RK + "order", "desc", parseOrder, undefined, "session");
   const [publishedFilter, setPublishedFilter] = useLocalStore<PublishedFilter>(
     PUBLISHED_FILTER_KEY,
     "all",
-    parsePublishedFilter
+    parsePublishedFilter,
+    undefined,
+    "session"
   );
-  const [page, setPage] = useLocalStore<number>(RK + "page", 0, parsePage);
+  const [page, setPage] = useLocalStore<number>(RK + "page", 0, parsePage, undefined, "session");
   const [filterOpen, setFilterOpen] = useState(false);
   const [catDropdownOpen, setCatDropdownOpen] = useState(false);
   const [pendingCats, setPendingCats] = useState<number[]>([]);

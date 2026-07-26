@@ -50,15 +50,18 @@ interface Props {
 
 export function MenuGrid({ menus }: Props) {
   const { isAdmin } = useAuth();
-  const [q, setQ] = useLocalStore<string>(K + "q", "", parseStr);
-  const [sort, setSort] = useLocalStore<SortKey>(K + "sort", "createdAt", parseSort);
-  const [order, setOrder] = useLocalStore<"asc" | "desc">(K + "order", "asc", parseOrder);
+  // Filtri per-scheda: persistono durante la navigazione ma si azzerano alla chiusura scheda
+  const [q, setQ] = useLocalStore<string>(K + "q", "", parseStr, undefined, "session");
+  const [sort, setSort] = useLocalStore<SortKey>(K + "sort", "createdAt", parseSort, undefined, "session");
+  const [order, setOrder] = useLocalStore<"asc" | "desc">(K + "order", "asc", parseOrder, undefined, "session");
   const [publishedFilter, setPublishedFilter] = useLocalStore<PublishedFilter>(
     K + "published",
     "all",
-    parsePublished
+    parsePublished,
+    undefined,
+    "session"
   );
-  const [page, setPage] = useLocalStore<number>(K + "page", 0, parsePage);
+  const [page, setPage] = useLocalStore<number>(K + "page", 0, parsePage, undefined, "session");
   const [filterOpen, setFilterOpen] = useState(false);
 
   const resetPage = () => setPage(0);
