@@ -45,7 +45,7 @@ export function ReviewBubble({
   return (
     <>
       <div
-        className={`relative flex h-full flex-col gap-2 overflow-hidden rounded-xl border p-3 shadow-sm ${s.card} ${
+        className={`relative flex h-full flex-col gap-1.5 overflow-hidden rounded-xl border p-2.5 shadow-sm sm:gap-2 sm:p-3 ${s.card} ${
           s.top ? "rating-top" : ""
         }`}
       >
@@ -98,7 +98,13 @@ export function ReviewBubble({
       </div>
 
       {hasComment && (
-        <Modal open={open} onClose={() => setOpen(false)} title="Recensione" size="sm">
+        <Modal
+          open={open}
+          onClose={() => setOpen(false)}
+          title="Recensione"
+          size="sm"
+          bodyClassName="min-h-[30dvh] sm:min-h-0"
+        >
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-3">
               <span className="flex items-center gap-2 text-sm">

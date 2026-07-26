@@ -478,7 +478,7 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
 
             {/* Sheet */}
             <motion.div
-              className="relative flex max-h-[80vh] w-full flex-col rounded-3xl bg-white/95 backdrop-blur-xl border border-white/40 shadow-2xl"
+              className="relative flex max-h-[88dvh] w-full flex-col rounded-3xl bg-white/95 backdrop-blur-xl border border-white/40 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
               initial={{ y: "110%" }}
               animate={{ y: 0 }}

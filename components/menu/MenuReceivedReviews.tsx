@@ -85,7 +85,7 @@ export function MenuReceivedReviews({ initialReviews, avgRating }: { initialRevi
             >
               <ReviewCarousel>
                 {group.reviews.map((r) => (
-                  <div key={r.id} className="w-[230px] shrink-0 snap-start sm:w-[250px]">
+                  <div key={r.id} className="w-[185px] shrink-0 snap-start sm:w-[250px]">
                     <ReviewBubble
                       nickname={r.nickname}
                       rating={r.rating}

@@ -8,9 +8,11 @@ interface Props {
   title?: string;
   children: React.ReactNode;
   size?: "sm" | "md" | "lg" | "xl";
+  /** Classi extra sul corpo scrollabile (es. `min-h-[...]` per garantire leggibilità su mobile). */
+  bodyClassName?: string;
 }
 
-export function Modal({ open, onClose, title, children, size = "md" }: Props) {
+export function Modal({ open, onClose, title, children, size = "md", bodyClassName = "" }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -31,7 +33,7 @@ export function Modal({ open, onClose, title, children, size = "md" }: Props) {
       style={{
         width: size === "sm" ? "360px" : size === "lg" ? "720px" : size === "xl" ? "900px" : "560px",
         maxWidth: "calc(100vw - 2rem)",
-        maxHeight: "calc(100vh - 4rem)",
+        maxHeight: "calc(100dvh - 2rem)",
       }}
     >
       {title && (
@@ -44,7 +46,7 @@ export function Modal({ open, onClose, title, children, size = "md" }: Props) {
           </button>
         </div>
       )}
-      <div className="flex-1 overflow-y-auto p-6">{children}</div>
+      <div className={`flex-1 overflow-y-auto p-6 ${bodyClassName}`}>{children}</div>
     </dialog>
   );
 }
