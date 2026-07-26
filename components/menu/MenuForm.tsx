@@ -3,12 +3,13 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
-  Search, X, Loader2, UtensilsCrossed, CalendarDays, Info, EyeOff, Zap, Plus,
+  Search, X, Loader2, UtensilsCrossed, CalendarDays, Info, EyeOff, Zap, Plus, Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { ReorderList, ReorderRow } from "@/components/ui/ReorderList";
 import { QuickTag } from "@/components/ui/QuickTag";
+import { PublishSwitch } from "@/components/ui/PublishSwitch";
 import type { RecipeSummary } from "@/lib/types";
 
 interface Props {
@@ -19,8 +20,12 @@ interface Props {
     description: string | null;
     date: string | null;
     servingTime: string | null;
+    people: number | null;
     photo: string | null;
+    published: boolean;
     recipeIds: number[];
+    /** Porzioni override per ricetta (per recipeId); assente = usa il default della ricetta */
+    recipeServings: Record<number, number | null>;
   };
 }
 
@@ -34,10 +39,17 @@ export function MenuForm({ initialData }: Props) {
     initialData?.date ? initialData.date.slice(0, 10) : ""
   );
   const [servingTime, setServingTime] = useState(initialData?.servingTime ?? "");
+  const [people, setPeople] = useState(
+    initialData?.people != null ? String(initialData.people) : ""
+  );
   const [photo, setPhoto] = useState(initialData?.photo ?? "");
+  const [published, setPublished] = useState(initialData?.published ?? true);
 
-  // Ricette selezionate (in ordine)
+  // Ricette selezionate (in ordine) + porzioni override per ricetta (recipeId → porzioni)
   const [selectedIds, setSelectedIds] = useState<number[]>(initialData?.recipeIds ?? []);
+  const [servingsById, setServingsById] = useState<Record<number, number | null>>(
+    initialData?.recipeServings ?? {}
+  );
   const [allRecipes, setAllRecipes] = useState<RecipeSummary[]>([]);
   const [search, setSearch] = useState("");
   const [loadingRecipes, setLoadingRecipes] = useState(true);
@@ -75,6 +87,17 @@ export function MenuForm({ initialData }: Props) {
     setSelectedIds((prev) => prev.filter((x) => x !== id));
   }, []);
 
+  // Porzioni override della ricetta nel menù: intero positivo, vuoto = usa il default
+  const setServings = useCallback((id: number, raw: string) => {
+    const n = parseInt(raw, 10);
+    setServingsById((prev) => {
+      const next = { ...prev };
+      if (Number.isFinite(n) && n > 0) next[id] = n;
+      else delete next[id];
+      return next;
+    });
+  }, []);
+
   const addQuickRecipe = async () => {
     const name = quickName.trim();
     if (!name) return;
@@ -87,7 +110,7 @@ export function MenuForm({ initialData }: Props) {
     });
     if (!res.ok) {
       const d = await res.json().catch(() => ({}));
-      setError(d.error ?? "Errore nella creazione della voce veloce");
+      setError(d.error ?? "Errore nella creazione della ricetta veloce");
       setCreatingQuick(false);
       return;
     }
@@ -110,8 +133,13 @@ export function MenuForm({ initialData }: Props) {
       description: description.trim() || null,
       date: date || null,
       servingTime: date && servingTime ? servingTime : null,
+      people: people.trim() ? Number(people) : null,
       photo: photo.trim() || null,
-      recipeIds: selectedIds,
+      published,
+      recipes: selectedIds.map((recipeId) => ({
+        recipeId,
+        servings: servingsById[recipeId] ?? null,
+      })),
     };
 
     const res = await fetch(
@@ -139,12 +167,13 @@ export function MenuForm({ initialData }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Sticky top bar — stesso stile del form ricetta */}
-      <div className="sticky top-[65px] z-30 flex items-center justify-between gap-3 rounded-b-2xl border border-white/50 bg-white/70 backdrop-blur-xl px-5 py-3 shadow-lg shadow-black/[0.07] ring-1 ring-black/[0.04]">
+      {/* Sticky top bar — stesso stile e offset del form ricetta */}
+      <div className="sticky z-30 flex items-center justify-between gap-3 rounded-b-2xl border border-white/50 bg-white/70 backdrop-blur-xl px-5 py-3 shadow-lg shadow-black/[0.07] ring-1 ring-black/[0.04]" style={{ top: "calc(env(safe-area-inset-top, 0px) + 56px)" }}>
         <h1 className="text-sm font-semibold text-gray-800 truncate">
           {isEditing ? "Modifica menù" : "Nuovo menù"}
         </h1>
         <div className="flex items-center gap-2 shrink-0">
+          <PublishSwitch published={published} onToggle={() => setPublished((p) => !p)} />
           <Button type="button" variant="ghost" size="sm" onClick={() => router.back()}>
             Annulla
           </Button>
@@ -212,6 +241,23 @@ export function MenuForm({ initialData }: Props) {
             )}
           </div>
           <div>
+            <label className="mb-1 flex items-center gap-1.5 text-xs font-medium text-sky-800">
+              <Users size={12} /> Persone (opzionale)
+            </label>
+            <input
+              type="number"
+              min={1}
+              inputMode="numeric"
+              value={people}
+              onChange={(e) => setPeople(e.target.value)}
+              placeholder="Es. 8"
+              className={inputCls}
+            />
+            <p className="mt-1 text-[11px] text-sky-600/70">
+              Numero di persone partecipanti
+            </p>
+          </div>
+          <div className="sm:col-span-2">
             <label className="mb-1 block text-xs font-medium text-sky-800">URL Foto (opzionale)</label>
             <input
               type="url"
@@ -272,6 +318,23 @@ export function MenuForm({ initialData }: Props) {
                     </span>
                   )}
                 </span>
+                {/* Porzioni per questo menù (vuoto = default della ricetta).
+                    Le ricette "veloci" non hanno ingredienti/porzioni: niente input. */}
+                {!r.quick && (
+                  <div className="flex shrink-0 items-center gap-1">
+                    <input
+                      type="number"
+                      min={1}
+                      inputMode="numeric"
+                      value={servingsById[r.id] != null ? String(servingsById[r.id]) : ""}
+                      onChange={(e) => setServings(r.id, e.target.value)}
+                      placeholder={r.servings != null ? String(r.servings) : "—"}
+                      title="Porzioni per questo menù (vuoto = usa il default della ricetta)"
+                      className="w-14 rounded-lg border border-white/40 bg-white/70 px-2 py-1 text-xs text-sky-950 placeholder:text-sky-500/40 focus:border-sky-300/60 focus:outline-none focus:ring-2 focus:ring-sky-300/40"
+                    />
+                    <span className="text-[10px] text-sky-600/70">{r.servingsUnit?.trim() || "porz."}</span>
+                  </div>
+                )}
                 {/* Order number */}
                 <span className="shrink-0 text-[10px] font-bold text-sky-400/60">#{idx + 1}</span>
                 {/* Drag handle */}
@@ -307,10 +370,10 @@ export function MenuForm({ initialData }: Props) {
             <button
               type="button"
               onClick={() => setShowQuickForm((v) => !v)}
-              title="Aggiungi una voce veloce: solo un nome, senza scheda (es. «Arrosticini»)"
+              title="Aggiungi una ricetta veloce: solo un nome, senza scheda (es. «Arrosticini»)"
               className="flex shrink-0 items-center gap-1.5 rounded-xl border border-sky-300/50 bg-sky-50/60 px-3 py-2.5 text-xs font-semibold text-sky-700 transition hover:bg-sky-100/70"
             >
-              <Zap size={13} /> Voce veloce
+              <Zap size={13} /> Ricetta veloce
             </button>
           </div>
 

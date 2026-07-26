@@ -1,14 +1,37 @@
-export default function MenuDetailLoading() {
+import { getSession } from "@/lib/session";
+
+export default async function MenuDetailLoading() {
+  // Solo lettura cookie (nessun DB): distingue lo skeleton admin da quello visitatore
+  const isAdmin = !!(await getSession());
+
   return (
     <div className="mx-auto max-w-4xl space-y-8 animate-pulse">
-      <div className="h-5 w-28 rounded-lg bg-white/20" />
-      <div className="h-10 w-2/3 rounded-xl bg-white/20" />
-      <div className="aspect-4/3 w-full rounded-2xl bg-zinc-800 lg:aspect-video" />
-      <div className="space-y-3">
-        <div className="h-6 w-40 rounded-xl bg-white/20" />
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+      {isAdmin && (
+        <>
+          {/* Barra azioni admin: Pronto (flex-1) + Esporta + Modifica + Elimina */}
+          <div className="flex items-stretch gap-2">
+            <div className="h-[52px] flex-1 rounded-xl bg-white/20" />
+            <div className="h-[52px] w-11 rounded-xl bg-white/15 sm:w-24" />
+            <div className="h-[52px] w-11 rounded-xl bg-white/15 sm:w-24" />
+            <div className="h-[52px] w-11 rounded-xl bg-white/15 sm:w-24" />
+          </div>
+          {/* Azioni secondarie: Modalità cucina + Recensioni ospiti */}
+          <div className="flex flex-wrap gap-2">
+            <div className="h-11 min-w-40 flex-1 rounded-xl bg-white/15" />
+            <div className="h-11 min-w-40 flex-1 rounded-xl bg-white/15" />
+          </div>
+        </>
+      )}
+
+      {/* Hero */}
+      <div className="aspect-3/1 min-h-45 w-full rounded-2xl bg-zinc-800 sm:aspect-4/1" />
+
+      {/* Ricette */}
+      <div className="space-y-4">
+        <div className="h-7 w-52 rounded-xl bg-white/20" />
+        <div className="grid gap-3 sm:grid-cols-2">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="aspect-4/3 rounded-2xl bg-zinc-800" />
+            <div key={i} className="h-24 rounded-2xl bg-white/10" />
           ))}
         </div>
       </div>

@@ -33,6 +33,7 @@ model Recipe {
   menus       MenuRecipe[]
   cookLogs    CookLog[]
   progress    RecipeProgress[]
+  ratings     RecipeRating[]
 }
 
 model CookLog {
@@ -138,6 +139,26 @@ model Admin {
   dedication String?
 
   recipeProgress RecipeProgress[]
+  recipeRatings  RecipeRating[]
+}
+
+/** Voto personale dell'admin su una ricetta (uno per account): 1-10 + nota opzionale.
+    Distinto dalle recensioni ospiti (Review) e NON incluso nella media pubblica. */
+model RecipeRating {
+  adminId   Int
+  recipeId  Int
+  /** Voto 1-10 */
+  rating    Int
+  /** Nota personale opzionale (promemoria dello chef) */
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  admin  Admin  @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@id([adminId, recipeId])
+  @@index([recipeId])
 }
 
 /** Avanzamento passi di una ricetta per admin (persistito per account, sync tra dispositivi) */
@@ -163,7 +184,21 @@ model Menu {
   date        DateTime?
   /** Orario di servizio "HH:mm" (opzionale); usato per il countdown "quando iniziare" */
   servingTime String?
+  /** Numero di persone previste per il menù (opzionale, uso futuro — non ancora consumato altrove) */
+  people      Int?
   photo       String?
+  /** Nota admin del menù (privata, come le note della ricetta ma senza voto) */
+  notes       String?
+  /** Totale speso per la spesa alimentari (inserito dalla lista spesa; alimenta la sezione Costi) */
+  groceryCost Float?
+  /** Ore di manodopera (sezione Costi) */
+  laborHours  Float?
+  /** Prezzo orario della manodopera in € (sezione Costi) */
+  laborRate   Float?
+  /** Ricarico % scelto per il prezzo di vendita (sezione Costi) */
+  markupPercent Float?
+  /** Visibilità del menù: false = "non pronto", nascosto ai visitatori (come Recipe.published) */
+  published   Boolean      @default(true)
   /** Token segreto per il link pubblico "recensisci le ricette di questo menù" (/recensisci/[token]) */
   reviewToken String       @unique
   /** Contatore recensioni anonime di questo menù: alimenta il nickname progressivo "Ospite N" */
@@ -176,12 +211,44 @@ model Menu {
   reviews       MenuReview[]
   /** Recensioni ricetta arrivate tramite il link di recensione di questo menù */
   recipeReviews Review[]
+  /** Voci di costo generiche ("altri costi") della sezione Costi (solo admin) */
+  costs         MenuCost[]
+  /** Ingredienti "extra" aggiunti a mano alla lista spesa, specifici di questo menù */
+  extraItems    MenuExtraItem[]
+}
+
+/** Voce di costo generica di un menù ("altri costi": gas/energia, trasporto, confezionamento…). */
+model MenuCost {
+  id     Int    @id @default(autoincrement())
+  menuId Int
+  order  Int    @default(0)
+  label  String
+  amount Float  @default(0)
+  menu   Menu   @relation(fields: [menuId], references: [id], onDelete: Cascade)
+
+  @@index([menuId])
+}
+
+/** Ingrediente "extra" della lista spesa di un menù (non presente nelle ricette, comprato comunque). */
+model MenuExtraItem {
+  id     Int     @id @default(autoincrement())
+  menuId Int
+  order  Int     @default(0)
+  name   String
+  qty    Float?
+  unit   String?
+  menu   Menu    @relation(fields: [menuId], references: [id], onDelete: Cascade)
+
+  @@index([menuId])
 }
 
 model MenuRecipe {
   menuId    Int
   recipeId  Int
   order     Int    @default(0)
+  /** Porzioni della ricetta in questo menù (override del default della ricetta); nullo = usa Recipe.servings.
+      Usato per scalare le quantità degli ingredienti nella lista della spesa del menù. */
+  servings  Int?
   /** Inizio pianificato della ricetta nella modalità cucina (timeline); nullo = calcolo automatico dal servizio */
   cookStartAt DateTime?
   menu      Menu   @relation(fields: [menuId], references: [id], onDelete: Cascade)

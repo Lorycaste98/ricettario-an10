@@ -1,18 +1,31 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
-import { EyeOff, Star, CookingPot, Clock, Users } from "lucide-react";
+import { EyeOff, Star, CookingPot, Clock, Users, ChefHat } from "lucide-react";
 import { type RecipeSummary, formatMinutes, formatServings } from "@/lib/types";
 import { FavoriteButton } from "./FavoriteButton";
 import { useAuth } from "@/components/AuthProvider";
 
-/** Pill voto (oro) — elemento in evidenza, coerente con l'ordinamento per valutazione. */
+/** Pill voto (oro) — media recensioni ospiti. */
 function RatingPill({ avg, count }: { avg: number; count: number }) {
   return (
     <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-amber-400/20 px-1.5 py-0.5 text-amber-300 shadow-sm">
       <Star size={11} className="fill-current" />
       <span className="text-xs font-bold leading-none">{avg.toFixed(1)}</span>
       <span className="text-[10px] leading-none text-amber-200/70">({count})</span>
+    </span>
+  );
+}
+
+/** Pill voto personale dell'admin (sky/indigo) — stile distinto dalle recensioni (oro). */
+function MyRatingPill({ value }: { value: number }) {
+  return (
+    <span
+      title="Il mio voto"
+      className="inline-flex shrink-0 items-center gap-1 rounded-md bg-sky-400/25 px-1.5 py-0.5 text-sky-100 shadow-sm ring-1 ring-inset ring-sky-300/40"
+    >
+      <ChefHat size={11} />
+      <span className="text-xs font-bold leading-none">{value}</span>
     </span>
   );
 }
@@ -82,7 +95,12 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
             >
               {recipe.name}
             </h3>
-            {hasRating && <RatingPill avg={recipe.avgRating!} count={recipe._count.reviews} />}
+            {(hasRating || (isAdmin && recipe.myRating != null)) && (
+              <div className="flex shrink-0 flex-col items-end gap-1">
+                {isAdmin && recipe.myRating != null && <MyRatingPill value={recipe.myRating} />}
+                {hasRating && <RatingPill avg={recipe.avgRating!} count={recipe._count.reviews} />}
+              </div>
+            )}
           </div>
 
           {hasMeta && (

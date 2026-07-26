@@ -10,13 +10,17 @@ import { getSiteUrl } from "@/lib/site-url";
 import { formatMinutes, formatServings } from "@/lib/types";
 import { resolveServeAt, computeStart, startLabel } from "@/lib/cook-schedule";
 import type { Metadata } from "next";
-import { CalendarDays, UtensilsCrossed, Star, Clock, Users, Pencil, AlarmClock, ChefHat } from "lucide-react";
+import { CalendarDays, UtensilsCrossed, Star, Clock, Users, AlarmClock, ChefHat, ArrowLeft } from "lucide-react";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { QuickTag } from "@/components/ui/QuickTag";
 import { MenuPdfButton } from "@/components/menu/MenuPdfButton";
 import { MenuShoppingList } from "@/components/menu/MenuShoppingList";
+import { MenuCosts } from "@/components/menu/MenuCosts";
+import { MenuNotesCard } from "@/components/menu/MenuNotesCard";
+import { MenuNoteQuickLink } from "@/components/menu/MenuNoteQuickLink";
 import { ShareReviewLink } from "@/components/menu/ShareReviewLink";
 import { MenuReceivedReviews } from "@/components/menu/MenuReceivedReviews";
+import { MenuAdminBar } from "./MenuAdminBar";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -59,7 +63,62 @@ export default async function MenuDetailPage({ params }: Params) {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8">
+    <div className="mx-auto max-w-4xl space-y-8">
+      {/* Back: bottone slim distinto (non si confonde con lo sfondo) */}
+      <Link
+        href="/menu"
+        className="inline-flex items-center gap-1.5 rounded-full border border-white/50 bg-white/70 px-3 py-1.5 text-sm font-medium text-sky-900 shadow-sm backdrop-blur-sm transition-colors hover:bg-white/90"
+      >
+        <ArrowLeft size={16} /> Tutti i menù
+      </Link>
+
+      {/* Azioni admin (solo admin): pronto/non pronto + esporta + modifica + elimina,
+          in cima — allineata al dettaglio ricetta (RecipeAdminBar) */}
+      {session && (
+        <MenuAdminBar
+          menuId={menu.id}
+          published={menu.published}
+          pdfSlot={
+            <MenuPdfButton
+              variant="bar"
+              menu={{
+                name: menu.name,
+                description: menu.description,
+                date: menu.date,
+                servingTime: menu.servingTime,
+                photo: menu.photo,
+                recipeIds: (menu.recipes as { recipe: { id: number } }[]).map((mr) => mr.recipe.id),
+              }}
+            />
+          }
+        />
+      )}
+
+      {/* Azioni admin secondarie (solo admin): modalità cucina + recensioni ospiti,
+          come estensione della barra sopra (subito sotto, prima dell'immagine).
+          Affiancate (larghezze uguali) finché la scritta ci sta, poi si incolonnano. */}
+      {session && (
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href={`/menu/${menu.id}/cucina`}
+            className="group relative flex flex-1 min-w-40 items-center justify-center gap-2 overflow-hidden rounded-xl border border-orange-400/40 bg-linear-to-br from-orange-500 to-amber-500 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-orange-500/20 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-orange-500/30 active:translate-y-0 active:shadow-sm"
+          >
+            {/* Shine sweep all'hover */}
+            <span className="pointer-events-none absolute inset-0 -translate-x-full bg-linear-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" />
+            <ChefHat size={16} className="shrink-0 transition-transform duration-300 group-hover:-rotate-12 group-hover:scale-110" />
+            Modalità cucina
+          </Link>
+          {reviewUrl && reviewQr && (
+            <div className="flex min-w-40 flex-1">
+              <ShareReviewLink url={reviewUrl} qrDataUrl={reviewQr} />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Accesso rapido alla nota (solo admin, solo se presente): scrolla alla sezione note */}
+      {session && menu.notes && <MenuNoteQuickLink note={menu.notes} targetId="note-menu" />}
+
       {/* Hero header */}
       <div className="relative overflow-hidden rounded-2xl">
         <div className="relative aspect-3/1 sm:aspect-4/1 min-h-45">
@@ -78,27 +137,6 @@ export default async function MenuDetailPage({ params }: Params) {
             </div>
           )}
           <div className="absolute inset-0 bg-linear-to-t from-sky-950/90 via-sky-950/40 to-transparent" />
-
-          {/* Azioni admin */}
-          {session && reviewUrl && reviewQr && (
-            <div className="absolute top-3 right-3 flex flex-wrap items-center justify-end gap-2">
-              <ShareReviewLink url={reviewUrl} qrDataUrl={reviewQr} />
-              <Link
-                href={`/menu/${menu.id}/cucina`}
-                className="flex items-center gap-1.5 rounded-xl border border-white/30 bg-black/40 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm hover:bg-black/60 transition"
-              >
-                <ChefHat size={11} />
-                Modalità cucina
-              </Link>
-              <Link
-                href={`/admin/menu/${menu.id}/modifica`}
-                className="flex items-center gap-1.5 rounded-xl border border-white/30 bg-black/40 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm hover:bg-black/60 transition"
-              >
-                <Pencil size={11} />
-                Modifica
-              </Link>
-            </div>
-          )}
 
           {/* Text overlay */}
           <div className="absolute bottom-0 left-0 right-0 p-5">
@@ -119,6 +157,12 @@ export default async function MenuDetailPage({ params }: Params) {
                 <UtensilsCrossed size={11} />
                 {menu._count.recipes} ricette
               </span>
+              {menu.people != null && (
+                <span className="flex items-center gap-1.5 text-xs text-white/70">
+                  <Users size={11} />
+                  {menu.people} persone
+                </span>
+              )}
               {menu.avgRating !== null && (
                 <span className="flex items-center gap-1.5 text-xs text-amber-300">
                   <Star size={11} fill="currentColor" />
@@ -139,22 +183,12 @@ export default async function MenuDetailPage({ params }: Params) {
           tone="orange"
           size="lg"
           titleClassName="text-sky-50"
-          action={
-            <MenuPdfButton
-              menu={{
-                name: menu.name,
-                description: menu.description,
-                date: menu.date,
-                servingTime: menu.servingTime,
-                photo: menu.photo,
-                recipeIds: (menu.recipes as { recipe: { id: number } }[]).map((mr) => mr.recipe.id),
-              }}
-            />
-          }
         />
         <div className="grid gap-3 sm:grid-cols-2">
-          {(menu.recipes as { order: number; recipe: ReturnType<typeof flattenRecipe> }[]).map(({ order, recipe }) => {
+          {(menu.recipes as { order: number; servings: number | null; recipe: ReturnType<typeof flattenRecipe> }[]).map(({ order, servings, recipe }) => {
             const totalTime = (recipe.prep ?? 0) + (recipe.cook ?? 0);
+            // Porzioni effettive nel menù: override del menù, altrimenti default della ricetta
+            const effectiveServings = servings ?? recipe.servings;
             // "Quando iniziare": calcolato solo se il menù ha una data
             const startInfo = serve ? computeStart(recipe, serve.serveAt) : null;
             // Niente "group" per le voci veloci: nessun Link, quindi niente hover cues (title/thumb) che suggeriscano cliccabilità
@@ -197,12 +231,15 @@ export default async function MenuDetailPage({ params }: Params) {
                         {formatMinutes(totalTime)}
                       </span>
                     )}
-                    {recipe.servings && (
-                      <span className="flex items-center gap-1">
-                        <Users size={10} />
+                    {effectiveServings && (
+                      <span
+                        className="flex items-center gap-1"
+                        title={servings != null ? "Porzioni impostate per questo menù" : undefined}
+                      >
+                        <Users size={10} className={servings != null ? "text-orange-500" : undefined} />
                         {recipe.servingsUnit
-                          ? formatServings(recipe.servings, recipe.servingsUnit)
-                          : `${recipe.servings}p`}
+                          ? formatServings(effectiveServings, recipe.servingsUnit)
+                          : `${effectiveServings}p`}
                       </span>
                     )}
                     {recipe.avgRating !== null && (
@@ -234,7 +271,7 @@ export default async function MenuDetailPage({ params }: Params) {
                     </div>
                   )}
                   {/* Ricetta "veloce": nessuna scheda, quindi nessun link cliccabile */}
-                  {recipe.quick && <QuickTag label="Voce veloce" className="mt-1" />}
+                  {recipe.quick && <QuickTag label="Ricetta veloce" className="mt-1" />}
                 </div>
               </>
             );
@@ -247,9 +284,34 @@ export default async function MenuDetailPage({ params }: Params) {
         </div>
       </section>
 
-      {/* Lista della spesa (solo admin) */}
-      {session && menu.shoppingList && (
-        <MenuShoppingList menuId={menu.id} items={menu.shoppingList} />
+      {/* Lista della spesa + extra + totale speso (solo admin) */}
+      {session && (
+        <MenuShoppingList
+          menuId={menu.id}
+          items={menu.shoppingList ?? []}
+          extraItems={menu.extraItems}
+          groceryCost={menu.groceryCost}
+        />
+      )}
+
+      {/* Costi e prezzo di vendita (solo admin) */}
+      {session && (
+        <MenuCosts
+          menuId={menu.id}
+          people={menu.people}
+          groceryCost={menu.groceryCost}
+          laborHours={menu.laborHours}
+          laborRate={menu.laborRate}
+          markupPercent={menu.markupPercent}
+          costs={menu.costs}
+        />
+      )}
+
+      {/* Note del menù (solo admin) — ancora per lo scroll dall'accesso rapido in alto */}
+      {session && (
+        <div id="note-menu" className="scroll-mt-24">
+          <MenuNotesCard menuId={menu.id} initial={menu.notes} />
+        </div>
       )}
 
       {/* Recensioni ricevute tramite il link di recensione (solo admin) */}

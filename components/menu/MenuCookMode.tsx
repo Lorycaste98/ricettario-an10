@@ -135,7 +135,7 @@ function QuickRecipeCookCard({
       </div>
       <div className="min-w-0 flex-1">
         <span className="block truncate text-sm font-semibold text-sky-950">{recipe.name}</span>
-        <QuickTag label="Voce veloce — nessuna procedura" className="mt-1" />
+        <QuickTag label="Ricetta veloce — nessuna procedura" className="mt-1" />
       </div>
       {cooked ? (
         <button

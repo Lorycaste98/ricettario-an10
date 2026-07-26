@@ -19,9 +19,11 @@ export function ShareReviewLink({ url, qrDataUrl }: { url: string; qrDataUrl: st
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 rounded-xl border border-white/30 bg-black/40 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm active:bg-black/60 sm:hover:bg-black/60 transition"
+        className="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl border border-sky-400/40 bg-linear-to-br from-sky-500 to-indigo-500 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-sky-500/20 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-sky-500/30 active:translate-y-0 active:shadow-sm"
       >
-        <Share2 size={11} />
+        {/* Shine sweep all'hover */}
+        <span className="pointer-events-none absolute inset-0 -translate-x-full bg-linear-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" />
+        <Share2 size={16} className="shrink-0 transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110" />
         Recensioni ospiti
       </button>
 

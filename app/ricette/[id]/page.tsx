@@ -9,6 +9,8 @@ import { flattenRecipe } from "@/lib/api";
 import { Badge } from "@/components/ui/Badge";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { ReviewSection } from "@/components/recipe/ReviewSection";
+import { PersonalRatingCard } from "@/components/recipe/PersonalRatingCard";
+import { MyRatingLink } from "@/components/recipe/MyRatingLink";
 import { RecipeProcedure } from "@/components/recipe/RecipeProcedure";
 import { FavoriteButton } from "@/components/recipe/FavoriteButton";
 import { RecipePdfButton } from "@/components/recipe/RecipePdfButton";
@@ -51,8 +53,17 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
   if (raw.quick) notFound();
 
   // Le ricette non pronte sono visibili solo agli admin
-  const isAdmin = !!(await getSession());
+  const session = await getSession();
+  const isAdmin = !!session;
   if (!raw.published && !isAdmin) notFound();
+
+  // Voto personale dell'admin loggato (uno per account): distinto dalle recensioni ospiti
+  const myRating = session
+    ? await db.recipeRating.findUnique({
+        where: { adminId_recipeId: { adminId: session.adminId, recipeId: raw.id } },
+        select: { rating: true, note: true },
+      })
+    : null;
 
   const recipe = flattenRecipe(raw) as ReturnType<typeof flattenRecipe> & typeof raw;
 
@@ -85,8 +96,11 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
 
   return (
     <article className="mx-auto max-w-4xl space-y-8 sm:space-y-10">
-      {/* Back */}
-      <Link href="/ricette" className="inline-flex items-center gap-1.5 text-sm font-medium text-sky-950 [text-shadow:0_1px_3px_rgba(255,255,255,0.6)] hover:opacity-70 transition-opacity">
+      {/* Back: bottone slim distinto (non si confonde con lo sfondo) */}
+      <Link
+        href="/ricette"
+        className="inline-flex items-center gap-1.5 rounded-full border border-white/50 bg-white/70 px-3 py-1.5 text-sm font-medium text-sky-900 shadow-sm backdrop-blur-sm transition-colors hover:bg-white/90"
+      >
         <ArrowLeft size={16} /> Tutte le ricette
       </Link>
 
@@ -155,12 +169,18 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
             );
           })()}
 
-          {recipe.links && (
-            <a href={recipe.links} target="_blank" rel="noopener noreferrer"
-              className="inline-flex w-fit items-center gap-2 rounded-full border border-orange-200/70 bg-orange-50/70 px-3.5 py-2 text-sm font-medium text-orange-700 backdrop-blur-sm transition-colors hover:bg-orange-100/80">
-              <Link2 size={15} className="shrink-0" /> Ricetta originale
-              <ExternalLink size={13} className="opacity-70" />
-            </a>
+          {/* Voto personale (solo admin, prima) + link ricetta originale, sulla stessa riga */}
+          {(isAdmin || recipe.links) && (
+            <div className="flex flex-wrap items-center gap-2">
+              {isAdmin && <MyRatingLink rating={myRating?.rating ?? null} />}
+              {recipe.links && (
+                <a href={recipe.links} target="_blank" rel="noopener noreferrer"
+                  className="inline-flex w-fit items-center gap-2 rounded-full border border-orange-200/70 bg-orange-50/70 px-3.5 py-2 text-sm font-medium text-orange-700 backdrop-blur-sm transition-colors hover:bg-orange-100/80">
+                  <Link2 size={15} className="shrink-0" /> Ricetta originale
+                  <ExternalLink size={13} className="opacity-70" />
+                </a>
+              )}
+            </div>
           )}
 
           {recipe.notes && (
@@ -199,9 +219,16 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
         </section>
       )}
 
+      {/* Voto personale dell'admin (card dedicata, stile distinto dalle recensioni) */}
+      {isAdmin && (
+        <div id="mio-voto" className="fade-up scroll-mt-24" style={{ animationDelay: "220ms" }}>
+          <PersonalRatingCard recipeId={recipe.id} initial={myRating} />
+        </div>
+      )}
+
       {/* Recensioni */}
-      <div className="fade-up" style={{ animationDelay: "240ms" }}>
-        <ReviewSection recipeId={recipe.id} initialReviews={recipe.reviews} />
+      <div className="fade-up" style={{ animationDelay: "300ms" }}>
+        <ReviewSection initialReviews={recipe.reviews} />
       </div>
     </article>
   );

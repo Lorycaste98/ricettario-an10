@@ -6,7 +6,7 @@
 import { type NextRequest } from "next/server";
 import crypto from "node:crypto";
 import { db } from "@/lib/db";
-import { ok, err } from "@/lib/api";
+import { ok, err, normalizePeople, normalizeMenuRecipes } from "@/lib/api";
 import { revalidateMenus } from "@/lib/queries";
 import { requireAdmin } from "@/lib/session";
 
@@ -16,6 +16,7 @@ const menuSummarySelect = {
   description: true,
   date: true,
   servingTime: true,
+  people: true,
   photo: true,
   createdAt: true,
   _count: { select: { recipeReviews: true, recipes: true } },
@@ -72,11 +73,18 @@ export async function POST(request: NextRequest) {
     description?: string;
     date?: string;
     servingTime?: string;
+    people?: number | null;
     photo?: string;
+    published?: boolean;
     recipeIds?: number[];
+    recipes?: { recipeId: number; servings?: number | null }[];
   };
 
   if (!b.name?.trim()) return err("Il campo 'name' è obbligatorio");
+
+  // Ricette: forma ricca `{recipeId, servings}[]` (porzioni per il menù), con
+  // fallback alla vecchia `recipeIds` (senza override porzioni)
+  const recipeRows = normalizeMenuRecipes(b.recipes, b.recipeIds);
 
   const menu = await db.menu.create({
     data: {
@@ -84,12 +92,15 @@ export async function POST(request: NextRequest) {
       description: b.description?.trim() || null,
       date: b.date ? new Date(b.date) : null,
       servingTime: b.date ? (b.servingTime?.trim() || null) : null,
+      people: normalizePeople(b.people),
       photo: b.photo?.trim() || null,
+      published: typeof b.published === "boolean" ? b.published : true,
       reviewToken: crypto.randomUUID(),
       recipes: {
-        create: (b.recipeIds ?? []).map((recipeId, idx) => ({
-          recipeId,
+        create: recipeRows.map((r, idx) => ({
+          recipeId: r.recipeId,
           order: idx,
+          servings: r.servings,
         })),
       },
     },

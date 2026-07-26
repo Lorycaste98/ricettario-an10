@@ -8,11 +8,11 @@ import type { Metadata } from "next";
 export const metadata: Metadata = { title: "Ricette — Ricettario" };
 
 export default async function RicettePage() {
-  // Gli admin vedono tutte le ricette (anche le non pronte); i visitatori solo le pubblicate
-  const isAdmin = !!(await getSession());
+  // Gli admin vedono tutte le ricette (anche le non pronte) + il proprio voto personale
+  const session = await getSession();
 
   const [recipes, categories, tags] = await Promise.all([
-    getRecipeSummaries(isAdmin),
+    getRecipeSummaries(session?.adminId ?? null),
     db.category.findMany({ orderBy: { name: "asc" } }),
     db.tag.findMany({ orderBy: { name: "asc" } }),
   ]);

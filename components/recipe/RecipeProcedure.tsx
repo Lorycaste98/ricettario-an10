@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { RotateCcw, Carrot, ListOrdered, Check, TriangleAlert, PartyPopper, CookingPot, Timer } from "lucide-react";
+import { RotateCcw, Carrot, ListOrdered, Check, TriangleAlert, PartyPopper, CookingPot, Timer, ChevronDown } from "lucide-react";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { PriceTag } from "@/components/ui/PriceTag";
 import { useRecipeProgress } from "@/lib/recipe-progress";
@@ -54,6 +54,8 @@ function formatQty(n: number): string {
 export function RecipeProcedure({ recipeId, defaultServings, servingsUnit, ingredients, steps }: Props) {
   const router = useRouter();
   const [servings, setServings] = useState<number>(defaultServings ?? 4);
+  // La procedura può essere lunga: dropdown chiuso di default (la barra di progresso resta visibile)
+  const [stepsOpen, setStepsOpen] = useState(false);
   // Progresso per INDICE di step, persistito: admin → DB, visitatori → localStorage
   const [done, setDone] = useRecipeProgress(recipeId, steps.length);
   const [pendingIdx, setPendingIdx] = useState<number | null>(null); // step index in attesa di conferma
@@ -183,12 +185,10 @@ export function RecipeProcedure({ recipeId, defaultServings, servingsUnit, ingre
 
       {/* ── Procedura interattiva ── */}
       <section className="rounded-2xl bg-white/60 border border-white/40 backdrop-blur-sm p-5 sm:p-6">
-        {/* Header sticky: la barra di progresso resta visibile anche con tanti step */}
+        {/* Header: dropdown chiuso di default. Stile trasparente identico in aperto/chiuso
+            così la barra di progresso resta sempre visibile allo stesso modo. */}
         {steps.length > 0 ? (
-          <div
-            className="sticky z-20 -mx-5 -mt-5 mb-5 rounded-t-2xl border-b border-white/40 bg-white/75 px-5 pt-4 pb-3 backdrop-blur-md shadow-sm shadow-black/[0.03] sm:-mx-6 sm:-mt-6 sm:px-6"
-            style={{ top: "calc(env(safe-area-inset-top, 0px) + 56px)" }}
-          >
+          <div>
             <SectionHeader
               title="Procedura"
               icon={<ListOrdered size={20} />}
@@ -197,7 +197,7 @@ export function RecipeProcedure({ recipeId, defaultServings, servingsUnit, ingre
               className="mb-2"
               action={
                 <span className="flex items-center gap-2">
-                  {done.size > 0 && (
+                  {stepsOpen && done.size > 0 && (
                     <button
                       type="button"
                       onClick={restart}
@@ -207,9 +207,20 @@ export function RecipeProcedure({ recipeId, defaultServings, servingsUnit, ingre
                       <RotateCcw className="h-3 w-3" />
                     </button>
                   )}
-                  <span className="text-xs font-medium text-sky-700 tabular-nums">
-                    {done.size}/{steps.length} passi · {Math.round((done.size / steps.length) * 100)}%
-                  </span>
+                  {/* Toggle come le recensioni: badge (passi + %) + freccia FUORI dal badge */}
+                  <button
+                    type="button"
+                    onClick={() => setStepsOpen((o) => !o)}
+                    aria-expanded={stepsOpen}
+                    aria-controls="procedura-steps"
+                    title={stepsOpen ? "Chiudi la procedura" : "Apri la procedura"}
+                    className="flex items-center gap-2"
+                  >
+                    <span className="rounded-full border border-white/50 bg-white/50 px-2.5 py-1 text-xs font-medium text-sky-700 tabular-nums">
+                      {done.size}/{steps.length} passi · {Math.round((done.size / steps.length) * 100)}%
+                    </span>
+                    <ChevronDown size={18} className={`shrink-0 text-sky-500 transition-transform duration-300 ${stepsOpen ? "rotate-180" : ""}`} />
+                  </button>
                 </span>
               }
             />
@@ -223,8 +234,14 @@ export function RecipeProcedure({ recipeId, defaultServings, servingsUnit, ingre
         ) : (
           <SectionHeader title="Procedura" icon={<ListOrdered size={20} />} tone="sky" size="lg" className="mb-5" />
         )}
-        <ol className="space-y-3">
-          {steps.map((step, i) => {
+        <div
+          className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+            steps.length === 0 || stepsOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+          }`}
+        >
+          <div className="overflow-hidden" inert={steps.length > 0 && !stepsOpen ? true : undefined}>
+            <ol id="procedura-steps" className="space-y-3 pt-4">
+              {steps.map((step, i) => {
             const checked = done.has(i);
             const isPending = pendingIdx === i;
             return (
@@ -304,7 +321,9 @@ export function RecipeProcedure({ recipeId, defaultServings, servingsUnit, ingre
               </li>
             );
           })}
-        </ol>
+            </ol>
+          </div>
+        </div>
       </section>
 
       {/* ── Banner completamento ── */}

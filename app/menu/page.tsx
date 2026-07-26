@@ -1,12 +1,14 @@
 import { MenuGrid } from "@/components/menu/MenuGrid";
 import { getMenuSummaries } from "@/lib/queries";
+import { getSession } from "@/lib/session";
 import type { Metadata } from "next";
 import { UtensilsCrossed } from "lucide-react";
 
 export const metadata: Metadata = { title: "Menù — Ricettario" };
 
 export default async function MenuListPage() {
-  const menus = await getMenuSummaries();
+  const isAdmin = !!(await getSession());
+  const menus = await getMenuSummaries(isAdmin);
 
   return (
     <div className="mx-auto max-w-7xl space-y-8">

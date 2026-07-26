@@ -19,7 +19,7 @@ interface Props {
   tags: Tag[];
 }
 
-type SortKey = "createdAt" | "name" | "prep" | "cook" | "cookCount" | "avgRating" | "reviews";
+type SortKey = "myRating" | "createdAt" | "name" | "prep" | "cook" | "cookCount" | "avgRating" | "reviews";
 type PublishedFilter = "all" | "published" | "draft";
 
 const PUBLISHED_OPTIONS: { value: PublishedFilter; label: string }[] = [
@@ -35,7 +35,9 @@ const parsePublishedFilter = (raw: string): PublishedFilter => {
   return v === "published" || v === "draft" ? v : "all";
 };
 
-const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+// "Il mio voto" è admin-only (voto personale); filtrato per i visitatori
+const SORT_OPTIONS: { value: SortKey; label: string; adminOnly?: boolean }[] = [
+  { value: "myRating", label: "Il mio voto", adminOnly: true },
   { value: "avgRating", label: "Valutazione" },
   { value: "reviews", label: "Recensioni" },
   { value: "createdAt", label: "Data" },
@@ -45,31 +47,61 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: "cookCount", label: "Volte cotta" },
 ];
 
+// Persistenza filtri: restano salvati anche tornando indietro dalla pagina di dettaglio
+const RK = "ricettario:recipe-list:";
+const SORT_KEYS = SORT_OPTIONS.map((o) => o.value);
+const parseStr = (raw: string): string => {
+  const v = JSON.parse(raw);
+  return typeof v === "string" ? v : "";
+};
+// Persiste solo la scelta ESPLICITA (null = nessuna). Il default effettivo lo deriva
+// il componente da isAdmin (admin → "myRating", visitatore → "avgRating"): così evitiamo
+// il caching del fallback dinamico di useLocalStore mentre isAdmin arriva async.
+const parseSortPref = (raw: string): SortKey | null => {
+  const v = JSON.parse(raw);
+  return SORT_KEYS.includes(v) ? v : null;
+};
+const parseOrder = (raw: string): "asc" | "desc" => (JSON.parse(raw) === "asc" ? "asc" : "desc");
+const parseNumArr = (raw: string): number[] => {
+  const v = JSON.parse(raw);
+  return Array.isArray(v) ? v.filter((x) => typeof x === "number") : [];
+};
+const parsePage = (raw: string): number => {
+  const v = JSON.parse(raw);
+  return Number.isInteger(v) && v >= 0 ? v : 0;
+};
+
 export function RecipeGrid({ recipes, categories, tags }: Props) {
   const { isAdmin } = useAuth();
-  const [q, setQ] = useState("");
-  const [activeCats, setActiveCats] = useState<number[]>([]);
-  const [activeTags, setActiveTags] = useState<number[]>([]);
-  const [sort, setSort] = useState<SortKey>("avgRating");
-  const [order, setOrder] = useState<"asc" | "desc">("desc");
+  const [q, setQ] = useLocalStore<string>(RK + "q", "", parseStr);
+  const [activeCats, setActiveCats] = useLocalStore<number[]>(RK + "cats", [], parseNumArr);
+  const [activeTags, setActiveTags] = useLocalStore<number[]>(RK + "tags", [], parseNumArr);
+  const [sortPref, setSort] = useLocalStore<SortKey | null>(RK + "sort", null, parseSortPref);
+  const [order, setOrder] = useLocalStore<"asc" | "desc">(RK + "order", "desc", parseOrder);
   const [publishedFilter, setPublishedFilter] = useLocalStore<PublishedFilter>(
     PUBLISHED_FILTER_KEY,
     "all",
     parsePublishedFilter
   );
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useLocalStore<number>(RK + "page", 0, parsePage);
   const [filterOpen, setFilterOpen] = useState(false);
   const [catDropdownOpen, setCatDropdownOpen] = useState(false);
   const [pendingCats, setPendingCats] = useState<number[]>([]);
   const [tagDropdownOpen, setTagDropdownOpen] = useState(false);
 
+  // Ordinamento di default: admin → "Il mio voto" personale, visitatore → "Valutazione".
+  // `sort` = scelta esplicita se presente, altrimenti il default derivato da isAdmin.
+  const defaultSort: SortKey = isAdmin ? "myRating" : "avgRating";
+  const sort: SortKey = sortPref ?? defaultSort;
+  const sortOptions = isAdmin ? SORT_OPTIONS : SORT_OPTIONS.filter((o) => !o.adminOnly);
+
   const resetPage = () => setPage(0);
   const isFilterActive =
-    sort !== "avgRating" || order !== "desc" || (isAdmin && publishedFilter !== "all");
+    sort !== defaultSort || order !== "desc" || (isAdmin && publishedFilter !== "all");
   const hasActiveFilters = activeCats.length > 0 || activeTags.length > 0;
 
   const toggleCat = (id: number) => {
-    setActiveCats((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+    setActiveCats(activeCats.includes(id) ? activeCats.filter((x) => x !== id) : [...activeCats, id]);
     resetPage();
   };
 
@@ -89,7 +121,7 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
   };
 
   const toggleTag = (id: number) => {
-    setActiveTags((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+    setActiveTags(activeTags.includes(id) ? activeTags.filter((x) => x !== id) : [...activeTags, id]);
     resetPage();
   };
 
@@ -111,6 +143,7 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
     // (null → 0, così le ricette senza voti/recensioni finiscono in fondo su "desc")
     const valueFor = (r: RecipeSummary): string | number => {
       if (sort === "name") return r.name;
+      if (sort === "myRating") return r.myRating ?? 0;
       if (sort === "avgRating") return r.avgRating ?? 0;
       if (sort === "reviews") return r._count.reviews;
       return r[sort] ?? 0;
@@ -129,7 +162,7 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
   const safePage = Math.min(page, Math.max(0, pageCount - 1));
   const paginated = filtered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
 
-  const toggleOrder = () => { setOrder((o) => (o === "asc" ? "desc" : "asc")); resetPage(); };
+  const toggleOrder = () => { setOrder(order === "asc" ? "desc" : "asc"); resetPage(); };
 
   return (
     <div className="space-y-5">
@@ -306,7 +339,7 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
             onChange={(e) => { setSort(e.target.value as SortKey); resetPage(); }}
             className="h-9 rounded-lg border border-white/40 bg-white/60 backdrop-blur-sm px-3 text-sm text-sky-950 focus:border-sky-400 focus:outline-none"
           >
-            {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            {sortOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
           <button
             onClick={toggleOrder}
@@ -540,7 +573,7 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
                 <div className="space-y-2.5">
                   <p className="text-[11px] font-semibold text-sky-600 uppercase tracking-wider">Ordina per</p>
                   <div className="grid grid-cols-2 gap-2">
-                    {SORT_OPTIONS.map((opt) => (
+                    {sortOptions.map((opt) => (
                       <button
                         key={opt.value}
                         onClick={() => { setSort(opt.value); resetPage(); }}

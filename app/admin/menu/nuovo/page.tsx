@@ -10,11 +10,7 @@ export default async function NuovoMenuPage() {
   if (!session) redirect("/login");
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-sky-50">Nuovo menù</h1>
-        <p className="text-sm text-sky-300/60 mt-0.5">Crea una raccolta di ricette per un&apos;occasione speciale</p>
-      </div>
+    <div className="mx-auto max-w-3xl space-y-6">
       <MenuForm />
     </div>
   );

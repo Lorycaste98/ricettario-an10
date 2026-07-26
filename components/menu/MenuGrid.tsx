@@ -8,15 +8,41 @@ import { Search, Plus, ArrowUpDown, ArrowUp, ArrowDown, X } from "lucide-react";
 import { MenuCard } from "./MenuCard";
 import { type MenuSummary } from "@/lib/types";
 import { useAuth } from "@/components/AuthProvider";
+import { useLocalStore } from "@/lib/local-store";
 
 const PAGE_SIZE = 12;
 
 type SortKey = "createdAt" | "name";
+type PublishedFilter = "all" | "published" | "draft";
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: "createdAt", label: "Data" },
   { value: "name", label: "Nome" },
 ];
+
+const PUBLISHED_OPTIONS: { value: PublishedFilter; label: string }[] = [
+  { value: "all", label: "Tutti" },
+  { value: "published", label: "Solo pronti" },
+  { value: "draft", label: "Solo non pronti" },
+];
+
+// Persistenza filtri: restano salvati anche tornando indietro dalla pagina di dettaglio
+const K = "ricettario:menu-list:";
+const parseStr = (raw: string): string => {
+  const v = JSON.parse(raw);
+  return typeof v === "string" ? v : "";
+};
+const parseSort = (raw: string): SortKey => (JSON.parse(raw) === "name" ? "name" : "createdAt");
+// Default: dalla più vecchia alla più recente (crescente)
+const parseOrder = (raw: string): "asc" | "desc" => (JSON.parse(raw) === "desc" ? "desc" : "asc");
+const parsePublished = (raw: string): PublishedFilter => {
+  const v = JSON.parse(raw);
+  return v === "published" || v === "draft" ? v : "all";
+};
+const parsePage = (raw: string): number => {
+  const v = JSON.parse(raw);
+  return Number.isInteger(v) && v >= 0 ? v : 0;
+};
 
 interface Props {
   menus: MenuSummary[];
@@ -24,14 +50,20 @@ interface Props {
 
 export function MenuGrid({ menus }: Props) {
   const { isAdmin } = useAuth();
-  const [q, setQ] = useState("");
-  const [sort, setSort] = useState<SortKey>("createdAt");
-  const [order, setOrder] = useState<"asc" | "desc">("desc");
-  const [page, setPage] = useState(0);
+  const [q, setQ] = useLocalStore<string>(K + "q", "", parseStr);
+  const [sort, setSort] = useLocalStore<SortKey>(K + "sort", "createdAt", parseSort);
+  const [order, setOrder] = useLocalStore<"asc" | "desc">(K + "order", "asc", parseOrder);
+  const [publishedFilter, setPublishedFilter] = useLocalStore<PublishedFilter>(
+    K + "published",
+    "all",
+    parsePublished
+  );
+  const [page, setPage] = useLocalStore<number>(K + "page", 0, parsePage);
   const [filterOpen, setFilterOpen] = useState(false);
 
   const resetPage = () => setPage(0);
-  const isFilterActive = sort !== "createdAt" || order !== "desc";
+  const isFilterActive =
+    sort !== "createdAt" || order !== "asc" || (isAdmin && publishedFilter !== "all");
 
   const filtered = useMemo(() => {
     let list = [...menus];
@@ -43,6 +75,9 @@ export function MenuGrid({ menus }: Props) {
           (m.description && m.description.toLowerCase().includes(lq))
       );
     }
+    // Visibilità (solo admin: i visitatori non ricevono mai i menù non pronti)
+    if (isAdmin && publishedFilter === "published") list = list.filter((m) => m.published);
+    else if (isAdmin && publishedFilter === "draft") list = list.filter((m) => !m.published);
 
     list.sort((a, b) => {
       const av = sort === "name" ? a.name : a[sort];
@@ -52,14 +87,14 @@ export function MenuGrid({ menus }: Props) {
       return 0;
     });
     return list;
-  }, [menus, q, sort, order]);
+  }, [menus, q, sort, order, isAdmin, publishedFilter]);
 
   const pageCount = Math.ceil(filtered.length / PAGE_SIZE);
   const safePage = Math.min(page, Math.max(0, pageCount - 1));
   const paginated = filtered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
 
   const toggleOrder = () => {
-    setOrder((o) => (o === "asc" ? "desc" : "asc"));
+    setOrder(order === "asc" ? "desc" : "asc");
     resetPage();
   };
 
@@ -99,8 +134,28 @@ export function MenuGrid({ menus }: Props) {
           )}
         </button>
 
-        {/* Desktop: sort + order */}
+        {/* Desktop: visibilità (solo admin) + sort + order */}
         <div className="hidden sm:flex items-center gap-2 shrink-0">
+          {/* Visibilità (solo admin) */}
+          {isAdmin && (
+            <div className="flex h-9 items-center rounded-lg border border-white/40 bg-white/60 backdrop-blur-sm p-0.5">
+              {PUBLISHED_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => { setPublishedFilter(opt.value); resetPage(); }}
+                  className={clsx(
+                    "h-full rounded-md px-2.5 text-xs font-medium transition-colors whitespace-nowrap",
+                    publishedFilter === opt.value
+                      ? "bg-orange-500 text-white shadow-sm"
+                      : "text-sky-800 hover:bg-white/70"
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          )}
+
           <select
             value={sort}
             onChange={(e) => {
@@ -149,7 +204,7 @@ export function MenuGrid({ menus }: Props) {
 
       {/* Grid */}
       {paginated.length > 0 ? (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 sm:gap-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
           {paginated.map((m) => (
             <MenuCard key={m.id} menu={m} />
           ))}
@@ -160,10 +215,11 @@ export function MenuGrid({ menus }: Props) {
           <p className="font-medium text-sky-950 [text-shadow:0_1px_3px_rgba(255,255,255,0.6)]">
             Nessun menù trovato
           </p>
-          {q && (
+          {(q || (isAdmin && publishedFilter !== "all")) && (
             <button
               onClick={() => {
                 setQ("");
+                setPublishedFilter("all");
                 resetPage();
               }}
               className="text-sm font-semibold text-orange-700 hover:underline"
@@ -238,6 +294,31 @@ export function MenuGrid({ menus }: Props) {
 
               {/* Scrollable body */}
               <div className="flex-1 overflow-y-auto overscroll-contain px-6 py-5 space-y-6">
+                {/* Visibilità (solo admin) */}
+                {isAdmin && (
+                  <div className="space-y-2.5">
+                    <p className="text-[11px] font-semibold text-sky-600 uppercase tracking-wider">
+                      Visibilità
+                    </p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {PUBLISHED_OPTIONS.map((opt) => (
+                        <button
+                          key={opt.value}
+                          onClick={() => { setPublishedFilter(opt.value); resetPage(); }}
+                          className={clsx(
+                            "rounded-xl border px-2 py-2.5 text-xs font-medium transition-all",
+                            publishedFilter === opt.value
+                              ? "border-orange-400 bg-orange-50 text-orange-700"
+                              : "border-sky-100 bg-sky-50/50 text-sky-900"
+                          )}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-2.5">
                   <p className="text-[11px] font-semibold text-sky-600 uppercase tracking-wider">
                     Ordina per

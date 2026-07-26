@@ -1,10 +1,10 @@
 "use client";
 import { useMemo, useState } from "react";
-import Link from "next/link";
-import { MessageSquareHeart, Star } from "lucide-react";
-import { SectionHeader } from "@/components/ui/SectionHeader";
+import { MessageSquareHeart, ChevronDown } from "lucide-react";
 import { ReviewBubble } from "@/components/recipe/ReviewBubble";
 import { ReviewCarousel } from "@/components/recipe/ReviewCarousel";
+import { RatingCountBadge, ReviewsSummary } from "@/components/recipe/ReviewStats";
+import { Collapsible } from "@/components/ui/Collapsible";
 import { ConfirmModal } from "@/components/ui/Modal";
 import type { MenuRecipeReview } from "@/lib/types";
 
@@ -34,6 +34,8 @@ export function MenuReceivedReviews({ initialReviews, avgRating }: { initialRevi
   const [reviews, setReviews] = useState(initialReviews);
   const [deleting, setDeleting] = useState<number | null>(null);
   const [confirmId, setConfirmId] = useState<number | null>(null);
+  // Card recensioni: dropdown generico, aperto di default
+  const [open, setOpen] = useState(true);
 
   const groups = useMemo(() => groupByRecipe(reviews), [reviews]);
 
@@ -48,54 +50,57 @@ export function MenuReceivedReviews({ initialReviews, avgRating }: { initialRevi
   };
 
   return (
-    <section className="space-y-4 rounded-2xl border border-white/40 bg-white/60 p-5 shadow-sm backdrop-blur-sm sm:p-6">
-      <SectionHeader
-        title="Recensioni ricevute"
-        icon={<MessageSquareHeart size={20} />}
-        tone="orange"
-        size="lg"
-        hint={avgRating != null ? `Media ${avgRating}/10 su ${reviews.length}` : undefined}
-      />
-      <div className="space-y-5">
-        {groups.map((group) => (
-          <div key={group.recipe.id} className="space-y-2.5">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              {group.recipe.quick ? (
-                <span className="text-sm font-bold text-sky-950">{group.recipe.name}</span>
-              ) : (
-                <Link
-                  href={`/ricette/${group.recipe.id}`}
-                  className="text-sm font-bold text-sky-950 transition-colors active:text-orange-600 sm:hover:text-orange-600"
-                >
-                  {group.recipe.name}
-                </Link>
-              )}
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
-                <Star size={11} fill="currentColor" className="text-amber-400" />
-                {group.avg}/10
-                <span className="text-sky-600/70">
-                  · {group.reviews.length} recension{group.reviews.length === 1 ? "e" : "i"}
-                </span>
-              </span>
-            </div>
+    <section className="rounded-2xl border border-white/40 bg-white/60 p-5 shadow-sm backdrop-blur-sm sm:p-6">
+      {/* Header = toggle del dropdown generico (aperto di default) */}
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-2.5 text-left sm:gap-3"
+      >
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-rose-400 to-pink-500 text-white shadow-md shadow-rose-500/30">
+          <MessageSquareHeart size={20} />
+        </span>
+        <h2 className="min-w-0 flex-1 truncate text-lg font-bold text-sky-950 sm:text-xl">Recensioni</h2>
+        {avgRating != null && <ReviewsSummary avg={avgRating} count={reviews.length} />}
+        <ChevronDown
+          size={18}
+          className={`shrink-0 text-sky-500 transition-transform duration-300 ${open ? "rotate-180" : ""}`}
+        />
+      </button>
 
-            {/* Recensioni della ricetta in carosello (frecce + sfumature ai bordi) */}
-            <ReviewCarousel>
-              {group.reviews.map((r) => (
-                <div key={r.id} className="w-[230px] shrink-0 snap-start sm:w-[250px]">
-                  <ReviewBubble
-                    nickname={r.nickname}
-                    rating={r.rating}
-                    comment={r.comment}
-                    createdAt={r.createdAt}
-                    isAdmin
-                    onDelete={() => setConfirmId(r.id)}
-                  />
-                </div>
-              ))}
-            </ReviewCarousel>
+      <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+        {/* Un dropdown per ricetta (chiuso di default): chiuso mostra ricetta + media + n° recensioni */}
+        <div className="overflow-hidden" inert={!open || undefined}>
+          <div className="space-y-2.5 pt-5">
+            {groups.map((group) => (
+            <Collapsible
+              key={group.recipe.id}
+              header={
+                <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <span className="text-sm font-bold text-sky-950">{group.recipe.name}</span>
+                  <RatingCountBadge avg={group.avg} count={group.reviews.length} />
+                </span>
+              }
+            >
+              <ReviewCarousel>
+                {group.reviews.map((r) => (
+                  <div key={r.id} className="w-[230px] shrink-0 snap-start sm:w-[250px]">
+                    <ReviewBubble
+                      nickname={r.nickname}
+                      rating={r.rating}
+                      comment={r.comment}
+                      createdAt={r.createdAt}
+                      isAdmin
+                      onDelete={() => setConfirmId(r.id)}
+                    />
+                  </div>
+                ))}
+              </ReviewCarousel>
+            </Collapsible>
+          ))}
           </div>
-        ))}
+        </div>
       </div>
 
       <ConfirmModal

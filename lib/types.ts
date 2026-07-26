@@ -26,10 +26,19 @@ export interface RecipeSummary {
   /** Ricetta "veloce": solo nome, senza scheda. Esclusa da libreria/ricerca, nessuna pagina di dettaglio. */
   quick: boolean;
   createdAt: string;
+  /** Media delle recensioni ospiti (dai link menù); NON include il voto personale dell'admin. */
   avgRating: number | null;
+  /** Voto personale (1-10) dell'admin loggato su questa ricetta; null = non votata / visitatore. */
+  myRating: number | null;
   categories: Category[];
   tags: Tag[];
   _count: { reviews: number };
+}
+
+/** Voto personale dell'admin su una ricetta (uno per account): 1-10 + nota opzionale. */
+export interface PersonalRating {
+  rating: number;
+  note: string | null;
 }
 
 export interface Ingredient {
@@ -108,11 +117,30 @@ export interface MenuSummary {
   description: string | null;
   date: string | null;
   servingTime: string | null;
+  /** Persone previste per il menù (opzionale, informativo). */
+  people: number | null;
   photo: string | null;
+  /** false = "non pronto", nascosto ai visitatori (visibile solo all'admin, offuscato) */
+  published: boolean;
   createdAt: string;
   avgRating: number | null;
   _count: { reviews: number; recipes: number };
   previewPhotos: string[];
+}
+
+/** Voce di costo generica di un menù ("altri costi"). */
+export interface MenuCostLine {
+  id: number;
+  label: string;
+  amount: number;
+}
+
+/** Ingrediente "extra" aggiunto a mano alla lista spesa di un menù. */
+export interface MenuExtraItem {
+  id: number;
+  name: string;
+  qty: number | null;
+  unit: string | null;
 }
 
 export interface MenuDetail extends MenuSummary {
@@ -121,9 +149,26 @@ export interface MenuDetail extends MenuSummary {
   reviewToken: string;
   recipes: Array<{
     order: number;
+    /** Porzioni scelte per questa ricetta nel menù (override del default della ricetta); null = default. */
+    servings: number | null;
     recipe: RecipeSummary;
   }>;
   recipeReviews: MenuRecipeReview[];
+  // Campi admin-only (Costi + nota + extra lista spesa); null/[] per i visitatori.
+  /** Nota admin del menù (privata). */
+  notes: string | null;
+  /** Totale speso per la spesa alimentari (dalla lista spesa). */
+  groceryCost: number | null;
+  /** Ore di manodopera. */
+  laborHours: number | null;
+  /** Prezzo orario della manodopera (€/h). */
+  laborRate: number | null;
+  /** Ricarico % scelto per il prezzo di vendita. */
+  markupPercent: number | null;
+  /** Voci di costo generiche ("altri costi"). */
+  costs: MenuCostLine[];
+  /** Ingredienti "extra" della lista spesa (non presenti nelle ricette). */
+  extraItems: MenuExtraItem[];
 }
 
 // Utility

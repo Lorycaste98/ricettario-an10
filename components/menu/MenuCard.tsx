@@ -1,7 +1,10 @@
+"use client";
 import Link from "next/link";
 import Image from "next/image";
+import { clsx } from "clsx";
 import type { MenuSummary } from "@/lib/types";
-import { UtensilsCrossed, Star, BookOpen, CalendarDays } from "lucide-react";
+import { UtensilsCrossed, Star, BookOpen, CalendarDays, EyeOff, Users } from "lucide-react";
+import { useAuth } from "@/components/AuthProvider";
 
 function formatDate(d: string | null) {
   if (!d) return null;
@@ -12,20 +15,38 @@ function formatDate(d: string | null) {
   });
 }
 
+/** Pill voto (oro) — identica alla RecipeCard per omogeneità. */
+function RatingPill({ avg, count }: { avg: number; count: number }) {
+  return (
+    <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-amber-400/20 px-1.5 py-0.5 text-amber-300 shadow-sm">
+      <Star size={11} className="fill-current" />
+      <span className="text-xs font-bold leading-none">{avg.toFixed(1)}</span>
+      <span className="text-[10px] leading-none text-amber-200/70">({count})</span>
+    </span>
+  );
+}
+
 export function MenuCard({ menu }: { menu: MenuSummary }) {
+  const { isAdmin } = useAuth();
   const photos = menu.previewPhotos.slice(0, 4);
   const date = formatDate(menu.date);
+  const hasRating = menu._count.reviews > 0 && menu.avgRating !== null;
+  // Menù "non pronto": visibile solo all'admin, offuscato + badge (come RecipeCard)
+  const isHidden = isAdmin && !menu.published;
 
   return (
     <Link
       href={`/menu/${menu.id}`}
-      className="group relative flex flex-col overflow-hidden rounded-2xl bg-zinc-900 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
+      className={clsx(
+        "group relative flex flex-col overflow-hidden rounded-2xl bg-zinc-900 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300",
+        isHidden && "opacity-55 hover:opacity-100 ring-1 ring-dashed ring-white/30"
+      )}
     >
-      {/* Image collage or single photo */}
+      {/* Image area — l'aspect ratio fisso rende tutte le card della stessa altezza */}
       <div className="relative aspect-4/3 overflow-hidden">
         {photos.length === 0 ? (
-          <div className="flex h-full items-center justify-center bg-sky-950/80">
-            <UtensilsCrossed size={48} className="text-sky-400/50" />
+          <div className="flex h-full items-center justify-center bg-zinc-800">
+            <UtensilsCrossed size={48} className="text-sky-400/40" />
           </div>
         ) : photos.length === 1 ? (
           <Image
@@ -50,43 +71,48 @@ export function MenuCard({ menu }: { menu: MenuSummary }) {
                   />
                 </div>
               ) : (
-                <div key={i} className="bg-sky-950/60" />
+                <div key={i} className="bg-zinc-800" />
               )
             )}
           </div>
         )}
 
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-linear-to-t from-black/85 via-black/25 to-transparent" />
+        {/* Sottile sfumatura in alto per la leggibilità dei badge */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-linear-to-b from-black/45 to-transparent" />
 
-        {/* Recipes count badge */}
-        <div className="absolute top-2.5 right-2.5">
-          <span className="flex items-center gap-1 rounded-full bg-black/50 px-2.5 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">
-            <BookOpen size={9} />
-            {menu._count.recipes} ricette
-          </span>
-        </div>
+        {/* Badge "non pronto" (solo admin) */}
+        {isHidden && (
+          <div className="absolute top-2.5 left-2.5">
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/90 px-2 py-0.5 text-[10px] font-semibold text-white shadow backdrop-blur-sm">
+              <EyeOff size={10} /> Non pronto
+            </span>
+          </div>
+        )}
 
-        {/* Bottom info */}
-        <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-3">
-          <h3 className="text-xs sm:text-sm font-bold text-white leading-snug line-clamp-2 drop-shadow group-hover:text-orange-300 transition-colors">
-            {menu.name}
-          </h3>
-          {menu.description && (
-            <p className="mt-0.5 text-[10px] sm:text-[11px] text-white/70 line-clamp-1">{menu.description}</p>
-          )}
-          <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-            {menu.avgRating !== null && (
-              <span className="flex items-center gap-0.5 text-amber-300 text-[10px] sm:text-xs">
-                <Star size={9} fill="currentColor" />
-                <span className="font-semibold">{menu.avgRating.toFixed(1)}</span>
-                <span className="text-white/60">({menu._count.reviews})</span>
+        {/* Pannello info frosted: sopra la foto, ma la foto resta visibile (blur) */}
+        <div className="absolute inset-x-0 bottom-0 flex flex-col gap-1 border-t border-white/10 bg-black/30 px-2.5 py-2 backdrop-blur-md sm:px-3">
+          <div className="flex items-start justify-between gap-2">
+            <h3
+              title={menu.name}
+              className="min-h-[2.75em] text-xs sm:text-sm font-bold text-white leading-snug line-clamp-2 drop-shadow group-hover:text-orange-300 transition-colors"
+            >
+              {menu.name}
+            </h3>
+            {hasRating && <RatingPill avg={menu.avgRating!} count={menu._count.reviews} />}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[10px] sm:text-[11px] text-white/85">
+            <span className="flex items-center gap-1">
+              <BookOpen size={12} className="shrink-0" /> {menu._count.recipes} ricette
+            </span>
+            {date && (
+              <span className="flex items-center gap-1">
+                <CalendarDays size={12} className="shrink-0" /> {date}
               </span>
             )}
-            {date && (
-              <span className="flex items-center gap-0.5 text-[10px] sm:text-[11px] text-white/70">
-                <CalendarDays size={9} />
-                {date}
+            {menu.people != null && (
+              <span className="flex items-center gap-1">
+                <Users size={12} className="shrink-0" /> {menu.people} pers.
               </span>
             )}
           </div>
@@ -95,4 +121,3 @@ export function MenuCard({ menu }: { menu: MenuSummary }) {
     </Link>
   );
 }
-

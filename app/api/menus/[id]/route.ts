@@ -1,12 +1,13 @@
 /**
  * GET    /api/menus/[id]  — dettaglio menu
  * PUT    /api/menus/[id]  — aggiorna menu (admin)
+ * PATCH  /api/menus/[id]  — aggiorna la sola visibilità `published` (admin)
  * DELETE /api/menus/[id]  — elimina menu (admin)
  */
 
 import { type NextRequest } from "next/server";
 import { db } from "@/lib/db";
-import { recipeSummarySelect, ok, err } from "@/lib/api";
+import { recipeSummarySelect, ok, err, normalizePeople, normalizeMoney, normalizeMenuRecipes } from "@/lib/api";
 import { attachRecipeRatings, revalidateMenus } from "@/lib/queries";
 import { getSession, requireAdmin } from "@/lib/session";
 
@@ -20,7 +21,9 @@ const menuDetailSelect = (isAdmin: boolean) =>
     description: true,
     date: true,
     servingTime: true,
+    people: true,
     photo: true,
+    published: true,
     createdAt: true,
     updatedAt: true,
     _count: { select: { recipeReviews: true, recipes: true } },
@@ -32,6 +35,7 @@ const menuDetailSelect = (isAdmin: boolean) =>
       where: isAdmin ? {} : { recipe: { published: true } },
       select: {
         order: true,
+        servings: true,
         recipe: { select: recipeSummarySelect },
       },
       orderBy: { order: "asc" as const },
@@ -49,6 +53,8 @@ export async function GET(_req: NextRequest, { params }: Params) {
     select: menuDetailSelect(isAdmin),
   });
   if (!menu) return err("Menu non trovato", 404);
+  // Menù "non pronto": invisibile ai visitatori
+  if (!isAdmin && !menu.published) return err("Menu non trovato", 404);
 
   const reviews = menu.recipeReviews as { rating: number }[];
   const avgRating =
@@ -69,8 +75,9 @@ export async function GET(_req: NextRequest, { params }: Params) {
     _count: { reviews: menu._count.recipeReviews, recipes: menu.recipes.length },
     avgRating,
     previewPhotos,
-    recipes: menu.recipes.map((mr: { order: number }, i: number) => ({
+    recipes: menu.recipes.map((mr: { order: number; servings: number | null }, i: number) => ({
       order: mr.order,
+      servings: mr.servings,
       recipe: rated[i],
     })),
   });
@@ -96,11 +103,16 @@ export async function PUT(request: NextRequest, { params }: Params) {
     description?: string;
     date?: string | null;
     servingTime?: string | null;
+    people?: number | null;
     photo?: string | null;
+    published?: boolean;
     recipeIds?: number[];
+    recipes?: { recipeId: number; servings?: number | null }[];
   };
 
   if (!b.name?.trim()) return err("Il campo 'name' è obbligatorio");
+
+  const recipeRows = normalizeMenuRecipes(b.recipes, b.recipeIds);
 
   // Replace recipes: preserva i cookStartAt pianificati (timeline modalità cucina)
   // per le ricette che restano nel menù, altrimenti il delete-recreate li azzererebbe
@@ -118,12 +130,15 @@ export async function PUT(request: NextRequest, { params }: Params) {
       description: b.description?.trim() || null,
       date: b.date ? new Date(b.date) : null,
       servingTime: b.date ? (b.servingTime?.trim() || null) : null,
+      people: normalizePeople(b.people),
       photo: b.photo?.trim() || null,
+      ...(typeof b.published === "boolean" ? { published: b.published } : {}),
       recipes: {
-        create: (b.recipeIds ?? []).map((recipeId, idx) => ({
-          recipeId,
+        create: recipeRows.map((r, idx) => ({
+          recipeId: r.recipeId,
           order: idx,
-          cookStartAt: prevStarts.get(recipeId) ?? null,
+          servings: r.servings,
+          cookStartAt: prevStarts.get(r.recipeId) ?? null,
         })),
       },
     },
@@ -131,6 +146,46 @@ export async function PUT(request: NextRequest, { params }: Params) {
   });
 
   revalidateMenus();
+  return ok(menu);
+}
+
+export async function PATCH(request: NextRequest, { params }: Params) {
+  const guard = await requireAdmin();
+  if (guard) return guard;
+
+  const { id } = await params;
+  const menuId = Number(id);
+  if (isNaN(menuId)) return err("ID non valido", 400);
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return err("Body JSON non valido");
+  }
+
+  const b = body as {
+    published?: boolean;
+    notes?: string | null;
+    groceryCost?: number | null;
+  };
+
+  // Update parziale dei campi scalari admin: aggiorna solo le chiavi presenti nel body
+  const data: { published?: boolean; notes?: string | null; groceryCost?: number | null } = {};
+  if (typeof b.published === "boolean") data.published = b.published;
+  if ("notes" in b) data.notes = b.notes?.trim() || null;
+  if ("groceryCost" in b) data.groceryCost = normalizeMoney(b.groceryCost);
+
+  if (Object.keys(data).length === 0) return err("Nessun campo aggiornabile nel body");
+
+  const menu = await db.menu.update({
+    where: { id: menuId },
+    data,
+    select: { id: true, published: true },
+  });
+
+  // La visibilità cambia le liste/anteprime cachate; note/costi sono admin-only (non cachati)
+  if ("published" in data) revalidateMenus();
   return ok(menu);
 }
 

@@ -94,3 +94,53 @@ export function parseDateOnly(value?: string | null): Date | undefined {
   return isNaN(d.getTime()) ? undefined : d;
 }
 
+/** Intero positivo o `null` (per campi porzioni/persone opzionali dei menù). */
+export function normalizePeople(value?: number | null): number | null {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : null;
+}
+
+/**
+ * Importo in € ≥ 0 arrotondato a 2 decimali, oppure `null` (campo assente/vuoto/non valido).
+ * Usato dai campi monetari dei menù (spesa, prezzo orario, voci di costo).
+ */
+export function normalizeMoney(value?: number | null): number | null {
+  const n = Number(value);
+  return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : null;
+}
+
+/** Numero di ore ≥ 0 (manodopera), max 2 decimali, oppure `null`. */
+export function normalizeHours(value?: number | null): number | null {
+  const n = Number(value);
+  return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : null;
+}
+
+/** Percentuale ≥ 0 (ricarico), max 2 decimali, oppure `null`. */
+export function normalizePercent(value?: number | null): number | null {
+  const n = Number(value);
+  return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : null;
+}
+
+/**
+ * Normalizza le ricette di un menù in `{recipeId, servings}[]` (ordine preservato).
+ * Accetta la forma ricca `recipes` (con override porzioni) o, in fallback, la
+ * vecchia `recipeIds` (senza porzioni). Scarta id non validi e duplicati.
+ */
+export function normalizeMenuRecipes(
+  recipes?: { recipeId: number; servings?: number | null }[],
+  recipeIds?: number[]
+): { recipeId: number; servings: number | null }[] {
+  const raw = recipes?.length
+    ? recipes
+    : (recipeIds ?? []).map((recipeId) => ({ recipeId, servings: null }));
+  const seen = new Set<number>();
+  const out: { recipeId: number; servings: number | null }[] = [];
+  for (const r of raw) {
+    const id = Number(r.recipeId);
+    if (!Number.isInteger(id) || seen.has(id)) continue;
+    seen.add(id);
+    out.push({ recipeId: id, servings: normalizePeople(r.servings) });
+  }
+  return out;
+}
+

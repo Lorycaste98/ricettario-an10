@@ -33,9 +33,11 @@ export default async function ModificaMenuPage({ params }: Params) {
       description: true,
       date: true,
       servingTime: true,
+      people: true,
       photo: true,
+      published: true,
       recipes: {
-        select: { recipeId: true },
+        select: { recipeId: true, servings: true },
         orderBy: { order: "asc" },
       },
     },
@@ -48,16 +50,19 @@ export default async function ModificaMenuPage({ params }: Params) {
     description: menu.description,
     date: menu.date ? menu.date.toISOString() : null,
     servingTime: menu.servingTime,
+    people: menu.people,
     photo: menu.photo,
+    published: menu.published,
     recipeIds: menu.recipes.map((r: { recipeId: number }) => r.recipeId),
+    recipeServings: Object.fromEntries(
+      menu.recipes
+        .filter((r: { servings: number | null }) => r.servings != null)
+        .map((r: { recipeId: number; servings: number | null }) => [r.recipeId, r.servings])
+    ) as Record<number, number | null>,
   };
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-sky-50">Modifica menù</h1>
-        <p className="text-sm text-sky-300/60 mt-0.5 truncate">{menu.name}</p>
-      </div>
+    <div className="mx-auto max-w-3xl space-y-6">
       <MenuForm initialData={initialData} />
     </div>
   );

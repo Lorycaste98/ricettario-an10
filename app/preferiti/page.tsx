@@ -7,8 +7,8 @@ import type { Metadata } from "next";
 export const metadata: Metadata = { title: "Preferiti — Ricettario" };
 
 export default async function PreferitiPage() {
-  const isAdmin = !!(await getSession());
-  const recipes = await getRecipeSummaries(isAdmin);
+  const session = await getSession();
+  const recipes = await getRecipeSummaries(session?.adminId ?? null);
 
   return (
     <div>

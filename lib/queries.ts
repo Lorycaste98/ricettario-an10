@@ -46,7 +46,8 @@ export async function attachRecipeRatings<T extends { id: number }>(rows: T[]) {
   if (rows.length === 0) return [];
   const grouped = await db.review.groupBy({
     by: ["recipeId"],
-    where: { recipeId: { in: rows.map((r) => r.id) } },
+    // Solo recensioni ospiti (dai link menù): il voto personale dell'admin vive in RecipeRating
+    where: { recipeId: { in: rows.map((r) => r.id) }, menuId: { not: null } },
     _avg: { rating: true },
   });
   const avgById = new Map<number, number | null>(
@@ -61,6 +62,8 @@ export async function attachRecipeRatings<T extends { id: number }>(rows: T[]) {
       createdAt:
         flat.createdAt instanceof Date ? flat.createdAt.toISOString() : flat.createdAt,
       avgRating: avg != null ? Math.round(avg * 10) / 10 : null,
+      // Voto personale: attaccato solo per l'admin loggato in queryRecipeSummaries; default null
+      myRating: null as number | null,
     };
   });
 }
@@ -68,13 +71,25 @@ export async function attachRecipeRatings<T extends { id: number }>(rows: T[]) {
 // ---------------------------------------------------------------------------
 // Ricette — riepiloghi
 // ---------------------------------------------------------------------------
-async function queryRecipeSummaries(where: Record<string, unknown> | undefined) {
+async function queryRecipeSummaries(
+  where: Record<string, unknown> | undefined,
+  adminId: number | null = null
+) {
   const rows = await db.recipe.findMany({
     where,
     select: recipeSummarySelect,
     orderBy: { createdAt: "desc" },
   });
-  return attachRecipeRatings(rows);
+  const summaries = await attachRecipeRatings(rows);
+  if (adminId == null) return summaries;
+
+  // Voto personale dell'admin loggato (uno per ricetta): attacca `myRating`
+  const mine = await db.recipeRating.findMany({
+    where: { adminId, recipeId: { in: rows.map((r) => r.id) } },
+    select: { recipeId: true, rating: true },
+  });
+  const myById = new Map(mine.map((m) => [m.recipeId, m.rating]));
+  return summaries.map((s) => ({ ...s, myRating: myById.get(s.id) ?? null }));
 }
 
 const getCachedRecipeSummaries = unstable_cache(
@@ -83,9 +98,14 @@ const getCachedRecipeSummaries = unstable_cache(
   { tags: [RECIPES_TAG], revalidate: REVALIDATE_SECONDS }
 );
 
-/** Lista completa per /ricette e /preferiti. Admin: fresca e con le non pronte (mai le "veloci"). */
-export function getRecipeSummaries(isAdmin: boolean) {
-  return isAdmin ? queryRecipeSummaries({ quick: false }) : getCachedRecipeSummaries();
+/**
+ * Lista completa per /ricette e /preferiti. Admin: fresca, con le non pronte (mai le "veloci")
+ * e con il proprio voto personale (`myRating`). Visitatore (`adminId` null): cache condivisa.
+ */
+export function getRecipeSummaries(adminId: number | null) {
+  return adminId != null
+    ? queryRecipeSummaries({ quick: false }, adminId)
+    : getCachedRecipeSummaries();
 }
 
 /** Ultime 4 ricette pubblicate per la home (sempre visitatore). */
@@ -112,7 +132,9 @@ function processMenuRow(m: {
   description: string | null;
   date: Date | null;
   servingTime: string | null;
+  people: number | null;
   photo: string | null;
+  published: boolean;
   createdAt: Date;
   _count: { recipeReviews: number; recipes: number };
   recipeReviews: { rating: number }[];
@@ -135,7 +157,9 @@ function processMenuRow(m: {
     description: m.description,
     date: m.date ? m.date.toISOString() : null,
     servingTime: m.servingTime,
+    people: m.people,
     photo: m.photo,
+    published: m.published,
     createdAt: m.createdAt.toISOString(),
     _count: { reviews: m._count.recipeReviews, recipes: m._count.recipes },
     avgRating,
@@ -143,8 +167,10 @@ function processMenuRow(m: {
   };
 }
 
-async function queryMenuSummaries(take?: number) {
+async function queryMenuSummaries(take?: number, isAdmin = false) {
   const menus = await db.menu.findMany({
+    // I menù "non pronti" restano nascosti ai visitatori (come le ricette)
+    where: isAdmin ? undefined : { published: true },
     orderBy: { createdAt: "desc" },
     ...(take ? { take } : {}),
     select: {
@@ -153,7 +179,9 @@ async function queryMenuSummaries(take?: number) {
       description: true,
       date: true,
       servingTime: true,
+      people: true,
       photo: true,
+      published: true,
       createdAt: true,
       _count: { select: { recipeReviews: true, recipes: true } },
       recipeReviews: { select: { rating: true } },
@@ -169,14 +197,18 @@ async function queryMenuSummaries(take?: number) {
   return menus.map(processMenuRow);
 }
 
-/** Lista completa menù per /menu. */
-export const getMenuSummaries = unstable_cache(
+const getCachedMenuSummaries = unstable_cache(
   () => queryMenuSummaries(),
   ["menu-summaries"],
   { tags: [MENUS_TAG], revalidate: REVALIDATE_SECONDS }
 );
 
-/** Ultimi 4 menù per la home. */
+/** Lista completa menù per /menu. Admin: fresca e con i "non pronti". */
+export function getMenuSummaries(isAdmin: boolean) {
+  return isAdmin ? queryMenuSummaries(undefined, true) : getCachedMenuSummaries();
+}
+
+/** Ultimi 4 menù pubblicati per la home (sempre visitatore). */
 export const getHomeMenus = unstable_cache(
   () => queryMenuSummaries(4),
   ["home-menus"],
@@ -195,10 +227,24 @@ async function queryMenuDetail(id: number, isAdmin: boolean) {
       description: true,
       date: true,
       servingTime: true,
+      people: true,
       photo: true,
+      published: true,
       createdAt: true,
       updatedAt: true,
       reviewToken: true,
+      // Sezione Costi + nota + extra lista spesa: solo admin (come gli ingredienti sotto)
+      ...(isAdmin
+        ? {
+            notes: true,
+            groceryCost: true,
+            laborHours: true,
+            laborRate: true,
+            markupPercent: true,
+            costs: { select: { id: true, label: true, amount: true }, orderBy: { order: "asc" as const } },
+            extraItems: { select: { id: true, name: true, qty: true, unit: true }, orderBy: { order: "asc" as const } },
+          }
+        : {}),
       // Recensioni ricetta arrivate tramite il link di questo menù (vedi /recensisci/[token])
       recipeReviews: {
         select: {
@@ -212,6 +258,8 @@ async function queryMenuDetail(id: number, isAdmin: boolean) {
         where: isAdmin ? {} : { recipe: { published: true } },
         select: {
           order: true,
+          // Porzioni override del menù (per scalare gli ingredienti nella lista spesa)
+          servings: true,
           recipe: {
             select: {
               ...recipeSummarySelect,
@@ -228,6 +276,8 @@ async function queryMenuDetail(id: number, isAdmin: boolean) {
     },
   });
   if (!menu) return null;
+  // Menù "non pronto": invisibile ai visitatori (→ notFound), visibile all'admin
+  if (!isAdmin && !menu.published) return null;
 
   const avgRating =
     menu.recipeReviews.length > 0
@@ -237,17 +287,39 @@ async function queryMenuDetail(id: number, isAdmin: boolean) {
       : null;
 
   const rated = await attachRecipeRatings(menu.recipes.map((mr) => mr.recipe));
-  const recipes = menu.recipes.map((mr, i) => ({ order: mr.order, recipe: rated[i] }));
+  // `servings` = porzioni scelte per il menù (override); `recipe.servings` = default della ricetta
+  const recipes = menu.recipes.map((mr, i) => ({ order: mr.order, servings: mr.servings, recipe: rated[i] }));
 
-  // Lista della spesa: solo per l'admin (vedi select condizionale sopra)
+  // Lista della spesa: solo per l'admin (vedi select condizionale sopra).
+  // Le quantità sono scalate se il menù imposta porzioni diverse dal default della ricetta.
   const shoppingList: ShoppingListItem[] | null = isAdmin
     ? buildShoppingList(
-        recipes.map(({ recipe }) => ({
-          name: recipe.name as string,
-          ingredients: (recipe as unknown as { ingredients?: { name: string; qty: number | null; unit: string | null; optional: boolean }[] }).ingredients ?? [],
-        }))
+        recipes.map(({ servings, recipe }) => {
+          const ings =
+            (recipe as unknown as { ingredients?: { name: string; qty: number | null; unit: string | null; optional: boolean }[] }).ingredients ?? [];
+          const base = (recipe as unknown as { servings: number | null }).servings;
+          const factor = servings && base && base > 0 ? servings / base : 1;
+          return {
+            name: recipe.name as string,
+            ingredients:
+              factor === 1
+                ? ings
+                : ings.map((i) => ({ ...i, qty: i.qty != null ? Math.round(i.qty * factor * 100) / 100 : null })),
+          };
+        })
       )
     : null;
+
+  // Campi admin-only (Costi + nota + extra lista spesa): presenti nel select solo se isAdmin
+  const admin = menu as unknown as {
+    notes: string | null;
+    groceryCost: number | null;
+    laborHours: number | null;
+    laborRate: number | null;
+    markupPercent: number | null;
+    costs: { id: number; label: string; amount: number }[];
+    extraItems: { id: number; name: string; qty: number | null; unit: string | null }[];
+  };
 
   return {
     id: menu.id,
@@ -255,7 +327,9 @@ async function queryMenuDetail(id: number, isAdmin: boolean) {
     description: menu.description,
     date: menu.date ? menu.date.toISOString() : null,
     servingTime: menu.servingTime,
+    people: menu.people,
     photo: menu.photo,
+    published: menu.published,
     createdAt: menu.createdAt.toISOString(),
     updatedAt: menu.updatedAt.toISOString(),
     reviewToken: menu.reviewToken,
@@ -263,6 +337,14 @@ async function queryMenuDetail(id: number, isAdmin: boolean) {
     _count: { reviews: menu.recipeReviews.length, recipes: menu.recipes.length },
     recipes,
     shoppingList,
+    // Solo admin (altrimenti i campi non sono nel select)
+    notes: isAdmin ? admin.notes : null,
+    groceryCost: isAdmin ? admin.groceryCost : null,
+    laborHours: isAdmin ? admin.laborHours : null,
+    laborRate: isAdmin ? admin.laborRate : null,
+    markupPercent: isAdmin ? admin.markupPercent : null,
+    costs: isAdmin ? admin.costs : [],
+    extraItems: isAdmin ? admin.extraItems : [],
     recipeReviews: menu.recipeReviews.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() })),
   };
 }

@@ -2,15 +2,12 @@
 import { useMemo, useState } from "react";
 import { MessageSquareHeart, CalendarDays, ChevronDown } from "lucide-react";
 import { type Review } from "@/lib/types";
-import { Button } from "@/components/ui/Button";
-import { Textarea } from "@/components/ui/Input";
-import { RatingInput } from "@/components/ui/Rating";
 import { useAuth } from "@/components/AuthProvider";
 import { ConfirmModal } from "@/components/ui/Modal";
+import { Collapsible } from "@/components/ui/Collapsible";
 import { ReviewBubble } from "@/components/recipe/ReviewBubble";
 import { ReviewCarousel } from "@/components/recipe/ReviewCarousel";
-
-const MAX_DATES = 4;
+import { RatingCountBadge, ReviewsSummary } from "@/components/recipe/ReviewStats";
 
 // Giorno locale YYYY-MM-DD + etichetta leggibile (le review arrivate dallo stesso
 // menù condividono il timestamp: un gruppo-data ≈ "la volta che l'abbiamo cucinata").
@@ -54,44 +51,17 @@ function groupByDate(reviews: Review[]): DateGroup[] {
     });
 }
 
-export function ReviewSection({ recipeId, initialReviews }: { recipeId: number; initialReviews: Review[] }) {
+export function ReviewSection({ initialReviews }: { initialReviews: Review[] }) {
   const { isAdmin } = useAuth();
   const [reviews, setReviews] = useState<Review[]>(initialReviews);
-  const [rating, setRating] = useState(8);
-  const [comment, setComment] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
   const [deleting, setDeleting] = useState<number | null>(null);
   const [confirmId, setConfirmId] = useState<number | null>(null);
-  const [showAll, setShowAll] = useState(false);
+  // Card recensioni: dropdown generico, aperto di default
+  const [open, setOpen] = useState(true);
 
   const groups = useMemo(() => groupByDate(reviews), [reviews]);
-  const visibleGroups = showAll ? groups : groups.slice(0, MAX_DATES);
-  const hiddenCount = groups.length - visibleGroups.length;
 
-  const avgRating = reviews.length
-    ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)
-    : null;
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-    setError("");
-    const res = await fetch(`/api/recipes/${recipeId}/reviews`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ rating, comment: comment.trim() }),
-    });
-    if (res.ok) {
-      const r = await res.json();
-      setReviews((prev) => [r, ...prev]);
-      setRating(8); setComment("");
-    } else {
-      const d = await res.json();
-      setError(d.error ?? "Errore durante l'invio");
-    }
-    setSubmitting(false);
-  };
+  const avgRating = reviews.length ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : null;
 
   const deleteReview = async (id: number) => {
     setDeleting(id);
@@ -102,98 +72,74 @@ export function ReviewSection({ recipeId, initialReviews }: { recipeId: number; 
   };
 
   return (
-    <section className="space-y-6 rounded-2xl border border-white/40 bg-white/60 p-5 shadow-sm backdrop-blur-sm sm:p-6">
-      <div className="flex items-center gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-rose-400 to-pink-500 text-white shadow-md shadow-rose-500/30">
-          <MessageSquareHeart size={18} />
+    <section className="rounded-2xl border border-white/40 bg-white/60 p-5 shadow-sm backdrop-blur-sm sm:p-6">
+      {/* Header = toggle del dropdown generico (aperto di default) */}
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-2.5 text-left sm:gap-3"
+      >
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-rose-400 to-pink-500 text-white shadow-md shadow-rose-500/30">
+          <MessageSquareHeart size={20} />
         </span>
-        <h2 className="text-xl font-bold text-sky-950">Recensioni</h2>
-        {avgRating && (
-          <span className="flex items-center gap-1 rounded-full border border-amber-300/40 bg-amber-400/15 px-3 py-1 text-sm font-medium text-amber-700">
-            {avgRating}/10
-            <span className="text-sky-600">({reviews.length})</span>
-          </span>
-        )}
-      </div>
+        <h2 className="min-w-0 flex-1 truncate text-lg font-bold text-sky-950 sm:text-xl">Recensioni</h2>
+        {avgRating != null && <ReviewsSummary avg={avgRating} count={reviews.length} />}
+        <ChevronDown
+          size={18}
+          className={`shrink-0 text-sky-500 transition-transform duration-300 ${open ? "rotate-180" : ""}`}
+        />
+      </button>
 
-      {/* Nota personale admin (promemoria, non una recensione pubblica) */}
-      {isAdmin && (
-        <div className="rounded-xl border border-white/40 bg-white/40 p-5 backdrop-blur-sm">
-          <h3 className="mb-4 text-sm font-semibold text-sky-800">Aggiungi una nota personale</h3>
-          <p className="mb-4 text-xs text-sky-700/70">
-            Un promemoria tuo (non è una recensione degli ospiti): le recensioni pubbliche arrivano solo dal link di recensione del menù.
-          </p>
-          <form onSubmit={submit} className="space-y-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-sky-900">Voto</label>
-              <RatingInput value={rating} onChange={setRating} />
+      <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+        <div className="overflow-hidden" inert={!open || undefined}>
+          {reviews.length === 0 ? (
+            <p className="pt-5 text-sm text-sky-700">
+              Le recensioni si lasciano dalla pagina di recensione del menù in cui è stata cucinata questa ricetta.
+            </p>
+          ) : (
+            // Un dropdown per data (chiuso di default): chiuso mostra data + media + n° voti
+            <div className="space-y-2.5 pt-5">
+              {groups.map((g) => (
+                <Collapsible
+                  key={g.key}
+                  header={
+                    <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <span className="inline-flex items-center gap-1.5 text-sm font-bold text-sky-950">
+                        <CalendarDays size={14} className="text-sky-400" />
+                        {g.label}
+                      </span>
+                      <RatingCountBadge avg={g.avg} count={g.reviews.length} />
+                      {g.menu && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-600">
+                          dal menù {g.menu.name}
+                        </span>
+                      )}
+                    </span>
+                  }
+                >
+                  <ReviewCarousel>
+                    {g.reviews.map((r) => (
+                      <div key={r.id} className="w-[230px] shrink-0 snap-start sm:w-[250px]">
+                        <ReviewBubble
+                          nickname={r.nickname}
+                          rating={r.rating}
+                          comment={r.comment}
+                          createdAt={r.createdAt}
+                          showDate={false}
+                          chip={!g.menu && r.menu ? { href: `/menu/${r.menu.id}`, label: r.menu.name } : null}
+                          isAdmin={isAdmin}
+                          onDelete={() => setConfirmId(r.id)}
+                        />
+                      </div>
+                    ))}
+                  </ReviewCarousel>
+                </Collapsible>
+              ))}
             </div>
-            <Textarea label="Note (opzionale)" value={comment} onChange={(e) => setComment(e.target.value)} rows={3} placeholder="Come è venuta questa volta?" />
-            {error && <p className="text-sm text-red-600">{error}</p>}
-            <Button type="submit" loading={submitting}>Salva nota</Button>
-          </form>
-        </div>
-      )}
-
-      {/* Lista raggruppata per data (più recente in cima) */}
-      {reviews.length === 0 ? (
-        <p className="text-sm text-sky-700">
-          {isAdmin
-            ? "Ancora nessuna recensione."
-            : "Le recensioni si lasciano dalla pagina di recensione del menù in cui è stata cucinata questa ricetta."}
-        </p>
-      ) : (
-        <div className="space-y-5">
-          {visibleGroups.map((g) => (
-            <div key={g.key} className="space-y-2.5">
-              {/* Header del gruppo-data */}
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <span className="inline-flex items-center gap-1.5 text-sm font-bold text-sky-950">
-                  <CalendarDays size={14} className="text-sky-400" />
-                  {g.label}
-                </span>
-                <span className="text-xs text-sky-600/80">
-                  media {g.avg.toFixed(1)} · {g.reviews.length} vot{g.reviews.length === 1 ? "o" : "i"}
-                </span>
-                {g.menu && (
-                  <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-600">
-                    dal menù {g.menu.name}
-                  </span>
-                )}
-              </div>
-
-              {/* Carosello delle recensioni di quel giorno */}
-              <ReviewCarousel>
-                {g.reviews.map((r) => (
-                  <div key={r.id} className="w-[230px] shrink-0 snap-start sm:w-[250px]">
-                    <ReviewBubble
-                      nickname={r.nickname}
-                      rating={r.rating}
-                      comment={r.comment}
-                      createdAt={r.createdAt}
-                      showDate={false}
-                      chip={!g.menu && r.menu ? { href: `/menu/${r.menu.id}`, label: r.menu.name } : null}
-                      isAdmin={isAdmin}
-                      onDelete={() => setConfirmId(r.id)}
-                    />
-                  </div>
-                ))}
-              </ReviewCarousel>
-            </div>
-          ))}
-
-          {hiddenCount > 0 && (
-            <button
-              type="button"
-              onClick={() => setShowAll(true)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-white/50 bg-white/50 px-4 py-2 text-sm font-semibold text-sky-700 transition-colors hover:bg-white/80"
-            >
-              Vedi altre date <span className="text-sky-500">({hiddenCount})</span>
-              <ChevronDown size={15} />
-            </button>
           )}
         </div>
-      )}
+      </div>
 
       <ConfirmModal
         open={confirmId !== null}
