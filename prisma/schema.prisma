@@ -71,6 +71,8 @@ model Ingredient {
   description String?
   /** Ingrediente facoltativo: mostrato con l'etichetta "opzionale" (dettaglio, lista spesa, PDF) */
   optional    Boolean @default(false)
+  /** Sezione/preparazione di cui fa parte (es. "Per l'impasto"); null = nessuna sezione */
+  section     String?
   order       Int
   recipeId    Int
   recipe      Recipe  @relation(fields: [recipeId], references: [id], onDelete: Cascade)

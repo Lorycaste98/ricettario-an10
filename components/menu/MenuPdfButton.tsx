@@ -25,7 +25,7 @@ interface RecipeDetailResponse {
   photo: string | null;
   categories: { name: string; color: string }[];
   tags: { name: string }[];
-  ingredients: { name: string; qty: number | null; unit: string | null; description: string | null; optional?: boolean }[];
+  ingredients: { name: string; qty: number | null; unit: string | null; description: string | null; optional?: boolean; section?: string | null }[];
   steps: { text: string; mins: number | null; kind?: string }[];
 }
 
@@ -42,7 +42,7 @@ function toPdfData(r: RecipeDetailResponse): RecipePdfData {
     categories: r.categories.map((c) => ({ name: c.name, color: c.color })),
     tags: r.tags.map((t) => ({ name: t.name })),
     ingredients: r.ingredients.map((i) => ({
-      name: i.name, qty: i.qty, unit: i.unit, description: i.description, optional: i.optional,
+      name: i.name, qty: i.qty, unit: i.unit, description: i.description, optional: i.optional, section: i.section ?? null,
     })),
     steps: r.steps.map((s) => ({ text: s.text, mins: s.mins, kind: s.kind })),
   };

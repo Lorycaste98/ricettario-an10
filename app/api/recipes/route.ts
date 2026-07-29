@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
     quick?: boolean;
     categoryIds?: number[];
     tagIds?: number[];
-    ingredients?: { name: string; qty?: number; unit?: string; description?: string; optional?: boolean; order: number }[];
+    ingredients?: { name: string; qty?: number; unit?: string; description?: string; optional?: boolean; section?: string | null; order: number }[];
     steps?: { text: string; mins?: number; kind?: string; order: number }[];
     photos?: { url: string; order?: number }[];
   };
@@ -128,6 +128,7 @@ export async function POST(request: NextRequest) {
           unit: i.unit ?? null,
           description: i.description ?? null,
           optional: !!i.optional,
+          section: i.section?.trim() || null,
           order: i.order,
         })),
       },

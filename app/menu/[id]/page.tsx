@@ -63,7 +63,7 @@ export default async function MenuDetailPage({ params }: Params) {
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8">
+    <div className="mx-auto max-w-4xl space-y-6 sm:space-y-5">
       {/* Back: bottone slim distinto (non si confonde con lo sfondo) */}
       <Link
         href="/menu"

@@ -1,11 +1,12 @@
 "use client";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { RotateCcw, Carrot, ListOrdered, Check, TriangleAlert, PartyPopper, CookingPot, Timer, ChevronDown } from "lucide-react";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { PriceTag } from "@/components/ui/PriceTag";
 import { useRecipeProgress } from "@/lib/recipe-progress";
 import { formatMinutes, toStepKind, STEP_KIND_LABEL, type StepKind } from "@/lib/types";
+import { groupIngredientsBySection } from "@/lib/ingredient-sections";
 
 // Stile badge per tipo step (la Preparazione resta senza badge per non affollare)
 const KIND_BADGE: Partial<Record<StepKind, string>> = {
@@ -20,6 +21,8 @@ interface Ingredient {
   unit: string | null;
   description: string | null;
   optional: boolean;
+  /** Sezione/preparazione (es. "Per l'impasto"); assente/nulla = nessuna sezione */
+  section?: string | null;
 }
 
 interface Step {
@@ -49,6 +52,40 @@ function formatQty(n: number): string {
   return String(r);
 }
 
+/** Griglia di righe ingrediente (una per lista intera o una per sezione). */
+function IngredientList({
+  items,
+  scaledQty,
+}: {
+  items: Ingredient[];
+  scaledQty: (qty: number | null) => string;
+}) {
+  return (
+    <ul className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
+      {items.map((ing) => {
+        const qtyStr = scaledQty(ing.qty);
+        const label = ing.qty != null
+          ? `${qtyStr}${ing.unit ? ` ${ing.unit}` : ""}`
+          : (ing.unit ?? "q.b.");
+        return (
+          <li key={ing.id} className="flex items-baseline gap-1.5 min-w-0">
+            <span className="shrink-0 text-xs font-semibold text-orange-500 tabular-nums whitespace-nowrap">
+              {label}
+            </span>
+            <span className="min-w-0 text-sm text-sky-900">
+              {ing.name}
+              {ing.optional && <PriceTag className="ml-1.5" />}
+              {ing.description && (
+                <span className="block text-sky-600 font-normal">{ing.description}</span>
+              )}
+            </span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 // ─── component ────────────────────────────────────────────────────────────────
 
 export function RecipeProcedure({ recipeId, defaultServings, servingsUnit, ingredients, steps }: Props) {
@@ -62,6 +99,9 @@ export function RecipeProcedure({ recipeId, defaultServings, servingsUnit, ingre
   const [dismissed, setDismissed] = useState(false); // ha chiuso il banner (con "No" o dopo conferma cottura)
   const [cookConfirmed, setCookConfirmed] = useState(false); // la cottura è stata davvero registrata
   const [cookLoading, setCookLoading] = useState(false);
+
+  // Ingredienti raggruppati per sezione/preparazione (un solo gruppo = nessuna sezione)
+  const sections = useMemo(() => groupIngredientsBySection(ingredients), [ingredients]);
 
   // Scala la quantità in base alle porzioni selezionate
   const scaledQty = (qty: number | null): string => {
@@ -116,7 +156,7 @@ export function RecipeProcedure({ recipeId, defaultServings, servingsUnit, ingre
   const dismiss = () => setDismissed(true);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-5">
 
       {/* ── Ingredienti ── */}
       <section className="rounded-2xl bg-white/60 border border-white/40 backdrop-blur-sm p-5 sm:p-6">
@@ -159,28 +199,27 @@ export function RecipeProcedure({ recipeId, defaultServings, servingsUnit, ingre
           )}
         </div>
 
-        <ul className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
-          {ingredients.map((ing) => {
-            const qtyStr = scaledQty(ing.qty);
-            const label = ing.qty != null
-              ? `${qtyStr}${ing.unit ? ` ${ing.unit}` : ""}`
-              : (ing.unit ?? "q.b.");
-            return (
-              <li key={ing.id} className="flex items-baseline gap-1.5 min-w-0">
-                <span className="shrink-0 text-xs font-semibold text-orange-500 tabular-nums whitespace-nowrap">
-                  {label}
-                </span>
-                <span className="min-w-0 text-sm text-sky-900">
-                  {ing.name}
-                  {ing.optional && <PriceTag className="ml-1.5" />}
-                  {ing.description && (
-                    <span className="block text-sky-600 font-normal">{ing.description}</span>
-                  )}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
+        {/* Senza sezioni resta la lista piatta di sempre; con le sezioni ogni
+            preparazione ha il suo titolo e la sua griglia */}
+        {sections.length <= 1 ? (
+          <IngredientList items={ingredients} scaledQty={scaledQty} />
+        ) : (
+          <div className="space-y-4">
+            {sections.map((group, i) => (
+              <div key={group.section ?? `__none-${i}`}>
+                {group.section && (
+                  <div className="mb-2 flex items-center gap-2">
+                    <span className="text-xs font-bold uppercase tracking-wide text-emerald-800">
+                      {group.section}
+                    </span>
+                    <span className="h-px flex-1 bg-emerald-700/20" />
+                  </div>
+                )}
+                <IngredientList items={group.items} scaledQty={scaledQty} />
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* ── Procedura interattiva ── */}

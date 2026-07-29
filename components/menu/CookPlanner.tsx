@@ -73,6 +73,18 @@ export function CookPlanner({
     }
   };
 
+  // Inizio pianificato di ogni ricetta, passato allo stepper: le card mostrano
+  // l'orario e permettono di cambiarlo a mano (stesso editor della timeline)
+  const starts = useMemo(() => {
+    if (!hasTimeline) return undefined;
+    const out: Record<number, { start: Date; isCustom: boolean; leadMins: number }> = {};
+    for (const r of recipes) {
+      const s = schedules.get(r.id);
+      if (s) out[r.id] = { start: s.start, isCustom: s.isCustom, leadMins: s.leadMins };
+    }
+    return out;
+  }, [hasTimeline, recipes, schedules]);
+
   // Orario di ogni step, passato allo stepper (solo se la timeline è attiva)
   const stepTimes = useMemo(() => {
     if (!hasTimeline) return undefined;
@@ -109,7 +121,15 @@ export function CookPlanner({
         )
       )}
 
-      <MenuCookMode menuId={menuId} recipes={recipes} stepTimes={stepTimes} />
+      <MenuCookMode
+        menuId={menuId}
+        recipes={recipes}
+        stepTimes={stepTimes}
+        starts={starts}
+        serveAt={hasTimeline ? serve?.serveAt : undefined}
+        onStartChange={(recipeId, start) => patchSchedule(recipeId, start.toISOString())}
+        onStartReset={(recipeId) => patchSchedule(recipeId, null)}
+      />
     </div>
   );
 }

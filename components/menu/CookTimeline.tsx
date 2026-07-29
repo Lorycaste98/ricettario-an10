@@ -13,6 +13,7 @@ import {
 import { formatMinutes, STEP_KIND_LABEL, type StepKind } from "@/lib/types";
 import { PALETTE } from "@/components/ui/ColorPicker";
 import { QuickTag } from "@/components/ui/QuickTag";
+import { StartTimeEditor } from "@/components/menu/StartTimeEditor";
 
 // Timeline "Gantt" della modalità cucina: una corsia per ricetta, barra
 // suddivisa negli step (larghezza ∝ minuti), trascinabile in orizzontale per
@@ -156,7 +157,8 @@ export function CookTimeline({
       </div>
 
       <p className="text-[11px] text-sky-700/70">
-        Trascina la barra di una ricetta per scegliere a che ora iniziarla (scatti di 5 minuti).
+        Tocca l&apos;orario di una ricetta per impostare l&apos;inizio a mano, oppure trascina la sua barra
+        per aggiustarlo (scatti di 5 minuti).
       </p>
 
       {/* Canvas scrollabile — scrollbar custom: pollice scuro, nessuno sfondo sul binario */}
@@ -215,6 +217,7 @@ export function CookTimeline({
                   recipe={recipe}
                   schedule={schedule}
                   color={recipeColor.get(recipe.id) ?? PALETTE[0]}
+                  serveAt={serveAt}
                   pxPerMin={pxPerMin}
                   startPx={minsFrom(schedule.start) * pxPerMin}
                   windowWidthPx={widthPx}
@@ -271,6 +274,7 @@ function TimelineLane({
   recipe,
   schedule,
   color,
+  serveAt,
   pxPerMin,
   startPx,
   windowWidthPx,
@@ -282,6 +286,7 @@ function TimelineLane({
   recipe: TimelineRecipe;
   schedule: RecipeSchedule;
   color: string;
+  serveAt: Date;
   pxPerMin: number;
   startPx: number;
   windowWidthPx: number;
@@ -311,9 +316,23 @@ function TimelineLane({
       <div className="sticky left-1 z-[5] flex w-max max-w-[85vw] items-center gap-2 pb-0.5">
         <span className="h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-white/60" style={{ backgroundColor: color }} />
         <span className="truncate text-xs font-semibold text-sky-950">{recipe.name}</span>
-        <span className={`inline-flex items-center gap-1 text-[10px] tabular-nums ${dragMins != null ? "font-bold text-orange-700" : "text-sky-700/70"}`}>
-          {formatClock(liveStart)} <ArrowRight size={10} /> {formatClock(new Date(liveStart.getTime() + schedule.leadMins * 60_000))}
-        </span>
+        {dragMins != null ? (
+          // Durante il trascinamento l'orario è "live": niente bottone, solo il testo
+          <span className="inline-flex items-center gap-1 text-[10px] font-bold tabular-nums text-orange-700">
+            {formatClock(liveStart)} <ArrowRight size={10} /> {formatClock(new Date(liveStart.getTime() + schedule.leadMins * 60_000))}
+          </span>
+        ) : (
+          <StartTimeEditor
+            recipeName={recipe.name}
+            start={schedule.start}
+            isCustom={schedule.isCustom}
+            leadMins={schedule.leadMins}
+            serveAt={serveAt}
+            onChange={(start) => onStartChange(recipe.id, start)}
+            onReset={() => onReset(recipe.id)}
+            variant="lane"
+          />
+        )}
         {schedule.isCustom && (
           <button
             type="button"

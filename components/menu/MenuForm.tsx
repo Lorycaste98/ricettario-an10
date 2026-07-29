@@ -162,11 +162,12 @@ export function MenuForm({ initialData }: Props) {
     router.refresh();
   };
 
+  // py-2 su mobile (form lunghi: meno spazio verticale), py-2.5 da sm in su
   const inputCls =
-    "w-full rounded-xl border border-white/30 bg-white/20 px-3 py-2.5 text-sm text-sky-950 placeholder:text-sky-700/50 focus:outline-none focus:ring-2 focus:ring-sky-400/50 focus:border-sky-300/60 backdrop-blur-sm transition";
+    "w-full rounded-xl border border-white/30 bg-white/20 px-3 py-2 sm:py-2.5 text-sm text-sky-950 placeholder:text-sky-700/50 focus:outline-none focus:ring-2 focus:ring-sky-400/50 focus:border-sky-300/60 backdrop-blur-sm transition";
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
       {/* Sticky top bar — stesso stile e offset del form ricetta */}
       <div className="sticky z-30 flex items-center justify-between gap-3 rounded-b-2xl border border-white/50 bg-white/70 backdrop-blur-xl px-5 py-3 shadow-lg shadow-black/[0.07] ring-1 ring-black/[0.04]" style={{ top: "calc(env(safe-area-inset-top, 0px) + 56px)" }}>
         <h1 className="text-sm font-semibold text-gray-800 truncate">
@@ -190,9 +191,9 @@ export function MenuForm({ initialData }: Props) {
       )}
 
       {/* Campi base */}
-      <div className="rounded-2xl border border-white/50 bg-white/60 backdrop-blur-sm p-5 sm:p-6 shadow-sm space-y-4">
+      <div className="rounded-2xl border border-white/50 bg-white/60 backdrop-blur-sm p-4 sm:p-6 shadow-sm space-y-3 sm:space-y-4">
         <SectionHeader title="Informazioni" icon={<Info size={18} />} tone="sky" />
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-3 sm:gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <label className="mb-1 block text-xs font-medium text-sky-800">Nome menu *</label>
             <input
@@ -271,7 +272,7 @@ export function MenuForm({ initialData }: Props) {
       </div>
 
       {/* Selezione ricette */}
-      <div className="rounded-2xl border border-white/50 bg-white/60 backdrop-blur-sm p-5 sm:p-6 shadow-sm space-y-4">
+      <div className="rounded-2xl border border-white/50 bg-white/60 backdrop-blur-sm p-4 sm:p-6 shadow-sm space-y-3 sm:space-y-4">
         <SectionHeader
           title="Ricette nel menù"
           icon={<UtensilsCrossed size={18} />}
@@ -294,7 +295,7 @@ export function MenuForm({ initialData }: Props) {
                 as="li"
                 key={r.id}
                 value={r.id}
-                className="flex items-center gap-3 rounded-xl border border-white/30 bg-white/50 px-3 py-2"
+                className="flex items-center gap-2 rounded-xl border border-white/30 bg-white/50 px-2 py-1.5 sm:gap-3 sm:px-3 sm:py-2"
               >
               {(handle) => (
               <>
@@ -332,11 +333,12 @@ export function MenuForm({ initialData }: Props) {
                       title="Porzioni per questo menù (vuoto = usa il default della ricetta)"
                       className="w-14 rounded-lg border border-white/40 bg-white/70 px-2 py-1 text-xs text-sky-950 placeholder:text-sky-500/40 focus:border-sky-300/60 focus:outline-none focus:ring-2 focus:ring-sky-300/40"
                     />
-                    <span className="text-[10px] text-sky-600/70">{r.servingsUnit?.trim() || "porz."}</span>
+                    {/* Unità nascosta su mobile: la riga è già fitta (thumb + nome + porzioni) */}
+                    <span className="hidden text-[10px] text-sky-600/70 sm:inline">{r.servingsUnit?.trim() || "porz."}</span>
                   </div>
                 )}
                 {/* Order number */}
-                <span className="shrink-0 text-[10px] font-bold text-sky-400/60">#{idx + 1}</span>
+                <span className="hidden shrink-0 text-[10px] font-bold text-sky-400/60 sm:inline">#{idx + 1}</span>
                 {/* Drag handle */}
                 <div className="shrink-0">{handle}</div>
                 {/* Remove */}

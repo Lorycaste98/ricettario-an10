@@ -16,15 +16,18 @@ interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
 const baseClass =
   "w-full rounded-lg border border-sky-200 bg-white/60 backdrop-blur-sm px-3 py-2 text-sm text-sky-950 placeholder:text-sm placeholder:text-sky-700/50 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-300/30 disabled:bg-white/30 disabled:cursor-not-allowed";
 
+// Etichetta compatta su mobile (i form sono lunghi: meno spazio verticale per campo)
+const labelClass = "text-xs sm:text-sm font-medium text-sky-900";
+
 export function Input({ label, error, className, id, type, ...props }: InputProps) {
   const inputId = id ?? label?.toLowerCase().replace(/\s/g, "-");
   const [show, setShow] = useState(false);
   const isPassword = type === "password";
   const inputType = isPassword && show ? "text" : type;
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-0.5 sm:gap-1">
       {label && (
-        <label htmlFor={inputId} className="text-sm font-medium text-sky-900">
+        <label htmlFor={inputId} className={labelClass}>
           {label}
         </label>
       )}
@@ -60,9 +63,9 @@ export function Input({ label, error, className, id, type, ...props }: InputProp
 export function Textarea({ label, error, className, id, ...props }: TextareaProps) {
   const inputId = id ?? label?.toLowerCase().replace(/\s/g, "-");
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-0.5 sm:gap-1">
       {label && (
-        <label htmlFor={inputId} className="text-sm font-medium text-sky-900">
+        <label htmlFor={inputId} className={labelClass}>
           {label}
         </label>
       )}

@@ -60,7 +60,7 @@ export async function PUT(
     published?: boolean;
     categoryIds?: number[];
     tagIds?: number[];
-    ingredients?: { name: string; qty?: number | null; unit?: string | null; description?: string | null; optional?: boolean; order: number }[];
+    ingredients?: { name: string; qty?: number | null; unit?: string | null; description?: string | null; optional?: boolean; section?: string | null; order: number }[];
     steps?: { text: string; mins?: number | null; kind?: string; order: number }[];
     photos?: { url: string; order?: number }[];
   };
@@ -118,6 +118,7 @@ export async function PUT(
                   unit: i.unit ?? null,
                   description: i.description ?? null,
                   optional: !!i.optional,
+                  section: i.section?.trim() || null,
                   order: i.order,
                 })),
               },

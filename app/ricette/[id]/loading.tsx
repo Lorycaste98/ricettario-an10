@@ -1,8 +1,22 @@
-export default function RecipeDetailLoading() {
+import { getSession } from "@/lib/session";
+
+export default async function RecipeDetailLoading() {
+  // Solo lettura cookie (nessun DB): distingue lo skeleton admin da quello visitatore
+  const isAdmin = !!(await getSession());
+
   return (
-    <div className="mx-auto max-w-4xl space-y-8 animate-pulse">
-      {/* Back link */}
-      <div className="h-4 w-36 rounded-lg bg-white/20" />
+    <div className="mx-auto max-w-4xl space-y-6 sm:space-y-5 animate-pulse">
+      {/* Back link — stessa forma/altezza del bottone reale (pill h-[34px]) */}
+      <div className="h-[34px] w-40 rounded-full bg-white/20" />
+
+      {/* Barra azioni admin: Pronta (flex-1) + Modifica + Elimina */}
+      {isAdmin && (
+        <div className="flex items-stretch gap-2">
+          <div className="h-[54px] flex-1 rounded-xl bg-white/20" />
+          <div className="h-[54px] w-11 rounded-xl bg-white/15 sm:w-28" />
+          <div className="h-[54px] w-11 rounded-xl bg-white/15 sm:w-28" />
+        </div>
+      )}
 
       {/* Header grid — foto sinistra, info destra */}
       <div className="grid gap-6 lg:grid-cols-2 lg:gap-8">

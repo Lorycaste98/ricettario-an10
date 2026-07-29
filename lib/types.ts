@@ -49,6 +49,8 @@ export interface Ingredient {
   description: string | null;
   /** Ingrediente facoltativo: mostrato con l'etichetta "opzionale". */
   optional: boolean;
+  /** Sezione/preparazione di appartenenza (es. "Per l'impasto"); null = nessuna sezione. */
+  section?: string | null;
   order: number;
 }
 

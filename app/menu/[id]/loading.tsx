@@ -5,7 +5,10 @@ export default async function MenuDetailLoading() {
   const isAdmin = !!(await getSession());
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8 animate-pulse">
+    <div className="mx-auto max-w-4xl space-y-6 sm:space-y-5 animate-pulse">
+      {/* Back link — stessa forma/altezza del bottone reale (pill h-[34px]) */}
+      <div className="h-[34px] w-36 rounded-full bg-white/20" />
+
       {isAdmin && (
         <>
           {/* Barra azioni admin: Pronto (flex-1) + Esporta + Modifica + Elimina */}

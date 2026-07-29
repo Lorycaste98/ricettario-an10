@@ -8,6 +8,7 @@ import {
 } from "@react-pdf/renderer";
 import type { RecipePdfData } from "./RecipePdfButton";
 import { formatMinutes } from "@/lib/types";
+import { groupIngredientsBySection } from "@/lib/ingredient-sections";
 
 const ORANGE = "#f97316";
 const SKY = "#0c4a6e";
@@ -117,6 +118,15 @@ export const pdfStyles = StyleSheet.create({
   ingredientText: { flex: 1, fontSize: 9.5 },
   ingredientQty: { fontFamily: "Helvetica-Bold", color: SKY },
   ingredientDesc: { color: GRAY, fontSize: 8.5 },
+  // Titolo di una sezione di ingredienti (es. "Per l'impasto")
+  ingredientGroup: {
+    fontSize: 9,
+    fontFamily: "Helvetica-Bold",
+    color: SKY,
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+    marginBottom: 4,
+  },
   step: { flexDirection: "row", marginBottom: 8, alignItems: "flex-start" },
   // Pallino numerato: View contenitore con numero centrato (flex)
   stepNum: {
@@ -276,24 +286,34 @@ export function RecipePdfContent({
           {recipe.ingredients.length === 0 ? (
             <Text style={{ color: LIGHT }}>—</Text>
           ) : (
-            recipe.ingredients.map((ing, i) => {
-              const qty = fmtQty(ing.qty, ing.unit);
-              return (
-                <View key={i} style={pdfStyles.ingredientItem}>
-                  <View style={pdfStyles.dot} />
-                  <Text style={pdfStyles.ingredientText}>
-                    {qty ? <Text style={pdfStyles.ingredientQty}>{qty} </Text> : null}
-                    {ing.name}
-                    {ing.optional ? (
-                      <Text style={pdfStyles.ingredientDesc}> (opz.)</Text>
-                    ) : null}
-                    {ing.description ? (
-                      <Text style={pdfStyles.ingredientDesc}> — {ing.description}</Text>
-                    ) : null}
+            // Gruppi per sezione/preparazione: senza sezioni è un gruppo solo (titolo omesso)
+            groupIngredientsBySection(recipe.ingredients).map((group, gi) => (
+              <View key={gi}>
+                {group.section ? (
+                  <Text style={[pdfStyles.ingredientGroup, gi > 0 ? { marginTop: 6 } : {}]}>
+                    {group.section}
                   </Text>
-                </View>
-              );
-            })
+                ) : null}
+                {group.items.map((ing, i) => {
+                  const qty = fmtQty(ing.qty, ing.unit);
+                  return (
+                    <View key={i} style={pdfStyles.ingredientItem}>
+                      <View style={pdfStyles.dot} />
+                      <Text style={pdfStyles.ingredientText}>
+                        {qty ? <Text style={pdfStyles.ingredientQty}>{qty} </Text> : null}
+                        {ing.name}
+                        {ing.optional ? (
+                          <Text style={pdfStyles.ingredientDesc}> (opz.)</Text>
+                        ) : null}
+                        {ing.description ? (
+                          <Text style={pdfStyles.ingredientDesc}> — {ing.description}</Text>
+                        ) : null}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            ))
           )}
         </View>
 

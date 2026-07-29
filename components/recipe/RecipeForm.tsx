@@ -3,7 +3,7 @@ import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { clsx } from "clsx";
-import { Info, ImageIcon, Tag as TagIcon, Hash, Carrot, ListOrdered, Camera, Star, X, TriangleAlert, Save, CircleCheck } from "lucide-react";
+import { Info, ImageIcon, Tag as TagIcon, Hash, Carrot, ListOrdered, Camera, Star, X, TriangleAlert, Save, CircleCheck, Layers, Plus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Input";
 import { IngredientCombobox } from "@/components/ui/IngredientCombobox";
@@ -18,11 +18,11 @@ import { type Category, type Tag, type StepKind, STEP_KINDS, STEP_KIND_LABEL } f
 
 // `uid` = identità stabile della riga per il drag & drop (le key per indice
 // rompono il Reorder); generato client-side, mai inviato all'API.
-interface IngredientRow { uid: string; name: string; qty: string; unit: string; description: string; optional: boolean }
+interface IngredientRow { uid: string; name: string; qty: string; unit: string; description: string; optional: boolean; section: string }
 interface StepRow { uid: string; text: string; mins: string; kind: StepKind }
 
 const uid = () => crypto.randomUUID();
-const emptyIngredient = (): IngredientRow => ({ uid: uid(), name: "", qty: "", unit: "", description: "", optional: false });
+const emptyIngredient = (section = ""): IngredientRow => ({ uid: uid(), name: "", qty: "", unit: "", description: "", optional: false, section });
 const emptyStep = (): StepRow => ({ uid: uid(), text: "", mins: "", kind: "PREP" });
 /** Riga foto interna al form: url + flag per la foto principale */
 interface PhotoRow { url: string; isMain: boolean }
@@ -139,7 +139,7 @@ function Section({
   return (
     <section
       className={clsx(
-        "fade-up rounded-2xl border border-white/50 bg-white/60 backdrop-blur-sm p-5 sm:p-6 shadow-sm space-y-4",
+        "fade-up rounded-2xl border border-white/50 bg-white/60 backdrop-blur-sm p-4 sm:p-6 shadow-sm space-y-3 sm:space-y-4",
         className
       )}
       style={{ animationDelay: `${delay}ms` }}
@@ -156,6 +156,50 @@ const inlineInput =
   "rounded-lg border border-white/40 bg-white/60 backdrop-blur-sm px-2 py-2 text-sm text-sky-950 placeholder:text-sm placeholder:text-sky-600/50 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-300/30";
 
 // ─── OptionalChip ─────────────────────────────────────────────────────────────
+
+// ─── SectionField ─────────────────────────────────────────────────────────────
+
+/** id del <datalist> con le sezioni già usate (uno solo per form). */
+const SECTIONS_LIST_ID = "ingredient-sections";
+
+/**
+ * Campo "sezione" della riga ingrediente (visibile solo con le sezioni attive):
+ * input libero con `datalist` delle sezioni già usate nella ricetta, così la
+ * seconda riga in poi si sceglie dalla tendina invece di riscriverla.
+ */
+function SectionField({
+  value,
+  onChange,
+  listId,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  /** id del <datalist> condiviso (uno solo per form: le righe sono duplicate mobile/desktop) */
+  listId: string;
+}) {
+  return (
+    <span
+      className={clsx(
+        "inline-flex min-w-0 items-center gap-1 self-start rounded-full border py-0.5 pl-2 pr-1 transition-colors focus-within:border-sky-400 focus-within:ring-2 focus-within:ring-sky-300/30",
+        value.trim() ? "border-emerald-300 bg-emerald-100/70" : "border-white/40 bg-white/40"
+      )}
+    >
+      <Layers size={10} className={clsx("shrink-0", value.trim() ? "text-emerald-700" : "text-sky-500")} />
+      <input
+        type="text"
+        list={listId}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="sezione"
+        title="Sezione/preparazione di questo ingrediente (es. Per l'impasto)"
+        className={clsx(
+          "w-24 min-w-0 bg-transparent text-[11px] font-medium placeholder:font-normal focus:outline-none sm:w-28",
+          value.trim() ? "text-emerald-900 placeholder:text-emerald-700/50" : "text-sky-900 placeholder:text-sky-500/60"
+        )}
+      />
+    </span>
+  );
+}
 
 /** Chip-toggle "opzionale" per la riga ingrediente (mobile e desktop). */
 function OptionalChip({ active, onToggle }: { active: boolean; onToggle: () => void }) {
@@ -213,6 +257,11 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
     initialData?.ingredients?.length
       ? initialData.ingredients.map((r) => ({ ...r, uid: uid() }))
       : [emptyIngredient()]
+  );
+  // Sezioni/preparazioni degli ingredienti (es. "Per l'impasto"): opzionali,
+  // si attivano solo quando servono. In modifica sono già attive se salvate.
+  const [useSections, setUseSections] = useState(
+    () => initialData?.ingredients?.some((i) => i.section?.trim()) ?? false
   );
   const [steps, setSteps] = useState<StepRow[]>(() =>
     initialData?.steps?.length
@@ -299,7 +348,22 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
   const toggleTag = (id: number) =>
     setTagIds((p) => p.includes(id) ? p.filter((x) => x !== id) : [...p, id]);
 
-  const addIngredient = () => setIngredients((p) => [...p, emptyIngredient()]);
+  // Righe con la descrizione aperta a mano su mobile (le già compilate si vedono sempre)
+  const [descriptionOpen, setDescriptionOpen] = useState<Set<string>>(new Set());
+  const showDescription = (row: IngredientRow) => !!row.description.trim() || descriptionOpen.has(row.uid);
+  const openDescription = (rowUid: string) =>
+    setDescriptionOpen((prev) => new Set(prev).add(rowUid));
+
+  // Sezioni già usate: alimentano la tendina del campo sezione
+  const sectionOptions = useMemo(
+    () => [...new Set(ingredients.map((i) => i.section.trim()).filter(Boolean))],
+    [ingredients]
+  );
+
+  // La nuova riga eredita la sezione dell'ultima: inserendo gli ingredienti di
+  // una preparazione alla volta non serve riscriverla ogni volta
+  const addIngredient = () =>
+    setIngredients((p) => [...p, emptyIngredient(useSections ? p[p.length - 1]?.section ?? "" : "")]);
   const removeIngredient = (i: number) => setIngredients((p) => p.filter((_, j) => j !== i));
   const updateIngredient = (i: number, f: keyof IngredientRow, v: string) =>
     setIngredients((p) => p.map((r, j) => j === i ? { ...r, [f]: v } : r));
@@ -362,7 +426,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
       tagIds,
       ingredients: ingredients
         .filter((i) => i.name.trim())
-        .map((i, order) => ({ name: i.name.trim(), qty: i.qty ? Number(i.qty) : null, unit: i.unit.trim() || null, description: i.description.trim() || null, optional: i.optional, order })),
+        .map((i, order) => ({ name: i.name.trim(), qty: i.qty ? Number(i.qty) : null, unit: i.unit.trim() || null, description: i.description.trim() || null, optional: i.optional, section: useSections ? i.section.trim() || null : null, order })),
       steps: steps
         .filter((s) => s.text.trim())
         .map((s, order) => ({ text: s.text.trim(), mins: s.mins ? Number(s.mins) : null, kind: s.kind, order })),
@@ -395,10 +459,10 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
       setError(err instanceof Error ? err.message : "Errore sconosciuto");
       setSaving(false);
     }
-  }, [name, createdAt, servings, servingsUnit, prep, cook, notes, links, published, categoryIds, tagIds, ingredients, steps, photos, isEdit, recipeId, router]);
+  }, [name, createdAt, servings, servingsUnit, prep, cook, notes, links, published, categoryIds, tagIds, ingredients, useSections, steps, photos, isEdit, recipeId, router]);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
 
       {/* Sticky top bar */}
       <div className="sticky z-30 flex items-center justify-between gap-3 rounded-b-2xl border border-white/50 bg-white/70 backdrop-blur-xl px-5 py-3 shadow-lg shadow-black/[0.07] ring-1 ring-black/[0.04]" style={{ top: "calc(env(safe-area-inset-top, 0px) + 56px)" }}>
@@ -428,7 +492,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
           placeholder="Es. Risotto allo zafferano" />
         <Input label="Data" type="date" value={createdAt}
           onChange={(e) => setCreatedAt(e.target.value)} />
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-4">
           <Input label="Porzioni" type="number" min={1} value={servings}
             onChange={(e) => setServings(e.target.value)} placeholder="4" />
           <Input label="Unità" type="text" value={servingsUnit}
@@ -578,7 +642,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
           Wrapper z-20/z-[15]: ogni Section ha backdrop-blur (nuovo stacking
           context), quindi i dropdown vanno sollevati sopra le sezioni successive.
           Restano sotto la top bar sticky (z-30). */}
-      <div className="grid gap-6 sm:grid-cols-2 sm:items-stretch">
+      <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 sm:items-stretch">
       <div className="relative z-20 h-full">
       <Section
         title="Categorie"
@@ -621,6 +685,44 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
       {/* 5. Ingredienti — z-10 wrapper lifts this stacking context above the Procedura section */}
       <div className="relative z-10">
       <Section title="Ingredienti" icon={<Carrot size={18} />} tone="emerald" delay={240}>
+        {/* Sezioni/preparazioni: opzionali, da attivare solo quando servono
+            (es. una ricetta con impasto + crema). Da spente non si vede nulla. */}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          <button
+            type="button"
+            role="switch"
+            aria-checked={useSections}
+            onClick={() => setUseSections((v) => !v)}
+            className={clsx(
+              "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+              useSections
+                ? "border-emerald-300 bg-emerald-100/80 text-emerald-800"
+                : "border-white/40 bg-white/40 text-sky-700 hover:bg-white/60"
+            )}
+          >
+            <Layers size={13} className="shrink-0" />
+            Sezioni
+            <span
+              className={clsx(
+                "relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition-colors",
+                useSections ? "bg-emerald-500" : "bg-sky-900/20"
+              )}
+            >
+              <span
+                className={clsx(
+                  "inline-block h-3 w-3 rounded-full bg-white shadow transition-transform",
+                  useSections ? "translate-x-3.5" : "translate-x-0.5"
+                )}
+              />
+            </span>
+          </button>
+          <p className="text-xs text-sky-600">
+            {useSections
+              ? "Assegna a ogni riga la sua preparazione (es. «Per l'impasto»): il dettaglio ricetta le mostra raggruppate."
+              : "Attivale se la ricetta ha più preparazioni (es. impasto e crema)."}
+          </p>
+        </div>
+
         <div className="space-y-2">
           {/* Header colonne — solo desktop */}
           <div
@@ -639,33 +741,55 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
             <ReorderRow key={ing.uid} value={ing}>
             {(handle) => (
             <div>
-              {/* ── Card mobile ── */}
-              <div className="sm:hidden rounded-xl border border-white/30 bg-white/20 p-3 space-y-2">
-                <div className="flex items-center gap-2">
+              {/* ── Card mobile (compatta: nome + qtà/unità su due righe;
+                     descrizione, opzionale e sezione solo se servono) ── */}
+              <div className="sm:hidden rounded-xl border border-white/30 bg-white/20 p-2 space-y-1.5">
+                <div className="flex items-center gap-1.5">
                   <div className="shrink-0 -ml-1">{handle}</div>
+                  <IngredientCombobox
+                    value={ing.name}
+                    onChange={(v) => updateIngredient(i, "name", v)}
+                    allIngredients={allIngredients}
+                    onNewIngredient={handleNewIngredient}
+                    placeholder="Ingrediente"
+                    className={inlineInput + " min-w-0 flex-1"}
+                  />
+                  <button type="button" onClick={() => removeIngredient(i)}
+                    className="shrink-0 rounded p-1 text-sky-300 hover:text-red-400 transition-colors"><X size={14} /></button>
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5 pl-5">
                   <input type="number" min={0} step="any" value={ing.qty}
                     onChange={(e) => updateIngredient(i, "qty", e.target.value)} placeholder="Qtà"
-                    className={inlineInput + " w-20 shrink-0"} />
+                    className={inlineInput + " w-16 shrink-0 py-1.5"} />
                   <input type="text" value={ing.unit}
-                    onChange={(e) => updateIngredient(i, "unit", e.target.value)} placeholder="g / ml…"
-                    className={inlineInput + " flex-1 min-w-0"} />
-                  <button type="button" onClick={() => removeIngredient(i)}
-                    className="shrink-0 rounded p-1.5 text-sky-300 hover:text-red-400 transition-colors"><X size={14} /></button>
+                    onChange={(e) => updateIngredient(i, "unit", e.target.value)} placeholder="g/ml…"
+                    className={inlineInput + " w-20 shrink-0 py-1.5"} />
+                  <OptionalChip active={ing.optional} onToggle={() => toggleIngredientOptional(i)} />
+                  {useSections && (
+                    <SectionField
+                      value={ing.section}
+                      onChange={(v) => updateIngredient(i, "section", v)}
+                      listId={SECTIONS_LIST_ID}
+                    />
+                  )}
+                  {/* La descrizione è rara: si apre solo su richiesta (o se già compilata) */}
+                  {!showDescription(ing) && (
+                    <button
+                      type="button"
+                      onClick={() => openDescription(ing.uid)}
+                      className="inline-flex items-center gap-1 rounded-full border border-white/40 bg-white/40 px-2 py-0.5 text-[11px] font-medium text-sky-500 transition-colors hover:text-sky-800"
+                    >
+                      <Plus size={10} /> descrizione
+                    </button>
+                  )}
                 </div>
-                <IngredientCombobox
-                  value={ing.name}
-                  onChange={(v) => updateIngredient(i, "name", v)}
-                  allIngredients={allIngredients}
-                  onNewIngredient={handleNewIngredient}
-                  placeholder="Ingrediente"
-                  className={inlineInput + " w-full"}
-                />
-                <input type="text" value={ing.description}
-                  onChange={(e) => updateIngredient(i, "description", e.target.value)}
-                  placeholder="Descrizione (es. fredda, bollente…)"
-                  className={inlineInput + " w-full text-xs"}
-                />
-                <OptionalChip active={ing.optional} onToggle={() => toggleIngredientOptional(i)} />
+                {showDescription(ing) && (
+                  <input type="text" value={ing.description} autoFocus={descriptionOpen.has(ing.uid) && !ing.description}
+                    onChange={(e) => updateIngredient(i, "description", e.target.value)}
+                    placeholder="Descrizione (es. fredda, bollente…)"
+                    className={inlineInput + " ml-5 w-[calc(100%-1.25rem)] py-1.5 text-xs"}
+                  />
+                )}
               </div>
 
               {/* ── Grid desktop ── */}
@@ -694,7 +818,16 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
                     placeholder="descrizione (es. fredda, bollente…)"
                     className={inlineInput + " w-full text-xs opacity-80"}
                   />
+                  <div className="flex flex-wrap items-center gap-2">
                   <OptionalChip active={ing.optional} onToggle={() => toggleIngredientOptional(i)} />
+                  {useSections && (
+                    <SectionField
+                      value={ing.section}
+                      onChange={(v) => updateIngredient(i, "section", v)}
+                      listId={SECTIONS_LIST_ID}
+                    />
+                  )}
+                </div>
                 </div>
                 <button type="button" onClick={() => removeIngredient(i)}
                   className="flex items-center justify-center rounded p-1 text-sky-300 hover:text-red-400 transition-colors pt-2"><X size={14} /></button>
@@ -705,6 +838,14 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
           ))}
           </ReorderList>
         </div>
+        {/* Tendina condivisa delle sezioni già usate nella ricetta */}
+        {useSections && (
+          <datalist id={SECTIONS_LIST_ID}>
+            {sectionOptions.map((o) => (
+              <option key={o} value={o} />
+            ))}
+          </datalist>
+        )}
         <Button type="button" variant="ghost" size="sm" onClick={addIngredient}>
           + Aggiungi ingrediente
         </Button>
@@ -713,23 +854,23 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
 
       {/* 6. Procedura */}
       <Section title="Procedura" icon={<ListOrdered size={18} />} tone="sky" delay={300}>
-        <ReorderList values={steps} onReorder={setSteps} className="space-y-4">
+        <ReorderList values={steps} onReorder={setSteps} className="space-y-3 sm:space-y-4">
           {steps.map((step, i) => (
-            <ReorderRow key={step.uid} value={step} className="flex gap-3 items-start">
+            <ReorderRow key={step.uid} value={step} className="flex gap-2 sm:gap-3 items-start">
             {(handle) => (
             <>
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white mt-2">
+              <span className="flex h-6 w-6 sm:h-7 sm:w-7 shrink-0 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white mt-1.5 sm:mt-2">
                 {i + 1}
               </span>
-              <div className="flex-1 space-y-1.5">
+              <div className="flex-1 min-w-0 space-y-1.5">
                 <Textarea value={step.text} onChange={(e) => updateStep(i, "text", e.target.value)}
                   placeholder={`Descrivi il passo ${i + 1}...`} rows={2} />
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                   <select
                     value={step.kind}
                     onChange={(e) => updateStep(i, "kind", e.target.value as StepKind)}
                     title="Tipo di tempo di questo passo"
-                    className={inlineInput + " shrink-0"}
+                    className={inlineInput + " shrink-0 py-1.5 text-xs sm:py-2 sm:text-sm"}
                   >
                     {STEP_KINDS.map((k) => (
                       <option key={k} value={k}>{STEP_KIND_LABEL[k]}</option>
@@ -737,11 +878,11 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
                   </select>
                   <input type="number" min={0} value={step.mins}
                     onChange={(e) => updateStep(i, "mins", e.target.value)} placeholder="—"
-                    className={inlineInput + " w-20 shrink-0"} />
-                  <span className="text-xs text-sky-600">min (opz.)</span>
+                    className={inlineInput + " w-16 shrink-0 py-1.5 text-xs sm:w-20 sm:py-2 sm:text-sm"} />
+                  <span className="text-[11px] text-sky-600 sm:text-xs">min (opz.)</span>
                 </div>
               </div>
-              <div className="flex flex-col items-center gap-0.5 pt-2 shrink-0">
+              <div className="flex flex-col items-center gap-0.5 pt-1.5 sm:pt-2 shrink-0">
                 {handle}
                 <button type="button" onClick={() => removeStep(i)}
                   className="rounded p-1 text-gray-300 hover:bg-red-50 hover:text-red-400 transition-colors mt-0.5"><X size={14} /></button>

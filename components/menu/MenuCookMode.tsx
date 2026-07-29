@@ -7,6 +7,7 @@ import { formatMinutes, toStepKind, STEP_KIND_LABEL, type StepKind } from "@/lib
 import { formatClock } from "@/lib/cook-timeline";
 import { useLocalStore } from "@/lib/local-store";
 import { QuickTag } from "@/components/ui/QuickTag";
+import { StartTimeEditor } from "@/components/menu/StartTimeEditor";
 
 const KIND_BADGE: Partial<Record<StepKind, string>> = {
   COOK: "bg-red-100 text-red-700",
@@ -47,15 +48,30 @@ function parseProgress(raw: string): Record<number, Progress> {
   return parsed as Record<number, Progress>;
 }
 
+export interface RecipeStart {
+  start: Date;
+  isCustom: boolean;
+  leadMins: number;
+}
+
 export function MenuCookMode({
   menuId,
   recipes,
   stepTimes,
+  starts,
+  serveAt,
+  onStartChange,
+  onStartReset,
 }: {
   menuId: number;
   recipes: Recipe[];
   /** Orario di inizio di ogni step per ricetta (dalla timeline del CookPlanner) */
   stepTimes?: Record<number, Date[]>;
+  /** Inizio pianificato di ogni ricetta: abilita il chip orario editabile sulla card */
+  starts?: Record<number, RecipeStart>;
+  serveAt?: Date;
+  onStartChange?: (recipeId: number, start: Date) => void;
+  onStartReset?: (recipeId: number) => void;
 }) {
   const [progress, setProgress] = useLocalStore<Record<number, Progress>>(
     storageKey(menuId),
@@ -89,6 +105,10 @@ export function MenuCookMode({
             progress={progress[recipe.id] ?? { stepIdx: 0, cooked: false }}
             onChange={(patch) => update(recipe.id, patch)}
             stepTimes={stepTimes?.[recipe.id]}
+            start={starts?.[recipe.id]}
+            serveAt={serveAt}
+            onStartChange={onStartChange && ((s) => onStartChange(recipe.id, s))}
+            onStartReset={onStartReset && (() => onStartReset(recipe.id))}
           />
         )
       )}
@@ -165,11 +185,19 @@ function RecipeCookCard({
   progress,
   onChange,
   stepTimes,
+  start,
+  serveAt,
+  onStartChange,
+  onStartReset,
 }: {
   recipe: Recipe;
   progress: Progress;
   onChange: (patch: Partial<Progress>) => void;
   stepTimes?: Date[];
+  start?: RecipeStart;
+  serveAt?: Date;
+  onStartChange?: (start: Date) => void;
+  onStartReset?: () => void;
 }) {
   const [cookLoading, setCookLoading] = useState(false);
   const { steps } = recipe;
@@ -212,11 +240,26 @@ function RecipeCookCard({
           <Link href={`/ricette/${recipe.id}`} className="block truncate text-sm font-semibold text-sky-950 hover:text-orange-600 transition-colors">
             {recipe.name}
           </Link>
-          {total > 0 && (
-            <p className="text-[11px] text-sky-700/70 tabular-nums">
-              {atCompletion ? "Procedura completata" : `Passo ${progress.stepIdx + 1}/${total}`}
-            </p>
-          )}
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+            {total > 0 && (
+              <p className="text-[11px] text-sky-700/70 tabular-nums">
+                {atCompletion ? "Procedura completata" : `Passo ${progress.stepIdx + 1}/${total}`}
+              </p>
+            )}
+            {/* Ora di inizio: modificabile a mano anche da qui (stesso editor della timeline) */}
+            {start && onStartChange && onStartReset && (
+              <StartTimeEditor
+                recipeName={recipe.name}
+                start={start.start}
+                isCustom={start.isCustom}
+                leadMins={start.leadMins}
+                serveAt={serveAt}
+                onChange={onStartChange}
+                onReset={onStartReset}
+                variant="card"
+              />
+            )}
+          </div>
         </div>
         {(progress.stepIdx > 0 || progress.cooked) && (
           <button

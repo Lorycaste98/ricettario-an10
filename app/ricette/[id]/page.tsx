@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { ArrowLeft, Clock, Flame, Hourglass, Sigma, Users, ExternalLink, CalendarDays, ImageIcon, UtensilsCrossed, StickyNote, Link2 } from "lucide-react";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
-import { flattenRecipe } from "@/lib/api";
+import { flattenRecipe, recipeDetailSelect } from "@/lib/api";
 import { Badge } from "@/components/ui/Badge";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { ReviewSection } from "@/components/recipe/ReviewSection";
@@ -28,23 +28,11 @@ export async function generateMetadata({ params }: PageProps<"/ricette/[id]">): 
 export default async function RecipePage({ params }: PageProps<"/ricette/[id]">) {
   const { id } = await params;
 
+  // Select condiviso con l'API (`recipeDetailSelect`): duplicarlo qui aveva già
+  // fatto perdere per strada un campo nuovo (`Ingredient.section`)
   const raw = await db.recipe.findUnique({
     where: { id: Number(id) },
-    select: {
-      id: true, name: true, servings: true, servingsUnit: true, prep: true, cook: true,
-      notes: true, links: true, photo: true, cookCount: true, published: true, quick: true,
-      createdAt: true, updatedAt: true,
-      categories: { select: { category: { select: { id: true, name: true, color: true } } } },
-      tags: { select: { tag: { select: { id: true, name: true } } } },
-      photos: { select: { id: true, url: true, order: true }, orderBy: { order: "asc" } },
-      ingredients: { select: { id: true, name: true, qty: true, unit: true, description: true, optional: true, order: true }, orderBy: { order: "asc" } },
-      steps: { select: { id: true, text: true, mins: true, kind: true, order: true }, orderBy: { order: "asc" } },
-      reviews: {
-        select: { id: true, nickname: true, rating: true, comment: true, createdAt: true, menu: { select: { id: true, name: true } } },
-        orderBy: { createdAt: "desc" },
-      },
-      _count: { select: { reviews: true } },
-    },
+    select: recipeDetailSelect,
   });
 
   if (!raw) notFound();
@@ -88,14 +76,14 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
     photo: allPhotos[0] ?? null,
     categories: recipe.categories.map((c: { name: string; color: string }) => ({ name: c.name, color: c.color })),
     tags: recipe.tags.map((t: { name: string }) => ({ name: t.name })),
-    ingredients: recipe.ingredients.map((i: { name: string; qty: number | null; unit: string | null; description: string | null; optional: boolean }) => ({
-      name: i.name, qty: i.qty, unit: i.unit, description: i.description, optional: i.optional,
+    ingredients: recipe.ingredients.map((i: { name: string; qty: number | null; unit: string | null; description: string | null; optional: boolean; section: string | null }) => ({
+      name: i.name, qty: i.qty, unit: i.unit, description: i.description, optional: i.optional, section: i.section,
     })),
     steps: recipe.steps.map((s: { text: string; mins: number | null; kind: string }) => ({ text: s.text, mins: s.mins, kind: s.kind })),
   };
 
   return (
-    <article className="mx-auto max-w-4xl space-y-8 sm:space-y-10">
+    <article className="mx-auto max-w-4xl space-y-6 sm:space-y-5">
       {/* Back: bottone slim distinto (non si confonde con lo sfondo) */}
       <Link
         href="/ricette"
