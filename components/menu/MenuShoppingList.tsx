@@ -147,33 +147,52 @@ export function MenuShoppingList({
   const totalCount = items.length + extra.length;
 
   const inputCls =
-    "rounded-lg border border-white/40 bg-white/60 px-2.5 py-1.5 text-sm text-sky-950 placeholder:text-sky-700/40 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-300/30";
+    "rounded-lg border border-white/40 bg-white/60 px-2.5 py-1.5 text-sm text-sky-950 placeholder:text-sky-700/60 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-300/30";
+
+  // Voce già presa: barratura leggera (tratto sottile) e testo comunque leggibile.
+  // Il "fatto" lo dà soprattutto la spunta verde, la riga resta rileggibile a colpo d'occhio.
+  const checkedTextCls = "text-sky-500 line-through decoration-1 decoration-emerald-900/80";
+
+  // Riga cliccabile: niente `hover` su touch (resta appiccicato dopo il tap) e niente
+  // tap-highlight nativo — era quel lampo grigio che sembrava uno sfarfallio.
+  const rowBtnCls =
+    "flex w-full items-center gap-2 rounded-lg px-1.5 py-1.5 text-left select-none touch-manipulation " +
+    "[-webkit-tap-highlight-color:transparent] transition-colors sm:hover:bg-white/40";
+
+  const checkboxCls = (isChecked: boolean) =>
+    `flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[10px] transition-colors ${
+      isChecked ? "border-green-500 bg-green-500 text-white" : "border-sky-400/50 bg-white/60"
+    }`;
 
   return (
-    <section className="rounded-2xl border border-white/25 bg-white/30 backdrop-blur-sm p-5 sm:p-6">
+    // Sfondo "carta": il gradiente di pagina è `position: fixed`, quindi una card
+    // molto trasparente passa dal quasi-bianco (alto viewport) al blu notte (basso)
+    // e il testo scuro spariva a metà scroll. Qui serve una superficie chiara
+    // stabile — è una lista da leggere mentre si fa la spesa, non una vetrina.
+    <section className="rounded-2xl border border-white/60 bg-white/75 backdrop-blur-md p-5 sm:p-6 shadow-sm">
       <SectionHeader
         title="Lista della spesa"
         icon={<ShoppingCart size={20} />}
         tone="emerald"
         size="lg"
-        titleClassName="text-sky-50"
+        titleClassName="text-sky-950"
         hint={`${checked.size}/${totalCount} spuntati`}
         className="mb-4"
       />
 
       <div className="relative mb-4">
-        <Search size={15} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sky-500/60" />
+        <Search size={15} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sky-600" />
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Cerca un ingrediente…"
-          className="w-full rounded-xl border border-white/40 bg-white/50 py-2.5 pl-10 pr-3 text-sm text-sky-950 placeholder:text-sky-700/40 backdrop-blur-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-300/30"
+          className="w-full rounded-xl border border-white/40 bg-white/70 py-2.5 pl-10 pr-3 text-sm text-sky-950 placeholder:text-sky-700/60 backdrop-blur-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-300/30"
         />
       </div>
 
       {filtered.length === 0 && filteredExtra.length === 0 ? (
-        <p className="text-sm text-sky-700/60">Nessun ingrediente {query.trim() ? "trovato" : "nel menù"}.</p>
+        <p className="text-sm text-sky-700">Nessun ingrediente {query.trim() ? "trovato" : "nel menù"}.</p>
       ) : (
         <ul className="grid grid-cols-1 gap-x-6 gap-y-1 sm:grid-cols-2">
           {visible.map((item) => {
@@ -184,27 +203,26 @@ export function MenuShoppingList({
                 <button
                   type="button"
                   onClick={() => toggle(item.key)}
-                  className="flex w-full items-baseline gap-2 rounded-lg px-1.5 py-1.5 text-left hover:bg-white/30 transition-colors"
+                  title={item.recipeNames.join(", ")}
+                  className={rowBtnCls}
                 >
-                  <span
-                    className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[10px] mt-0.5 transition-colors ${
-                      isChecked ? "border-green-500 bg-green-500 text-white" : "border-sky-400/50 bg-white/60"
-                    }`}
-                  >
+                  <span className={checkboxCls(isChecked)}>
                     {isChecked ? <Check size={11} /> : ""}
                   </span>
                   <span className="shrink-0 text-xs font-semibold text-orange-600 tabular-nums whitespace-nowrap">
                     {label}
                   </span>
-                  <span className={`min-w-0 flex-1 text-sm ${isChecked ? "line-through text-sky-500/60" : "text-sky-900"}`}>
+                  {/* Ingrediente e ricette sulla stessa riga, centrati in altezza:
+                      le ricette si accorciano per prime (min-w-0 + truncate) */}
+                  <span className={`shrink-0 text-sm ${isChecked ? checkedTextCls : "text-sky-900"}`}>
                     {item.name}
-                    {item.optional && <PriceTag className="ml-1.5" />}
-                    {item.recipeNames.length > 0 && (
-                      <span className="ml-1.5 text-[11px] font-normal text-sky-600/60">
-                        ({item.recipeNames.join(", ")})
-                      </span>
-                    )}
                   </span>
+                  {item.optional && <PriceTag className="shrink-0" />}
+                  {item.recipeNames.length > 0 && (
+                    <span className="min-w-0 flex-1 truncate text-[11px] font-normal text-sky-700">
+                      ({item.recipeNames.join(", ")})
+                    </span>
+                  )}
                 </button>
               </li>
             );
@@ -232,7 +250,7 @@ export function MenuShoppingList({
 
       {/* Ingredienti aggiunti a mano (extra), non presenti nelle ricette */}
       <div className="mt-5 border-t border-white/40 pt-4">
-        <h3 className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-sky-700/70">
+        <h3 className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-sky-800">
           Aggiunti a mano
         </h3>
         {filteredExtra.length > 0 && (
@@ -244,20 +262,12 @@ export function MenuShoppingList({
                 item.qty != null ? `${formatQty(item.qty)}${item.unit ? ` ${item.unit}` : ""}` : (item.unit ?? "q.b.");
               return (
                 <li key={key} className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => toggle(key)}
-                    className="flex min-w-0 flex-1 items-baseline gap-2 rounded-lg px-1.5 py-1.5 text-left hover:bg-white/30 transition-colors"
-                  >
-                    <span
-                      className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[10px] mt-0.5 transition-colors ${
-                        isChecked ? "border-green-500 bg-green-500 text-white" : "border-sky-400/50 bg-white/60"
-                      }`}
-                    >
+                  <button type="button" onClick={() => toggle(key)} className={`${rowBtnCls} min-w-0 flex-1`}>
+                    <span className={checkboxCls(isChecked)}>
                       {isChecked ? <Check size={11} /> : ""}
                     </span>
                     <span className="shrink-0 text-xs font-semibold text-orange-600 tabular-nums whitespace-nowrap">{label}</span>
-                    <span className={`min-w-0 flex-1 text-sm ${isChecked ? "line-through text-sky-500/60" : "text-sky-900"}`}>
+                    <span className={`min-w-0 flex-1 truncate text-sm ${isChecked ? checkedTextCls : "text-sky-900"}`}>
                       {item.name}
                     </span>
                   </button>
@@ -349,7 +359,7 @@ export function MenuShoppingList({
         >
           Salva
         </button>
-        <span className="text-[11px] text-sky-600/70">
+        <span className="text-[11px] text-sky-700">
           {groceryCost != null ? "Salvando sostituisci il valore registrato." : "Finisce nei “Costi” del menù."}
         </span>
       </div>

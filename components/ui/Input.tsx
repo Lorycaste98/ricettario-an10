@@ -13,8 +13,10 @@ interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   error?: string;
 }
 
+// py-1.5 su mobile (~34px di altezza) → py-2 da sm in su: i form sono lunghi e
+// su telefono ogni campo in meno di 4px si sente sullo scroll totale
 const baseClass =
-  "w-full rounded-lg border border-sky-200 bg-white/60 backdrop-blur-sm px-3 py-2 text-sm text-sky-950 placeholder:text-sm placeholder:text-sky-700/50 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-300/30 disabled:bg-white/30 disabled:cursor-not-allowed";
+  "w-full rounded-lg border border-sky-200 bg-white/60 backdrop-blur-sm px-3 py-1.5 sm:py-2 text-sm text-sky-950 placeholder:text-sm placeholder:text-sky-700/50 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-300/30 disabled:bg-white/30 disabled:cursor-not-allowed";
 
 // Etichetta compatta su mobile (i form sono lunghi: meno spazio verticale per campo)
 const labelClass = "text-xs sm:text-sm font-medium text-sky-900";

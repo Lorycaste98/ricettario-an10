@@ -34,7 +34,7 @@ export default async function MenuDetailLoading() {
         <div className="h-7 w-52 rounded-xl bg-white/20" />
         <div className="grid gap-3 sm:grid-cols-2">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-24 rounded-2xl bg-white/10" />
+            <div key={i} className="h-24 rounded-2xl bg-white/25" />
           ))}
         </div>
       </div>

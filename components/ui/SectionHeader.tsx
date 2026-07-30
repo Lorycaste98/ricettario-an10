@@ -37,10 +37,12 @@ export function SectionHeader({
   titleClassName?: string;
   className?: string;
 }) {
-  const badge = size === "lg" ? "h-10 w-10" : "h-9 w-9";
-  const titleSize = size === "lg" ? "text-lg sm:text-xl font-bold" : "text-base font-semibold";
+  // Badge e titolo un filo più piccoli su mobile: negli header di sezione dei form
+  // (uno per card) il guadagno in altezza si somma su tutta la pagina
+  const badge = size === "lg" ? "h-9 w-9 sm:h-10 sm:w-10" : "h-8 w-8 sm:h-9 sm:w-9";
+  const titleSize = size === "lg" ? "text-lg sm:text-xl font-bold" : "text-sm sm:text-base font-semibold";
   return (
-    <div className={`flex items-center gap-3 ${className}`}>
+    <div className={`flex items-center gap-2.5 sm:gap-3 ${className}`}>
       <span
         className={`flex ${badge} shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-md ${SECTION_TONES[tone]}`}
       >

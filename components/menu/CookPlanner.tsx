@@ -97,7 +97,7 @@ export function CookPlanner({
   }, [hasTimeline, recipes, schedules]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 sm:space-y-5">
       {hasTimeline && serve ? (
         <CookTimeline
           recipes={recipes}
@@ -109,7 +109,7 @@ export function CookPlanner({
       ) : (
         hydrated &&
         recipes.length > 0 && (
-          <div className="flex items-center gap-3 rounded-2xl border border-white/25 bg-white/30 backdrop-blur-sm p-4 text-sm text-sky-900">
+          <div className="flex items-center gap-3 rounded-2xl border border-white/60 bg-white/75 backdrop-blur-md p-4 shadow-sm text-sm text-sky-900">
             <CalendarClock size={18} className="shrink-0 text-orange-600" />
             <p>
               Imposta <strong>data e ora di servizio</strong> del menù per pianificare le ricette sulla timeline.{" "}

@@ -3,7 +3,7 @@ import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { clsx } from "clsx";
-import { Info, ImageIcon, Tag as TagIcon, Hash, Carrot, ListOrdered, Camera, Star, X, TriangleAlert, Save, CircleCheck, Layers, Plus } from "lucide-react";
+import { Info, ImageIcon, Tag as TagIcon, Hash, Carrot, ListOrdered, Camera, Star, X, TriangleAlert, Save, CircleCheck, Layers, StickyNote } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Input";
 import { IngredientCombobox } from "@/components/ui/IngredientCombobox";
@@ -139,7 +139,7 @@ function Section({
   return (
     <section
       className={clsx(
-        "fade-up rounded-2xl border border-white/50 bg-white/60 backdrop-blur-sm p-4 sm:p-6 shadow-sm space-y-3 sm:space-y-4",
+        "fade-up rounded-2xl border border-white/50 bg-white/60 backdrop-blur-sm p-3 sm:p-6 shadow-sm space-y-2.5 sm:space-y-4",
         className
       )}
       style={{ animationDelay: `${delay}ms` }}
@@ -150,10 +150,23 @@ function Section({
   );
 }
 
-// ─── shared inline input class ────────────────────────────────────────────────
+// ─── shared inline input / icon-button classes ────────────────────────────────
 
+/**
+ * Bottone icona delle righe (rimuovi, aggiungi descrizione): pastiglia chiara
+ * fissa invece di una semplice icona tenue. Sullo sfondo a gradiente dell'app le
+ * icone `sky-300`/`gray-300` diventavano invisibili in alcune zone. Stessa
+ * impostazione dei bottoni riga del form menù e della maniglia di `ReorderList`.
+ */
+const rowIconBtn =
+  "flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-white/60 bg-white/70 shadow-sm transition-colors";
+const rowIconBtnNeutral = `${rowIconBtn} text-sky-600 hover:bg-white hover:text-sky-900`;
+const rowIconBtnDanger = `${rowIconBtn} text-rose-500 hover:bg-rose-50 hover:text-rose-600`;
+
+
+// py-1.5 su mobile (~34px), py-2 da sm in su — vedi anche `Input` in components/ui/Input.tsx
 const inlineInput =
-  "rounded-lg border border-white/40 bg-white/60 backdrop-blur-sm px-2 py-2 text-sm text-sky-950 placeholder:text-sm placeholder:text-sky-600/50 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-300/30";
+  "rounded-lg border border-white/40 bg-white/60 backdrop-blur-sm px-2 py-1.5 sm:py-2 text-sm text-sky-950 placeholder:text-sm placeholder:text-sky-600/50 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-300/30";
 
 // ─── OptionalChip ─────────────────────────────────────────────────────────────
 
@@ -171,20 +184,23 @@ function SectionField({
   value,
   onChange,
   listId,
+  compact = false,
 }: {
   value: string;
   onChange: (v: string) => void;
   /** id del <datalist> condiviso (uno solo per form: le righe sono duplicate mobile/desktop) */
   listId: string;
+  /** Riga mobile: campo più stretto per stare sulla stessa riga di qtà/unità */
+  compact?: boolean;
 }) {
   return (
     <span
       className={clsx(
         "inline-flex min-w-0 items-center gap-1 self-start rounded-full border py-0.5 pl-2 pr-1 transition-colors focus-within:border-sky-400 focus-within:ring-2 focus-within:ring-sky-300/30",
-        value.trim() ? "border-emerald-300 bg-emerald-100/70" : "border-white/40 bg-white/40"
+        value.trim() ? "border-emerald-300 bg-emerald-100/70" : "border-white/60 bg-white/70"
       )}
     >
-      <Layers size={10} className={clsx("shrink-0", value.trim() ? "text-emerald-700" : "text-sky-500")} />
+      <Layers size={10} className={clsx("shrink-0", value.trim() ? "text-emerald-700" : "text-sky-600")} />
       <input
         type="text"
         list={listId}
@@ -193,16 +209,17 @@ function SectionField({
         placeholder="sezione"
         title="Sezione/preparazione di questo ingrediente (es. Per l'impasto)"
         className={clsx(
-          "w-24 min-w-0 bg-transparent text-[11px] font-medium placeholder:font-normal focus:outline-none sm:w-28",
-          value.trim() ? "text-emerald-900 placeholder:text-emerald-700/50" : "text-sky-900 placeholder:text-sky-500/60"
+          "min-w-0 bg-transparent text-[11px] font-medium placeholder:font-normal focus:outline-none",
+          compact ? "w-20" : "w-24 sm:w-28",
+          value.trim() ? "text-emerald-900 placeholder:text-emerald-700/50" : "text-sky-900 placeholder:text-sky-600/70"
         )}
       />
     </span>
   );
 }
 
-/** Chip-toggle "opzionale" per la riga ingrediente (mobile e desktop). */
-function OptionalChip({ active, onToggle }: { active: boolean; onToggle: () => void }) {
+/** Chip-toggle "opzionale" per la riga ingrediente (`compact` = etichetta corta, riga mobile). */
+function OptionalChip({ active, onToggle, compact = false }: { active: boolean; onToggle: () => void; compact?: boolean }) {
   return (
     <button
       type="button"
@@ -212,10 +229,10 @@ function OptionalChip({ active, onToggle }: { active: boolean; onToggle: () => v
         "inline-flex items-center gap-1 self-start rounded-full border px-2 py-0.5 text-[11px] font-medium transition-colors",
         active
           ? "border-amber-300 bg-amber-100 text-amber-800"
-          : "border-white/40 bg-white/40 text-sky-500 hover:border-amber-200 hover:text-amber-700"
+          : "border-white/60 bg-white/70 text-sky-600 hover:border-amber-200 hover:text-amber-700"
       )}
     >
-      <TagIcon size={10} /> opzionale
+      <TagIcon size={10} /> {compact ? "opz." : "opzionale"}
     </button>
   );
 }
@@ -465,7 +482,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
     <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
 
       {/* Sticky top bar */}
-      <div className="sticky z-30 flex items-center justify-between gap-3 rounded-b-2xl border border-white/50 bg-white/70 backdrop-blur-xl px-5 py-3 shadow-lg shadow-black/[0.07] ring-1 ring-black/[0.04]" style={{ top: "calc(env(safe-area-inset-top, 0px) + 56px)" }}>
+      <div className="sticky z-30 flex items-center justify-between gap-2 rounded-b-2xl border border-white/50 bg-white/70 backdrop-blur-xl px-3 py-2 sm:gap-3 sm:px-5 sm:py-3 shadow-lg shadow-black/[0.07] ring-1 ring-black/[0.04]" style={{ top: "calc(env(safe-area-inset-top, 0px) + 56px)" }}>
         <h1 className="text-sm font-semibold text-gray-800 truncate">
           {isEdit ? "Modifica ricetta" : "Nuova ricetta"}
         </h1>
@@ -475,7 +492,9 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
             Annulla
           </Button>
           <Button type="submit" size="sm" loading={saving}>
-            {isEdit ? "Salva modifiche" : "Crea ricetta"}
+            {/* Etichetta corta su mobile: lascia respiro al titolo nella barra sticky */}
+            <span className="sm:hidden">{isEdit ? "Salva" : "Crea"}</span>
+            <span className="hidden sm:inline">{isEdit ? "Salva modifiche" : "Crea ricetta"}</span>
           </Button>
         </div>
       </div>
@@ -512,14 +531,15 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
             <button
               type="button"
               onClick={applyDerived}
-              className="ml-auto rounded-md bg-sky-500 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-sky-600 transition-colors"
+              className="ml-auto shrink-0 rounded-md bg-sky-500 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-sky-600 transition-colors"
+              title="Copia i minuti calcolati dai passi nei campi Prep. e Cottura"
             >
-              Applica a Prep/Cottura
+              Applica<span className="hidden sm:inline"> a Prep/Cottura</span>
             </button>
           </div>
         )}
         <Textarea label="Note" value={notes} onChange={(e) => setNotes(e.target.value)}
-          rows={3} placeholder="Consigli, varianti, sostituzioni..." />
+          rows={2} placeholder="Consigli, varianti, sostituzioni..." />
         <Input label="Link fonte" type="url" value={links}
           onChange={(e) => setLinks(e.target.value)} placeholder="https://..." />
       </Section>
@@ -627,9 +647,10 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
                   <button
                     type="button"
                     onClick={() => removePhoto(i)}
-                    className="shrink-0 rounded p-1.5 text-gray-300 hover:bg-red-50 hover:text-red-400 transition-colors"
+                    title="Rimuovi riga foto"
+                    className={rowIconBtnDanger}
                   >
-                    <X size={14} />
+                    <X size={13} />
                   </button>
                 </div>
               ) : null
@@ -743,51 +764,50 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
             <div>
               {/* ── Card mobile (compatta: nome + qtà/unità su due righe;
                      descrizione, opzionale e sezione solo se servono) ── */}
-              <div className="sm:hidden rounded-xl border border-white/30 bg-white/20 p-2 space-y-1.5">
+              <div className="sm:hidden rounded-xl border border-white/50 bg-white/45 p-1.5 space-y-1">
                 <div className="flex items-center gap-1.5">
-                  <div className="shrink-0 -ml-1">{handle}</div>
+                  {handle}
                   <IngredientCombobox
                     value={ing.name}
                     onChange={(v) => updateIngredient(i, "name", v)}
                     allIngredients={allIngredients}
                     onNewIngredient={handleNewIngredient}
                     placeholder="Ingrediente"
-                    className={inlineInput + " min-w-0 flex-1"}
+                    className={inlineInput + " h-8 min-w-0 flex-1 py-0"}
                   />
+                  {/* Descrizione: rara, si apre su richiesta (icona qui per non
+                      rubare una riga intera ai chip qtà/unità/sezione sotto) */}
+                  {!showDescription(ing) && (
+                    <button type="button" onClick={() => openDescription(ing.uid)}
+                      title="Aggiungi una descrizione all'ingrediente"
+                      className={rowIconBtnNeutral}><StickyNote size={13} /></button>
+                  )}
                   <button type="button" onClick={() => removeIngredient(i)}
-                    className="shrink-0 rounded p-1 text-sky-300 hover:text-red-400 transition-colors"><X size={14} /></button>
+                    title="Rimuovi ingrediente"
+                    className={rowIconBtnDanger}><X size={13} /></button>
                 </div>
-                <div className="flex flex-wrap items-center gap-1.5 pl-5">
+                <div className="flex flex-wrap items-center gap-1.5">
                   <input type="number" min={0} step="any" value={ing.qty}
                     onChange={(e) => updateIngredient(i, "qty", e.target.value)} placeholder="Qtà"
-                    className={inlineInput + " w-16 shrink-0 py-1.5"} />
+                    className={inlineInput + " h-8 w-14 shrink-0 px-1.5 py-0 text-center"} />
                   <input type="text" value={ing.unit}
-                    onChange={(e) => updateIngredient(i, "unit", e.target.value)} placeholder="g/ml…"
-                    className={inlineInput + " w-20 shrink-0 py-1.5"} />
-                  <OptionalChip active={ing.optional} onToggle={() => toggleIngredientOptional(i)} />
+                    onChange={(e) => updateIngredient(i, "unit", e.target.value)} placeholder="g/ml"
+                    className={inlineInput + " h-8 w-16 shrink-0 px-1.5 py-0 text-center"} />
+                  <OptionalChip compact active={ing.optional} onToggle={() => toggleIngredientOptional(i)} />
                   {useSections && (
                     <SectionField
+                      compact
                       value={ing.section}
                       onChange={(v) => updateIngredient(i, "section", v)}
                       listId={SECTIONS_LIST_ID}
                     />
-                  )}
-                  {/* La descrizione è rara: si apre solo su richiesta (o se già compilata) */}
-                  {!showDescription(ing) && (
-                    <button
-                      type="button"
-                      onClick={() => openDescription(ing.uid)}
-                      className="inline-flex items-center gap-1 rounded-full border border-white/40 bg-white/40 px-2 py-0.5 text-[11px] font-medium text-sky-500 transition-colors hover:text-sky-800"
-                    >
-                      <Plus size={10} /> descrizione
-                    </button>
                   )}
                 </div>
                 {showDescription(ing) && (
                   <input type="text" value={ing.description} autoFocus={descriptionOpen.has(ing.uid) && !ing.description}
                     onChange={(e) => updateIngredient(i, "description", e.target.value)}
                     placeholder="Descrizione (es. fredda, bollente…)"
-                    className={inlineInput + " ml-5 w-[calc(100%-1.25rem)] py-1.5 text-xs"}
+                    className={inlineInput + " h-8 w-full py-0 text-xs"}
                   />
                 )}
               </div>
@@ -795,9 +815,9 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
               {/* ── Grid desktop ── */}
               <div
                 className="hidden sm:grid items-start gap-2"
-                style={{ gridTemplateColumns: "1.5rem 4rem 5rem 1fr 1.5rem" }}
+                style={{ gridTemplateColumns: "1.75rem 4rem 5rem 1fr 1.75rem" }}
               >
-                <div className="flex items-start justify-center pt-1.5 -ml-1">{handle}</div>
+                <div className="flex items-start justify-center pt-1.5">{handle}</div>
                 <input type="number" min={0} step="any" value={ing.qty}
                   onChange={(e) => updateIngredient(i, "qty", e.target.value)} placeholder="Qtà"
                   className={inlineInput + " w-full"} />
@@ -830,7 +850,8 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
                 </div>
                 </div>
                 <button type="button" onClick={() => removeIngredient(i)}
-                  className="flex items-center justify-center rounded p-1 text-sky-300 hover:text-red-400 transition-colors pt-2"><X size={14} /></button>
+                  title="Rimuovi ingrediente"
+                  className={rowIconBtnDanger + " mt-1"}><X size={13} /></button>
               </div>
             </div>
             )}
@@ -870,7 +891,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
                     value={step.kind}
                     onChange={(e) => updateStep(i, "kind", e.target.value as StepKind)}
                     title="Tipo di tempo di questo passo"
-                    className={inlineInput + " shrink-0 py-1.5 text-xs sm:py-2 sm:text-sm"}
+                    className={inlineInput + " shrink-0 text-xs sm:text-sm"}
                   >
                     {STEP_KINDS.map((k) => (
                       <option key={k} value={k}>{STEP_KIND_LABEL[k]}</option>
@@ -878,14 +899,15 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
                   </select>
                   <input type="number" min={0} value={step.mins}
                     onChange={(e) => updateStep(i, "mins", e.target.value)} placeholder="—"
-                    className={inlineInput + " w-16 shrink-0 py-1.5 text-xs sm:w-20 sm:py-2 sm:text-sm"} />
+                    className={inlineInput + " w-16 shrink-0 text-xs sm:w-20 sm:text-sm"} />
                   <span className="text-[11px] text-sky-600 sm:text-xs">min (opz.)</span>
                 </div>
               </div>
-              <div className="flex flex-col items-center gap-0.5 pt-1.5 sm:pt-2 shrink-0">
+              <div className="flex flex-col items-center gap-1 pt-1.5 sm:pt-2 shrink-0">
                 {handle}
                 <button type="button" onClick={() => removeStep(i)}
-                  className="rounded p-1 text-gray-300 hover:bg-red-50 hover:text-red-400 transition-colors mt-0.5"><X size={14} /></button>
+                  title="Rimuovi passo"
+                  className={rowIconBtnDanger}><X size={13} /></button>
               </div>
             </>
             )}

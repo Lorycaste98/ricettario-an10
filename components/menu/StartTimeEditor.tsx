@@ -83,7 +83,7 @@ export function StartTimeEditor({
           type="button"
           onClick={openDialog}
           title="Imposta a mano l'ora di inizio"
-          className={`inline-flex items-center gap-1 rounded px-1 text-[10px] tabular-nums text-sky-700/70 transition-colors hover:bg-white/70 hover:text-sky-900 ${className}`}
+          className={`inline-flex items-center gap-1 rounded px-1 text-[10px] tabular-nums text-sky-700 transition-colors hover:bg-white/70 hover:text-sky-900 ${className}`}
         >
           {formatClock(start)} <ArrowRight size={10} /> {formatClock(end)}
           <Pencil size={9} className="opacity-60" />

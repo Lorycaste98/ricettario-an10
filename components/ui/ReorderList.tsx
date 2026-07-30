@@ -61,7 +61,10 @@ export function ReorderRow<T>({
         e.preventDefault();
         controls.start(e);
       }}
-      className="cursor-grab active:cursor-grabbing touch-none p-1 text-sky-300 hover:text-sky-500 transition-colors"
+      // Contrasto: lo sfondo dell'app è un gradiente, quindi le icone "tenui"
+      // (sky-300, gray-300) sparivano su alcune porzioni. Pastiglia chiara fissa
+      // + icona sky-600, come i bottoni riga del form menù.
+      className="flex h-6 w-6 shrink-0 cursor-grab items-center justify-center rounded-lg border border-white/60 bg-white/70 text-sky-600 shadow-sm transition-colors hover:bg-white hover:text-sky-900 active:cursor-grabbing touch-none"
     >
       <GripVertical size={14} />
     </button>

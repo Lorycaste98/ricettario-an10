@@ -1,12 +1,12 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
-import Link from "next/link";
 import type { ReactNode } from "react";
-import { ArrowLeft, Clock, Flame, Hourglass, Sigma, Users, ExternalLink, CalendarDays, ImageIcon, UtensilsCrossed, StickyNote, Link2 } from "lucide-react";
+import { Clock, Flame, Hourglass, Sigma, Users, ExternalLink, CalendarDays, ImageIcon, UtensilsCrossed, StickyNote, Link2 } from "lucide-react";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { flattenRecipe, recipeDetailSelect } from "@/lib/api";
 import { Badge } from "@/components/ui/Badge";
+import { BackLink } from "@/components/ui/BackLink";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { ReviewSection } from "@/components/recipe/ReviewSection";
 import { PersonalRatingCard } from "@/components/recipe/PersonalRatingCard";
@@ -84,13 +84,8 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
 
   return (
     <article className="mx-auto max-w-4xl space-y-6 sm:space-y-5">
-      {/* Back: bottone slim distinto (non si confonde con lo sfondo) */}
-      <Link
-        href="/ricette"
-        className="inline-flex items-center gap-1.5 rounded-full border border-white/50 bg-white/70 px-3 py-1.5 text-sm font-medium text-sky-900 shadow-sm backdrop-blur-sm transition-colors hover:bg-white/90"
-      >
-        <ArrowLeft size={16} /> Tutte le ricette
-      </Link>
+      {/* Back: bottone condiviso (BackLink), identico su ricetta/menù/modalità cucina */}
+      <BackLink href="/ricette" label="Tutte le ricette" />
 
       {/* Azioni admin (solo admin): pronta/non pronta + modifica + elimina, in cima */}
       <RecipeAdminBar recipeId={recipe.id} published={recipe.published} />

@@ -9,6 +9,12 @@ import { useLocalStore } from "@/lib/local-store";
 import { QuickTag } from "@/components/ui/QuickTag";
 import { StartTimeEditor } from "@/components/menu/StartTimeEditor";
 
+// Card ricetta della modalità cucina: stesso "vetro chiaro" leggibile delle altre
+// card con testo scuro (lista spesa, costi, dettaglio ricetta). Con bg-white/30 il
+// testo sparisce nella fascia bassa del gradiente di pagina.
+const cookCardCls =
+  "rounded-2xl border border-white/60 bg-white/75 backdrop-blur-md p-4 sm:p-5 shadow-sm";
+
 const KIND_BADGE: Partial<Record<StepKind, string>> = {
   COOK: "bg-red-100 text-red-700",
   WAIT: "bg-amber-100 text-amber-700",
@@ -85,7 +91,7 @@ export function MenuCookMode({
   };
 
   if (recipes.length === 0) {
-    return <p className="text-sm text-sky-300/60">Questo menù non ha ancora ricette.</p>;
+    return <p className="text-sm text-sky-100">Questo menù non ha ancora ricette.</p>;
   }
 
   return (
@@ -145,7 +151,7 @@ function QuickRecipeCookCard({
   };
 
   return (
-    <div className="rounded-2xl border border-white/25 bg-white/30 backdrop-blur-sm p-4 sm:p-5 flex items-center gap-3">
+    <div className={`${cookCardCls} flex items-center gap-3`}>
       <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-sky-100">
         {recipe.photo ? (
           <Image src={recipe.photo} alt={recipe.name} fill className="object-cover" sizes="44px" />
@@ -226,7 +232,7 @@ function RecipeCookCard({
   };
 
   return (
-    <div className="rounded-2xl border border-white/25 bg-white/30 backdrop-blur-sm p-4 sm:p-5 flex flex-col gap-3">
+    <div className={`${cookCardCls} flex flex-col gap-3`}>
       {/* Header */}
       <div className="flex items-center gap-3">
         <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-sky-100">
@@ -242,7 +248,7 @@ function RecipeCookCard({
           </Link>
           <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
             {total > 0 && (
-              <p className="text-[11px] text-sky-700/70 tabular-nums">
+              <p className="text-[11px] text-sky-700 tabular-nums">
                 {atCompletion ? "Procedura completata" : `Passo ${progress.stepIdx + 1}/${total}`}
               </p>
             )}
@@ -285,7 +291,7 @@ function RecipeCookCard({
 
       {/* Step corrente o banner di completamento */}
       {step ? (
-        <div className="rounded-xl bg-white/40 border border-white/30 p-3.5 flex-1">
+        <div className="rounded-xl bg-white/60 border border-white/50 p-3.5 flex-1">
           <p className="text-sm leading-relaxed text-sky-900">{step.text}</p>
           {(() => {
             const kind = toStepKind(step.kind);
@@ -304,7 +310,7 @@ function RecipeCookCard({
             );
           })()}
           {nextAt && (
-            <p className="mt-2 border-t border-white/40 pt-1.5 text-[11px] text-sky-600/80">
+            <p className="mt-2 border-t border-white/60 pt-1.5 text-[11px] text-sky-700">
               Prossimo passo alle <strong className="tabular-nums">{formatClock(nextAt)}</strong>
             </p>
           )}
@@ -316,7 +322,7 @@ function RecipeCookCard({
             <p className="text-sm font-semibold text-green-900">
               {progress.cooked ? "Cottura registrata!" : "Tutti i passi completati"}
             </p>
-            {!progress.cooked && <p className="text-xs text-green-800/80">Segna la ricetta come cucinata?</p>}
+            {!progress.cooked && <p className="text-xs text-green-800">Segna la ricetta come cucinata?</p>}
           </div>
           {progress.cooked ? (
             <button

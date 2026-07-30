@@ -4,16 +4,16 @@
 
 function Field({ className = "" }: { className?: string }) {
   return (
-    <div className={`space-y-1 ${className}`}>
+    <div className={`space-y-0.5 sm:space-y-1 ${className}`}>
       <div className="h-3 w-20 rounded bg-white/40" />
-      <div className="h-9 rounded-lg bg-white/40 sm:h-10" />
+      <div className="h-[34px] rounded-lg bg-white/40 sm:h-10" />
     </div>
   );
 }
 
 function Card({ children }: { children: React.ReactNode }) {
   return (
-    <div className="space-y-3 rounded-2xl border border-white/50 bg-white/60 p-4 shadow-sm backdrop-blur-sm sm:space-y-4 sm:p-6">
+    <div className="space-y-2.5 rounded-2xl border border-white/50 bg-white/60 p-3 shadow-sm backdrop-blur-sm sm:space-y-4 sm:p-6">
       {children}
     </div>
   );
@@ -21,8 +21,8 @@ function Card({ children }: { children: React.ReactNode }) {
 
 function CardTitle() {
   return (
-    <div className="flex items-center gap-2">
-      <div className="h-7 w-7 rounded-lg bg-white/50" />
+    <div className="flex items-center gap-2.5 sm:gap-3">
+      <div className="h-8 w-8 rounded-xl bg-white/50 sm:h-9 sm:w-9" />
       <div className="h-4 w-32 rounded bg-white/50" />
     </div>
   );
@@ -32,7 +32,7 @@ export function FormSkeleton({ variant }: { variant: "recipe" | "menu" }) {
   return (
     <div className="mx-auto max-w-3xl animate-pulse space-y-4 sm:space-y-6">
       {/* Top bar sticky (titolo + pubblica + annulla + salva) */}
-      <div className="flex items-center justify-between gap-3 rounded-b-2xl border border-white/50 bg-white/70 px-5 py-3 shadow-lg backdrop-blur-xl">
+      <div className="flex items-center justify-between gap-2 rounded-b-2xl border border-white/50 bg-white/70 px-3 py-2 shadow-lg backdrop-blur-xl sm:gap-3 sm:px-5 sm:py-3">
         <div className="h-5 w-32 rounded bg-white/60" />
         <div className="flex shrink-0 items-center gap-2">
           <div className="h-7 w-16 rounded-full bg-white/60" />
@@ -53,12 +53,12 @@ export function FormSkeleton({ variant }: { variant: "recipe" | "menu" }) {
                 <Field key={i} />
               ))}
             </div>
-            <div className="h-20 rounded-lg bg-white/40" />
+            <div className="h-16 rounded-lg bg-white/40" />
             <Field />
           </>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
-            <div className="sm:col-span-2 h-16 rounded-lg bg-white/40" />
+            <div className="sm:col-span-2 h-14 rounded-lg bg-white/40" />
             <Field />
             <Field />
             <Field className="sm:col-span-2" />
@@ -92,7 +92,7 @@ export function FormSkeleton({ variant }: { variant: "recipe" | "menu" }) {
           <Card>
             <CardTitle />
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-16 rounded-xl bg-white/30 sm:h-14" />
+              <div key={i} className="h-[86px] rounded-xl bg-white/30 sm:h-[104px]" />
             ))}
           </Card>
 

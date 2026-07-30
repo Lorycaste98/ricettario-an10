@@ -24,7 +24,7 @@ const GRID_STEPS = [15, 30, 60, 120, 240, 480, 1440] as const; // minuti
 const MIN_LABEL_PX = 64;
 const SLIVER_PX = 7; // step senza durata
 const MIN_SEG_PX = 14; // larghezza minima cliccabile per step con durata
-const MAX_INITIAL_WIDTH = 3200;
+const MAX_INITIAL_WIDTH = 3200; // tetto di sicurezza quando non si conosce la larghezza reale
 const ZOOM_TRANSITION_MS = 300; // deve combaciare con la classe duration-300 sotto
 
 const SEGMENT_COLOR: Record<StepKind, string> = {
@@ -32,6 +32,25 @@ const SEGMENT_COLOR: Record<StepKind, string> = {
   COOK: "bg-red-400/85",
   WAIT: "bg-amber-300/85",
 };
+
+/**
+ * Zoom iniziale: il più grande che fa stare TUTTA la finestra nello schermo.
+ * Prima il tetto era fisso (3200px): su telefono significava un canvas 10 volte
+ * più largo del viewport, con le ricette fuori campo e in vista solo una fascia
+ * di ore lontana da esse (sembrava che gli orari fossero sbagliati).
+ * `CookTimeline` è renderizzata solo client-side (gate `hydrated` in CookPlanner),
+ * quindi `window` c'è; il guard serve solo per sicurezza.
+ */
+function fitZoom(spanMins: number): number {
+  const available =
+    typeof window === "undefined"
+      ? MAX_INITIAL_WIDTH
+      : Math.max(260, Math.min(window.innerWidth, 1080) - 80);
+  for (const z of ZOOM_PRESETS) {
+    if (spanMins * z <= available) return z;
+  }
+  return ZOOM_PRESETS[ZOOM_PRESETS.length - 1];
+}
 
 interface Selected {
   recipeId: number;
@@ -82,12 +101,7 @@ export function CookTimeline({
     return { windowStart: start, spanMins: Math.max(60, (end.getTime() - start.getTime()) / 60_000) };
   }, [timelineRecipes, schedules, serveAt]);
 
-  const [pxPerMin, setPxPerMin] = useState<number>(() => {
-    for (const z of ZOOM_PRESETS) {
-      if (spanMins * z <= MAX_INITIAL_WIDTH) return z;
-    }
-    return ZOOM_PRESETS[ZOOM_PRESETS.length - 1];
-  });
+  const [pxPerMin, setPxPerMin] = useState<number>(() => fitZoom(spanMins));
 
   const zoomIdx = ZOOM_PRESETS.indexOf(pxPerMin as (typeof ZOOM_PRESETS)[number]);
   const canZoomIn = zoomIdx > 0;
@@ -107,9 +121,54 @@ export function CookTimeline({
   };
   const zoomTransitionCls = zooming ? "transition-[left,width] duration-300 ease-out" : "";
 
+  // Scroll orizzontale: all'apertura inquadra il servizio (se il canvas non ci sta
+  // tutto) e dopo un cambio orario riporta in vista la barra spostata — altrimenti
+  // si finisce a guardare una fascia di ore dove non c'è nessuna ricetta.
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const barRefs = useRef(new Map<number, HTMLElement>());
+  const registerBar = (recipeId: number, el: HTMLElement | null) => {
+    if (el) barRefs.current.set(recipeId, el);
+    else barRefs.current.delete(recipeId);
+  };
+
+  const revealBar = (recipeId: number) => {
+    // 80ms: il tempo che React ricommetta la barra nella nuova posizione
+    setTimeout(() => {
+      const box = scrollRef.current;
+      const bar = barRefs.current.get(recipeId);
+      if (!box || !bar) return;
+      const c = box.getBoundingClientRect();
+      const b = bar.getBoundingClientRect();
+      if (b.left >= c.left && b.right <= c.right) return; // già in vista
+      box.scrollTo({
+        left: box.scrollLeft + (b.left - c.left) - c.width / 2 + b.width / 2,
+        behavior: "smooth",
+      });
+    }, 80);
+  };
+
+  const handleStartChange = (recipeId: number, start: Date) => {
+    onStartChange(recipeId, start);
+    revealBar(recipeId);
+  };
+  const handleReset = (recipeId: number) => {
+    onReset(recipeId);
+    revealBar(recipeId);
+  };
+
   const widthPx = spanMins * pxPerMin;
   const minsFrom = (d: Date) => (d.getTime() - windowStart.getTime()) / 60_000;
   const servePx = minsFrom(serveAt) * pxPerMin;
+
+  // All'apertura, se il canvas resta più largo dello schermo, inquadra il servizio
+  // (la parte di giornata che interessa davvero) invece dell'inizio della finestra.
+  useEffect(() => {
+    const box = scrollRef.current;
+    if (!box || box.scrollWidth <= box.clientWidth) return;
+    box.scrollLeft = Math.max(0, servePx - box.clientWidth * 0.75);
+    // solo al montaggio: dopo comanda l'utente (scroll, zoom, drag)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Gridline: il passo più piccolo che lascia almeno MIN_LABEL_PX tra le etichette
   const gridStep = GRID_STEPS.find((s) => s * pxPerMin >= MIN_LABEL_PX) ?? GRID_STEPS[GRID_STEPS.length - 1];
@@ -122,11 +181,12 @@ export function CookTimeline({
   }, [spanMins, gridStep, pxPerMin, windowStart]);
 
   return (
-    <section className="rounded-2xl border border-white/25 bg-white/30 backdrop-blur-sm p-4 sm:p-5 space-y-3">
+    // Stesso "vetro chiaro" leggibile delle card ricetta dello stepper
+    <section className="rounded-2xl border border-white/60 bg-white/75 backdrop-blur-md p-4 sm:p-5 shadow-sm space-y-3">
       {/* Header: titolo + legenda + zoom */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <h2 className="text-sm font-semibold text-sky-950">Timeline</h2>
-        <div className="flex items-center gap-3 text-[10px] text-sky-800/80">
+        <div className="flex items-center gap-3 text-[10px] text-sky-800">
           {(Object.keys(SEGMENT_COLOR) as StepKind[]).map((k) => (
             <span key={k} className="flex items-center gap-1">
               <span className={`h-2 w-2 rounded-sm ${SEGMENT_COLOR[k]}`} />
@@ -156,13 +216,14 @@ export function CookTimeline({
         </div>
       </div>
 
-      <p className="text-[11px] text-sky-700/70">
+      <p className="text-[11px] text-sky-700">
         Tocca l&apos;orario di una ricetta per impostare l&apos;inizio a mano, oppure trascina la sua barra
         per aggiustarlo (scatti di 5 minuti).
       </p>
 
       {/* Canvas scrollabile — scrollbar custom: pollice scuro, nessuno sfondo sul binario */}
       <div
+        ref={scrollRef}
         className="overflow-x-auto overscroll-x-contain rounded-xl border border-white/30 bg-white/25 pb-2
           [scrollbar-width:thin] [scrollbar-color:#0c4a6e66_transparent]
           [&::-webkit-scrollbar]:h-2.5 [&::-webkit-scrollbar-track]:bg-transparent
@@ -177,7 +238,7 @@ export function CookTimeline({
               return (
                 <span
                   key={t.px}
-                  className="absolute top-1 text-[10px] tabular-nums text-sky-700/70 whitespace-nowrap"
+                  className="absolute top-1 text-[10px] tabular-nums text-sky-700 whitespace-nowrap"
                   style={{ left: t.px + 3 }}
                 >
                   {formatClock(t.date)}
@@ -222,8 +283,9 @@ export function CookTimeline({
                   startPx={minsFrom(schedule.start) * pxPerMin}
                   windowWidthPx={widthPx}
                   zooming={zooming}
-                  onStartChange={onStartChange}
-                  onReset={onReset}
+                  registerBar={registerBar}
+                  onStartChange={handleStartChange}
+                  onReset={handleReset}
                   onSelect={(segment) => setSelected({ recipeId: recipe.id, recipeName: recipe.name, segment })}
                 />
               );
@@ -234,7 +296,7 @@ export function CookTimeline({
 
       {/* Ricette veloci: nessuno step da pianificare, elencate senza corsia */}
       {quickRecipes.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 text-[11px] text-sky-800/70">
+        <div className="flex flex-wrap items-center gap-2 text-[11px] text-sky-800">
           <span className="font-medium">Senza tempistica:</span>
           {quickRecipes.map((r) => (
             <QuickTag key={r.id} label={r.name} />
@@ -279,6 +341,7 @@ function TimelineLane({
   startPx,
   windowWidthPx,
   zooming,
+  registerBar,
   onStartChange,
   onReset,
   onSelect,
@@ -294,6 +357,8 @@ function TimelineLane({
    * Mai durante il drag di una barra, altrimenti lo scatto a fine trascinamento verrebbe "ammorbidito"
    * col risultato di un salto indietro seguito da uno scivolamento innaturale. */
   zooming: boolean;
+  /** Registra il nodo della barra: serve al genitore per riportarla in vista */
+  registerBar: (recipeId: number, el: HTMLElement | null) => void;
   onStartChange: (recipeId: number, start: Date) => void;
   onReset: (recipeId: number) => void;
   onSelect: (segment: TimelineSegment) => void;
@@ -353,6 +418,7 @@ function TimelineLane({
       {/* Corsia con barra trascinabile */}
       <div ref={constraintsRef} className={`relative h-8 ${zoomTransitionCls}`} style={{ width: windowWidthPx }}>
         <motion.div
+          ref={(el: HTMLDivElement | null) => registerBar(recipe.id, el)}
           drag="x"
           dragConstraints={constraintsRef}
           dragMomentum={false}

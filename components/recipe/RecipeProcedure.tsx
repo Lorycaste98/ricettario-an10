@@ -159,7 +159,7 @@ export function RecipeProcedure({ recipeId, defaultServings, servingsUnit, ingre
     <div className="space-y-6 sm:space-y-5">
 
       {/* ── Ingredienti ── */}
-      <section className="rounded-2xl bg-white/60 border border-white/40 backdrop-blur-sm p-5 sm:p-6">
+      <section className="rounded-2xl bg-white/75 border border-white/60 backdrop-blur-md p-5 sm:p-6 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <SectionHeader title="Ingredienti" icon={<Carrot size={20} />} tone="emerald" size="lg" />
 
@@ -223,7 +223,7 @@ export function RecipeProcedure({ recipeId, defaultServings, servingsUnit, ingre
       </section>
 
       {/* ── Procedura interattiva ── */}
-      <section className="rounded-2xl bg-white/60 border border-white/40 backdrop-blur-sm p-5 sm:p-6">
+      <section className="rounded-2xl bg-white/75 border border-white/60 backdrop-blur-md p-5 sm:p-6 shadow-sm">
         {/* Header: dropdown chiuso di default. Stile trasparente identico in aperto/chiuso
             così la barra di progresso resta sempre visibile allo stesso modo. */}
         {steps.length > 0 ? (

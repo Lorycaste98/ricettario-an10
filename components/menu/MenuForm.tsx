@@ -162,14 +162,14 @@ export function MenuForm({ initialData }: Props) {
     router.refresh();
   };
 
-  // py-2 su mobile (form lunghi: meno spazio verticale), py-2.5 da sm in su
+  // py-1.5 su mobile (~34px, come `inlineInput`/`Input`), py-2.5 da sm in su
   const inputCls =
-    "w-full rounded-xl border border-white/30 bg-white/20 px-3 py-2 sm:py-2.5 text-sm text-sky-950 placeholder:text-sky-700/50 focus:outline-none focus:ring-2 focus:ring-sky-400/50 focus:border-sky-300/60 backdrop-blur-sm transition";
+    "w-full rounded-xl border border-white/30 bg-white/20 px-3 py-1.5 sm:py-2.5 text-sm text-sky-950 placeholder:text-sky-700/50 focus:outline-none focus:ring-2 focus:ring-sky-400/50 focus:border-sky-300/60 backdrop-blur-sm transition";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
       {/* Sticky top bar — stesso stile e offset del form ricetta */}
-      <div className="sticky z-30 flex items-center justify-between gap-3 rounded-b-2xl border border-white/50 bg-white/70 backdrop-blur-xl px-5 py-3 shadow-lg shadow-black/[0.07] ring-1 ring-black/[0.04]" style={{ top: "calc(env(safe-area-inset-top, 0px) + 56px)" }}>
+      <div className="sticky z-30 flex items-center justify-between gap-2 rounded-b-2xl border border-white/50 bg-white/70 backdrop-blur-xl px-3 py-2 sm:gap-3 sm:px-5 sm:py-3 shadow-lg shadow-black/[0.07] ring-1 ring-black/[0.04]" style={{ top: "calc(env(safe-area-inset-top, 0px) + 56px)" }}>
         <h1 className="text-sm font-semibold text-gray-800 truncate">
           {isEditing ? "Modifica menù" : "Nuovo menù"}
         </h1>
@@ -179,7 +179,9 @@ export function MenuForm({ initialData }: Props) {
             Annulla
           </Button>
           <Button type="submit" size="sm" loading={saving}>
-            {isEditing ? "Salva modifiche" : "Crea menù"}
+            {/* Etichetta corta su mobile: lascia respiro al titolo nella barra sticky */}
+            <span className="sm:hidden">{isEditing ? "Salva" : "Crea"}</span>
+            <span className="hidden sm:inline">{isEditing ? "Salva modifiche" : "Crea menù"}</span>
           </Button>
         </div>
       </div>
@@ -191,7 +193,7 @@ export function MenuForm({ initialData }: Props) {
       )}
 
       {/* Campi base */}
-      <div className="rounded-2xl border border-white/50 bg-white/60 backdrop-blur-sm p-4 sm:p-6 shadow-sm space-y-3 sm:space-y-4">
+      <div className="rounded-2xl border border-white/50 bg-white/60 backdrop-blur-sm p-3 sm:p-6 shadow-sm space-y-2.5 sm:space-y-4">
         <SectionHeader title="Informazioni" icon={<Info size={18} />} tone="sky" />
         <div className="grid gap-3 sm:gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
@@ -272,7 +274,7 @@ export function MenuForm({ initialData }: Props) {
       </div>
 
       {/* Selezione ricette */}
-      <div className="rounded-2xl border border-white/50 bg-white/60 backdrop-blur-sm p-4 sm:p-6 shadow-sm space-y-3 sm:space-y-4">
+      <div className="rounded-2xl border border-white/50 bg-white/60 backdrop-blur-sm p-3 sm:p-6 shadow-sm space-y-2.5 sm:space-y-4">
         <SectionHeader
           title="Ricette nel menù"
           icon={<UtensilsCrossed size={18} />}
@@ -300,7 +302,7 @@ export function MenuForm({ initialData }: Props) {
               {(handle) => (
               <>
                 {/* Thumb */}
-                <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg bg-sky-100">
+                <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-lg bg-sky-100 sm:h-9 sm:w-9">
                   {r.photo ? (
                     <Image src={r.photo} alt={r.name} fill className="object-cover" sizes="36px" />
                   ) : (

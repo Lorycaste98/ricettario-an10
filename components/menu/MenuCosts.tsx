@@ -150,13 +150,16 @@ export function MenuCosts({
     "w-full rounded-lg border border-white/40 bg-white/60 px-2.5 py-1.5 text-sm text-sky-950 tabular-nums placeholder:text-sky-700/40 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-300/30";
 
   return (
-    <section className="rounded-2xl border border-white/25 bg-white/30 backdrop-blur-sm p-5 sm:p-6">
+    // Sfondo "carta" come la lista della spesa: il gradiente di pagina è fisso, su
+    // una card molto trasparente i numeri scuri sparivano nella fascia bassa del
+    // viewport (vedi MenuShoppingList).
+    <section className="rounded-2xl border border-white/60 bg-white/75 backdrop-blur-md p-5 sm:p-6 shadow-sm">
       <SectionHeader
         title="Costi e prezzo"
         icon={<Calculator size={20} />}
         tone="violet"
         size="lg"
-        titleClassName="text-sky-50"
+        titleClassName="text-sky-950"
         hint="Somma i costi del menù e calcola il prezzo di vendita"
         className="mb-4"
       />
@@ -171,7 +174,7 @@ export function MenuCosts({
             <span className="text-sm font-semibold text-sky-950 tabular-nums">{fmt(ingredientsCost)}</span>
           </div>
         </div>
-        <p className="-mt-1 px-1 text-[11px] text-sky-600/70">
+        <p className="-mt-1 px-1 text-[11px] text-sky-700">
           Dal “totale speso” nella lista della spesa qui sopra.
         </p>
 
@@ -341,7 +344,7 @@ export function MenuCosts({
             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
               {outputs.includes("perPerson") && (
                 <div className="flex flex-col justify-between rounded-xl border border-violet-300/40 bg-white/60 px-4 py-3">
-                  <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-sky-700/80">
+                  <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-sky-800">
                     <Users size={13} className="text-violet-600" /> A persona{people ? ` · ${people}` : ""}
                   </span>
                   {people ? (
@@ -352,13 +355,13 @@ export function MenuCosts({
                       <span className="text-[11px] text-sky-600">costo {fmt(totalCost / people)}</span>
                     </>
                   ) : (
-                    <span className="mt-1.5 text-xs text-sky-600/80">Imposta le persone del menù.</span>
+                    <span className="mt-1.5 text-xs text-sky-700">Imposta le persone del menù.</span>
                   )}
                 </div>
               )}
               {outputs.includes("margin") && (
                 <div className="flex flex-col justify-between rounded-xl border border-violet-300/40 bg-white/60 px-4 py-3">
-                  <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-sky-700/80">
+                  <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-sky-800">
                     <TrendingUp size={13} className="text-emerald-600" /> Margine
                   </span>
                   <span className="mt-1.5 text-xl font-extrabold text-emerald-700 tabular-nums">

@@ -10,7 +10,8 @@ import { getSiteUrl } from "@/lib/site-url";
 import { formatMinutes, formatServings } from "@/lib/types";
 import { resolveServeAt, computeStart, startLabel } from "@/lib/cook-schedule";
 import type { Metadata } from "next";
-import { CalendarDays, UtensilsCrossed, Star, Clock, Users, AlarmClock, ChefHat, ArrowLeft } from "lucide-react";
+import { CalendarDays, UtensilsCrossed, Star, Clock, Users, AlarmClock, ChefHat } from "lucide-react";
+import { BackLink } from "@/components/ui/BackLink";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { QuickTag } from "@/components/ui/QuickTag";
 import { MenuPdfButton } from "@/components/menu/MenuPdfButton";
@@ -64,13 +65,8 @@ export default async function MenuDetailPage({ params }: Params) {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 sm:space-y-5">
-      {/* Back: bottone slim distinto (non si confonde con lo sfondo) */}
-      <Link
-        href="/menu"
-        className="inline-flex items-center gap-1.5 rounded-full border border-white/50 bg-white/70 px-3 py-1.5 text-sm font-medium text-sky-900 shadow-sm backdrop-blur-sm transition-colors hover:bg-white/90"
-      >
-        <ArrowLeft size={16} /> Tutti i menù
-      </Link>
+      {/* Back: bottone condiviso (BackLink), identico su ricetta/menù/modalità cucina */}
+      <BackLink href="/menu" label="Tutti i menù" />
 
       {/* Azioni admin (solo admin): pronto/non pronto + esporta + modifica + elimina,
           in cima — allineata al dettaglio ricetta (RecipeAdminBar) */}
@@ -192,8 +188,10 @@ export default async function MenuDetailPage({ params }: Params) {
             // "Quando iniziare": calcolato solo se il menù ha una data
             const startInfo = serve ? computeStart(recipe, serve.serveAt) : null;
             // Niente "group" per le voci veloci: nessun Link, quindi niente hover cues (title/thumb) che suggeriscano cliccabilità
-            const cardClassName = `flex items-start gap-3 rounded-2xl border border-white/25 bg-white/30 backdrop-blur-sm p-3.5 transition-all duration-200 ${
-              recipe.quick ? "" : "group hover:bg-white/45 hover:shadow-md"
+            // Stesso "vetro chiaro" delle altre card della pagina (lista spesa, costi, note):
+            // con bg-white/30 il testo scuro sparisce nella fascia bassa del gradiente
+            const cardClassName = `flex items-start gap-3 rounded-2xl border border-white/60 bg-white/75 backdrop-blur-md p-3.5 shadow-sm transition-all duration-200 ${
+              recipe.quick ? "" : "group hover:bg-white/90 hover:shadow-md"
             }`;
             const cardContent = (
               <>
@@ -224,7 +222,7 @@ export default async function MenuDetailPage({ params }: Params) {
                   <h3 className="text-sm font-semibold text-sky-950 group-hover:text-orange-600 transition-colors line-clamp-1">
                     {recipe.name}
                   </h3>
-                  <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-sky-700/70">
+                  <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-sky-700">
                     {totalTime > 0 && (
                       <span className="flex items-center gap-1">
                         <Clock size={10} />

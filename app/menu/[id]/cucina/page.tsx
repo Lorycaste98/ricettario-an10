@@ -1,8 +1,8 @@
 import { notFound, redirect } from "next/navigation";
-import Link from "next/link";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
-import { ArrowLeft, ChefHat } from "lucide-react";
+import { ChefHat } from "lucide-react";
+import { BackLink } from "@/components/ui/BackLink";
 import { CookPlanner } from "@/components/menu/CookPlanner";
 import type { Metadata } from "next";
 
@@ -61,21 +61,18 @@ export default async function MenuCookModePage({ params }: Params) {
   }));
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
-      <Link
-        href={`/menu/${menu.id}`}
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-sky-950 [text-shadow:0_1px_3px_rgba(255,255,255,0.6)] hover:opacity-70 transition-opacity"
-      >
-        <ArrowLeft size={16} /> {menu.name}
-      </Link>
+    // Stesso ritmo verticale del dettaglio ricetta/menù (back → header → contenuto)
+    <div className="mx-auto max-w-5xl space-y-6 sm:space-y-5">
+      {/* Back: bottone condiviso (BackLink), identico su ricetta/menù/modalità cucina */}
+      <BackLink href={`/menu/${menu.id}`} label={menu.name} />
 
       <div className="flex items-center gap-3">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-orange-400 to-rose-500 text-white shadow-md shadow-orange-500/30">
           <ChefHat size={20} />
         </span>
         <div>
-          <h1 className="text-lg sm:text-xl font-bold text-sky-50 leading-tight">Modalità cucina</h1>
-          <p className="text-xs text-sky-300/60">Segui la procedura di ogni ricetta passo dopo passo</p>
+          <h1 className="text-lg sm:text-xl font-bold text-sky-50 leading-tight drop-shadow">Modalità cucina</h1>
+          <p className="text-xs text-sky-100">Segui la procedura di ogni ricetta passo dopo passo</p>
         </div>
       </div>
 
