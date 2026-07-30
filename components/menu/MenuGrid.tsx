@@ -12,11 +12,12 @@ import { useLocalStore } from "@/lib/local-store";
 
 const PAGE_SIZE = 12;
 
-type SortKey = "createdAt" | "name";
+type SortKey = "date" | "createdAt" | "name";
 type PublishedFilter = "all" | "published" | "draft";
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
-  { value: "createdAt", label: "Data" },
+  { value: "date", label: "Data servizio" },
+  { value: "createdAt", label: "Data creazione" },
   { value: "name", label: "Nome" },
 ];
 
@@ -32,7 +33,10 @@ const parseStr = (raw: string): string => {
   const v = JSON.parse(raw);
   return typeof v === "string" ? v : "";
 };
-const parseSort = (raw: string): SortKey => (JSON.parse(raw) === "name" ? "name" : "createdAt");
+const parseSort = (raw: string): SortKey => {
+  const v = JSON.parse(raw);
+  return v === "name" || v === "createdAt" ? v : "date";
+};
 // Default: dalla più vecchia alla più recente (crescente)
 const parseOrder = (raw: string): "asc" | "desc" => (JSON.parse(raw) === "desc" ? "desc" : "asc");
 const parsePublished = (raw: string): PublishedFilter => {
@@ -52,7 +56,7 @@ export function MenuGrid({ menus }: Props) {
   const { isAdmin } = useAuth();
   // Filtri per-scheda: persistono durante la navigazione ma si azzerano alla chiusura scheda
   const [q, setQ] = useLocalStore<string>(K + "q", "", parseStr, undefined, "session");
-  const [sort, setSort] = useLocalStore<SortKey>(K + "sort", "createdAt", parseSort, undefined, "session");
+  const [sort, setSort] = useLocalStore<SortKey>(K + "sort", "date", parseSort, undefined, "session");
   const [order, setOrder] = useLocalStore<"asc" | "desc">(K + "order", "asc", parseOrder, undefined, "session");
   const [publishedFilter, setPublishedFilter] = useLocalStore<PublishedFilter>(
     K + "published",
@@ -66,7 +70,7 @@ export function MenuGrid({ menus }: Props) {
 
   const resetPage = () => setPage(0);
   const isFilterActive =
-    sort !== "createdAt" || order !== "asc" || (isAdmin && publishedFilter !== "all");
+    sort !== "date" || order !== "asc" || (isAdmin && publishedFilter !== "all");
 
   const filtered = useMemo(() => {
     let list = [...menus];
@@ -83,8 +87,14 @@ export function MenuGrid({ menus }: Props) {
     else if (isAdmin && publishedFilter === "draft") list = list.filter((m) => !m.published);
 
     list.sort((a, b) => {
-      const av = sort === "name" ? a.name : a[sort];
-      const bv = sort === "name" ? b.name : b[sort];
+      // I menù senza data di servizio finiscono sempre in fondo, in entrambe le direzioni
+      if (sort === "date") {
+        if (!a.date && !b.date) return 0;
+        if (!a.date) return 1;
+        if (!b.date) return -1;
+      }
+      const av = sort === "name" ? a.name : (a[sort] ?? "");
+      const bv = sort === "name" ? b.name : (b[sort] ?? "");
       if (av < bv) return order === "asc" ? -1 : 1;
       if (av > bv) return order === "asc" ? 1 : -1;
       return 0;
