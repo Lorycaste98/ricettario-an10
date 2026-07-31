@@ -1,10 +1,11 @@
 "use client";
 import { clsx } from "clsx";
 import { Eye, EyeOff } from "lucide-react";
-import { InputHTMLAttributes, TextareaHTMLAttributes, useState } from "react";
+import { InputHTMLAttributes, ReactNode, TextareaHTMLAttributes, useState } from "react";
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
-  label?: string;
+  /** Stringa nel 99% dei casi; ReactNode per etichette con icona (es. lucchetto) */
+  label?: ReactNode;
   error?: string;
 }
 
@@ -22,7 +23,7 @@ const baseClass =
 const labelClass = "text-xs sm:text-sm font-medium text-sky-900";
 
 export function Input({ label, error, className, id, type, ...props }: InputProps) {
-  const inputId = id ?? label?.toLowerCase().replace(/\s/g, "-");
+  const inputId = id ?? (typeof label === "string" ? label.toLowerCase().replace(/\s/g, "-") : undefined);
   const [show, setShow] = useState(false);
   const isPassword = type === "password";
   const inputType = isPassword && show ? "text" : type;

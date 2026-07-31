@@ -3,7 +3,7 @@ import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { clsx } from "clsx";
-import { Info, ImageIcon, Tag as TagIcon, Hash, Carrot, ListOrdered, Camera, Star, X, TriangleAlert, Save, CircleCheck, Layers, StickyNote } from "lucide-react";
+import { Info, ImageIcon, Tag as TagIcon, Hash, Carrot, ListOrdered, Camera, Star, X, TriangleAlert, Save, CircleCheck, Layers, StickyNote, Lock, Pencil, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Input";
 import { IngredientCombobox } from "@/components/ui/IngredientCombobox";
@@ -313,7 +313,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
       .catch(() => {});
   }, []);
 
-  // Somma i minuti degli step per tipo → suggerisce prep/cottura
+  // Somma i minuti degli step per tipo → alimenta prep/cottura
   const derived = useMemo(() => {
     let prepM = 0, cookM = 0, waitM = 0;
     for (const s of steps) {
@@ -326,18 +326,31 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
     return { prep: prepM, cook: cookM, wait: waitM, hasAny: prepM + cookM + waitM > 0 };
   }, [steps]);
 
-  // Auto-compila i campi VUOTI dalla derivazione (ricette nuove); non sovrascrive
-  // mai valori già presenti (incl. quelli salvati di ricette esistenti).
-  useEffect(() => {
-    if (derived.prep > 0) setPrep((cur) => (cur === "" ? String(derived.prep) : cur));
-  }, [derived.prep]);
-  useEffect(() => {
-    if (derived.cook > 0) setCook((cur) => (cur === "" ? String(derived.cook) : cur));
-  }, [derived.cook]);
+  /**
+   * Prep/Cottura hanno due modalità:
+   * - automatica (default): i campi sono in sola lettura e seguono SEMPRE la somma
+   *   dei minuti degli step, live. Nessun bottone da ricordarsi di premere.
+   * - manuale: sbloccata dall'utente, i campi si editano a mano e non vengono più
+   *   toccati. Le ricette esistenti con tempi salvati partono di qui, così i valori
+   *   già scelti non vengono sovrascritti.
+   */
+  const [timesManual, setTimesManual] = useState(
+    () => !!(initialData?.prep?.trim() || initialData?.cook?.trim())
+  );
 
-  const applyDerived = () => {
-    setPrep(derived.prep > 0 ? String(derived.prep) : "");
-    setCook(derived.cook > 0 ? String(derived.cook) : "");
+  // Valori effettivi dei due campi (quelli mostrati e quelli salvati): in
+  // automatico sono la somma degli step, in manuale lo stato editato a mano.
+  const derivedStr = (m: number) => (m > 0 ? String(m) : "");
+  const prepValue = timesManual ? prep : derivedStr(derived.prep);
+  const cookValue = timesManual ? cook : derivedStr(derived.cook);
+
+  /** Sblocca/riblocca i tempi; sbloccando si parte dai valori automatici correnti. */
+  const toggleTimesManual = () => {
+    if (!timesManual) {
+      setPrep(derivedStr(derived.prep));
+      setCook(derivedStr(derived.cook));
+    }
+    setTimesManual(!timesManual);
   };
 
   const handleNewIngredient = (name: string) => {
@@ -433,8 +446,8 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
       createdAt: createdAt || null,
       servings: servings ? Number(servings) : null,
       servingsUnit: servingsUnit.trim() || null,
-      prep: prep ? Number(prep) : null,
-      cook: cook ? Number(cook) : null,
+      prep: prepValue ? Number(prepValue) : null,
+      cook: cookValue ? Number(cookValue) : null,
       notes: notes.trim() || null,
       links: links.trim() || null,
       photo: mainPhoto?.url.trim() || null,
@@ -476,7 +489,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
       setError(err instanceof Error ? err.message : "Errore sconosciuto");
       setSaving(false);
     }
-  }, [name, createdAt, servings, servingsUnit, prep, cook, notes, links, published, categoryIds, tagIds, ingredients, useSections, steps, photos, isEdit, recipeId, router]);
+  }, [name, createdAt, servings, servingsUnit, prepValue, cookValue, notes, links, published, categoryIds, tagIds, ingredients, useSections, steps, photos, isEdit, recipeId, router]);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
@@ -517,27 +530,55 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
           <Input label="Unità" type="text" value={servingsUnit}
             onChange={(e) => setServingsUnit(e.target.value)}
             placeholder="porzioni" title="Es. teglie da 28cm, pirofile… Vuoto = persone" />
-          <Input label="Prep. (min)" type="number" min={0} value={prep}
-            onChange={(e) => setPrep(e.target.value)} placeholder="20" />
-          <Input label="Cottura (min)" type="number" min={0} value={cook}
-            onChange={(e) => setCook(e.target.value)} placeholder="30" />
+          <Input
+            label={<span className="inline-flex items-center gap-1">Prep. (min) {timesManual ? <Pencil size={11} className="text-amber-600" /> : <Lock size={11} className="text-sky-600" />}</span>}
+            id="prep-min" type="number" min={0} value={prepValue} readOnly={!timesManual}
+            onChange={(e) => setPrep(e.target.value)} placeholder={timesManual ? "20" : "—"}
+            className={clsx(!timesManual && "cursor-default bg-sky-50/70 text-sky-800")}
+            title={timesManual ? undefined : "Calcolato dai passi: sbloccalo per modificarlo a mano"} />
+          <Input
+            label={<span className="inline-flex items-center gap-1">Cottura (min) {timesManual ? <Pencil size={11} className="text-amber-600" /> : <Lock size={11} className="text-sky-600" />}</span>}
+            id="cook-min" type="number" min={0} value={cookValue} readOnly={!timesManual}
+            onChange={(e) => setCook(e.target.value)} placeholder={timesManual ? "30" : "—"}
+            className={clsx(!timesManual && "cursor-default bg-sky-50/70 text-sky-800")}
+            title={timesManual ? undefined : "Calcolato dai passi: sbloccalo per modificarlo a mano"} />
         </div>
-        {derived.hasAny && (
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg bg-sky-50/60 border border-sky-100 px-3 py-2 text-xs text-sky-700">
-            <span className="font-medium">Dai passi:</span>
-            <span>Prep <strong>{derived.prep}m</strong></span>
-            <span>Cottura <strong>{derived.cook}m</strong></span>
-            {derived.wait > 0 && <span>Attesa <strong>{derived.wait}m</strong></span>}
-            <button
-              type="button"
-              onClick={applyDerived}
-              className="ml-auto shrink-0 rounded-md bg-sky-500 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-sky-600 transition-colors"
-              title="Copia i minuti calcolati dai passi nei campi Prep. e Cottura"
-            >
-              Applica<span className="hidden sm:inline"> a Prep/Cottura</span>
-            </button>
-          </div>
-        )}
+        {/* Barra di stato dei tempi: sempre visibile, così si può passare a mano
+            anche quando nessuno step ha minuti (altrimenti i campi resterebbero
+            bloccati e vuoti senza via d'uscita). */}
+        <div className={clsx(
+          "flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border px-3 py-2 text-xs",
+          timesManual
+            ? "border-amber-100 bg-amber-50/60 text-amber-800"
+            : "border-sky-100 bg-sky-50/60 text-sky-700"
+        )}>
+          {derived.hasAny ? (
+            <>
+              <span className="font-medium">Dai passi:</span>
+              <span>Prep <strong>{derived.prep}m</strong></span>
+              <span>Cottura <strong>{derived.cook}m</strong></span>
+              {derived.wait > 0 && <span>Attesa <strong>{derived.wait}m</strong></span>}
+            </>
+          ) : (
+            <span className="font-medium">
+              {timesManual ? "Valori inseriti a mano" : "I tempi si calcolano dai minuti dei passi"}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={toggleTimesManual}
+            className={clsx(
+              "ml-auto inline-flex shrink-0 items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-semibold text-white transition-colors",
+              timesManual ? "bg-amber-500 hover:bg-amber-600" : "bg-sky-500 hover:bg-sky-600"
+            )}
+            title={timesManual
+              ? "Torna a calcolare Prep. e Cottura dalla somma dei passi"
+              : "Sblocca i campi per inserire Prep. e Cottura a mano"}
+          >
+            {timesManual ? <RotateCcw size={12} /> : <Pencil size={12} />}
+            {timesManual ? "Torna automatico" : <>Modifica<span className="hidden sm:inline"> a mano</span></>}
+          </button>
+        </div>
         <Textarea label="Note" value={notes} onChange={(e) => setNotes(e.target.value)}
           rows={2} placeholder="Consigli, varianti, sostituzioni..." />
         <Input label="Link fonte" type="url" value={links}
