@@ -1,5 +1,6 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "./Button";
 
 interface Props {
@@ -12,8 +13,17 @@ interface Props {
   bodyClassName?: string;
 }
 
+const SIZE_PX = { sm: 360, md: 560, lg: 720, xl: 900 } as const;
+
+const noopSubscribe = () => () => {};
+
 export function Modal({ open, onClose, title, children, size = "md", bodyClassName = "" }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
+  // Il dialog viene montato in un portale su <body>: gli antenati con
+  // `backdrop-filter` (le card "vetro chiaro" della modalità cucina, la timeline)
+  // creano un containing block per i figli `position: fixed` e su Safari/iPad il
+  // dialog veniva centrato — e ritagliato — dentro la card invece che nel viewport.
+  const mounted = useSyncExternalStore(noopSubscribe, () => true, () => false);
 
   useEffect(() => {
     const el = ref.current;
@@ -22,23 +32,22 @@ export function Modal({ open, onClose, title, children, size = "md", bodyClassNa
     else el.close();
   }, [open]);
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
-  return (
+  return createPortal(
     <dialog
       ref={ref}
       onClose={onClose}
       onClick={(e) => { if (e.target === ref.current) onClose(); }}
       className="fixed inset-0 z-50 m-auto rounded-2xl border border-white/30 bg-white/85 backdrop-blur-xl p-0 shadow-2xl backdrop:bg-sky-950/40 open:flex open:flex-col"
       style={{
-        width: size === "sm" ? "360px" : size === "lg" ? "720px" : size === "xl" ? "900px" : "560px",
-        maxWidth: "calc(100vw - 2rem)",
+        width: `min(${SIZE_PX[size]}px, calc(100vw - 2rem))`,
         maxHeight: "calc(100dvh - 2rem)",
       }}
     >
       {title && (
-        <div className="flex items-center justify-between border-b border-white/30 px-6 py-4">
-          <h2 className="text-lg font-semibold text-sky-950">{title}</h2>
+        <div className="flex items-center justify-between border-b border-white/30 px-5 py-3.5 sm:px-6 sm:py-4">
+          <h2 className="text-base sm:text-lg font-semibold text-sky-950">{title}</h2>
           <button onClick={onClose} className="rounded-lg p-1.5 text-sky-600 hover:bg-white/50 hover:text-sky-900">
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -46,8 +55,9 @@ export function Modal({ open, onClose, title, children, size = "md", bodyClassNa
           </button>
         </div>
       )}
-      <div className={`flex-1 overflow-y-auto p-6 ${bodyClassName}`}>{children}</div>
-    </dialog>
+      <div className={`flex-1 overflow-y-auto p-5 sm:p-6 ${bodyClassName}`}>{children}</div>
+    </dialog>,
+    document.body
   );
 }
 

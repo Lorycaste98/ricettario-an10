@@ -158,20 +158,24 @@ export function StartTimeEditor({
           </p>
         )}
 
-        <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
+        {/* Su schermo stretto i tre bottoni non ci stanno in riga: «Ora automatica»
+            scende sotto invece di far traboccare il dialog */}
+        <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
           {isCustom && (
-            <Button variant="ghost" size="sm" onClick={reset} className="mr-auto">
+            <Button variant="ghost" size="sm" onClick={reset} className="sm:mr-auto">
               <span className="inline-flex items-center gap-1.5">
                 <RotateCcw size={14} /> Ora automatica
               </span>
             </Button>
           )}
-          <Button variant="secondary" size="sm" onClick={() => setOpen(false)}>
-            Annulla
-          </Button>
-          <Button size="sm" onClick={save} disabled={!draft}>
-            Salva
-          </Button>
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" size="sm" onClick={() => setOpen(false)}>
+              Annulla
+            </Button>
+            <Button size="sm" onClick={save} disabled={!draft}>
+              Salva
+            </Button>
+          </div>
         </div>
       </Modal>
     </>

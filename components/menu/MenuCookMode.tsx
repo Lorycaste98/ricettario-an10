@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, RotateCcw, PartyPopper, UtensilsCrossed, Check, CookingPot, AlarmClock, Timer } from "lucide-react";
+import { ChevronLeft, ChevronRight, RotateCcw, PartyPopper, UtensilsCrossed, Check, CookingPot, AlarmClock, Timer, ListX } from "lucide-react";
 import { formatMinutes, toStepKind, STEP_KIND_LABEL, type StepKind } from "@/lib/types";
 import { formatClock } from "@/lib/cook-timeline";
 import { useLocalStore } from "@/lib/local-store";
@@ -12,8 +12,10 @@ import { StartTimeEditor } from "@/components/menu/StartTimeEditor";
 // Card ricetta della modalità cucina: stesso "vetro chiaro" leggibile delle altre
 // card con testo scuro (lista spesa, costi, dettaglio ricetta). Con bg-white/30 il
 // testo sparisce nella fascia bassa del gradiente di pagina.
+// `min-w-0`: senza, la traccia della griglia si allarga alla min-content della card
+// (parole lunghe nel testo dello step) e la card finisce oltre il bordo dello schermo.
 const cookCardCls =
-  "rounded-2xl border border-white/60 bg-white/75 backdrop-blur-md p-4 sm:p-5 shadow-sm";
+  "min-w-0 rounded-2xl border border-white/60 bg-white/75 backdrop-blur-md p-3.5 sm:p-5 shadow-sm";
 
 const KIND_BADGE: Partial<Record<StepKind, string>> = {
   COOK: "bg-red-100 text-red-700",
@@ -151,24 +153,34 @@ function QuickRecipeCookCard({
   };
 
   return (
-    <div className={`${cookCardCls} flex items-center gap-3`}>
-      <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-sky-100">
-        {recipe.photo ? (
-          <Image src={recipe.photo} alt={recipe.name} fill className="object-cover" sizes="44px" />
-        ) : (
-          <div className="flex h-full items-center justify-center text-sky-300"><UtensilsCrossed size={18} /></div>
-        )}
+    <div className={`${cookCardCls} flex flex-col gap-3`}>
+      {/* Header: stessa anatomia della card con stepper */}
+      <div className="flex items-center gap-3">
+        <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-sky-100">
+          {recipe.photo ? (
+            <Image src={recipe.photo} alt={recipe.name} fill className="object-cover" sizes="44px" />
+          ) : (
+            <div className="flex h-full items-center justify-center text-sky-500"><UtensilsCrossed size={18} /></div>
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-semibold text-sky-950">{recipe.name}</span>
+          <QuickTag className="mt-0.5" />
+        </div>
       </div>
-      <div className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-semibold text-sky-950">{recipe.name}</span>
-        <QuickTag label="Ricetta veloce — nessuna procedura" className="mt-1" />
+
+      {/* Al posto del riquadro dello step: qui non c'è nulla da seguire */}
+      <div className="flex flex-1 items-center gap-2 rounded-xl border border-dashed border-sky-300/70 bg-white/45 p-3 text-[13px] text-sky-700">
+        <ListX size={16} className="shrink-0 text-sky-600" />
+        Nessuna procedura da seguire.
       </div>
+
       {cooked ? (
         <button
           type="button"
           onClick={undoCooked}
           disabled={cookLoading}
-          className="shrink-0 inline-flex items-center gap-1 rounded-lg border border-green-400/50 bg-green-100/60 px-3 py-1.5 text-xs font-medium text-green-800 hover:bg-green-100 disabled:opacity-50 transition-colors"
+          className="flex w-full items-center justify-center gap-1 rounded-lg border border-green-400/50 bg-green-100/60 px-3 py-2 text-xs font-medium text-green-800 hover:bg-green-100 disabled:opacity-50 transition-colors"
         >
           <Check size={13} /> Cucinata
         </button>
@@ -177,7 +189,7 @@ function QuickRecipeCookCard({
           type="button"
           onClick={markCooked}
           disabled={cookLoading}
-          className="shrink-0 rounded-lg bg-orange-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-orange-600 disabled:opacity-50 transition-colors"
+          className="flex w-full items-center justify-center rounded-lg bg-orange-500 px-3 py-2 text-xs font-medium text-white hover:bg-orange-600 disabled:opacity-50 transition-colors"
         >
           {cookLoading ? "…" : <span className="inline-flex items-center gap-1"><CookingPot size={13} /> Segna cucinata</span>}
         </button>
@@ -239,7 +251,7 @@ function RecipeCookCard({
           {recipe.photo ? (
             <Image src={recipe.photo} alt={recipe.name} fill className="object-cover" sizes="44px" />
           ) : (
-            <div className="flex h-full items-center justify-center text-sky-300"><UtensilsCrossed size={18} /></div>
+            <div className="flex h-full items-center justify-center text-sky-500"><UtensilsCrossed size={18} /></div>
           )}
         </div>
         <div className="min-w-0 flex-1">
@@ -291,8 +303,8 @@ function RecipeCookCard({
 
       {/* Step corrente o banner di completamento */}
       {step ? (
-        <div className="rounded-xl bg-white/60 border border-white/50 p-3.5 flex-1">
-          <p className="text-sm leading-relaxed text-sky-900">{step.text}</p>
+        <div className="min-w-0 rounded-xl bg-white/60 border border-white/50 p-3 sm:p-3.5 flex-1">
+          <p className="text-[13px] sm:text-sm leading-relaxed text-sky-900 [overflow-wrap:anywhere]">{step.text}</p>
           {(() => {
             const kind = toStepKind(step.kind);
             const badge = KIND_BADGE[kind];
@@ -316,10 +328,10 @@ function RecipeCookCard({
           )}
         </div>
       ) : (
-        <div className="rounded-xl border border-green-300/50 bg-green-100/60 backdrop-blur-sm p-3.5 flex-1 flex items-center gap-3">
-          <PartyPopper size={22} className="text-green-700 shrink-0" />
+        <div className="min-w-0 rounded-xl border border-green-300/50 bg-green-100/60 backdrop-blur-sm p-3 sm:p-3.5 flex-1 flex items-center gap-2.5 sm:gap-3">
+          <PartyPopper size={20} className="text-green-700 shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-green-900">
+            <p className="text-[13px] sm:text-sm font-semibold text-green-900">
               {progress.cooked ? "Cottura registrata!" : "Tutti i passi completati"}
             </p>
             {!progress.cooked && <p className="text-xs text-green-800">Segna la ricetta come cucinata?</p>}

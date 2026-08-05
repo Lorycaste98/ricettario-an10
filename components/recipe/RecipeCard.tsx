@@ -9,10 +9,10 @@ import { useAuth } from "@/components/AuthProvider";
 /** Pill voto (oro) — media recensioni ospiti. */
 function RatingPill({ avg, count }: { avg: number; count: number }) {
   return (
-    <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-amber-400/20 px-1.5 py-0.5 text-amber-300 shadow-sm">
-      <Star size={11} className="fill-current" />
-      <span className="text-xs font-bold leading-none">{avg.toFixed(1)}</span>
-      <span className="text-[10px] leading-none text-amber-200/70">({count})</span>
+    <span className="inline-flex shrink-0 items-center gap-0.5 rounded-md bg-amber-400/20 px-1 py-0.5 text-amber-300 shadow-sm sm:gap-1 sm:px-1.5">
+      <Star className="size-2.5 fill-current sm:size-3" />
+      <span className="text-[10px] font-bold leading-none sm:text-xs">{avg.toFixed(1)}</span>
+      <span className="text-[9px] leading-none text-amber-200/80 sm:text-[10px]">({count})</span>
     </span>
   );
 }
@@ -22,10 +22,10 @@ function MyRatingPill({ value }: { value: number }) {
   return (
     <span
       title="Il mio voto"
-      className="inline-flex shrink-0 items-center gap-1 rounded-md bg-sky-400/25 px-1.5 py-0.5 text-sky-100 shadow-sm ring-1 ring-inset ring-sky-300/40"
+      className="inline-flex shrink-0 items-center gap-0.5 rounded-md bg-sky-400/25 px-1 py-0.5 text-sky-100 shadow-sm ring-1 ring-inset ring-sky-300/40 sm:gap-1 sm:px-1.5"
     >
-      <ChefHat size={11} />
-      <span className="text-xs font-bold leading-none">{value}</span>
+      <ChefHat className="size-2.5 sm:size-3" />
+      <span className="text-[10px] font-bold leading-none sm:text-xs">{value}</span>
     </span>
   );
 }
@@ -70,14 +70,14 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
           <div className="flex flex-wrap items-center gap-1.5">
             {primaryCat && (
               <span
-                className="rounded-full px-2.5 py-0.5 text-[10px] font-semibold text-white shadow backdrop-blur-sm"
+                className="max-w-28 truncate rounded-full px-2 py-0.5 text-[9px] font-semibold text-white shadow backdrop-blur-sm sm:max-w-none sm:px-2.5 sm:text-[10px]"
                 style={{ backgroundColor: primaryCat.color + "cc" }}
               >
                 {primaryCat.name}
               </span>
             )}
             {isHidden && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/90 px-2 py-0.5 text-[10px] font-semibold text-white shadow backdrop-blur-sm">
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/90 px-2 py-0.5 text-[9px] font-semibold text-white shadow backdrop-blur-sm sm:text-[10px]">
                 <EyeOff size={10} /> Non pronta
               </span>
             )}
@@ -86,17 +86,19 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
           <FavoriteButton recipeId={recipe.id} />
         </div>
 
-        {/* Pannello info frosted: sopra la foto, ma la foto resta visibile (blur) */}
-        <div className="absolute inset-x-0 bottom-0 flex flex-col gap-1 border-t border-white/10 bg-black/30 px-2.5 py-2 backdrop-blur-md sm:px-3">
-          <div className="flex items-start justify-between gap-2">
+        {/* Pannello info frosted: sopra la foto, ma la foto resta visibile (blur).
+            Su mobile è volutamente minimale (titolo + voti + tempo): il resto delle
+            informazioni ruba spazio alla foto, che è il motivo per cui si guarda la card. */}
+        <div className="absolute inset-x-0 bottom-0 flex flex-col gap-0.5 border-t border-white/10 bg-black/30 px-2 py-1.5 backdrop-blur-md sm:gap-1 sm:px-3 sm:py-2">
+          <div className="flex items-start justify-between gap-1.5">
             <h3
               title={recipe.name}
-              className="min-h-[2.75em] text-xs sm:text-sm font-bold text-white leading-snug line-clamp-2 drop-shadow group-hover:text-orange-300 transition-colors"
+              className="text-[11px] sm:min-h-[2.75em] sm:text-sm font-bold text-white leading-snug line-clamp-2 drop-shadow group-hover:text-orange-300 transition-colors"
             >
               {recipe.name}
             </h3>
             {(hasRating || (isAdmin && recipe.myRating != null)) && (
-              <div className="flex shrink-0 flex-col items-end gap-1">
+              <div className="flex shrink-0 flex-col items-end gap-0.5 sm:gap-1">
                 {isAdmin && recipe.myRating != null && <MyRatingPill value={recipe.myRating} />}
                 {hasRating && <RatingPill avg={recipe.avgRating!} count={recipe._count.reviews} />}
               </div>
@@ -104,15 +106,20 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
           </div>
 
           {hasMeta && (
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[10px] sm:text-[11px] text-white/85">
+            <div
+              className={`${
+                totalTime > 0 ? "flex" : "hidden sm:flex"
+              } flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[9px] sm:text-[11px] text-white/85`}
+            >
               {totalTime > 0 && (
                 <span className="flex items-center gap-1">
-                  <Clock size={12} className="shrink-0" /> {formatMinutes(totalTime)}
+                  <Clock className="size-2.5 shrink-0 sm:size-3" /> {formatMinutes(totalTime)}
                 </span>
               )}
+              {/* Porzioni e cotture: solo da tablet in su */}
               {recipe.servings && (
-                <span className="flex items-center gap-1">
-                  <Users size={12} className="shrink-0" />
+                <span className="hidden items-center gap-1 sm:flex">
+                  <Users className="size-3 shrink-0" />
                   <span className="truncate max-w-28">
                     {recipe.servingsUnit
                       ? formatServings(recipe.servings, recipe.servingsUnit)
@@ -121,8 +128,8 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
                 </span>
               )}
               {isAdmin && recipe.cookCount > 0 && (
-                <span className="flex items-center gap-1">
-                  <CookingPot size={12} className="shrink-0" /> ×{recipe.cookCount}
+                <span className="hidden items-center gap-1 sm:flex">
+                  <CookingPot className="size-3 shrink-0" /> ×{recipe.cookCount}
                 </span>
               )}
             </div>

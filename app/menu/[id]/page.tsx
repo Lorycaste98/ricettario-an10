@@ -115,9 +115,17 @@ export default async function MenuDetailPage({ params }: Params) {
       {/* Accesso rapido alla nota (solo admin, solo se presente): scrolla alla sezione note */}
       {session && menu.notes && <MenuNoteQuickLink note={menu.notes} targetId="note-menu" />}
 
-      {/* Hero header */}
-      <div className="relative overflow-hidden rounded-2xl">
-        <div className="relative aspect-3/1 sm:aspect-4/1 min-h-45">
+      {/* Hero header.
+          Griglia a cella singola: lo spaziatore impone il rapporto d'aspetto minimo,
+          il testo sta in flusso nella stessa cella e può farla crescere. Prima il
+          blocco era in `absolute` dentro un box ad altezza fissa: su schermo stretto
+          titolo/descrizione/meta traboccavano oltre il bordo alto e sparivano. */}
+      <div className="relative grid overflow-hidden rounded-2xl">
+        {/* Spaziatore: altezza minima dell'hero */}
+        <div className="col-start-1 row-start-1 aspect-3/1 sm:aspect-4/1 min-h-45" />
+
+        {/* Immagine + velatura */}
+        <div className="relative col-start-1 row-start-1">
           {menu.photo ? (
             <Image
               src={menu.photo}
@@ -132,41 +140,43 @@ export default async function MenuDetailPage({ params }: Params) {
               <UtensilsCrossed size={64} className="text-sky-600/40" />
             </div>
           )}
-          <div className="absolute inset-0 bg-linear-to-t from-sky-950/90 via-sky-950/40 to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-sky-950/90 via-sky-950/45 to-transparent" />
+        </div>
 
-          {/* Text overlay */}
-          <div className="absolute bottom-0 left-0 right-0 p-5">
-            <h1 className="text-2xl sm:text-3xl font-bold text-white drop-shadow">
-              {menu.name}
-            </h1>
-            {menu.description && (
-              <p className="mt-1 text-sm text-white/80 max-w-2xl">{menu.description}</p>
-            )}
-            <div className="mt-2 flex flex-wrap items-center gap-3">
-              {formattedDate && (
-                <span className="flex items-center gap-1.5 text-xs text-white/70">
-                  <CalendarDays size={11} />
-                  {formattedDate}
-                </span>
-              )}
-              <span className="flex items-center gap-1.5 text-xs text-white/70">
-                <UtensilsCrossed size={11} />
-                {menu._count.recipes} ricette
+        {/* Testo: in flusso, allineato in basso */}
+        <div className="relative col-start-1 row-start-1 flex min-w-0 flex-col justify-end p-4 sm:p-5">
+          <h1 className="text-xl sm:text-3xl font-bold text-white drop-shadow [overflow-wrap:anywhere]">
+            {menu.name}
+          </h1>
+          {menu.description && (
+            <p className="mt-1 max-w-2xl text-xs sm:text-sm text-white/80 line-clamp-3 sm:line-clamp-none">
+              {menu.description}
+            </p>
+          )}
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+            {formattedDate && (
+              <span className="flex items-center gap-1.5 text-[11px] sm:text-xs text-white/75">
+                <CalendarDays size={11} className="shrink-0" />
+                {formattedDate}
               </span>
-              {menu.people != null && (
-                <span className="flex items-center gap-1.5 text-xs text-white/70">
-                  <Users size={11} />
-                  {menu.people} persone
-                </span>
-              )}
-              {menu.avgRating !== null && (
-                <span className="flex items-center gap-1.5 text-xs text-amber-300">
-                  <Star size={11} fill="currentColor" />
-                  <span className="font-semibold">{menu.avgRating.toFixed(1)}</span>
-                  <span className="text-white/60">({menu._count.reviews} rec.)</span>
-                </span>
-              )}
-            </div>
+            )}
+            <span className="flex items-center gap-1.5 text-[11px] sm:text-xs text-white/75">
+              <UtensilsCrossed size={11} className="shrink-0" />
+              {menu._count.recipes} ricette
+            </span>
+            {menu.people != null && (
+              <span className="flex items-center gap-1.5 text-[11px] sm:text-xs text-white/75">
+                <Users size={11} className="shrink-0" />
+                {menu.people} persone
+              </span>
+            )}
+            {menu.avgRating !== null && (
+              <span className="flex items-center gap-1.5 text-[11px] sm:text-xs text-amber-300">
+                <Star size={11} fill="currentColor" className="shrink-0" />
+                <span className="font-semibold">{menu.avgRating.toFixed(1)}</span>
+                <span className="text-white/70">({menu._count.reviews} rec.)</span>
+              </span>
+            )}
           </div>
         </div>
       </div>
