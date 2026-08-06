@@ -76,6 +76,8 @@ export interface Step {
   mins: number | null;
   kind: StepKind;
   order: number;
+  /** Id degli ingredienti (della stessa ricetta) necessari a questo passo; assente/vuoto = nessun legame. */
+  ingredientIds?: number[];
 }
 
 export interface RecipePhoto {

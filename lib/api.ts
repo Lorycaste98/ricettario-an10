@@ -1,5 +1,10 @@
 // Selects condivisi per mantenere risposte consistenti
 
+import { db } from "@/lib/db";
+import { toStepKind } from "@/lib/types";
+
+type TxClient = Parameters<Parameters<typeof db.$transaction>[0]>[0];
+
 export const recipeSummarySelect = {
   id: true,
   name: true,
@@ -42,7 +47,15 @@ export const recipeDetailSelect = {
     orderBy: { order: "asc" as const },
   },
   steps: {
-    select: { id: true, text: true, mins: true, kind: true, order: true },
+    select: {
+      id: true,
+      text: true,
+      mins: true,
+      kind: true,
+      order: true,
+      // Ingredienti necessari al passo: appiattiti in `ingredientIds` da flattenRecipe
+      ingredients: { select: { ingredientId: true } },
+    },
     orderBy: { order: "asc" as const },
   },
   reviews: {
@@ -70,8 +83,109 @@ export function flattenRecipe(r: any) {
     ...r,
     categories: r.categories?.map((rc: { category: unknown }) => rc.category),
     tags: r.tags?.map((rt: { tag: unknown }) => rt.tag),
+    // Legami passo↔ingrediente: la junction diventa una lista di id (riferiti
+    // agli `ingredients[].id` della stessa risposta). In scrittura si usano
+    // invece gli indici, vedi `createRecipeContent`.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    steps: r.steps?.map((s: any) => ({
+      ...s,
+      ingredients: undefined,
+      ingredientIds: (s.ingredients ?? []).map((si: { ingredientId: number }) => si.ingredientId),
+    })),
     avgRating,
   };
+}
+
+// ─── Scrittura di ingredienti / step / legami ────────────────────────────────
+
+export interface IngredientInput {
+  name: string;
+  qty?: number | null;
+  unit?: string | null;
+  description?: string | null;
+  optional?: boolean;
+  section?: string | null;
+  order?: number;
+}
+
+export interface StepInput {
+  text: string;
+  mins?: number | null;
+  kind?: string;
+  order?: number;
+  /** Indici (posizione nell'array `ingredients` della stessa richiesta) degli ingredienti del passo */
+  ingredientIdx?: number[];
+}
+
+/**
+ * Crea ingredienti, step e legami passo↔ingrediente di una ricetta.
+ * Il chiamante deve aver già svuotato le tabelle (PUT) o aver appena creato la
+ * ricetta (POST); qui non si cancella nulla.
+ *
+ * I legami arrivano come **indici** nell'array `ingredients` — al momento della
+ * richiesta gli id non esistono ancora (il PUT fa delete-recreate di entrambe le
+ * tabelle) — quindi si possono risolvere solo qui, dopo l'insert. `order` viene
+ * riscritto con la posizione nell'array proprio per far coincidere indice e
+ * ordine di lettura.
+ */
+export async function createRecipeContent(
+  tx: TxClient,
+  recipeId: number,
+  ingredients: IngredientInput[] | undefined,
+  steps: StepInput[] | undefined
+) {
+  const ingRows = ingredients ?? [];
+  const stepRows = steps ?? [];
+
+  const createdIngredients = ingRows.length
+    ? await tx.ingredient.createManyAndReturn({
+        data: ingRows.map((i, idx) => ({
+          recipeId,
+          name: i.name,
+          qty: i.qty ?? null,
+          unit: i.unit ?? null,
+          description: i.description ?? null,
+          optional: !!i.optional,
+          section: i.section?.trim() || null,
+          order: idx,
+        })),
+        select: { id: true, order: true },
+      })
+    : [];
+
+  const createdSteps = stepRows.length
+    ? await tx.step.createManyAndReturn({
+        data: stepRows.map((s, idx) => ({
+          recipeId,
+          text: s.text,
+          mins: s.mins ?? null,
+          kind: toStepKind(s.kind),
+          order: idx,
+        })),
+        select: { id: true, order: true },
+      })
+    : [];
+
+  // `order` == indice nell'array inviato (riscritto sopra): mappe esatte
+  const ingredientIdByIdx = new Map(createdIngredients.map((i) => [i.order, i.id]));
+  const stepIdByIdx = new Map(createdSteps.map((s) => [s.order, s.id]));
+
+  const links: { stepId: number; ingredientId: number }[] = [];
+  stepRows.forEach((s, idx) => {
+    const stepId = stepIdByIdx.get(idx);
+    if (!stepId || !s.ingredientIdx?.length) return;
+    for (const ingredientId of new Set(
+      s.ingredientIdx
+        .map((i) => ingredientIdByIdx.get(i))
+        .filter((id): id is number => id !== undefined)
+    )) {
+      links.push({ stepId, ingredientId });
+    }
+  });
+
+  if (links.length > 0) {
+    await tx.stepIngredient.createMany({ data: links, skipDuplicates: true });
+  }
 }
 
 export function ok(data: unknown, status = 200) {

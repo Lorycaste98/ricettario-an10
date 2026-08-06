@@ -77,7 +77,7 @@ export function TagCombobox({
               key={t.id}
               type="button"
               onClick={() => onToggle(t.id)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-orange-300 bg-orange-100/70 px-3 py-1.5 text-xs font-medium text-orange-700 transition-transform hover:scale-105"
+              className="inline-flex items-center gap-1.5 rounded-full border border-orange-300 bg-orange-100/70 px-3 py-1.5 text-[0.75em] font-medium text-orange-700 transition-transform hover:scale-105"
               title="Rimuovi"
             >
               #{t.name}
@@ -108,7 +108,7 @@ export function TagCombobox({
                   key={t.id}
                   type="button"
                   onMouseDown={(e) => { e.preventDefault(); onToggle(t.id); }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 hover:bg-sky-50 transition-colors"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-[0.875em] text-gray-700 hover:bg-sky-50 transition-colors"
                 >
                   <span className="flex-1 truncate">#{t.name}</span>
                   {isSel && <Check size={14} className="shrink-0 text-emerald-500" />}
@@ -121,7 +121,7 @@ export function TagCombobox({
                 type="button"
                 onMouseDown={(e) => { e.preventDefault(); void handleCreate(); }}
                 disabled={creating}
-                className="flex w-full items-center gap-2 border-t border-gray-100 px-3 py-2 text-left text-sm font-medium text-orange-600 hover:bg-orange-50 transition-colors disabled:opacity-50"
+                className="flex w-full items-center gap-2 border-t border-gray-100 px-3 py-2 text-left text-[0.875em] font-medium text-orange-600 hover:bg-orange-50 transition-colors disabled:opacity-50"
               >
                 <Plus size={14} className="shrink-0" />
                 {creating ? "Creazione…" : <>Crea <span className="font-semibold">«{query.trim()}»</span></>}
@@ -131,9 +131,9 @@ export function TagCombobox({
         )}
       </div>
 
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      {error && <p className="text-[0.75em] text-red-500">{error}</p>}
       {selectedIds.length > 0 && (
-        <p className="text-xs text-sky-600">
+        <p className="text-[0.75em] text-sky-600">
           {selectedIds.length} tag selezionat{selectedIds.length === 1 ? "o" : "i"}
         </p>
       )}

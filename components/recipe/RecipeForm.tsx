@@ -3,7 +3,7 @@ import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { clsx } from "clsx";
-import { Info, ImageIcon, Tag as TagIcon, Hash, Carrot, ListOrdered, Camera, Star, X, TriangleAlert, Save, CircleCheck, Layers, StickyNote, Lock, Pencil, RotateCcw } from "lucide-react";
+import { Info, ImageIcon, Tag as TagIcon, Hash, Carrot, ListOrdered, Camera, Star, X, Check, TriangleAlert, Save, CircleCheck, Layers, StickyNote, Lock, Pencil, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Input";
 import { IngredientCombobox } from "@/components/ui/IngredientCombobox";
@@ -19,11 +19,14 @@ import { type Category, type Tag, type StepKind, STEP_KINDS, STEP_KIND_LABEL } f
 // `uid` = identità stabile della riga per il drag & drop (le key per indice
 // rompono il Reorder); generato client-side, mai inviato all'API.
 interface IngredientRow { uid: string; name: string; qty: string; unit: string; description: string; optional: boolean; section: string }
-interface StepRow { uid: string; text: string; mins: string; kind: StepKind }
+// `ingredientUids` = ingredienti necessari al passo, riferiti per uid: sopravvivono
+// al riordino e alla rimozione delle righe (gli indici no). Diventano indici solo
+// al salvataggio, vedi `handleSubmit`.
+interface StepRow { uid: string; text: string; mins: string; kind: StepKind; ingredientUids: string[] }
 
 const uid = () => crypto.randomUUID();
 const emptyIngredient = (section = ""): IngredientRow => ({ uid: uid(), name: "", qty: "", unit: "", description: "", optional: false, section });
-const emptyStep = (): StepRow => ({ uid: uid(), text: "", mins: "", kind: "PREP" });
+const emptyStep = (): StepRow => ({ uid: uid(), text: "", mins: "", kind: "PREP", ingredientUids: [] });
 /** Riga foto interna al form: url + flag per la foto principale */
 interface PhotoRow { url: string; isMain: boolean }
 
@@ -45,7 +48,9 @@ export interface RecipeFormData {
   categoryIds: number[];
   tagIds: number[];
   ingredients: Omit<IngredientRow, "uid">[];
-  steps: Omit<StepRow, "uid">[];
+  /** `ingredientIdx` = posizioni nell'array `ingredients` qui sopra (gli id degli
+      ingredienti cambiano a ogni salvataggio: il PUT fa delete-recreate) */
+  steps: (Omit<StepRow, "uid" | "ingredientUids"> & { ingredientIdx?: number[] })[];
   /** Foto extra della galleria (NON include la foto principale) */
   photos: { url: string }[];
 }
@@ -82,8 +87,8 @@ async function uploadToCloudinary(file: File): Promise<string> {
 
 // ─── ImageUploadButton ────────────────────────────────────────────────────────
 
-function ImageUploadButton({ onUrl, label = "Carica foto", small = false }: {
-  onUrl: (url: string) => void; label?: string; small?: boolean;
+function ImageUploadButton({ onUrl, label = "Carica foto" }: {
+  onUrl: (url: string) => void; label?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -108,11 +113,12 @@ function ImageUploadButton({ onUrl, label = "Carica foto", small = false }: {
   return (
     <div className="flex flex-col gap-1">
       <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleChange} />
-      <Button type="button" variant="secondary" size={small ? "sm" : "md"} loading={uploading}
+      {/* Sempre "sm": nel form compatto un bottone md sovrasta i campi da 28px */}
+      <Button type="button" variant="secondary" size="sm" loading={uploading}
         onClick={() => inputRef.current?.click()}>
         <Camera size={15} /> {label}
       </Button>
-      {uploadError && <p className="text-xs text-red-500">{uploadError}</p>}
+      {uploadError && <p className="text-[0.75em] text-red-500">{uploadError}</p>}
     </div>
   );
 }
@@ -153,20 +159,32 @@ function Section({
 // ─── shared inline input / icon-button classes ────────────────────────────────
 
 /**
+ * Altezza unica di TUTTI i controlli del form in versione compatta: campi (anche
+ * quelli di `Input`, via `--field-h` sul `<form>`), maniglia di drag, bottoni
+ * icona, chip e numero del passo. Prima ognuno andava per conto suo (24 / 32 /
+ * ~20px) e la riga sembrava montata a pezzi. Se la cambi, cambia **anche**
+ * `--field-h` sul `<form>`: sono lo stesso valore in due sintassi (28px = 1.75rem).
+ */
+const ROW_H = "h-7";
+
+/**
  * Bottone icona delle righe (rimuovi, aggiungi descrizione): pastiglia chiara
  * fissa invece di una semplice icona tenue. Sullo sfondo a gradiente dell'app le
  * icone `sky-300`/`gray-300` diventavano invisibili in alcune zone. Stessa
  * impostazione dei bottoni riga del form menù e della maniglia di `ReorderList`.
  */
 const rowIconBtn =
-  "flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-white/60 bg-white/70 shadow-sm transition-colors";
+  `flex ${ROW_H} w-7 shrink-0 items-center justify-center rounded-lg border border-white/60 bg-white/70 shadow-sm transition-colors`;
 const rowIconBtnNeutral = `${rowIconBtn} text-sky-600 hover:bg-white hover:text-sky-900`;
 const rowIconBtnDanger = `${rowIconBtn} text-rose-500 hover:bg-rose-50 hover:text-rose-600`;
 
 
 // py-1.5 su mobile (~34px), py-2 da sm in su — vedi anche `Input` in components/ui/Input.tsx
+// Il testo dentro ai campi usa lo stesso knob di `Input` (--field-font-size):
+// nelle righe fitte di ingredienti/step un campo alla dimensione piena stona
+// contro i chip e le etichette accanto.
 const inlineInput =
-  "rounded-lg border border-white/40 bg-white/60 backdrop-blur-sm px-2 py-1.5 sm:py-2 text-sm text-sky-950 placeholder:text-sm placeholder:text-sky-600/50 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-300/30";
+  "rounded-lg border border-white/40 bg-white/60 backdrop-blur-sm px-2 py-1.5 sm:py-2 text-[length:var(--field-font-size,0.875em)] text-sky-950 placeholder:text-[1em] placeholder:text-sky-600/50 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-300/30";
 
 // ─── OptionalChip ─────────────────────────────────────────────────────────────
 
@@ -196,11 +214,13 @@ function SectionField({
   return (
     <span
       className={clsx(
-        "inline-flex min-w-0 items-center gap-1 self-start rounded-full border py-0.5 pl-2 pr-1 transition-colors focus-within:border-sky-400 focus-within:ring-2 focus-within:ring-sky-300/30",
+        // Stessa altezza dei campi e dei bottoni della riga (vedi ROW_H)
+        ROW_H,
+        "inline-flex min-w-0 items-center gap-1 rounded-full border pl-2 pr-2 transition-colors focus-within:border-sky-400 focus-within:ring-2 focus-within:ring-sky-300/30",
         value.trim() ? "border-emerald-300 bg-emerald-100/70" : "border-white/60 bg-white/70"
       )}
     >
-      <Layers size={10} className={clsx("shrink-0", value.trim() ? "text-emerald-700" : "text-sky-600")} />
+      <Layers size={11} className={clsx("shrink-0", value.trim() ? "text-emerald-700" : "text-sky-600")} />
       <input
         type="text"
         list={listId}
@@ -209,7 +229,7 @@ function SectionField({
         placeholder="sezione"
         title="Sezione/preparazione di questo ingrediente (es. Per l'impasto)"
         className={clsx(
-          "min-w-0 bg-transparent text-[11px] font-medium placeholder:font-normal focus:outline-none",
+          "min-w-0 bg-transparent text-[0.6875em] font-medium placeholder:font-normal focus:outline-none",
           compact ? "w-20" : "w-24 sm:w-28",
           value.trim() ? "text-emerald-900 placeholder:text-emerald-700/50" : "text-sky-900 placeholder:text-sky-600/70"
         )}
@@ -226,14 +246,112 @@ function OptionalChip({ active, onToggle, compact = false }: { active: boolean; 
       onClick={onToggle}
       title="Segna come ingrediente opzionale"
       className={clsx(
-        "inline-flex items-center gap-1 self-start rounded-full border px-2 py-0.5 text-[11px] font-medium transition-colors",
+        ROW_H,
+        "inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 text-[0.6875em] font-medium transition-colors",
         active
           ? "border-amber-300 bg-amber-100 text-amber-800"
           : "border-white/60 bg-white/70 text-sky-600 hover:border-amber-200 hover:text-amber-700"
       )}
     >
-      <TagIcon size={10} /> {compact ? "opz." : "opzionale"}
+      <TagIcon size={11} /> {compact ? "opz." : "opzionale"}
     </button>
+  );
+}
+
+// ─── StepIngredients ──────────────────────────────────────────────────────────
+
+/** "500 g farina" / "farina" — etichetta breve di una riga ingrediente. */
+function ingredientLabel(row: IngredientRow): string {
+  const qty = [row.qty.trim(), row.unit.trim()].filter(Boolean).join(" ");
+  return qty ? `${qty} ${row.name.trim()}` : row.name.trim();
+}
+
+/**
+ * Ingredienti necessari a un passo: chip dei legami + pannello di selezione.
+ * Opzionale per definizione (le ricette esistenti non ne hanno nessuno), quindi
+ * da chiuso occupa una riga sola e non mostra nulla se non c'è niente di legato.
+ */
+function StepIngredients({
+  all,
+  selected,
+  onToggle,
+}: {
+  /** Tutte le righe ingrediente della ricetta con un nome (le altre non sono selezionabili) */
+  all: IngredientRow[];
+  selected: string[];
+  onToggle: (ingredientUid: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const selectedSet = new Set(selected);
+  const chips = all.filter((i) => selectedSet.has(i.uid));
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex flex-wrap items-center gap-1.5">
+        {chips.map((ing) => (
+          <span
+            key={ing.uid}
+            className="inline-flex max-w-full items-center gap-1 rounded-full border border-emerald-300 bg-emerald-100/70 py-0.5 pl-2 pr-1 text-[0.6875em] font-medium text-emerald-900"
+          >
+            <span className="truncate">{ingredientLabel(ing)}</span>
+            <button
+              type="button"
+              onClick={() => onToggle(ing.uid)}
+              title="Togli l'ingrediente dal passo"
+              className="shrink-0 rounded-full p-0.5 text-emerald-700 hover:bg-emerald-200 hover:text-emerald-900 transition-colors"
+            >
+              <X size={11} />
+            </button>
+          </span>
+        ))}
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          title="Scegli gli ingredienti che servono in questo passo"
+          className={clsx(
+            "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[0.6875em] font-medium transition-colors",
+            open
+              ? "border-emerald-300 bg-emerald-100/70 text-emerald-800"
+              : "border-white/60 bg-white/70 text-sky-600 hover:border-emerald-200 hover:text-emerald-700"
+          )}
+        >
+          <Carrot size={11} />
+          {chips.length > 0 ? "Modifica" : "Ingredienti"}
+        </button>
+      </div>
+
+      {open && (
+        <div className="rounded-xl border border-emerald-200/70 bg-emerald-50/60 p-2">
+          {all.length === 0 ? (
+            <p className="text-[0.6875em] text-sky-700">
+              Aggiungi prima gli ingredienti della ricetta: qui potrai spuntare quelli che servono in questo passo.
+            </p>
+          ) : (
+            <div className="flex flex-wrap gap-1.5">
+              {all.map((ing) => {
+                const active = selectedSet.has(ing.uid);
+                return (
+                  <button
+                    key={ing.uid}
+                    type="button"
+                    onClick={() => onToggle(ing.uid)}
+                    className={clsx(
+                      "inline-flex max-w-full items-center gap-1 rounded-full border px-2 py-0.5 text-[0.6875em] font-medium transition-colors",
+                      active
+                        ? "border-emerald-400 bg-emerald-200/80 text-emerald-900"
+                        : "border-white/70 bg-white/80 text-sky-800 hover:border-emerald-300 hover:bg-emerald-100/70"
+                    )}
+                  >
+                    {active && <Check size={11} className="shrink-0" />}
+                    <span className="truncate">{ingredientLabel(ing)}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -270,21 +388,31 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
   const [published, setPublished] = useState(initialData?.published ?? true);
   const [categoryIds, setCategoryIds] = useState<number[]>(initialData?.categoryIds ?? []);
   const [tagIds, setTagIds] = useState<number[]>(initialData?.tagIds ?? []);
-  const [ingredients, setIngredients] = useState<IngredientRow[]>(() =>
-    initialData?.ingredients?.length
+  // Ingredienti e step si inizializzano insieme: i legami del passo arrivano come
+  // indici e vanno tradotti negli uid appena generati per le righe ingrediente.
+  const [initialRows] = useState(() => {
+    const ingRows: IngredientRow[] = initialData?.ingredients?.length
       ? initialData.ingredients.map((r) => ({ ...r, uid: uid() }))
-      : [emptyIngredient()]
-  );
+      : [emptyIngredient()];
+    const stepRows: StepRow[] = initialData?.steps?.length
+      ? initialData.steps.map(({ ingredientIdx, ...r }) => ({
+          ...r,
+          uid: uid(),
+          ingredientUids: (ingredientIdx ?? [])
+            .map((i) => ingRows[i]?.uid)
+            .filter((u): u is string => !!u),
+        }))
+      : [emptyStep()];
+    return { ingredients: ingRows, steps: stepRows };
+  });
+
+  const [ingredients, setIngredients] = useState<IngredientRow[]>(initialRows.ingredients);
   // Sezioni/preparazioni degli ingredienti (es. "Per l'impasto"): opzionali,
   // si attivano solo quando servono. In modifica sono già attive se salvate.
   const [useSections, setUseSections] = useState(
     () => initialData?.ingredients?.some((i) => i.section?.trim()) ?? false
   );
-  const [steps, setSteps] = useState<StepRow[]>(() =>
-    initialData?.steps?.length
-      ? initialData.steps.map((r) => ({ ...r, uid: uid() }))
-      : [emptyStep()]
-  );
+  const [steps, setSteps] = useState<StepRow[]>(initialRows.steps);
   /**
    * Tutte le foto della ricetta in un unico array.
    * isMain = true indica la foto principale (mostrata nei card / lista).
@@ -402,8 +530,28 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
 
   const addStep = () => setSteps((p) => [...p, emptyStep()]);
   const removeStep = (i: number) => setSteps((p) => p.filter((_, j) => j !== i));
-  const updateStep = (i: number, f: keyof StepRow, v: string) =>
+  const updateStep = (i: number, f: "text" | "mins" | "kind", v: string) =>
     setSteps((p) => p.map((r, j) => j === i ? { ...r, [f]: v } : r));
+  /** Lega/slega un ingrediente al passo `i` (riferimento per uid della riga). */
+  const toggleStepIngredient = (i: number, ingredientUid: string) =>
+    setSteps((p) =>
+      p.map((r, j) =>
+        j === i
+          ? {
+              ...r,
+              ingredientUids: r.ingredientUids.includes(ingredientUid)
+                ? r.ingredientUids.filter((u) => u !== ingredientUid)
+                : [...r.ingredientUids, ingredientUid],
+            }
+          : r
+      )
+    );
+
+  // Solo le righe con un nome sono legabili (le vuote non arrivano nemmeno al salvataggio)
+  const namedIngredients = useMemo(
+    () => ingredients.filter((i) => i.name.trim()),
+    [ingredients]
+  );
 
   const addPhoto = () => setPhotos((p) => [...p, { url: "", isMain: false }]);
   const removePhoto = (i: number) =>
@@ -437,6 +585,10 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
     setError(null);
 
     const validPhotos = photos.filter((p) => p.url.trim());
+    // Le righe senza nome non vengono salvate: gli indici dei legami passo↔
+    // ingrediente si calcolano sulla lista già filtrata, non su quella del form
+    const savedIngredients = ingredients.filter((i) => i.name.trim());
+    const ingredientIdxByUid = new Map(savedIngredients.map((i, idx) => [i.uid, idx]));
     // La foto principale: quella marcata come main, o la prima disponibile
     const mainPhoto =
       validPhotos.find((p) => p.isMain) ?? validPhotos[0] ?? null;
@@ -454,12 +606,19 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
       published,
       categoryIds,
       tagIds,
-      ingredients: ingredients
-        .filter((i) => i.name.trim())
-        .map((i, order) => ({ name: i.name.trim(), qty: i.qty ? Number(i.qty) : null, unit: i.unit.trim() || null, description: i.description.trim() || null, optional: i.optional, section: useSections ? i.section.trim() || null : null, order })),
+      ingredients: savedIngredients.map((i, order) => ({ name: i.name.trim(), qty: i.qty ? Number(i.qty) : null, unit: i.unit.trim() || null, description: i.description.trim() || null, optional: i.optional, section: useSections ? i.section.trim() || null : null, order })),
       steps: steps
         .filter((s) => s.text.trim())
-        .map((s, order) => ({ text: s.text.trim(), mins: s.mins ? Number(s.mins) : null, kind: s.kind, order })),
+        .map((s, order) => ({
+          text: s.text.trim(),
+          mins: s.mins ? Number(s.mins) : null,
+          kind: s.kind,
+          order,
+          // Gli uid sono client-side: l'API riceve la posizione nell'array `ingredients`
+          ingredientIdx: s.ingredientUids
+            .map((u) => ingredientIdxByUid.get(u))
+            .filter((idx): idx is number => idx !== undefined),
+        })),
       photos: validPhotos.map((p, order) => ({ url: p.url.trim(), order })),
     };
 
@@ -492,11 +651,27 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
   }, [name, createdAt, servings, servingsUnit, prepValue, cookValue, notes, links, published, categoryIds, tagIds, ingredients, useSections, steps, photos, isEdit, recipeId, router]);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+    // Due knob per la tipografia del form, non serve toccare altro:
+    //  · `text-[…rem]`      → scala di TUTTI i testi (Input/Button/SectionHeader/
+    //                         combobox e chip sono in `em`, seguono da soli)
+    //  · `--field-font-size` → solo il testo digitato dentro ai campi, tenuto più
+    //                         basso della scala generale perché nelle righe fitte
+    //                         un campo a dimensione piena sovrasta chip ed etichette
+    //  · `--field-h`         → altezza dei campi in versione compatta; stesso valore
+    //                         di `ROW_H` (28px), così campi, maniglie, bottoni icona
+    //                         e chip sono allineati sulla stessa banda
+    // `data-compact-fields` disattiva su questo form la guardia anti-zoom iOS di
+    // globals.css (`input { font-size: 16px }` su touch), che essendo non-layered
+    // batteva ogni classe: senza, su mobile i campi restavano a 16px.
+    <form
+      onSubmit={handleSubmit}
+      data-compact-fields
+      className="space-y-4 sm:space-y-6 text-[0.9rem] sm:text-[0.95rem] [--field-font-size:0.75em] [--field-h:1.75rem]"
+    >
 
       {/* Sticky top bar */}
       <div className="sticky z-30 flex items-center justify-between gap-2 rounded-b-2xl border border-white/50 bg-white/70 backdrop-blur-xl px-3 py-2 sm:gap-3 sm:px-5 sm:py-3 shadow-lg shadow-black/[0.07] ring-1 ring-black/[0.04]" style={{ top: "calc(env(safe-area-inset-top, 0px) + 56px)" }}>
-        <h1 className="text-sm font-semibold text-gray-800 truncate">
+        <h1 className="text-[0.875em] font-semibold text-gray-800 truncate">
           {isEdit ? "Modifica ricetta" : "Nuova ricetta"}
         </h1>
         <div className="flex items-center gap-2 shrink-0">
@@ -513,7 +688,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+        <div className="flex items-center gap-2 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-[0.875em] text-red-700">
           <TriangleAlert size={16} className="shrink-0" /> <span>{error}</span>
         </div>
       )}
@@ -547,7 +722,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
             anche quando nessuno step ha minuti (altrimenti i campi resterebbero
             bloccati e vuoti senza via d'uscita). */}
         <div className={clsx(
-          "flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border px-3 py-2 text-xs",
+          "flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border px-2.5 py-1.5 text-[0.75em]",
           timesManual
             ? "border-amber-100 bg-amber-50/60 text-amber-800"
             : "border-sky-100 bg-sky-50/60 text-sky-700"
@@ -568,7 +743,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
             type="button"
             onClick={toggleTimesManual}
             className={clsx(
-              "ml-auto inline-flex shrink-0 items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-semibold text-white transition-colors",
+              "ml-auto inline-flex shrink-0 items-center gap-1 rounded-md px-2.5 py-1 text-[0.6875em] font-semibold text-white transition-colors",
               timesManual ? "bg-amber-500 hover:bg-amber-600" : "bg-sky-500 hover:bg-sky-600"
             )}
             title={timesManual
@@ -625,7 +800,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
                   onClick={() => setPhotoAsMain(i)}
                   title={p.isMain ? "Foto principale" : "Imposta come principale"}
                   className={clsx(
-                    "absolute bottom-0 left-0 right-0 py-1 text-center text-[11px] font-semibold transition-colors",
+                    "absolute bottom-0 left-0 right-0 py-1 text-center text-[0.6875em] font-semibold transition-colors",
                     p.isMain
                       ? "bg-orange-500/90 text-white"
                       : "bg-black/40 text-white/80 hover:bg-orange-500/80"
@@ -648,7 +823,6 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
                 {!p.url && (
                   <div className="absolute inset-0 flex items-center justify-center">
                     <ImageUploadButton
-                      small
                       label="Carica"
                       onUrl={(url) => updatePhoto(i, url)}
                     />
@@ -677,7 +851,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
             {photos.map((p, i) =>
               !p.url ? (
                 <div key={i} className="flex gap-2 items-center">
-                  <span className="text-xs text-sky-600 w-5 shrink-0">{i + 1}.</span>
+                  <span className="text-[0.75em] text-sky-600 w-5 shrink-0">{i + 1}.</span>
                   <input
                     type="text"
                     value={p.url}
@@ -756,7 +930,8 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
             aria-checked={useSections}
             onClick={() => setUseSections((v) => !v)}
             className={clsx(
-              "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+              ROW_H,
+              "inline-flex items-center gap-2 rounded-full border px-3 text-[0.75em] font-medium transition-colors",
               useSections
                 ? "border-emerald-300 bg-emerald-100/80 text-emerald-800"
                 : "border-white/40 bg-white/40 text-sky-700 hover:bg-white/60"
@@ -778,7 +953,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
               />
             </span>
           </button>
-          <p className="text-xs text-sky-600">
+          <p className="text-[0.75em] text-sky-600">
             {useSections
               ? "Assegna a ogni riga la sua preparazione (es. «Per l'impasto»): il dettaglio ricetta le mostra raggruppate."
               : "Attivale se la ricetta ha più preparazioni (es. impasto e crema)."}
@@ -788,8 +963,8 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
         <div className="space-y-2">
           {/* Header colonne — solo desktop */}
           <div
-            className="hidden sm:grid items-center gap-2 px-1 text-xs font-medium text-sky-600"
-            style={{ gridTemplateColumns: "1.5rem 4rem 5rem 1fr 1.5rem" }}
+            className="hidden sm:grid items-center gap-2 px-1 text-[0.75em] font-medium text-sky-600"
+            style={{ gridTemplateColumns: "1.75rem 4rem 5rem 1fr 1.75rem" }}
           >
             <span />
             <span>Qtà</span>
@@ -800,11 +975,14 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
 
           <ReorderList values={ingredients} onReorder={setIngredients} className="space-y-2">
           {ingredients.map((ing, i) => (
-            <ReorderRow key={ing.uid} value={ing}>
+            // handleSize: la maniglia deve essere alta quanto i campi della riga (ROW_H)
+            <ReorderRow key={ing.uid} value={ing} handleSize={`${ROW_H} w-7`}>
             {(handle) => (
             <div>
               {/* ── Card mobile (compatta: nome + qtà/unità su due righe;
-                     descrizione, opzionale e sezione solo se servono) ── */}
+                     descrizione, opzionale e sezione solo se servono).
+                     Maniglia, campi, bottoni e chip condividono ROW_H: la riga
+                     deve leggersi come un blocco solo, non come pezzi diversi ── */}
               <div className="sm:hidden rounded-xl border border-white/50 bg-white/45 p-1.5 space-y-1">
                 <div className="flex items-center gap-1.5">
                   {handle}
@@ -814,26 +992,26 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
                     allIngredients={allIngredients}
                     onNewIngredient={handleNewIngredient}
                     placeholder="Ingrediente"
-                    className={inlineInput + " h-8 min-w-0 flex-1 py-0"}
+                    className={`${inlineInput} ${ROW_H} min-w-0 flex-1 py-0`}
                   />
                   {/* Descrizione: rara, si apre su richiesta (icona qui per non
                       rubare una riga intera ai chip qtà/unità/sezione sotto) */}
                   {!showDescription(ing) && (
                     <button type="button" onClick={() => openDescription(ing.uid)}
                       title="Aggiungi una descrizione all'ingrediente"
-                      className={rowIconBtnNeutral}><StickyNote size={13} /></button>
+                      className={rowIconBtnNeutral}><StickyNote size={14} /></button>
                   )}
                   <button type="button" onClick={() => removeIngredient(i)}
                     title="Rimuovi ingrediente"
-                    className={rowIconBtnDanger}><X size={13} /></button>
+                    className={rowIconBtnDanger}><X size={14} /></button>
                 </div>
                 <div className="flex flex-wrap items-center gap-1.5">
                   <input type="number" min={0} step="any" value={ing.qty}
                     onChange={(e) => updateIngredient(i, "qty", e.target.value)} placeholder="Qtà"
-                    className={inlineInput + " h-8 w-14 shrink-0 px-1.5 py-0 text-center"} />
+                    className={`${inlineInput} ${ROW_H} w-14 shrink-0 px-1.5 py-0 text-center`} />
                   <input type="text" value={ing.unit}
                     onChange={(e) => updateIngredient(i, "unit", e.target.value)} placeholder="g/ml"
-                    className={inlineInput + " h-8 w-16 shrink-0 px-1.5 py-0 text-center"} />
+                    className={`${inlineInput} ${ROW_H} w-16 shrink-0 px-1.5 py-0 text-center`} />
                   <OptionalChip compact active={ing.optional} onToggle={() => toggleIngredientOptional(i)} />
                   {useSections && (
                     <SectionField
@@ -848,7 +1026,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
                   <input type="text" value={ing.description} autoFocus={descriptionOpen.has(ing.uid) && !ing.description}
                     onChange={(e) => updateIngredient(i, "description", e.target.value)}
                     placeholder="Descrizione (es. fredda, bollente…)"
-                    className={inlineInput + " h-8 w-full py-0 text-xs"}
+                    className={`${inlineInput} ${ROW_H} w-full py-0`}
                   />
                 )}
               </div>
@@ -858,13 +1036,13 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
                 className="hidden sm:grid items-start gap-2"
                 style={{ gridTemplateColumns: "1.75rem 4rem 5rem 1fr 1.75rem" }}
               >
-                <div className="flex items-start justify-center pt-1.5">{handle}</div>
+                <div className="flex items-start justify-center">{handle}</div>
                 <input type="number" min={0} step="any" value={ing.qty}
                   onChange={(e) => updateIngredient(i, "qty", e.target.value)} placeholder="Qtà"
-                  className={inlineInput + " w-full"} />
+                  className={`${inlineInput} ${ROW_H} w-full py-0`} />
                 <input type="text" value={ing.unit}
                   onChange={(e) => updateIngredient(i, "unit", e.target.value)} placeholder="g/ml…"
-                  className={inlineInput + " w-full"} />
+                  className={`${inlineInput} ${ROW_H} w-full py-0`} />
                 <div className="flex flex-col gap-1">
                   <IngredientCombobox
                     value={ing.name}
@@ -872,12 +1050,12 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
                     allIngredients={allIngredients}
                     onNewIngredient={handleNewIngredient}
                     placeholder="Ingrediente"
-                    className={inlineInput + " w-full"}
+                    className={`${inlineInput} ${ROW_H} w-full py-0`}
                   />
                   <input type="text" value={ing.description}
                     onChange={(e) => updateIngredient(i, "description", e.target.value)}
                     placeholder="descrizione (es. fredda, bollente…)"
-                    className={inlineInput + " w-full text-xs opacity-80"}
+                    className={`${inlineInput} ${ROW_H} w-full py-0 opacity-80`}
                   />
                   <div className="flex flex-wrap items-center gap-2">
                   <OptionalChip active={ing.optional} onToggle={() => toggleIngredientOptional(i)} />
@@ -892,7 +1070,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
                 </div>
                 <button type="button" onClick={() => removeIngredient(i)}
                   title="Rimuovi ingrediente"
-                  className={rowIconBtnDanger + " mt-1"}><X size={13} /></button>
+                  className={rowIconBtnDanger}><X size={14} /></button>
               </div>
             </div>
             )}
@@ -918,10 +1096,10 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
       <Section title="Procedura" icon={<ListOrdered size={18} />} tone="sky" delay={300}>
         <ReorderList values={steps} onReorder={setSteps} className="space-y-3 sm:space-y-4">
           {steps.map((step, i) => (
-            <ReorderRow key={step.uid} value={step} className="flex gap-2 sm:gap-3 items-start">
+            <ReorderRow key={step.uid} value={step} handleSize={`${ROW_H} w-7`} className="flex gap-2 sm:gap-3 items-start">
             {(handle) => (
             <>
-              <span className="flex h-6 w-6 sm:h-7 sm:w-7 shrink-0 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white mt-1.5 sm:mt-2">
+              <span className={`flex ${ROW_H} w-7 shrink-0 items-center justify-center rounded-full bg-orange-500 text-[0.75em] font-bold text-white`}>
                 {i + 1}
               </span>
               <div className="flex-1 min-w-0 space-y-1.5">
@@ -932,7 +1110,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
                     value={step.kind}
                     onChange={(e) => updateStep(i, "kind", e.target.value as StepKind)}
                     title="Tipo di tempo di questo passo"
-                    className={inlineInput + " shrink-0 text-xs sm:text-sm"}
+                    className={`${inlineInput} ${ROW_H} shrink-0 py-0`}
                   >
                     {STEP_KINDS.map((k) => (
                       <option key={k} value={k}>{STEP_KIND_LABEL[k]}</option>
@@ -940,15 +1118,22 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
                   </select>
                   <input type="number" min={0} value={step.mins}
                     onChange={(e) => updateStep(i, "mins", e.target.value)} placeholder="—"
-                    className={inlineInput + " w-16 shrink-0 text-xs sm:w-20 sm:text-sm"} />
-                  <span className="text-[11px] text-sky-600 sm:text-xs">min (opz.)</span>
+                    className={`${inlineInput} ${ROW_H} w-16 shrink-0 py-0 sm:w-20`} />
+                  <span className="text-[0.6875em] text-sky-600 sm:text-[0.75em]">min (opz.)</span>
                 </div>
+                {/* Ingredienti che servono in questo passo: opzionali, mostrati
+                    in modalità cucina e sotto il passo nel dettaglio ricetta */}
+                <StepIngredients
+                  all={namedIngredients}
+                  selected={step.ingredientUids}
+                  onToggle={(u) => toggleStepIngredient(i, u)}
+                />
               </div>
-              <div className="flex flex-col items-center gap-1 pt-1.5 sm:pt-2 shrink-0">
+              <div className="flex flex-col items-center gap-1 shrink-0">
                 {handle}
                 <button type="button" onClick={() => removeStep(i)}
                   title="Rimuovi passo"
-                  className={rowIconBtnDanger}><X size={13} /></button>
+                  className={rowIconBtnDanger}><X size={14} /></button>
               </div>
             </>
             )}
@@ -960,13 +1145,14 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
         </Button>
       </Section>
 
-      {/* Bottom save */}
-      <div className="flex justify-end gap-3 pb-10">
-        <Button type="button" variant="secondary" size="lg" onClick={() => router.back()}>
+      {/* Bottom save — "md" e non più "lg": è il tasto più grande del form, ma
+          accanto a campi da 28px un lg sembrava di un'altra pagina */}
+      <div className="flex justify-end gap-2 pb-10">
+        <Button type="button" variant="secondary" size="md" onClick={() => router.back()}>
           Annulla
         </Button>
-        <Button type="submit" size="lg" loading={saving}>
-          {isEdit ? <span className="inline-flex items-center gap-1.5"><Save size={16} /> Salva modifiche</span> : <span className="inline-flex items-center gap-1.5"><CircleCheck size={16} /> Crea ricetta</span>}
+        <Button type="submit" size="md" loading={saving}>
+          {isEdit ? <span className="inline-flex items-center gap-1.5"><Save size={14} /> Salva modifiche</span> : <span className="inline-flex items-center gap-1.5"><CircleCheck size={14} /> Crea ricetta</span>}
         </Button>
       </div>
     </form>

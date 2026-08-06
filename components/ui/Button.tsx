@@ -30,9 +30,12 @@ export function Button({
           "bg-white/60 text-sky-900 border border-white/40 hover:bg-white/80": variant === "secondary",
           "text-sky-800 hover:bg-white/30 hover:text-sky-950": variant === "ghost",
           "bg-red-500 text-white hover:bg-red-600": variant === "danger",
-          "px-2.5 py-1.5 text-sm": size === "sm",
-          "px-4 py-2 text-sm": size === "md",
-          "px-6 py-3 text-base": size === "lg",
+          // Testo in `em` (a base 16px == le vecchie text-sm/text-base): un
+          // contenitore che riduce la propria scala tipografica trascina anche i
+          // bottoni, senza doverli toccare uno per uno
+          "px-2.5 py-1.5 text-[0.875em]": size === "sm",
+          "px-4 py-2 text-[0.875em]": size === "md",
+          "px-6 py-3 text-[1em]": size === "lg",
         },
         className
       )}

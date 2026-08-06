@@ -40,12 +40,15 @@ export function ReorderRow<T>({
   value,
   as = "div",
   className,
+  handleSize = "h-6 w-6",
   onDragEnd,
   children,
 }: {
   value: T;
   as?: "div" | "li";
   className?: string;
+  /** Misura della pastiglia-maniglia: da allineare all'altezza dei controlli della riga */
+  handleSize?: string;
   /** Chiamata al rilascio del drag (es. per persistere il nuovo ordine) */
   onDragEnd?: () => void;
   /** Render prop: riceve la maniglia di drag già pronta da piazzare nel layout */
@@ -64,7 +67,7 @@ export function ReorderRow<T>({
       // Contrasto: lo sfondo dell'app è un gradiente, quindi le icone "tenui"
       // (sky-300, gray-300) sparivano su alcune porzioni. Pastiglia chiara fissa
       // + icona sky-600, come i bottoni riga del form menù.
-      className="flex h-6 w-6 shrink-0 cursor-grab items-center justify-center rounded-lg border border-white/60 bg-white/70 text-sky-600 shadow-sm transition-colors hover:bg-white hover:text-sky-900 active:cursor-grabbing touch-none"
+      className={`flex ${handleSize} shrink-0 cursor-grab items-center justify-center rounded-lg border border-white/60 bg-white/70 text-sky-600 shadow-sm transition-colors hover:bg-white hover:text-sky-900 active:cursor-grabbing touch-none`}
     >
       <GripVertical size={14} />
     </button>

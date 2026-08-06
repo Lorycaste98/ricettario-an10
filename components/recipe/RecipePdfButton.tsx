@@ -14,8 +14,9 @@ export interface RecipePdfData {
   photo: string | null;
   categories: { name: string; color: string }[];
   tags: { name: string }[];
-  ingredients: { name: string; qty: number | null; unit: string | null; description: string | null; optional?: boolean; section?: string | null }[];
-  steps: { text: string; mins: number | null; kind?: string }[];
+  /** `id` serve solo a risolvere i legami `steps[].ingredientIds` */
+  ingredients: { id?: number; name: string; qty: number | null; unit: string | null; description: string | null; optional?: boolean; section?: string | null }[];
+  steps: { text: string; mins: number | null; kind?: string; ingredientIds?: number[] }[];
 }
 
 /** Scarica un'immagine remota e la converte in data URL (per includerla nel PDF in modo affidabile). */

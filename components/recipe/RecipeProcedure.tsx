@@ -31,6 +31,8 @@ interface Step {
   mins: number | null;
   kind?: string;
   order: number;
+  /** Ingredienti necessari al passo (id di `ingredients`); assente/vuoto = nessun legame */
+  ingredientIds?: number[];
 }
 
 interface Props {
@@ -52,6 +54,12 @@ function formatQty(n: number): string {
   return String(r);
 }
 
+/** "500 g" / "q.b." — quantità (già scalata) e unità di un ingrediente. */
+function qtyLabel(ing: Ingredient, scaledQty: (qty: number | null) => string): string {
+  if (ing.qty != null) return `${scaledQty(ing.qty)}${ing.unit ? ` ${ing.unit}` : ""}`;
+  return ing.unit ?? "q.b.";
+}
+
 /** Griglia di righe ingrediente (una per lista intera o una per sezione). */
 function IngredientList({
   items,
@@ -63,10 +71,7 @@ function IngredientList({
   return (
     <ul className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
       {items.map((ing) => {
-        const qtyStr = scaledQty(ing.qty);
-        const label = ing.qty != null
-          ? `${qtyStr}${ing.unit ? ` ${ing.unit}` : ""}`
-          : (ing.unit ?? "q.b.");
+        const label = qtyLabel(ing, scaledQty);
         return (
           <li key={ing.id} className="flex items-baseline gap-1.5 min-w-0">
             <span className="shrink-0 text-xs font-semibold text-orange-500 tabular-nums whitespace-nowrap">
@@ -102,6 +107,11 @@ export function RecipeProcedure({ recipeId, defaultServings, servingsUnit, ingre
 
   // Ingredienti raggruppati per sezione/preparazione (un solo gruppo = nessuna sezione)
   const sections = useMemo(() => groupIngredientsBySection(ingredients), [ingredients]);
+  // Lookup per i legami passo↔ingrediente (Step.ingredientIds)
+  const ingredientById = useMemo(
+    () => new Map(ingredients.map((i) => [i.id, i])),
+    [ingredients]
+  );
 
   // Scala la quantità in base alle porzioni selezionate
   const scaledQty = (qty: number | null): string => {
@@ -283,6 +293,10 @@ export function RecipeProcedure({ recipeId, defaultServings, servingsUnit, ingre
               {steps.map((step, i) => {
             const checked = done.has(i);
             const isPending = pendingIdx === i;
+            // Ingredienti legati al passo (opzionali: le ricette senza legami non mostrano nulla)
+            const stepIngredients = (step.ingredientIds ?? [])
+              .map((id) => ingredientById.get(id))
+              .filter((ing): ing is Ingredient => !!ing);
             return (
               <li key={step.id} className="space-y-2">
                 <button
@@ -328,6 +342,22 @@ export function RecipeProcedure({ recipeId, defaultServings, servingsUnit, ingre
                         </div>
                       );
                     })()}
+                    {/* Ingredienti che servono in questo passo (quantità già scalate) */}
+                    {stepIngredients.length > 0 && (
+                      <div className={`mt-1.5 flex flex-wrap items-center gap-1.5 ${checked ? "opacity-50" : ""}`}>
+                        <Carrot size={12} className="shrink-0 text-emerald-600" />
+                        {stepIngredients.map((ing) => (
+                          <span
+                            key={ing.id}
+                            className="inline-flex items-baseline gap-1 rounded-full border border-emerald-200/80 bg-emerald-50/80 px-2 py-0.5 text-[11px] text-emerald-950"
+                          >
+                            {/* Stessa lettura della modalità cucina: quantità in evidenza, nome in tono normale */}
+                            <span className="font-bold tabular-nums text-emerald-700">{qtyLabel(ing, scaledQty)}</span>
+                            {ing.name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </button>
 

@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, RotateCcw, PartyPopper, UtensilsCrossed, Check, CookingPot, AlarmClock, Timer, ListX } from "lucide-react";
+import { ChevronLeft, ChevronRight, RotateCcw, PartyPopper, UtensilsCrossed, Check, CookingPot, AlarmClock, Timer, ListX, Carrot } from "lucide-react";
 import { formatMinutes, toStepKind, STEP_KIND_LABEL, type StepKind } from "@/lib/types";
 import { formatClock } from "@/lib/cook-timeline";
 import { useLocalStore } from "@/lib/local-store";
@@ -28,6 +28,17 @@ interface Step {
   mins: number | null;
   kind: string;
   order: number;
+  /** Ingredienti necessari al passo (id di `Recipe.ingredients`); assente = nessun legame */
+  ingredientIds?: number[];
+}
+
+/** Ingrediente della ricetta con le quantità già scalate sulle porzioni del menù. */
+export interface CookIngredient {
+  id: number;
+  name: string;
+  qty: number | null;
+  unit: string | null;
+  optional: boolean;
 }
 
 interface Recipe {
@@ -36,7 +47,18 @@ interface Recipe {
   photo: string | null;
   cookCount: number;
   quick?: boolean;
+  ingredients?: CookIngredient[];
   steps: Step[];
+}
+
+/** "500 g" (già scalata) e nome, separati: in cucina si legge prima il numero. */
+function ingredientParts(ing: CookIngredient): { amount: string; name: string } {
+  const qty = ing.qty != null ? formatQty(ing.qty) : null;
+  return { amount: [qty, ing.unit].filter(Boolean).join(" "), name: ing.name };
+}
+
+function formatQty(n: number): string {
+  return Number.isInteger(n) ? String(n) : String(Math.round(n * 100) / 100);
 }
 
 interface Progress {
@@ -222,6 +244,13 @@ function RecipeCookCard({
   const total = steps.length;
   const atCompletion = progress.stepIdx >= total;
   const step = atCompletion ? null : steps[progress.stepIdx];
+  // Ingredienti del passo corrente: si guarda la lista sotto mano, quindi la
+  // card dice quali servono adesso (quantità già scalate sulle porzioni del menù)
+  const stepIngredients = step
+    ? (step.ingredientIds ?? [])
+        .map((id) => recipe.ingredients?.find((ing) => ing.id === id))
+        .filter((ing): ing is CookIngredient => !!ing)
+    : [];
   const stepAt = !atCompletion ? stepTimes?.[progress.stepIdx] : undefined;
   const nextAt = !atCompletion ? stepTimes?.[progress.stepIdx + 1] : undefined;
 
@@ -321,6 +350,33 @@ function RecipeCookCard({
               </div>
             );
           })()}
+          {stepIngredients.length > 0 && (
+            <div className="mt-2.5 rounded-lg border border-emerald-200/80 bg-emerald-50/70 px-2.5 py-2">
+              <p className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-700">
+                <Carrot size={11} /> Ti servono
+              </p>
+              {/* Una pastiglia per ingrediente: affiancati a testo nudo due nomi
+                  corti sembrano una cosa sola ("100 g burro 2 uova"). Quantità
+                  in evidenza e nome in tono normale — in cucina si cerca il numero */}
+              <ul className="mt-1.5 flex flex-wrap gap-1.5">
+                {stepIngredients.map((ing) => {
+                  const { amount, name } = ingredientParts(ing);
+                  return (
+                    <li
+                      key={ing.id}
+                      className="inline-flex items-baseline gap-1.5 rounded-lg border border-emerald-200 bg-white/80 px-2 py-1 text-[13px]"
+                    >
+                      {amount && (
+                        <span className="shrink-0 font-bold tabular-nums text-emerald-700">{amount}</span>
+                      )}
+                      <span className="text-emerald-950">{name}</span>
+                      {ing.optional && <span className="text-[10px] text-emerald-600">(opz.)</span>}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
           {nextAt && (
             <p className="mt-2 border-t border-white/60 pt-1.5 text-[11px] text-sky-700">
               Prossimo passo alle <strong className="tabular-nums">{formatClock(nextAt)}</strong>

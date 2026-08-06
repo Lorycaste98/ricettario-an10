@@ -90,10 +90,25 @@ body {
   overscroll-behavior-y: none;
 }
 
-/* iOS: impedisce auto-zoom su focus degli input (font-size < 16px lo triggera) */
+/* iOS: impedisce auto-zoom su focus degli input (font-size < 16px lo triggera).
+   ⚠️ Questa regola è FUORI da ogni @layer: nella cascata le dichiarazioni non-layered
+   battono SEMPRE quelle dentro un layer, anche a specificità più bassa. Tailwind mette
+   le utility in `@layer utilities`, quindi qui `input {}` vince su qualsiasi `text-*`
+   messa sul campo: su touch ogni input resta a 16px e le classi vengono ignorate in
+   silenzio (è il motivo per cui i campi dei form sembravano più grandi su mobile che
+   su desktop). Se serve un campo più piccolo NON aggiungere una classe: usa la via
+   d'uscita qui sotto.
+
+   `data-compact-fields` = gruppo (tipicamente un form admin fitto) che rinuncia alla
+   guardia e segue la propria scala tipografica via `--field-font-size`. In cambio su
+   iOS il focus su quei campi zooma la pagina: da usare solo dove la densità conta più
+   dello zoom, non sui form pubblici (login, recensioni ospiti). */
 @media (hover: none) and (pointer: coarse) {
   input, select, textarea {
     font-size: 16px;
+  }
+  [data-compact-fields] :is(input, select, textarea) {
+    font-size: var(--field-font-size, inherit);
   }
 }
 

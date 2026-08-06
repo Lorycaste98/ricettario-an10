@@ -39,8 +39,12 @@ export function SectionHeader({
 }) {
   // Badge e titolo un filo più piccoli su mobile: negli header di sezione dei form
   // (uno per card) il guadagno in altezza si somma su tutta la pagina
+  // Titolo e hint in `em`: a base 16px valgono quanto le vecchie text-lg/base/sm,
+  // ma seguono la scala del contenitore (vedi il `<form>` di RecipeForm)
   const badge = size === "lg" ? "h-9 w-9 sm:h-10 sm:w-10" : "h-8 w-8 sm:h-9 sm:w-9";
-  const titleSize = size === "lg" ? "text-lg sm:text-xl font-bold" : "text-sm sm:text-base font-semibold";
+  const titleSize = size === "lg"
+    ? "text-[1.125em] sm:text-[1.25em] font-bold"
+    : "text-[0.875em] sm:text-[1em] font-semibold";
   return (
     <div className={`flex items-center gap-2.5 sm:gap-3 ${className}`}>
       <span
@@ -50,7 +54,7 @@ export function SectionHeader({
       </span>
       <div className="min-w-0 flex-1">
         <h2 className={`${titleSize} ${titleClassName} leading-tight`}>{title}</h2>
-        {hint && <p className="text-xs text-sky-600/80">{hint}</p>}
+        {hint && <p className="text-[0.75em] text-sky-600/80">{hint}</p>}
       </div>
       {action && <div className="shrink-0">{action}</div>}
     </div>

@@ -81,7 +81,7 @@ export function CategoryCombobox({
               key={c.id}
               type="button"
               onClick={() => onToggle(c.id)}
-              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-transform hover:scale-105"
+              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[0.75em] font-medium text-white shadow-sm transition-transform hover:scale-105"
               style={{ backgroundColor: c.color }}
               title="Rimuovi"
             >
@@ -113,7 +113,7 @@ export function CategoryCombobox({
                   key={c.id}
                   type="button"
                   onMouseDown={(e) => { e.preventDefault(); onToggle(c.id); }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 hover:bg-sky-50 transition-colors"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-[0.875em] text-gray-700 hover:bg-sky-50 transition-colors"
                 >
                   <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: c.color }} />
                   <span className="flex-1 truncate">{c.name}</span>
@@ -130,7 +130,7 @@ export function CategoryCombobox({
                   onMouseDown={(e) => { e.preventDefault(); void handleCreate(); }}
                   disabled={creating}
                   className={clsx(
-                    "flex flex-1 items-center gap-2 text-left text-sm font-medium text-orange-600 hover:text-orange-700 transition-colors disabled:opacity-50"
+                    "flex flex-1 items-center gap-2 text-left text-[0.875em] font-medium text-orange-600 hover:text-orange-700 transition-colors disabled:opacity-50"
                   )}
                 >
                   <Plus size={14} className="shrink-0" />
@@ -142,9 +142,9 @@ export function CategoryCombobox({
         )}
       </div>
 
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      {error && <p className="text-[0.75em] text-red-500">{error}</p>}
       {selectedIds.length > 0 && (
-        <p className="text-xs text-sky-600">
+        <p className="text-[0.75em] text-sky-600">
           {selectedIds.length} categori{selectedIds.length === 1 ? "a" : "e"} selezionat{selectedIds.length === 1 ? "a" : "e"}
         </p>
       )}

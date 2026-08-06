@@ -6,10 +6,18 @@
 
 import { type NextRequest } from "next/server";
 import { db } from "@/lib/db";
-import { recipeDetailSelect, flattenRecipe, ok, err, parseDateOnly } from "@/lib/api";
+import {
+  recipeDetailSelect,
+  flattenRecipe,
+  ok,
+  err,
+  parseDateOnly,
+  createRecipeContent,
+  type IngredientInput,
+  type StepInput,
+} from "@/lib/api";
 import { revalidateRecipes } from "@/lib/queries";
 import { getSession, requireAdmin } from "@/lib/session";
-import { toStepKind } from "@/lib/types";
 
 type TxClient = Parameters<Parameters<typeof db.$transaction>[0]>[0];
 
@@ -60,8 +68,8 @@ export async function PUT(
     published?: boolean;
     categoryIds?: number[];
     tagIds?: number[];
-    ingredients?: { name: string; qty?: number | null; unit?: string | null; description?: string | null; optional?: boolean; section?: string | null; order: number }[];
-    steps?: { text: string; mins?: number | null; kind?: string; order: number }[];
+    ingredients?: IngredientInput[];
+    steps?: StepInput[];
     photos?: { url: string; order?: number }[];
   };
 
@@ -90,6 +98,13 @@ export async function PUT(
       await tx.recipePhoto.deleteMany({ where: { recipeId } });
     }
 
+    // Ricrea ingredienti e step fuori dal `create` annidato: i legami passo↔
+    // ingrediente sono indici del payload e vanno risolti sugli id appena
+    // generati. Con una sola delle due liste nel body i legami restano vuoti
+    // (l'altra tabella è intatta, ma le sue righe di giunzione sono cadute in
+    // cascata insieme a quelle cancellate qui sopra).
+    await createRecipeContent(tx, recipeId, b.ingredients, b.steps);
+
     return tx.recipe.update({
       where: { id: recipeId },
       data: {
@@ -108,33 +123,6 @@ export async function PUT(
           : {}),
         ...(b.tagIds
           ? { tags: { create: b.tagIds.map((tid) => ({ tagId: tid })) } }
-          : {}),
-        ...(b.ingredients
-          ? {
-              ingredients: {
-                create: b.ingredients.map((i) => ({
-                  name: i.name,
-                  qty: i.qty ?? null,
-                  unit: i.unit ?? null,
-                  description: i.description ?? null,
-                  optional: !!i.optional,
-                  section: i.section?.trim() || null,
-                  order: i.order,
-                })),
-              },
-            }
-          : {}),
-        ...(b.steps
-          ? {
-              steps: {
-                create: b.steps.map((s) => ({
-                  text: s.text,
-                  mins: s.mins ?? null,
-                  kind: toStepKind(s.kind),
-                  order: s.order,
-                })),
-              },
-            }
           : {}),
         ...(b.photos
           ? {

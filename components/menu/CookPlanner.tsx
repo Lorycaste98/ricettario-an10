@@ -2,7 +2,7 @@
 import { useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { CalendarClock } from "lucide-react";
-import { MenuCookMode } from "@/components/menu/MenuCookMode";
+import { MenuCookMode, type CookIngredient } from "@/components/menu/MenuCookMode";
 import { CookTimeline } from "@/components/menu/CookTimeline";
 import { resolveServeAt } from "@/lib/cook-schedule";
 import {
@@ -11,6 +11,7 @@ import {
   stepStartTimes,
   type RecipeSchedule,
   type TimelineRecipe,
+  type TimelineStep,
 } from "@/lib/cook-timeline";
 
 // Wrapper della modalità cucina: possiede gli orari di inizio pianificati
@@ -19,6 +20,10 @@ import {
 
 interface CookRecipe extends TimelineRecipe {
   cookCount: number;
+  /** Ingredienti della ricetta, quantità già scalate sulle porzioni del menù */
+  ingredients?: CookIngredient[];
+  /** Come TimelineStep, più i legami con gli ingredienti (mostrati nello stepper) */
+  steps: (TimelineStep & { ingredientIds?: number[] })[];
 }
 
 const noopSubscribe = () => () => {};

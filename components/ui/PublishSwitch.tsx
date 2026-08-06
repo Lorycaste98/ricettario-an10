@@ -33,7 +33,7 @@ export function PublishSwitch({
           : "Non pronta — nascosta ai visitatori. Tocca per pubblicarla."
       }
       className={clsx(
-        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50",
+        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.75em] font-medium transition-colors disabled:opacity-50",
         published
           ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
           : "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100",

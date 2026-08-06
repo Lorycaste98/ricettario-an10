@@ -76,6 +76,9 @@ model Ingredient {
   order       Int
   recipeId    Int
   recipe      Recipe  @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  /** Step della procedura che usano questo ingrediente */
+  steps       StepIngredient[]
 }
 
 model IngredientMaster {
@@ -93,6 +96,22 @@ model Step {
   order    Int
   recipeId Int
   recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  /** Ingredienti che servono per questo passo (opzionale: le ricette esistenti non ne hanno) */
+  ingredients StepIngredient[]
+}
+
+/** Ingredienti necessari a un singolo passo della procedura (many-to-many Step ↔ Ingredient).
+    Sempre entro la stessa ricetta: il PUT ricetta fa delete-recreate di step e ingredienti,
+    quindi queste righe vengono riscritte a ogni salvataggio a partire dagli indici del form. */
+model StepIngredient {
+  stepId       Int
+  ingredientId Int
+  step         Step       @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+
+  @@id([stepId, ingredientId])
+  @@index([ingredientId])
 }
 
 model RecipePhoto {

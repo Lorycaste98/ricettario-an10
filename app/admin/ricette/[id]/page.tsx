@@ -31,7 +31,10 @@ export default async function ModificaRicettaPage({ params }: { params: Promise<
         tags: { select: { tag: { select: { id: true, name: true } } } },
         photos: { select: { id: true, url: true, order: true }, orderBy: { order: "asc" } },
         ingredients: { select: { id: true, name: true, qty: true, unit: true, description: true, optional: true, section: true, order: true }, orderBy: { order: "asc" } },
-        steps: { select: { id: true, text: true, mins: true, kind: true, order: true }, orderBy: { order: "asc" } },
+        steps: {
+          select: { id: true, text: true, mins: true, kind: true, order: true, ingredients: { select: { ingredientId: true } } },
+          orderBy: { order: "asc" },
+        },
         _count: { select: { reviews: true } },
       },
     }),
@@ -42,6 +45,7 @@ export default async function ModificaRicettaPage({ params }: { params: Promise<
   if (!raw) notFound();
 
   const recipe = flattenRecipe(raw) as ReturnType<typeof flattenRecipe> & typeof raw;
+  const ingredientIdxById = new Map(raw.ingredients.map((i, idx) => [i.id, idx]));
 
   const initialData: RecipeFormData = {
     name: recipe.name,
@@ -65,10 +69,15 @@ export default async function ModificaRicettaPage({ params }: { params: Promise<
       optional: i.optional,
       section: i.section ?? "",
     })),
-    steps: recipe.steps.map((s: { text: string; mins: number | null; kind: string }) => ({
+    // I legami passo↔ingrediente viaggiano per POSIZIONE nell'array `ingredients`
+    // qui sopra: gli id cambiano a ogni salvataggio (il PUT fa delete-recreate)
+    steps: raw.steps.map((s) => ({
       text: s.text,
       mins: s.mins != null ? String(s.mins) : "",
       kind: toStepKind(s.kind),
+      ingredientIdx: s.ingredients
+        .map((si) => ingredientIdxById.get(si.ingredientId))
+        .filter((idx): idx is number => idx !== undefined),
     })),
     photos: recipe.photos.map((p: { url: string }) => ({ url: p.url })),
   };

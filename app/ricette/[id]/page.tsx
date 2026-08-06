@@ -76,10 +76,13 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
     photo: allPhotos[0] ?? null,
     categories: recipe.categories.map((c: { name: string; color: string }) => ({ name: c.name, color: c.color })),
     tags: recipe.tags.map((t: { name: string }) => ({ name: t.name })),
-    ingredients: recipe.ingredients.map((i: { name: string; qty: number | null; unit: string | null; description: string | null; optional: boolean; section: string | null }) => ({
-      name: i.name, qty: i.qty, unit: i.unit, description: i.description, optional: i.optional, section: i.section,
+    ingredients: recipe.ingredients.map((i: { id: number; name: string; qty: number | null; unit: string | null; description: string | null; optional: boolean; section: string | null }) => ({
+      id: i.id, name: i.name, qty: i.qty, unit: i.unit, description: i.description, optional: i.optional, section: i.section,
     })),
-    steps: recipe.steps.map((s: { text: string; mins: number | null; kind: string }) => ({ text: s.text, mins: s.mins, kind: s.kind })),
+    // `ingredientIds` (legami passo↔ingrediente) arriva da flattenRecipe
+    steps: recipe.steps.map((s: { text: string; mins: number | null; kind: string; ingredientIds?: number[] }) => ({
+      text: s.text, mins: s.mins, kind: s.kind, ingredientIds: s.ingredientIds,
+    })),
   };
 
   return (

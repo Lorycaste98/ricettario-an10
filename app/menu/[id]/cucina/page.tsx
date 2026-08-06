@@ -36,6 +36,8 @@ export default async function MenuCookModePage({ params }: Params) {
           order: true,
           // Inizio pianificato nella timeline (drag della barra ricetta)
           cookStartAt: true,
+          // Porzioni del menù (override): scalano le quantità mostrate sugli step
+          servings: true,
           recipe: {
             select: {
               id: true,
@@ -45,7 +47,19 @@ export default async function MenuCookModePage({ params }: Params) {
               quick: true,
               prep: true,
               cook: true,
-              steps: { select: { id: true, text: true, mins: true, kind: true, order: true }, orderBy: { order: "asc" } },
+              servings: true,
+              ingredients: {
+                select: { id: true, name: true, qty: true, unit: true, optional: true },
+                orderBy: { order: "asc" },
+              },
+              steps: {
+                select: {
+                  id: true, text: true, mins: true, kind: true, order: true,
+                  // Ingredienti necessari al passo: mostrati sulla card dello step corrente
+                  ingredients: { select: { ingredientId: true } },
+                },
+                orderBy: { order: "asc" },
+              },
             },
           },
         },
@@ -55,10 +69,24 @@ export default async function MenuCookModePage({ params }: Params) {
   });
   if (!menu) notFound();
 
-  const recipes = menu.recipes.map((mr) => ({
-    ...mr.recipe,
-    cookStartAt: mr.cookStartAt ? mr.cookStartAt.toISOString() : null,
-  }));
+  const recipes = menu.recipes.map((mr) => {
+    // Stesse porzioni della lista della spesa: se il menù ne imposta di diverse
+    // dal default della ricetta, le quantità degli step seguono
+    const base = mr.recipe.servings;
+    const factor = mr.servings && base && base > 0 ? mr.servings / base : 1;
+    return {
+      ...mr.recipe,
+      ingredients: mr.recipe.ingredients.map((i) => ({
+        ...i,
+        qty: i.qty != null ? Math.round(i.qty * factor * 100) / 100 : null,
+      })),
+      steps: mr.recipe.steps.map(({ ingredients, ...s }) => ({
+        ...s,
+        ingredientIds: ingredients.map((si) => si.ingredientId),
+      })),
+      cookStartAt: mr.cookStartAt ? mr.cookStartAt.toISOString() : null,
+    };
+  });
 
   return (
     // Stesso ritmo verticale del dettaglio ricetta/menù (back → header → contenuto)

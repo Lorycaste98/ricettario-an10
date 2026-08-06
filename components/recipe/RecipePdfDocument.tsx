@@ -148,6 +148,8 @@ export const pdfStyles = StyleSheet.create({
   stepBody: { flex: 1 },
   stepText: { fontSize: 9.5 },
   stepMins: { fontSize: 8, color: ORANGE, marginTop: 1, fontFamily: "Helvetica-Bold" },
+  // Ingredienti necessari al passo (solo se la ricetta li ha legati)
+  stepIngredients: { fontSize: 8, color: GRAY, marginTop: 1 },
   footer: {
     position: "absolute",
     bottom: 24,
@@ -325,19 +327,32 @@ export function RecipePdfContent({
           {recipe.steps.length === 0 ? (
             <Text style={{ color: LIGHT }}>—</Text>
           ) : (
-            recipe.steps.map((s, i) => (
-              <View key={i} style={pdfStyles.step}>
-                <View style={pdfStyles.stepNum}>
-                  <Text style={pdfStyles.stepNumText}>{i + 1}</Text>
+            recipe.steps.map((s, i) => {
+              // Ingredienti legati al passo, nell'ordine della lista ricetta
+              const stepIngredients = s.ingredientIds?.length
+                ? recipe.ingredients.filter((ing) => ing.id != null && s.ingredientIds!.includes(ing.id))
+                : [];
+              return (
+                <View key={i} style={pdfStyles.step}>
+                  <View style={pdfStyles.stepNum}>
+                    <Text style={pdfStyles.stepNumText}>{i + 1}</Text>
+                  </View>
+                  <View style={pdfStyles.stepBody}>
+                    <Text style={pdfStyles.stepText}>{s.text}</Text>
+                    {stepIngredients.length > 0 ? (
+                      <Text style={pdfStyles.stepIngredients}>
+                        {stepIngredients
+                          .map((ing) => [fmtQty(ing.qty, ing.unit), ing.name].filter(Boolean).join(" "))
+                          .join(" · ")}
+                      </Text>
+                    ) : null}
+                    {s.mins ? (
+                      <Text style={pdfStyles.stepMins}>{formatMinutes(s.mins)}</Text>
+                    ) : null}
+                  </View>
                 </View>
-                <View style={pdfStyles.stepBody}>
-                  <Text style={pdfStyles.stepText}>{s.text}</Text>
-                  {s.mins ? (
-                    <Text style={pdfStyles.stepMins}>{formatMinutes(s.mins)}</Text>
-                  ) : null}
-                </View>
-              </View>
-            ))
+              );
+            })
           )}
         </View>
       </View>

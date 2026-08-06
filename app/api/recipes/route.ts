@@ -14,10 +14,18 @@
 
 import { type NextRequest } from "next/server";
 import { db } from "@/lib/db";
-import { recipeSummarySelect, flattenRecipe, ok, err, parseDateOnly } from "@/lib/api";
+import {
+  recipeSummarySelect,
+  flattenRecipe,
+  ok,
+  err,
+  parseDateOnly,
+  createRecipeContent,
+  type IngredientInput,
+  type StepInput,
+} from "@/lib/api";
 import { attachRecipeRatings, revalidateRecipes } from "@/lib/queries";
 import { getSession, requireAdmin } from "@/lib/session";
-import { toStepKind } from "@/lib/types";
 
 export async function GET(request: NextRequest) {
   const sp = request.nextUrl.searchParams;
@@ -95,59 +103,51 @@ export async function POST(request: NextRequest) {
     quick?: boolean;
     categoryIds?: number[];
     tagIds?: number[];
-    ingredients?: { name: string; qty?: number; unit?: string; description?: string; optional?: boolean; section?: string | null; order: number }[];
-    steps?: { text: string; mins?: number; kind?: string; order: number }[];
+    ingredients?: IngredientInput[];
+    steps?: StepInput[];
     photos?: { url: string; order?: number }[];
   };
 
   if (!b.name?.trim()) return err("Il campo 'name' è obbligatorio");
 
-  const recipe = await db.recipe.create({
-    data: {
-      name: b.name.trim(),
-      ...(parseDateOnly(b.createdAt) ? { createdAt: parseDateOnly(b.createdAt) } : {}),
-      servings: b.servings ?? null,
-      servingsUnit: b.servingsUnit?.trim() || null,
-      prep: b.prep ?? null,
-      cook: b.cook ?? null,
-      notes: b.notes?.trim() || null,
-      links: b.links?.trim() || null,
-      photo: b.photo ?? null,
-      published: b.published ?? true,
-      quick: !!b.quick,
-      categories: {
-        create: (b.categoryIds ?? []).map((id) => ({ categoryId: id })),
+  // Transazione: ingredienti e step nascono fuori dal create annidato perché i
+  // legami passo↔ingrediente hanno bisogno degli id appena generati
+  const recipe = await db.$transaction(async (tx) => {
+    const created = await tx.recipe.create({
+      data: {
+        name: b.name!.trim(),
+        ...(parseDateOnly(b.createdAt) ? { createdAt: parseDateOnly(b.createdAt) } : {}),
+        servings: b.servings ?? null,
+        servingsUnit: b.servingsUnit?.trim() || null,
+        prep: b.prep ?? null,
+        cook: b.cook ?? null,
+        notes: b.notes?.trim() || null,
+        links: b.links?.trim() || null,
+        photo: b.photo ?? null,
+        published: b.published ?? true,
+        quick: !!b.quick,
+        categories: {
+          create: (b.categoryIds ?? []).map((id) => ({ categoryId: id })),
+        },
+        tags: {
+          create: (b.tagIds ?? []).map((id) => ({ tagId: id })),
+        },
+        photos: {
+          create: (b.photos ?? []).map((p, idx) => ({
+            url: p.url,
+            order: p.order ?? idx,
+          })),
+        },
       },
-      tags: {
-        create: (b.tagIds ?? []).map((id) => ({ tagId: id })),
-      },
-      ingredients: {
-        create: (b.ingredients ?? []).map((i) => ({
-          name: i.name,
-          qty: i.qty ?? null,
-          unit: i.unit ?? null,
-          description: i.description ?? null,
-          optional: !!i.optional,
-          section: i.section?.trim() || null,
-          order: i.order,
-        })),
-      },
-      steps: {
-        create: (b.steps ?? []).map((s) => ({
-          text: s.text,
-          mins: s.mins ?? null,
-          kind: toStepKind(s.kind),
-          order: s.order,
-        })),
-      },
-      photos: {
-        create: (b.photos ?? []).map((p, idx) => ({
-          url: p.url,
-          order: p.order ?? idx,
-        })),
-      },
-    },
-    select: recipeSummarySelect,
+      select: { id: true },
+    });
+
+    await createRecipeContent(tx, created.id, b.ingredients, b.steps);
+
+    return tx.recipe.findUniqueOrThrow({
+      where: { id: created.id },
+      select: recipeSummarySelect,
+    });
   });
 
   // Sincronizza i nuovi nomi nel catalogo ingredienti

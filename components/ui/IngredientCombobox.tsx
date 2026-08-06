@@ -88,7 +88,7 @@ export function IngredientCombobox({
                 e.preventDefault();
                 selectItem(name);
               }}
-              className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-sky-50 transition-colors"
+              className="w-full px-3 py-2 text-left text-[0.875em] text-gray-700 hover:bg-sky-50 transition-colors"
             >
               {name}
             </button>
@@ -101,7 +101,7 @@ export function IngredientCombobox({
                 void handleAdd();
               }}
               disabled={adding}
-              className="w-full flex items-center gap-2 border-t border-gray-100 px-3 py-2 text-left text-sm font-medium text-orange-600 hover:bg-orange-50 transition-colors disabled:opacity-50"
+              className="w-full flex items-center gap-2 border-t border-gray-100 px-3 py-2 text-left text-[0.875em] font-medium text-orange-600 hover:bg-orange-50 transition-colors disabled:opacity-50"
             >
               <Plus size={13} />
               {adding ? "Aggiunta…" : `Aggiungi "${value.trim()}"`}
