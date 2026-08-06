@@ -9,6 +9,7 @@ import {
 import type { RecipePdfData } from "./RecipePdfButton";
 import { formatMinutes } from "@/lib/types";
 import { groupIngredientsBySection } from "@/lib/ingredient-sections";
+import { resolveLinkQty, splitIngredientIds } from "@/lib/step-ingredients";
 
 const ORANGE = "#f97316";
 const SKY = "#0c4a6e";
@@ -207,6 +208,9 @@ export function RecipePdfContent({
     0
   );
   const total = (recipe.prep ?? 0) + (recipe.cook ?? 0) + wait;
+  // Ingredienti ripartiti fra più passi: un legame senza quantità vale "il resto",
+  // non il totale (vedi lib/step-ingredients)
+  const splitIds = splitIngredientIds(recipe.steps ?? []);
 
   return (
     <>
@@ -328,9 +332,23 @@ export function RecipePdfContent({
             <Text style={{ color: LIGHT }}>—</Text>
           ) : (
             recipe.steps.map((s, i) => {
-              // Ingredienti legati al passo, nell'ordine della lista ricetta
-              const stepIngredients = s.ingredientIds?.length
-                ? recipe.ingredients.filter((ing) => ing.id != null && s.ingredientIds!.includes(ing.id))
+              // Ingredienti legati al passo, nell'ordine della lista ricetta, con la
+              // quantità usata in quel passo (o quella piena se non è ripartita)
+              const links = s.stepIngredients ?? [];
+              const stepIngredients = links.length
+                ? recipe.ingredients
+                    .map((ing) => {
+                      const link = links.find((l) => ing.id != null && l.ingredientId === ing.id);
+                      if (!link) return null;
+                      const qty = resolveLinkQty(link.qty, ing.qty, splitIds.has(link.ingredientId));
+                      const amount = qty != null
+                        ? fmtQty(qty, ing.unit)
+                        : ing.qty != null
+                        ? "il resto"
+                        : ing.unit ?? "";
+                      return [amount, ing.name].filter(Boolean).join(" ");
+                    })
+                    .filter((label): label is string => !!label)
                 : [];
               return (
                 <View key={i} style={pdfStyles.step}>
@@ -340,11 +358,7 @@ export function RecipePdfContent({
                   <View style={pdfStyles.stepBody}>
                     <Text style={pdfStyles.stepText}>{s.text}</Text>
                     {stepIngredients.length > 0 ? (
-                      <Text style={pdfStyles.stepIngredients}>
-                        {stepIngredients
-                          .map((ing) => [fmtQty(ing.qty, ing.unit), ing.name].filter(Boolean).join(" "))
-                          .join(" · ")}
-                      </Text>
+                      <Text style={pdfStyles.stepIngredients}>{stepIngredients.join(" · ")}</Text>
                     ) : null}
                     {s.mins ? (
                       <Text style={pdfStyles.stepMins}>{formatMinutes(s.mins)}</Text>

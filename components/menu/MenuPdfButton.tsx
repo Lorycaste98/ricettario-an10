@@ -7,6 +7,7 @@ import {
   safeFileName,
   type RecipePdfData,
 } from "@/components/recipe/RecipePdfButton";
+import type { StepIngredientLink } from "@/lib/step-ingredients";
 import type { MenuPdfMeta, MenuPdfRecipe } from "./MenuPdfDocument";
 
 export interface MenuPdfProps {
@@ -26,7 +27,7 @@ interface RecipeDetailResponse {
   categories: { name: string; color: string }[];
   tags: { name: string }[];
   ingredients: { id?: number; name: string; qty: number | null; unit: string | null; description: string | null; optional?: boolean; section?: string | null }[];
-  steps: { text: string; mins: number | null; kind?: string; ingredientIds?: number[] }[];
+  steps: { text: string; mins: number | null; kind?: string; stepIngredients?: StepIngredientLink[] }[];
 }
 
 function toPdfData(r: RecipeDetailResponse): RecipePdfData {
@@ -44,7 +45,7 @@ function toPdfData(r: RecipeDetailResponse): RecipePdfData {
     ingredients: r.ingredients.map((i) => ({
       id: i.id, name: i.name, qty: i.qty, unit: i.unit, description: i.description, optional: i.optional, section: i.section ?? null,
     })),
-    steps: r.steps.map((s) => ({ text: s.text, mins: s.mins, kind: s.kind, ingredientIds: s.ingredientIds })),
+    steps: r.steps.map((s) => ({ text: s.text, mins: s.mins, kind: s.kind, stepIngredients: s.stepIngredients })),
   };
 }
 

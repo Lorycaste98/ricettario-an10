@@ -32,7 +32,7 @@ export default async function ModificaRicettaPage({ params }: { params: Promise<
         photos: { select: { id: true, url: true, order: true }, orderBy: { order: "asc" } },
         ingredients: { select: { id: true, name: true, qty: true, unit: true, description: true, optional: true, section: true, order: true }, orderBy: { order: "asc" } },
         steps: {
-          select: { id: true, text: true, mins: true, kind: true, order: true, ingredients: { select: { ingredientId: true } } },
+          select: { id: true, text: true, mins: true, kind: true, order: true, ingredients: { select: { ingredientId: true, qty: true } } },
           orderBy: { order: "asc" },
         },
         _count: { select: { reviews: true } },
@@ -70,14 +70,15 @@ export default async function ModificaRicettaPage({ params }: { params: Promise<
       section: i.section ?? "",
     })),
     // I legami passo↔ingrediente viaggiano per POSIZIONE nell'array `ingredients`
-    // qui sopra: gli id cambiano a ogni salvataggio (il PUT fa delete-recreate)
+    // qui sopra: gli id cambiano a ogni salvataggio (il PUT fa delete-recreate).
+    // `qty` = quantità usata in quel passo (null = non specificata)
     steps: raw.steps.map((s) => ({
       text: s.text,
       mins: s.mins != null ? String(s.mins) : "",
       kind: toStepKind(s.kind),
-      ingredientIdx: s.ingredients
-        .map((si) => ingredientIdxById.get(si.ingredientId))
-        .filter((idx): idx is number => idx !== undefined),
+      stepIngredients: s.ingredients
+        .map((si) => ({ idx: ingredientIdxById.get(si.ingredientId), qty: si.qty }))
+        .filter((l): l is { idx: number; qty: number | null } => l.idx !== undefined),
     })),
     photos: recipe.photos.map((p: { url: string }) => ({ url: p.url })),
   };

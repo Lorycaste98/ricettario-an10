@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/db";
 import { toStepKind } from "@/lib/types";
+import { normalizeStepQty } from "@/lib/step-ingredients";
 
 type TxClient = Parameters<Parameters<typeof db.$transaction>[0]>[0];
 
@@ -53,8 +54,9 @@ export const recipeDetailSelect = {
       mins: true,
       kind: true,
       order: true,
-      // Ingredienti necessari al passo: appiattiti in `ingredientIds` da flattenRecipe
-      ingredients: { select: { ingredientId: true } },
+      // Ingredienti necessari al passo con la quantità usata in quel passo:
+      // appiattiti in `stepIngredients` da flattenRecipe
+      ingredients: { select: { ingredientId: true, qty: true } },
     },
     orderBy: { order: "asc" as const },
   },
@@ -83,14 +85,20 @@ export function flattenRecipe(r: any) {
     ...r,
     categories: r.categories?.map((rc: { category: unknown }) => rc.category),
     tags: r.tags?.map((rt: { tag: unknown }) => rt.tag),
-    // Legami passo↔ingrediente: la junction diventa una lista di id (riferiti
-    // agli `ingredients[].id` della stessa risposta). In scrittura si usano
-    // invece gli indici, vedi `createRecipeContent`.
+    // Legami passo↔ingrediente: la junction diventa `{ingredientId, qty}[]` (gli
+    // id sono riferiti agli `ingredients[].id` della stessa risposta, la `qty` è
+    // la parte del totale usata in quel passo — null = non specificata). In
+    // scrittura si usano invece gli indici, vedi `createRecipeContent`.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     steps: r.steps?.map((s: any) => ({
       ...s,
       ingredients: undefined,
-      ingredientIds: (s.ingredients ?? []).map((si: { ingredientId: number }) => si.ingredientId),
+      stepIngredients: (s.ingredients ?? []).map(
+        (si: { ingredientId: number; qty?: number | null }) => ({
+          ingredientId: si.ingredientId,
+          qty: si.qty ?? null,
+        })
+      ),
     })),
     avgRating,
   };
@@ -113,7 +121,12 @@ export interface StepInput {
   mins?: number | null;
   kind?: string;
   order?: number;
-  /** Indici (posizione nell'array `ingredients` della stessa richiesta) degli ingredienti del passo */
+  /**
+   * Ingredienti del passo: `idx` = posizione nell'array `ingredients` della stessa
+   * richiesta, `qty` = quantità usata in questo passo (omessa/null = "quanto serve").
+   */
+  stepIngredients?: { idx: number; qty?: number | null }[];
+  /** @deprecated Forma senza quantità, accettata in fallback (payload vecchi). */
   ingredientIdx?: number[];
 }
 
@@ -126,7 +139,9 @@ export interface StepInput {
  * richiesta gli id non esistono ancora (il PUT fa delete-recreate di entrambe le
  * tabelle) — quindi si possono risolvere solo qui, dopo l'insert. `order` viene
  * riscritto con la posizione nell'array proprio per far coincidere indice e
- * ordine di lettura.
+ * ordine di lettura. La `qty` del legame è la parte del totale usata in quel
+ * passo: qui si normalizza soltanto (≥ 0), lo sforamento sul totale è un avviso
+ * del form (vedi `lib/step-ingredients.ts`), non un errore di salvataggio.
  */
 export async function createRecipeContent(
   tx: TxClient,
@@ -170,16 +185,21 @@ export async function createRecipeContent(
   const ingredientIdByIdx = new Map(createdIngredients.map((i) => [i.order, i.id]));
   const stepIdByIdx = new Map(createdSteps.map((s) => [s.order, s.id]));
 
-  const links: { stepId: number; ingredientId: number }[] = [];
+  const links: { stepId: number; ingredientId: number; qty: number | null }[] = [];
   stepRows.forEach((s, idx) => {
     const stepId = stepIdByIdx.get(idx);
-    if (!stepId || !s.ingredientIdx?.length) return;
-    for (const ingredientId of new Set(
-      s.ingredientIdx
-        .map((i) => ingredientIdByIdx.get(i))
-        .filter((id): id is number => id !== undefined)
-    )) {
-      links.push({ stepId, ingredientId });
+    if (!stepId) return;
+    // Forma nuova (con quantità) o, in fallback, la vecchia lista di soli indici
+    const refs = s.stepIngredients?.length
+      ? s.stepIngredients
+      : (s.ingredientIdx ?? []).map((i) => ({ idx: i, qty: null }));
+    // Un ingrediente non può comparire due volte nello stesso passo (@@id): vince il primo
+    const seen = new Set<number>();
+    for (const ref of refs) {
+      const ingredientId = ingredientIdByIdx.get(ref.idx);
+      if (ingredientId === undefined || seen.has(ingredientId)) continue;
+      seen.add(ingredientId);
+      links.push({ stepId, ingredientId, qty: normalizeStepQty(ref.qty) });
     }
   });
 

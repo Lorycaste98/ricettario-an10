@@ -12,21 +12,32 @@ import { TagCombobox } from "@/components/ui/TagCombobox";
 import { SectionHeader, type SectionTone } from "@/components/ui/SectionHeader";
 import { PublishSwitch } from "@/components/ui/PublishSwitch";
 import { ReorderList, ReorderRow } from "@/components/ui/ReorderList";
+import { Modal } from "@/components/ui/Modal";
 import { type Category, type Tag, type StepKind, STEP_KINDS, STEP_KIND_LABEL } from "@/lib/types";
+import {
+  allocationOf,
+  formatQty,
+  resolveLinkQty,
+  QTY_EPSILON,
+  type Allocation,
+} from "@/lib/step-ingredients";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 // `uid` = identità stabile della riga per il drag & drop (le key per indice
 // rompono il Reorder); generato client-side, mai inviato all'API.
 interface IngredientRow { uid: string; name: string; qty: string; unit: string; description: string; optional: boolean; section: string }
-// `ingredientUids` = ingredienti necessari al passo, riferiti per uid: sopravvivono
-// al riordino e alla rimozione delle righe (gli indici no). Diventano indici solo
-// al salvataggio, vedi `handleSubmit`.
-interface StepRow { uid: string; text: string; mins: string; kind: StepKind; ingredientUids: string[] }
+/**
+ * Ingrediente legato a un passo: riferito per **uid** della riga ingrediente (così
+ * sopravvive a riordino e rimozione, gli indici no) + la quantità usata in questo
+ * passo, come stringa come tutti i campi numerici del form ("" = non specificata).
+ */
+interface StepIngredientRow { uid: string; qty: string }
+interface StepRow { uid: string; text: string; mins: string; kind: StepKind; ingredients: StepIngredientRow[] }
 
 const uid = () => crypto.randomUUID();
 const emptyIngredient = (section = ""): IngredientRow => ({ uid: uid(), name: "", qty: "", unit: "", description: "", optional: false, section });
-const emptyStep = (): StepRow => ({ uid: uid(), text: "", mins: "", kind: "PREP", ingredientUids: [] });
+const emptyStep = (): StepRow => ({ uid: uid(), text: "", mins: "", kind: "PREP", ingredients: [] });
 /** Riga foto interna al form: url + flag per la foto principale */
 interface PhotoRow { url: string; isMain: boolean }
 
@@ -48,9 +59,12 @@ export interface RecipeFormData {
   categoryIds: number[];
   tagIds: number[];
   ingredients: Omit<IngredientRow, "uid">[];
-  /** `ingredientIdx` = posizioni nell'array `ingredients` qui sopra (gli id degli
-      ingredienti cambiano a ogni salvataggio: il PUT fa delete-recreate) */
-  steps: (Omit<StepRow, "uid" | "ingredientUids"> & { ingredientIdx?: number[] })[];
+  /** `stepIngredients[].idx` = posizioni nell'array `ingredients` qui sopra (gli id
+      degli ingredienti cambiano a ogni salvataggio: il PUT fa delete-recreate);
+      `qty` = quantità usata in quel passo, null = non specificata */
+  steps: (Omit<StepRow, "uid" | "ingredients"> & {
+    stepIngredients?: { idx: number; qty: number | null }[];
+  })[];
   /** Foto extra della galleria (NON include la foto principale) */
   photos: { url: string }[];
 }
@@ -238,6 +252,31 @@ function SectionField({
   );
 }
 
+/**
+ * Avviso sulla riga ingrediente: i passi ne hanno assegnato più del totale.
+ * Sta qui e non solo nel pannello del passo perché il numero sbagliato appartiene
+ * all'ingrediente — chi apre il form deve vederlo senza aprire i passi. Compare
+ * **solo** in caso di sforamento: la riga mobile è già al limite delle due righe.
+ */
+function OverAllocationChip({ assigned, total, unit }: { assigned: number; total: string; unit: string }) {
+  const u = unit.trim();
+  return (
+    <span
+      title={`I passi usano ${formatQty(assigned)}${u ? ` ${u}` : ""} di questo ingrediente, più del totale indicato`}
+      className={clsx(
+        ROW_H,
+        "inline-flex shrink-0 items-center gap-1 rounded-full border border-rose-300 bg-rose-100 px-2 text-[0.6875em] font-medium text-rose-800"
+      )}
+    >
+      <TriangleAlert size={11} className="shrink-0" />
+      <span className="tabular-nums">
+        {formatQty(assigned)}/{total}
+        {u && ` ${u}`}
+      </span>
+    </span>
+  );
+}
+
 /** Chip-toggle "opzionale" per la riga ingrediente (`compact` = etichetta corta, riga mobile). */
 function OptionalChip({ active, onToggle, compact = false }: { active: boolean; onToggle: () => void; compact?: boolean }) {
   return (
@@ -260,54 +299,107 @@ function OptionalChip({ active, onToggle, compact = false }: { active: boolean; 
 
 // ─── StepIngredients ──────────────────────────────────────────────────────────
 
-/** "500 g farina" / "farina" — etichetta breve di una riga ingrediente. */
-function ingredientLabel(row: IngredientRow): string {
-  const qty = [row.qty.trim(), row.unit.trim()].filter(Boolean).join(" ");
-  return qty ? `${qty} ${row.name.trim()}` : row.name.trim();
+/** Quantità della riga ingrediente come numero; null = non indicata o non valida. */
+function rowTotal(row: IngredientRow): number | null {
+  const n = Number(row.qty);
+  return row.qty.trim() && Number.isFinite(n) && n >= 0 ? n : null;
+}
+
+/** Quantità di un legame (campo del form) come numero; null = "quanto serve". */
+function linkQty(row: StepIngredientRow | undefined): number | null {
+  if (!row?.qty.trim()) return null;
+  const n = Number(row.qty);
+  return Number.isFinite(n) && n >= 0 ? n : null;
+}
+
+/** "500 g" / "q.b." — quantità + unità di una riga ingrediente. */
+function amountLabel(qty: number | null, unit: string): string {
+  const u = unit.trim();
+  if (qty == null) return u || "q.b.";
+  return u ? `${formatQty(qty)} ${u}` : formatQty(qty);
 }
 
 /**
- * Ingredienti necessari a un passo: chip dei legami + pannello di selezione.
- * Opzionale per definizione (le ricette esistenti non ne hanno nessuno), quindi
- * da chiuso occupa una riga sola e non mostra nulla se non c'è niente di legato.
+ * Etichetta del chip di un legame: la quantità di QUESTO passo (o quella piena
+ * dell'ingrediente se il legame non la indica e nessun altro passo la ripartisce
+ * — vedi `resolveLinkQty`) davanti al nome.
+ */
+function chipLabel(ing: IngredientRow, link: StepIngredientRow, split: boolean): string {
+  const qty = resolveLinkQty(linkQty(link), rowTotal(ing), split);
+  const name = ing.name.trim();
+  const amount = qty != null ? amountLabel(qty, ing.unit) : "";
+  return amount ? `${amount} ${name}` : name;
+}
+
+/**
+ * Ingredienti necessari a un passo: chip dei legami + pannello di selezione con la
+ * quantità usata in questo passo.
+ *
+ * Opzionale per definizione (le ricette esistenti non hanno legami), quindi da
+ * chiuso occupa una riga sola e non mostra nulla se non c'è niente di legato. Le
+ * quantità sono una ripartizione del totale della riga ingrediente: il pannello
+ * mostra sempre «di X» e il residuo, e segnala in rosa se la somma dei passi
+ * supera il totale (avviso, non blocco — vedi `handleSubmit`).
  */
 function StepIngredients({
   all,
   selected,
+  allocations,
   onToggle,
+  onQtyChange,
 }: {
   /** Tutte le righe ingrediente della ricetta con un nome (le altre non sono selezionabili) */
   all: IngredientRow[];
-  selected: string[];
+  selected: StepIngredientRow[];
+  /** Ripartizione per uid ingrediente, calcolata su TUTTI i passi (vedi `allocations` nel form) */
+  allocations: Map<string, Allocation>;
   onToggle: (ingredientUid: string) => void;
+  onQtyChange: (ingredientUid: string, qty: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const selectedSet = new Set(selected);
-  const chips = all.filter((i) => selectedSet.has(i.uid));
+  const selectedByUid = new Map(selected.map((s) => [s.uid, s]));
+  // Nell'ordine della lista ingredienti, non in quello di selezione: si rilegge
+  // come la lista sopra
+  const chips = all.filter((i) => selectedByUid.has(i.uid));
 
   return (
     <div className="space-y-1.5">
       <div className="flex flex-wrap items-center gap-1.5">
-        {chips.map((ing) => (
-          <span
-            key={ing.uid}
-            className="inline-flex max-w-full items-center gap-1 rounded-full border border-emerald-300 bg-emerald-100/70 py-0.5 pl-2 pr-1 text-[0.6875em] font-medium text-emerald-900"
-          >
-            <span className="truncate">{ingredientLabel(ing)}</span>
-            <button
-              type="button"
-              onClick={() => onToggle(ing.uid)}
-              title="Togli l'ingrediente dal passo"
-              className="shrink-0 rounded-full p-0.5 text-emerald-700 hover:bg-emerald-200 hover:text-emerald-900 transition-colors"
+        {chips.map((ing) => {
+          const alloc = allocations.get(ing.uid);
+          return (
+            <span
+              key={ing.uid}
+              className={clsx(
+                "inline-flex max-w-full items-center gap-1 rounded-full border py-0.5 pl-2 pr-1 text-[0.6875em] font-medium",
+                alloc?.over
+                  ? "border-rose-300 bg-rose-100/80 text-rose-900"
+                  : "border-emerald-300 bg-emerald-100/70 text-emerald-900"
+              )}
             >
-              <X size={11} />
-            </button>
-          </span>
-        ))}
+              <span className="truncate">
+                {chipLabel(ing, selectedByUid.get(ing.uid)!, !!alloc?.split)}
+              </span>
+              <button
+                type="button"
+                onClick={() => onToggle(ing.uid)}
+                title="Togli l'ingrediente dal passo"
+                className={clsx(
+                  "shrink-0 rounded-full p-0.5 transition-colors",
+                  alloc?.over
+                    ? "text-rose-700 hover:bg-rose-200 hover:text-rose-900"
+                    : "text-emerald-700 hover:bg-emerald-200 hover:text-emerald-900"
+                )}
+              >
+                <X size={11} />
+              </button>
+            </span>
+          );
+        })}
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          title="Scegli gli ingredienti che servono in questo passo"
+          title="Scegli gli ingredienti che servono in questo passo e quanto ne serve"
           className={clsx(
             "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[0.6875em] font-medium transition-colors",
             open
@@ -321,33 +413,143 @@ function StepIngredients({
       </div>
 
       {open && (
-        <div className="rounded-xl border border-emerald-200/70 bg-emerald-50/60 p-2">
+        <div className="rounded-xl border border-emerald-200/70 bg-emerald-50/60 p-1.5 sm:p-2">
           {all.length === 0 ? (
             <p className="text-[0.6875em] text-sky-700">
               Aggiungi prima gli ingredienti della ricetta: qui potrai spuntare quelli che servono in questo passo.
             </p>
           ) : (
-            <div className="flex flex-wrap gap-1.5">
+            // Liste lunghe: il pannello scrolla invece di allungare il passo
+            <ul className="max-h-64 space-y-1 overflow-y-auto pr-0.5">
               {all.map((ing) => {
-                const active = selectedSet.has(ing.uid);
+                const link = selectedByUid.get(ing.uid);
+                const active = !!link;
+                const alloc = allocations.get(ing.uid);
+                const total = rowTotal(ing);
+                const own = linkQty(link);
+                // Quanto ne resta per QUESTO passo: totale meno quello che si sono
+                // già preso gli altri passi (la quota di questo non conta)
+                const takenElsewhere = Math.round(((alloc?.assigned ?? 0) - (own ?? 0)) * 100) / 100;
+                const availableHere =
+                  total != null ? Math.round((total - takenElsewhere) * 100) / 100 : null;
+                const over = active && own != null && availableHere != null
+                  && own - availableHere > QTY_EPSILON;
+                const unit = ing.unit.trim();
+
                 return (
-                  <button
+                  <li
                     key={ing.uid}
-                    type="button"
-                    onClick={() => onToggle(ing.uid)}
                     className={clsx(
-                      "inline-flex max-w-full items-center gap-1 rounded-full border px-2 py-0.5 text-[0.6875em] font-medium transition-colors",
-                      active
-                        ? "border-emerald-400 bg-emerald-200/80 text-emerald-900"
-                        : "border-white/70 bg-white/80 text-sky-800 hover:border-emerald-300 hover:bg-emerald-100/70"
+                      "flex flex-wrap items-center gap-1 rounded-lg border px-1 py-1 transition-colors",
+                      over
+                        ? "border-rose-300 bg-rose-50/80"
+                        : active
+                        ? "border-emerald-300 bg-emerald-100/60"
+                        : "border-white/70 bg-white/70"
                     )}
                   >
-                    {active && <Check size={11} className="shrink-0" />}
-                    <span className="truncate">{ingredientLabel(ing)}</span>
-                  </button>
+                    {/* Nome = toggle del legame. `basis-full` su mobile (riga sua,
+                        i controlli quantità vanno sotto), in linea da sm in su */}
+                    <button
+                      type="button"
+                      onClick={() => onToggle(ing.uid)}
+                      title={active ? "Togli l'ingrediente dal passo" : "Aggiungi l'ingrediente al passo"}
+                      className={clsx(
+                        ROW_H,
+                        "flex min-w-0 flex-1 basis-full items-center gap-1.5 rounded-md px-1 text-left text-[0.75em] font-medium transition-colors sm:basis-40",
+                        active ? "text-emerald-900" : "text-sky-800 hover:text-emerald-700"
+                      )}
+                    >
+                      <span
+                        className={clsx(
+                          "flex size-4 shrink-0 items-center justify-center rounded border",
+                          active
+                            ? "border-emerald-500 bg-emerald-500 text-white"
+                            : "border-sky-300 bg-white/80"
+                        )}
+                      >
+                        {active && <Check size={11} />}
+                      </span>
+                      <span className="truncate">{ing.name.trim()}</span>
+                    </button>
+
+                    {active && (
+                      <>
+                        <span className="flex shrink-0 items-center gap-1">
+                          <input
+                            type="number"
+                            min={0}
+                            step="any"
+                            value={link.qty}
+                            onChange={(e) => onQtyChange(ing.uid, e.target.value)}
+                            placeholder="q.b."
+                            title="Quantità usata in questo passo (vuoto = quanto serve)"
+                            className={clsx(
+                              inlineInput,
+                              ROW_H,
+                              "w-16 px-1.5 py-0 text-center",
+                              over && "border-rose-300 bg-rose-50/80"
+                            )}
+                          />
+                          {unit && (
+                            <span className="text-[0.6875em] font-medium text-sky-700">{unit}</span>
+                          )}
+                          {/* "resto"/"tutto": la quantità che ancora non è assegnata */}
+                          {availableHere != null && availableHere > 0 && own !== availableHere && (
+                            <button
+                              type="button"
+                              onClick={() => onQtyChange(ing.uid, String(availableHere))}
+                              title="Assegna a questo passo la quantità non ancora assegnata"
+                              className={clsx(
+                                ROW_H,
+                                "shrink-0 rounded-full border border-white/70 bg-white/80 px-2 text-[0.6875em] font-medium text-sky-700 transition-colors hover:border-emerald-300 hover:text-emerald-700"
+                              )}
+                            >
+                              {takenElsewhere > 0 ? "resto" : "tutto"}
+                            </button>
+                          )}
+                          {own != null && (
+                            <button
+                              type="button"
+                              onClick={() => onQtyChange(ing.uid, "")}
+                              title="Non specificare la quantità (quanto serve)"
+                              className={rowIconBtnNeutral}
+                            >
+                              <RotateCcw size={12} />
+                            </button>
+                          )}
+                        </span>
+
+                        {/* Riepilogo: su mobile va a capo da solo, su desktop si
+                            allinea a destra */}
+                        <span
+                          className={clsx(
+                            "basis-full text-[0.6875em] sm:ml-auto sm:basis-auto sm:text-right",
+                            over ? "font-medium text-rose-700" : "text-sky-600"
+                          )}
+                        >
+                          {total == null ? (
+                            "totale non indicato"
+                          ) : over ? (
+                            // clamp: se altri passi hanno già sforato, il disponibile
+                            // qui è negativo e "disponibili -50 g" non si legge
+                            `oltre il totale: disponibili ${amountLabel(Math.max(0, availableHere), unit)}`
+                          ) : (
+                            <>
+                              di {amountLabel(total, unit)}
+                              {takenElsewhere > 0 && ` · altri passi ${formatQty(takenElsewhere)}`}
+                              {availableHere != null &&
+                                availableHere > 0 &&
+                                ` · resta ${formatQty(Math.max(0, availableHere - (own ?? 0)))}`}
+                            </>
+                          )}
+                        </span>
+                      </>
+                    )}
+                  </li>
                 );
               })}
-            </div>
+            </ul>
           )}
         </div>
       )}
@@ -395,12 +597,15 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
       ? initialData.ingredients.map((r) => ({ ...r, uid: uid() }))
       : [emptyIngredient()];
     const stepRows: StepRow[] = initialData?.steps?.length
-      ? initialData.steps.map(({ ingredientIdx, ...r }) => ({
+      ? initialData.steps.map(({ stepIngredients, ...r }) => ({
           ...r,
           uid: uid(),
-          ingredientUids: (ingredientIdx ?? [])
-            .map((i) => ingRows[i]?.uid)
-            .filter((u): u is string => !!u),
+          ingredients: (stepIngredients ?? [])
+            .map((l) => {
+              const ingUid = ingRows[l.idx]?.uid;
+              return ingUid ? { uid: ingUid, qty: l.qty != null ? String(l.qty) : "" } : null;
+            })
+            .filter((l): l is StepIngredientRow => !!l),
         }))
       : [emptyStep()];
     return { ingredients: ingRows, steps: stepRows };
@@ -539,9 +744,23 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
         j === i
           ? {
               ...r,
-              ingredientUids: r.ingredientUids.includes(ingredientUid)
-                ? r.ingredientUids.filter((u) => u !== ingredientUid)
-                : [...r.ingredientUids, ingredientUid],
+              ingredients: r.ingredients.some((l) => l.uid === ingredientUid)
+                ? r.ingredients.filter((l) => l.uid !== ingredientUid)
+                : [...r.ingredients, { uid: ingredientUid, qty: "" }],
+            }
+          : r
+      )
+    );
+  /** Quantità dell'ingrediente `ingredientUid` nel passo `i` ("" = quanto serve). */
+  const setStepIngredientQty = (i: number, ingredientUid: string, qty: string) =>
+    setSteps((p) =>
+      p.map((r, j) =>
+        j === i
+          ? {
+              ...r,
+              ingredients: r.ingredients.map((l) =>
+                l.uid === ingredientUid ? { ...l, qty } : l
+              ),
             }
           : r
       )
@@ -551,6 +770,38 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
   const namedIngredients = useMemo(
     () => ingredients.filter((i) => i.name.trim()),
     [ingredients]
+  );
+
+  /**
+   * Ripartizione di ogni ingrediente sui passi (uid → `Allocation`): quanto è già
+   * assegnato, quanto resta, se la somma sfora il totale. Derivata a ogni render
+   * da ingredienti + passi: cambiando il totale di una riga lo sforamento compare
+   * subito, senza stato da tenere in sincrono.
+   */
+  const allocations = useMemo(() => {
+    const map = new Map<string, Allocation>();
+    for (const ing of ingredients) {
+      const total = ing.qty.trim() && Number.isFinite(Number(ing.qty)) ? Number(ing.qty) : null;
+      const qtys: (number | null)[] = [];
+      for (const s of steps) {
+        const link = s.ingredients.find((l) => l.uid === ing.uid);
+        if (!link) continue;
+        const n = Number(link.qty);
+        qtys.push(link.qty.trim() && Number.isFinite(n) && n >= 0 ? n : null);
+      }
+      map.set(ing.uid, allocationOf(total, qtys));
+    }
+    return map;
+  }, [ingredients, steps]);
+
+  /** Ingredienti con più quantità assegnate del totale disponibile (avviso, non blocco). */
+  const overAllocated = useMemo(
+    () =>
+      ingredients.filter((i) => {
+        const a = allocations.get(i.uid);
+        return !!a?.over;
+      }),
+    [ingredients, allocations]
   );
 
   const addPhoto = () => setPhotos((p) => [...p, { url: "", isMain: false }]);
@@ -578,9 +829,7 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
       return [...prev, { url, isMain: isFirstMain }];
     });
 
-  const handleSubmit = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim()) { setError("Il nome è obbligatorio"); return; }
+  const submitRecipe = useCallback(async () => {
     setSaving(true);
     setError(null);
 
@@ -614,10 +863,11 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
           mins: s.mins ? Number(s.mins) : null,
           kind: s.kind,
           order,
-          // Gli uid sono client-side: l'API riceve la posizione nell'array `ingredients`
-          ingredientIdx: s.ingredientUids
-            .map((u) => ingredientIdxByUid.get(u))
-            .filter((idx): idx is number => idx !== undefined),
+          // Gli uid sono client-side: l'API riceve la posizione nell'array
+          // `ingredients` + la quantità usata in questo passo ("" → null = q.b.)
+          stepIngredients: s.ingredients
+            .map((l) => ({ idx: ingredientIdxByUid.get(l.uid), qty: l.qty.trim() ? Number(l.qty) : null }))
+            .filter((l): l is { idx: number; qty: number | null } => l.idx !== undefined),
         })),
       photos: validPhotos.map((p, order) => ({ url: p.url.trim(), order })),
     };
@@ -649,6 +899,21 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
       setSaving(false);
     }
   }, [name, createdAt, servings, servingsUnit, prepValue, cookValue, notes, links, published, categoryIds, tagIds, ingredients, useSections, steps, photos, isEdit, recipeId, router]);
+
+  /**
+   * Le quantità assegnate ai passi che superano il totale dell'ingrediente sono un
+   * **avviso**, non un blocco: possono venire da un arrotondamento o da una scelta
+   * voluta, e una ricetta lunga non deve restare non salvabile per questo. Si
+   * chiede conferma una volta sola, elencando i casi.
+   */
+  const [confirmOver, setConfirmOver] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) { setError("Il nome è obbligatorio"); return; }
+    if (overAllocated.length > 0) { setConfirmOver(true); return; }
+    void submitRecipe();
+  };
 
   return (
     // Due knob per la tipografia del form, non serve toccare altro:
@@ -1013,6 +1278,13 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
                     onChange={(e) => updateIngredient(i, "unit", e.target.value)} placeholder="g/ml"
                     className={`${inlineInput} ${ROW_H} w-16 shrink-0 px-1.5 py-0 text-center`} />
                   <OptionalChip compact active={ing.optional} onToggle={() => toggleIngredientOptional(i)} />
+                  {allocations.get(ing.uid)?.over && (
+                    <OverAllocationChip
+                      assigned={allocations.get(ing.uid)!.assigned}
+                      total={ing.qty.trim()}
+                      unit={ing.unit}
+                    />
+                  )}
                   {useSections && (
                     <SectionField
                       compact
@@ -1059,6 +1331,13 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
                   />
                   <div className="flex flex-wrap items-center gap-2">
                   <OptionalChip active={ing.optional} onToggle={() => toggleIngredientOptional(i)} />
+                  {allocations.get(ing.uid)?.over && (
+                    <OverAllocationChip
+                      assigned={allocations.get(ing.uid)!.assigned}
+                      total={ing.qty.trim()}
+                      unit={ing.unit}
+                    />
+                  )}
                   {useSections && (
                     <SectionField
                       value={ing.section}
@@ -1121,12 +1400,15 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
                     className={`${inlineInput} ${ROW_H} w-16 shrink-0 py-0 sm:w-20`} />
                   <span className="text-[0.6875em] text-sky-600 sm:text-[0.75em]">min (opz.)</span>
                 </div>
-                {/* Ingredienti che servono in questo passo: opzionali, mostrati
-                    in modalità cucina e sotto il passo nel dettaglio ricetta */}
+                {/* Ingredienti che servono in questo passo (con la quantità usata
+                    qui): opzionali, mostrati in modalità cucina e sotto il passo
+                    nel dettaglio ricetta */}
                 <StepIngredients
                   all={namedIngredients}
-                  selected={step.ingredientUids}
+                  selected={step.ingredients}
+                  allocations={allocations}
                   onToggle={(u) => toggleStepIngredient(i, u)}
+                  onQtyChange={(u, qty) => setStepIngredientQty(i, u, qty)}
                 />
               </div>
               <div className="flex flex-col items-center gap-1 shrink-0">
@@ -1155,6 +1437,61 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
           {isEdit ? <span className="inline-flex items-center gap-1.5"><Save size={14} /> Salva modifiche</span> : <span className="inline-flex items-center gap-1.5"><CircleCheck size={14} /> Crea ricetta</span>}
         </Button>
       </div>
+
+      {/* Conferma sforamento quantità: avviso, non blocco (vedi handleSubmit) */}
+      <Modal
+        open={confirmOver}
+        onClose={() => setConfirmOver(false)}
+        title="Quantità oltre il totale"
+        size="sm"
+      >
+        <p className="text-sm text-sky-800">
+          {overAllocated.length === 1
+            ? "In un ingrediente la somma"
+            : `In ${overAllocated.length} ingredienti la somma`}{" "}
+          delle quantità assegnate ai passi supera il totale della ricetta:
+        </p>
+        {/* La lista scrolla da sé (non tutta la modale): con molti ingredienti
+            sforati i due bottoni qui sotto finivano oltre il bordo dello schermo
+            e bisognava scorrere la modale per trovarli. 35dvh regge anche il
+            telefono in orizzontale, dove l'altezza utile è ~340px */}
+        <ul className="mt-3 max-h-[35dvh] space-y-1.5 overflow-y-auto pr-0.5">
+          {overAllocated.map((ing) => {
+            const a = allocations.get(ing.uid);
+            const unit = ing.unit.trim();
+            return (
+              <li
+                key={ing.uid}
+                className="flex flex-wrap items-baseline gap-x-1.5 rounded-lg border border-rose-200 bg-rose-50/80 px-2.5 py-1.5 text-sm"
+              >
+                <span className="min-w-0 break-words font-semibold text-rose-900">{ing.name.trim()}</span>
+                <span className="text-rose-700">
+                  assegnati {formatQty(a?.assigned ?? 0)}
+                  {unit && ` ${unit}`} su {ing.qty.trim()}
+                  {unit && ` ${unit}`}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+        {/* Su mobile in colonna (le due etichette affiancate non stanno in 288px,
+            la larghezza della modale "sm" su un telefono da 320px): `col-reverse`
+            tiene l'azione principale in alto, come da abitudine su iOS */}
+        <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
+          <Button variant="secondary" onClick={() => setConfirmOver(false)} disabled={saving}>
+            Torna a correggere
+          </Button>
+          <Button
+            onClick={() => {
+              setConfirmOver(false);
+              void submitRecipe();
+            }}
+            loading={saving}
+          >
+            Salva comunque
+          </Button>
+        </div>
+      </Modal>
     </form>
   );
 }

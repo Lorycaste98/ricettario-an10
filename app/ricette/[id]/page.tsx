@@ -17,6 +17,7 @@ import { RecipePdfButton } from "@/components/recipe/RecipePdfButton";
 import { RecipeActions } from "./RecipeActions";
 import { RecipeAdminBar } from "./RecipeAdminBar";
 import { formatMinutes, formatServings } from "@/lib/types";
+import type { StepIngredientLink } from "@/lib/step-ingredients";
 import type { Metadata } from "next";
 
 export async function generateMetadata({ params }: PageProps<"/ricette/[id]">): Promise<Metadata> {
@@ -79,9 +80,9 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
     ingredients: recipe.ingredients.map((i: { id: number; name: string; qty: number | null; unit: string | null; description: string | null; optional: boolean; section: string | null }) => ({
       id: i.id, name: i.name, qty: i.qty, unit: i.unit, description: i.description, optional: i.optional, section: i.section,
     })),
-    // `ingredientIds` (legami passo↔ingrediente) arriva da flattenRecipe
-    steps: recipe.steps.map((s: { text: string; mins: number | null; kind: string; ingredientIds?: number[] }) => ({
-      text: s.text, mins: s.mins, kind: s.kind, ingredientIds: s.ingredientIds,
+    // `stepIngredients` (legami passo↔ingrediente + quantità) arriva da flattenRecipe
+    steps: recipe.steps.map((s: { text: string; mins: number | null; kind: string; stepIngredients?: StepIngredientLink[] }) => ({
+      text: s.text, mins: s.mins, kind: s.kind, stepIngredients: s.stepIngredients,
     })),
   };
 

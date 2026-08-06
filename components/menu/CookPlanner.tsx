@@ -5,6 +5,7 @@ import { CalendarClock } from "lucide-react";
 import { MenuCookMode, type CookIngredient } from "@/components/menu/MenuCookMode";
 import { CookTimeline } from "@/components/menu/CookTimeline";
 import { resolveServeAt } from "@/lib/cook-schedule";
+import type { StepIngredientLink } from "@/lib/step-ingredients";
 import {
   buildSchedule,
   defaultStart,
@@ -23,7 +24,7 @@ interface CookRecipe extends TimelineRecipe {
   /** Ingredienti della ricetta, quantità già scalate sulle porzioni del menù */
   ingredients?: CookIngredient[];
   /** Come TimelineStep, più i legami con gli ingredienti (mostrati nello stepper) */
-  steps: (TimelineStep & { ingredientIds?: number[] })[];
+  steps: (TimelineStep & { stepIngredients?: StepIngredientLink[] })[];
 }
 
 const noopSubscribe = () => () => {};

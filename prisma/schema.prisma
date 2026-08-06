@@ -107,6 +107,11 @@ model Step {
 model StepIngredient {
   stepId       Int
   ingredientId Int
+  /** Quantità dell'ingrediente usata in QUESTO passo, nell'unità di `Ingredient.unit`
+      (nessuna unità propria: senza un'unità condivisa la somma non sarebbe verificabile).
+      null = non specificata ("quanto serve"). È una ripartizione di `Ingredient.qty`, che
+      resta l'unico totale: la somma sui passi può stare sotto, non sopra. */
+  qty          Float?
   step         Step       @relation(fields: [stepId], references: [id], onDelete: Cascade)
   ingredient   Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
 

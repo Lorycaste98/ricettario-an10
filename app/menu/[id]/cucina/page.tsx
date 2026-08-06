@@ -55,8 +55,9 @@ export default async function MenuCookModePage({ params }: Params) {
               steps: {
                 select: {
                   id: true, text: true, mins: true, kind: true, order: true,
-                  // Ingredienti necessari al passo: mostrati sulla card dello step corrente
-                  ingredients: { select: { ingredientId: true } },
+                  // Ingredienti necessari al passo (+ quantità usata in quel passo):
+                  // mostrati sulla card dello step corrente
+                  ingredients: { select: { ingredientId: true, qty: true } },
                 },
                 orderBy: { order: "asc" },
               },
@@ -74,15 +75,18 @@ export default async function MenuCookModePage({ params }: Params) {
     // dal default della ricetta, le quantità degli step seguono
     const base = mr.recipe.servings;
     const factor = mr.servings && base && base > 0 ? mr.servings / base : 1;
+    const scale = (qty: number | null) => (qty != null ? Math.round(qty * factor * 100) / 100 : null);
     return {
       ...mr.recipe,
-      ingredients: mr.recipe.ingredients.map((i) => ({
-        ...i,
-        qty: i.qty != null ? Math.round(i.qty * factor * 100) / 100 : null,
-      })),
+      ingredients: mr.recipe.ingredients.map((i) => ({ ...i, qty: scale(i.qty) })),
       steps: mr.recipe.steps.map(({ ingredients, ...s }) => ({
         ...s,
-        ingredientIds: ingredients.map((si) => si.ingredientId),
+        // Anche le quantità del singolo passo vanno scalate, non solo i totali:
+        // altrimenti il passo dichiara grammi non scalati mentre la lista spesa sì
+        stepIngredients: ingredients.map((si) => ({
+          ingredientId: si.ingredientId,
+          qty: scale(si.qty),
+        })),
       })),
       cookStartAt: mr.cookStartAt ? mr.cookStartAt.toISOString() : null,
     };

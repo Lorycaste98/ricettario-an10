@@ -4,6 +4,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, RotateCcw, PartyPopper, UtensilsCrossed, Check, CookingPot, AlarmClock, Timer, ListX, Carrot } from "lucide-react";
 import { formatMinutes, toStepKind, STEP_KIND_LABEL, type StepKind } from "@/lib/types";
+import {
+  formatQty,
+  resolveLinkQty,
+  splitIngredientIds,
+  type StepIngredientLink,
+} from "@/lib/step-ingredients";
 import { formatClock } from "@/lib/cook-timeline";
 import { useLocalStore } from "@/lib/local-store";
 import { QuickTag } from "@/components/ui/QuickTag";
@@ -28,8 +34,11 @@ interface Step {
   mins: number | null;
   kind: string;
   order: number;
-  /** Ingredienti necessari al passo (id di `Recipe.ingredients`); assente = nessun legame */
-  ingredientIds?: number[];
+  /**
+   * Ingredienti necessari al passo (id di `Recipe.ingredients` + quantità usata in
+   * questo passo, già scalata sulle porzioni del menù); assente = nessun legame
+   */
+  stepIngredients?: StepIngredientLink[];
 }
 
 /** Ingrediente della ricetta con le quantità già scalate sulle porzioni del menù. */
@@ -51,14 +60,20 @@ interface Recipe {
   steps: Step[];
 }
 
-/** "500 g" (già scalata) e nome, separati: in cucina si legge prima il numero. */
-function ingredientParts(ing: CookIngredient): { amount: string; name: string } {
-  const qty = ing.qty != null ? formatQty(ing.qty) : null;
-  return { amount: [qty, ing.unit].filter(Boolean).join(" "), name: ing.name };
-}
-
-function formatQty(n: number): string {
-  return Number.isInteger(n) ? String(n) : String(Math.round(n * 100) / 100);
+/**
+ * "500 g" (già scalata) e nome, separati: in cucina si legge prima il numero.
+ * `qty` è quella del passo quando indicata, altrimenti quella piena dell'ingrediente
+ * (o «il resto» se sono altri passi a ripartirla) — vedi `resolveLinkQty`.
+ */
+function ingredientParts(ing: CookIngredient, qty: number | null, split: boolean): { amount: string; name: string } {
+  const resolved = resolveLinkQty(qty, ing.qty, split);
+  const amount =
+    resolved != null
+      ? [formatQty(resolved), ing.unit].filter(Boolean).join(" ")
+      : ing.qty != null
+      ? "il resto"
+      : ing.unit ?? "";
+  return { amount, name: ing.name };
 }
 
 interface Progress {
@@ -246,10 +261,14 @@ function RecipeCookCard({
   const step = atCompletion ? null : steps[progress.stepIdx];
   // Ingredienti del passo corrente: si guarda la lista sotto mano, quindi la
   // card dice quali servono adesso (quantità già scalate sulle porzioni del menù)
+  const splitIds = splitIngredientIds(steps);
   const stepIngredients = step
-    ? (step.ingredientIds ?? [])
-        .map((id) => recipe.ingredients?.find((ing) => ing.id === id))
-        .filter((ing): ing is CookIngredient => !!ing)
+    ? (step.stepIngredients ?? [])
+        .map((link) => {
+          const ing = recipe.ingredients?.find((i) => i.id === link.ingredientId);
+          return ing ? { ing, qty: link.qty } : null;
+        })
+        .filter((x): x is { ing: CookIngredient; qty: number | null } => !!x)
     : [];
   const stepAt = !atCompletion ? stepTimes?.[progress.stepIdx] : undefined;
   const nextAt = !atCompletion ? stepTimes?.[progress.stepIdx + 1] : undefined;
@@ -359,8 +378,8 @@ function RecipeCookCard({
                   corti sembrano una cosa sola ("100 g burro 2 uova"). Quantità
                   in evidenza e nome in tono normale — in cucina si cerca il numero */}
               <ul className="mt-1.5 flex flex-wrap gap-1.5">
-                {stepIngredients.map((ing) => {
-                  const { amount, name } = ingredientParts(ing);
+                {stepIngredients.map(({ ing, qty }) => {
+                  const { amount, name } = ingredientParts(ing, qty, splitIds.has(ing.id));
                   return (
                     <li
                       key={ing.id}

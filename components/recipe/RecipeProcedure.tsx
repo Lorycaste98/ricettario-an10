@@ -7,6 +7,11 @@ import { PriceTag } from "@/components/ui/PriceTag";
 import { useRecipeProgress } from "@/lib/recipe-progress";
 import { formatMinutes, toStepKind, STEP_KIND_LABEL, type StepKind } from "@/lib/types";
 import { groupIngredientsBySection } from "@/lib/ingredient-sections";
+import {
+  resolveLinkQty,
+  splitIngredientIds,
+  type StepIngredientLink,
+} from "@/lib/step-ingredients";
 
 // Stile badge per tipo step (la Preparazione resta senza badge per non affollare)
 const KIND_BADGE: Partial<Record<StepKind, string>> = {
@@ -31,8 +36,11 @@ interface Step {
   mins: number | null;
   kind?: string;
   order: number;
-  /** Ingredienti necessari al passo (id di `ingredients`); assente/vuoto = nessun legame */
-  ingredientIds?: number[];
+  /**
+   * Ingredienti necessari al passo (id di `ingredients` + quantità usata qui);
+   * assente/vuoto = nessun legame
+   */
+  stepIngredients?: StepIngredientLink[];
 }
 
 interface Props {
@@ -58,6 +66,23 @@ function formatQty(n: number): string {
 function qtyLabel(ing: Ingredient, scaledQty: (qty: number | null) => string): string {
   if (ing.qty != null) return `${scaledQty(ing.qty)}${ing.unit ? ` ${ing.unit}` : ""}`;
   return ing.unit ?? "q.b.";
+}
+
+/**
+ * Quantità del legame passo↔ingrediente: quella indicata per questo passo, oppure
+ * il totale dell'ingrediente se nessun passo lo ripartisce (`resolveLinkQty`).
+ * Quando l'ingrediente è ripartito ma questo passo non dice quanto, «il resto»:
+ * ripetere il totale pieno accanto a un passo che ne usa una frazione ingannerebbe.
+ */
+function linkQtyLabel(
+  link: StepIngredientLink,
+  ing: Ingredient,
+  split: boolean,
+  scaledQty: (qty: number | null) => string
+): string {
+  const qty = resolveLinkQty(link.qty, ing.qty, split);
+  if (qty != null) return `${scaledQty(qty)}${ing.unit ? ` ${ing.unit}` : ""}`;
+  return ing.qty != null ? "il resto" : ing.unit ?? "q.b.";
 }
 
 /** Griglia di righe ingrediente (una per lista intera o una per sezione). */
@@ -107,11 +132,14 @@ export function RecipeProcedure({ recipeId, defaultServings, servingsUnit, ingre
 
   // Ingredienti raggruppati per sezione/preparazione (un solo gruppo = nessuna sezione)
   const sections = useMemo(() => groupIngredientsBySection(ingredients), [ingredients]);
-  // Lookup per i legami passo↔ingrediente (Step.ingredientIds)
+  // Lookup per i legami passo↔ingrediente (Step.stepIngredients)
   const ingredientById = useMemo(
     () => new Map(ingredients.map((i) => [i.id, i])),
     [ingredients]
   );
+  // Ingredienti ripartiti fra più passi: cambia il significato di un legame senza
+  // quantità ("tutto" → "il resto"), vedi `linkQtyLabel`
+  const splitIds = useMemo(() => splitIngredientIds(steps), [steps]);
 
   // Scala la quantità in base alle porzioni selezionate
   const scaledQty = (qty: number | null): string => {
@@ -294,9 +322,12 @@ export function RecipeProcedure({ recipeId, defaultServings, servingsUnit, ingre
             const checked = done.has(i);
             const isPending = pendingIdx === i;
             // Ingredienti legati al passo (opzionali: le ricette senza legami non mostrano nulla)
-            const stepIngredients = (step.ingredientIds ?? [])
-              .map((id) => ingredientById.get(id))
-              .filter((ing): ing is Ingredient => !!ing);
+            const stepIngredients = (step.stepIngredients ?? [])
+              .map((link) => {
+                const ing = ingredientById.get(link.ingredientId);
+                return ing ? { link, ing } : null;
+              })
+              .filter((x): x is { link: StepIngredientLink; ing: Ingredient } => !!x);
             return (
               <li key={step.id} className="space-y-2">
                 <button
@@ -346,13 +377,15 @@ export function RecipeProcedure({ recipeId, defaultServings, servingsUnit, ingre
                     {stepIngredients.length > 0 && (
                       <div className={`mt-1.5 flex flex-wrap items-center gap-1.5 ${checked ? "opacity-50" : ""}`}>
                         <Carrot size={12} className="shrink-0 text-emerald-600" />
-                        {stepIngredients.map((ing) => (
+                        {stepIngredients.map(({ link, ing }) => (
                           <span
                             key={ing.id}
                             className="inline-flex items-baseline gap-1 rounded-full border border-emerald-200/80 bg-emerald-50/80 px-2 py-0.5 text-[11px] text-emerald-950"
                           >
                             {/* Stessa lettura della modalità cucina: quantità in evidenza, nome in tono normale */}
-                            <span className="font-bold tabular-nums text-emerald-700">{qtyLabel(ing, scaledQty)}</span>
+                            <span className="font-bold tabular-nums text-emerald-700">
+                              {linkQtyLabel(link, ing, splitIds.has(ing.id), scaledQty)}
+                            </span>
                             {ing.name}
                           </span>
                         ))}

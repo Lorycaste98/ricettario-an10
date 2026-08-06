@@ -1,5 +1,7 @@
 // Tipi condivisi per le API responses
 
+import type { StepIngredientLink } from "@/lib/step-ingredients";
+
 export interface Category {
   id: number;
   name: string;
@@ -76,8 +78,12 @@ export interface Step {
   mins: number | null;
   kind: StepKind;
   order: number;
-  /** Id degli ingredienti (della stessa ricetta) necessari a questo passo; assente/vuoto = nessun legame. */
-  ingredientIds?: number[];
+  /**
+   * Ingredienti (della stessa ricetta) necessari a questo passo; assente/vuoto = nessun legame.
+   * `qty` = parte del totale dell'ingrediente usata in questo passo, null = non specificata.
+   * Vedi `lib/step-ingredients.ts` per la resa a schermo.
+   */
+  stepIngredients?: StepIngredientLink[];
 }
 
 export interface RecipePhoto {

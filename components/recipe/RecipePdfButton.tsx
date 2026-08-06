@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { FileDown, Loader2 } from "lucide-react";
+import type { StepIngredientLink } from "@/lib/step-ingredients";
 
 export interface RecipePdfData {
   name: string;
@@ -14,9 +15,9 @@ export interface RecipePdfData {
   photo: string | null;
   categories: { name: string; color: string }[];
   tags: { name: string }[];
-  /** `id` serve solo a risolvere i legami `steps[].ingredientIds` */
+  /** `id` serve solo a risolvere i legami `steps[].stepIngredients` */
   ingredients: { id?: number; name: string; qty: number | null; unit: string | null; description: string | null; optional?: boolean; section?: string | null }[];
-  steps: { text: string; mins: number | null; kind?: string; ingredientIds?: number[] }[];
+  steps: { text: string; mins: number | null; kind?: string; stepIngredients?: StepIngredientLink[] }[];
 }
 
 /** Scarica un'immagine remota e la converte in data URL (per includerla nel PDF in modo affidabile). */
