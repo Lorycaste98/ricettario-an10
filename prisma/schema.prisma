@@ -34,6 +34,7 @@ model Recipe {
   cookLogs    CookLog[]
   progress    RecipeProgress[]
   ratings     RecipeRating[]
+  favorites   RecipeFavorite[]
 }
 
 model CookLog {
@@ -166,6 +167,7 @@ model Admin {
 
   recipeProgress RecipeProgress[]
   recipeRatings  RecipeRating[]
+  recipeFavorites RecipeFavorite[]
 }
 
 /** Voto personale dell'admin su una ricetta (uno per account): 1-10 + nota opzionale.
@@ -179,6 +181,21 @@ model RecipeRating {
   note      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  admin  Admin  @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@id([adminId, recipeId])
+  @@index([recipeId])
+}
+
+/** Ricetta salvata tra i preferiti da un admin (una riga per coppia account/ricetta).
+    I visitatori anonimi restano su localStorage (lib/favorites.ts): al login i preferiti
+    locali vengono ignorati, conta solo la lista dell'account. */
+model RecipeFavorite {
+  adminId   Int
+  recipeId  Int
+  createdAt DateTime @default(now())
 
   admin  Admin  @relation(fields: [adminId], references: [id], onDelete: Cascade)
   recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)

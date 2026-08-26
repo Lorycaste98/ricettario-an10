@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import Image from "next/image";
 import type { ReactNode } from "react";
 import { Clock, Flame, Hourglass, Sigma, Users, ExternalLink, CalendarDays, ImageIcon, UtensilsCrossed, StickyNote, Link2 } from "lucide-react";
 import { db } from "@/lib/db";
@@ -7,6 +6,7 @@ import { getSession } from "@/lib/session";
 import { flattenRecipe, recipeDetailSelect } from "@/lib/api";
 import { Badge } from "@/components/ui/Badge";
 import { BackLink } from "@/components/ui/BackLink";
+import { ViewerImage } from "@/components/ui/ViewerImage";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { ReviewSection } from "@/components/recipe/ReviewSection";
 import { PersonalRatingCard } from "@/components/recipe/PersonalRatingCard";
@@ -99,7 +99,7 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
         {/* Photo — slim su mobile, quadrata su desktop */}
         <div className="relative aspect-video sm:aspect-4/3 overflow-hidden rounded-2xl bg-white/20 backdrop-blur-sm">
           {allPhotos.length > 0 ? (
-            <Image src={allPhotos[0]} alt={recipe.name} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" priority />
+            <ViewerImage photos={allPhotos} index={0} src={allPhotos[0]} alt={recipe.name} className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" priority />
           ) : (
             <div className="flex h-full items-center justify-center text-sky-300"><UtensilsCrossed size={72} /></div>
           )}
@@ -199,7 +199,7 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {allPhotos.slice(1).map((url: string, i: number) => (
               <div key={i} className="relative aspect-square overflow-hidden rounded-xl bg-white/20 transition-transform duration-300 hover:scale-[1.02]">
-                <Image src={url} alt={`${recipe.name} foto ${i + 2}`} fill className="object-cover" sizes="33vw" />
+                <ViewerImage photos={allPhotos} index={i + 1} src={url} alt={`${recipe.name} foto ${i + 2}`} className="object-cover" sizes="33vw" />
               </div>
             ))}
           </div>

@@ -13,6 +13,7 @@ import type { Metadata } from "next";
 import { CalendarDays, UtensilsCrossed, Star, Clock, Users, AlarmClock, ChefHat } from "lucide-react";
 import { BackLink } from "@/components/ui/BackLink";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { ViewerImage } from "@/components/ui/ViewerImage";
 import { QuickTag } from "@/components/ui/QuickTag";
 import { MenuPdfButton } from "@/components/menu/MenuPdfButton";
 import { MenuShoppingList } from "@/components/menu/MenuShoppingList";
@@ -127,10 +128,10 @@ export default async function MenuDetailPage({ params }: Params) {
         {/* Immagine + velatura */}
         <div className="relative col-start-1 row-start-1">
           {menu.photo ? (
-            <Image
+            <ViewerImage
+              photos={[menu.photo]}
               src={menu.photo}
               alt={menu.name}
-              fill
               className="object-cover"
               sizes="(max-width: 1024px) 100vw, 1024px"
               priority
@@ -140,11 +141,14 @@ export default async function MenuDetailPage({ params }: Params) {
               <UtensilsCrossed size={64} className="text-sky-600/40" />
             </div>
           )}
-          <div className="absolute inset-0 bg-linear-to-t from-sky-950/90 via-sky-950/45 to-transparent" />
+          {/* pointer-events-none: la velatura copre la foto, che ora è cliccabile (apre il visore) */}
+          <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-sky-950/90 via-sky-950/45 to-transparent" />
         </div>
 
-        {/* Testo: in flusso, allineato in basso */}
-        <div className="relative col-start-1 row-start-1 flex min-w-0 flex-col justify-end p-4 sm:p-5">
+        {/* Testo: in flusso, allineato in basso.
+            pointer-events-none perché questa cella copre tutto l'hero (grid a cella
+            singola) e ruberebbe il click alla foto; dentro non c'è nulla di interattivo. */}
+        <div className="pointer-events-none relative col-start-1 row-start-1 flex min-w-0 flex-col justify-end p-4 sm:p-5">
           <h1 className="text-xl sm:text-3xl font-bold text-white drop-shadow [overflow-wrap:anywhere]">
             {menu.name}
           </h1>

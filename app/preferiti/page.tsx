@@ -18,7 +18,11 @@ export default async function PreferitiPage() {
           Preferiti
         </div>
         <h1 className="text-3xl font-bold text-sky-50 drop-shadow">Le tue ricette preferite</h1>
-        <p className="text-sky-200/80 text-sm">Salvate localmente su questo dispositivo</p>
+        <p className="text-sky-200/80 text-sm">
+          {session
+            ? "Salvate sul tuo account, su tutti i dispositivi"
+            : "Salvate localmente su questo dispositivo"}
+        </p>
       </div>
       <FavoritesClient recipes={recipes} />
     </div>

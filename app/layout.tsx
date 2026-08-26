@@ -4,6 +4,7 @@ import "./globals.css";
 import { AppShell } from "@/components/AppShell";
 import { AuthProvider } from "@/components/AuthProvider";
 import { DialogProvider } from "@/components/ui/ConfirmDialog";
+import { PhotoViewer } from "@/components/ui/PhotoViewer";
 import { getSiteUrl } from "@/lib/site-url";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
@@ -47,6 +48,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AuthProvider>
           <DialogProvider>
             <AppShell>{children}</AppShell>
+            {/* Visore foto a schermo intero: montato una volta, si apre via evento (ViewerImage) */}
+            <PhotoViewer />
           </DialogProvider>
         </AuthProvider>
       </body>
