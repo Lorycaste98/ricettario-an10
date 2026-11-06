@@ -5,6 +5,7 @@ import { AppShell } from "@/components/AppShell";
 import { AuthProvider } from "@/components/AuthProvider";
 import { DialogProvider } from "@/components/ui/ConfirmDialog";
 import { PhotoViewer } from "@/components/ui/PhotoViewer";
+import { CookingDock } from "@/components/cooking/CookingDock";
 import { getSiteUrl } from "@/lib/site-url";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
@@ -50,6 +51,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <AppShell>{children}</AppShell>
             {/* Visore foto a schermo intero: montato una volta, si apre via evento (ViewerImage) */}
             <PhotoViewer />
+            {/* «Sto cucinando»: bottone flottante + pannello + scheduler dei timer */}
+            <CookingDock />
           </DialogProvider>
         </AuthProvider>
       </body>

@@ -185,6 +185,8 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
       <div className="fade-up" style={{ animationDelay: "80ms" }}>
         <RecipeProcedure
           recipeId={recipe.id}
+          recipeName={recipe.name}
+          recipePhoto={allPhotos[0] ?? null}
           defaultServings={recipe.servings ?? null}
           servingsUnit={recipe.servingsUnit ?? null}
           ingredients={recipe.ingredients}

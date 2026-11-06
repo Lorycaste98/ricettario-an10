@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useSyncExternalStore } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { useLocalStore } from "@/lib/local-store";
 
@@ -8,6 +8,10 @@ import { useLocalStore } from "@/lib/local-store";
 //  - visitatore     → localStorage sul dispositivo (stesso pattern di preferiti/lista spesa)
 // Il progresso è per INDICE di step (gli id sono instabili: il PUT ricetta li ricrea);
 // `stepsCount` fa da guardia anti-stale: se la procedura cambia si riparte da zero.
+//
+// Lo stato admin è uno store **module-level** per recipeId (useSyncExternalStore):
+// più istanze dell'hook sulla stessa ricetta — la pagina di dettaglio e il pannello
+// «Sto cucinando» (lib/cooking-session.ts) — vedono e scrivono lo stesso Set, live.
 
 interface StoredProgress {
   doneSteps: number[];
@@ -15,6 +19,7 @@ interface StoredProgress {
 }
 
 const EMPTY: StoredProgress = { doneSteps: [], stepsCount: 0 };
+const EMPTY_SET: ReadonlySet<number> = new Set();
 const SAVE_DEBOUNCE_MS = 800;
 
 function parseStored(raw: string): StoredProgress {
@@ -33,6 +38,40 @@ function toSet(stored: StoredProgress, stepsCount: number): Set<number> {
   return new Set(stored.doneSteps.filter((i) => i < stepsCount));
 }
 
+// ── Store admin condiviso (per recipeId) ────────────────────────────────────
+
+const serverDone = new Map<number, ReadonlySet<number>>();
+const pending = new Map<number, StoredProgress>();
+const saveTimers = new Map<number, ReturnType<typeof setTimeout>>();
+const listeners = new Set<() => void>();
+
+function publishServer(recipeId: number, done: ReadonlySet<number>) {
+  serverDone.set(recipeId, done);
+  for (const l of listeners) l();
+}
+
+function subscribeServer(cb: () => void) {
+  listeners.add(cb);
+  return () => {
+    listeners.delete(cb);
+  };
+}
+
+function flush(recipeId: number, keepalive = false) {
+  const payload = pending.get(recipeId);
+  if (!payload) return;
+  pending.delete(recipeId);
+  clearTimeout(saveTimers.get(recipeId));
+  saveTimers.delete(recipeId);
+  // Errori silenziosi (es. 401 da auto-logout): il progresso resta comunque in memoria
+  fetch(`/api/recipes/${recipeId}/progress`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+    keepalive,
+  }).catch(() => {});
+}
+
 export function useRecipeProgress(
   recipeId: number,
   stepsCount: number
@@ -49,33 +88,22 @@ export function useRecipeProgress(
     parseStored
   );
 
-  // ── Admin: stato locale + sync col server ──
-  const [serverDone, setServerDone] = useState<Set<number>>(new Set());
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const pendingRef = useRef<StoredProgress | null>(null);
+  // ── Admin: store condiviso + sync col server ──
+  const adminDone = useSyncExternalStore(
+    subscribeServer,
+    () => serverDone.get(recipeId) ?? EMPTY_SET,
+    () => EMPTY_SET
+  );
 
-  const flush = useCallback((keepalive = false) => {
-    const payload = pendingRef.current;
-    if (!payload) return;
-    pendingRef.current = null;
-    clearTimeout(saveTimer.current);
-    // Errori silenziosi (es. 401 da auto-logout): il progresso resta comunque in memoria
-    fetch(`/api/recipes/${recipeId}/progress`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-      keepalive,
-    }).catch(() => {});
-  }, [recipeId]);
-
-  // Carica il progresso salvato quando la sessione admin è nota
+  // Carica il progresso salvato quando la sessione admin è nota.
+  // Se c'è un salvataggio in sospeso lo stato in memoria è più nuovo del server: non sovrascrivere.
   useEffect(() => {
     if (loading || !isAdmin) return;
     let cancelled = false;
     fetch(`/api/recipes/${recipeId}/progress`)
       .then((r) => (r.ok ? (r.json() as Promise<StoredProgress>) : EMPTY))
       .then((stored) => {
-        if (!cancelled) setServerDone(toSet(stored, stepsCount));
+        if (!cancelled && !pending.has(recipeId)) publishServer(recipeId, toSet(stored, stepsCount));
       })
       .catch(() => {});
     return () => { cancelled = true; };
@@ -83,31 +111,31 @@ export function useRecipeProgress(
 
   // Flush del salvataggio in sospeso quando si lascia la pagina
   useEffect(() => {
-    const onHide = () => flush(true);
+    const onHide = () => flush(recipeId, true);
     window.addEventListener("pagehide", onHide);
     document.addEventListener("visibilitychange", onHide);
     return () => {
       window.removeEventListener("pagehide", onHide);
       document.removeEventListener("visibilitychange", onHide);
-      flush(true);
+      flush(recipeId, true);
     };
-  }, [flush]);
+  }, [recipeId]);
 
   const setDone = useCallback(
     (next: ReadonlySet<number>) => {
       const stored: StoredProgress = { doneSteps: [...next].sort((a, b) => a - b), stepsCount };
       if (isAdmin) {
-        setServerDone(new Set(next));
-        pendingRef.current = stored;
-        clearTimeout(saveTimer.current);
-        saveTimer.current = setTimeout(() => flush(), SAVE_DEBOUNCE_MS);
+        publishServer(recipeId, new Set(next));
+        pending.set(recipeId, stored);
+        clearTimeout(saveTimers.get(recipeId));
+        saveTimers.set(recipeId, setTimeout(() => flush(recipeId), SAVE_DEBOUNCE_MS));
       } else {
         writeLocal(stored);
       }
     },
-    [isAdmin, stepsCount, flush, writeLocal]
+    [isAdmin, recipeId, stepsCount, writeLocal]
   );
 
-  const done = isAdmin ? serverDone : toSet(localStored, stepsCount);
+  const done = isAdmin ? adminDone : toSet(localStored, stepsCount);
   return [done, setDone];
 }

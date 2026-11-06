@@ -1,10 +1,24 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { RotateCcw, Carrot, ListOrdered, Check, TriangleAlert, PartyPopper, CookingPot, Timer, ChevronDown } from "lucide-react";
+import { RotateCcw, Scale, Carrot, ListOrdered, Check, TriangleAlert, PartyPopper, CookingPot, Timer, ChevronDown, X } from "lucide-react";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { PriceTag } from "@/components/ui/PriceTag";
 import { useRecipeProgress } from "@/lib/recipe-progress";
+import {
+  addRecipe,
+  finishRecipe,
+  findTimer,
+  isCooking,
+  isTimerStep,
+  refreshRecipe,
+  removeRecipe,
+  setRecipeScale,
+  useCookingSession,
+  type CookingScale,
+} from "@/lib/cooking-session";
+import { useAuth } from "@/components/AuthProvider";
+import { StepTimer } from "@/components/cooking/StepTimer";
 import { formatMinutes, toStepKind, STEP_KIND_LABEL, type StepKind } from "@/lib/types";
 import { groupIngredientsBySection } from "@/lib/ingredient-sections";
 import {
@@ -45,6 +59,9 @@ interface Step {
 
 interface Props {
   recipeId: number;
+  /** Nome e foto di copertina: servono allo snapshot di «Sto cucinando» */
+  recipeName: string;
+  recipePhoto: string | null;
   defaultServings: number | null;
   /** Unità delle porzioni (es. "teglie da 28cm"); nulla = persone/porzioni */
   servingsUnit?: string | null;
@@ -53,6 +70,10 @@ interface Props {
 }
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
+
+function ingredientByIdRaw(list: Ingredient[], id: number): Ingredient | undefined {
+  return list.find((i) => i.id === id);
+}
 
 function formatQty(n: number): string {
   if (n === 0) return "0";
@@ -89,19 +110,55 @@ function linkQtyLabel(
 function IngredientList({
   items,
   scaledQty,
+  editingId,
+  onEdit,
+  onApply,
+  anchorId,
 }: {
   items: Ingredient[];
   scaledQty: (qty: number | null) => string;
+  /** Ingrediente di cui si sta scrivendo la quantità (riproporzionamento) */
+  editingId: number | null;
+  onEdit: (id: number | null) => void;
+  /** Nuova quantità scritta dall'utente per `ing` → ricalcola il fattore */
+  onApply: (ing: Ingredient, value: number) => void;
+  /** Ingrediente su cui è stata ricalcolata la ricetta (evidenziato) */
+  anchorId: number | null;
 }) {
   return (
     <ul className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
       {items.map((ing) => {
         const label = qtyLabel(ing, scaledQty);
+        // Solo le quantità numeriche > 0 possono fare da riferimento (q.b. non scala)
+        const scalable = ing.qty != null && ing.qty > 0;
         return (
           <li key={ing.id} className="flex items-baseline gap-1.5 min-w-0">
-            <span className="shrink-0 text-xs font-semibold text-orange-500 tabular-nums whitespace-nowrap">
-              {label}
-            </span>
+            {editingId === ing.id ? (
+              <QtyEditor
+                initial={scaledQty(ing.qty)}
+                unit={ing.unit}
+                onCancel={() => onEdit(null)}
+                onSubmit={(v) => {
+                  onApply(ing, v);
+                  onEdit(null);
+                }}
+              />
+            ) : scalable ? (
+              <button
+                type="button"
+                onClick={() => onEdit(ing.id)}
+                title="Tocca per scrivere la quantità che hai: il resto si ricalcola"
+                className={`shrink-0 rounded text-xs font-semibold tabular-nums whitespace-nowrap underline decoration-dotted decoration-orange-300 underline-offset-4 hover:text-orange-600 ${
+                  anchorId === ing.id ? "bg-orange-100 px-1 text-orange-700" : "text-orange-500"
+                }`}
+              >
+                {label}
+              </button>
+            ) : (
+              <span className="shrink-0 text-xs font-semibold text-orange-500 tabular-nums whitespace-nowrap">
+                {label}
+              </span>
+            )}
             <span className="min-w-0 text-sm text-sky-900">
               {ing.name}
               {ing.optional && <PriceTag className="ml-1.5" />}
@@ -116,11 +173,90 @@ function IngredientList({
   );
 }
 
+/** Campo inline per scrivere la quantità di un ingrediente (Invio conferma, Esc annulla). */
+function QtyEditor({
+  initial,
+  unit,
+  onSubmit,
+  onCancel,
+}: {
+  initial: string;
+  unit: string | null;
+  onSubmit: (value: number) => void;
+  onCancel: () => void;
+}) {
+  const [value, setValue] = useState(initial);
+  const submit = () => {
+    const n = Number(value.replace(",", "."));
+    if (Number.isFinite(n) && n > 0) onSubmit(n);
+    else onCancel();
+  };
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        submit();
+      }}
+      className="inline-flex shrink-0 items-baseline gap-1"
+    >
+      <input
+        autoFocus
+        inputMode="decimal"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onFocus={(e) => e.target.select()}
+        onBlur={submit}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") onCancel();
+        }}
+        aria-label="Quantità che hai"
+        className="w-16 rounded-md border border-orange-300 bg-white px-1.5 py-0.5 text-xs font-semibold text-sky-950 tabular-nums focus:outline-none focus:ring-2 focus:ring-orange-400/50"
+      />
+      {unit && <span className="text-xs font-semibold text-orange-600">{unit}</span>}
+    </form>
+  );
+}
+
 // ─── component ────────────────────────────────────────────────────────────────
 
-export function RecipeProcedure({ recipeId, defaultServings, servingsUnit, ingredients, steps }: Props) {
+export function RecipeProcedure({ recipeId, recipeName, recipePhoto, defaultServings, servingsUnit, ingredients, steps }: Props) {
   const router = useRouter();
-  const [servings, setServings] = useState<number>(defaultServings ?? 4);
+  const { isAdmin } = useAuth();
+
+  // «Sto cucinando»: snapshot della ricetta per il pannello globale (lib/cooking-session.ts)
+  const session = useCookingSession();
+  const cooking = session.hydrated && isCooking(session, recipeId);
+  const cookingEntry = cooking ? session.recipes.find((r) => r.recipeId === recipeId) : undefined;
+
+  // Riproporzionamento (solo a schermo, la ricetta salvata non cambia): un unico
+  // fattore di scala. Le porzioni ne derivano (default × fattore) e lo stepper ±1
+  // lo riscrive; scrivere la quantità di un ingrediente lo ricalcola (nuova/originale).
+  // Dove vive: ricetta in «Sto cucinando» → salvato nella sessione (sopravvive ai
+  // cambi pagina, si azzera quando la ricetta esce); altrimenti stato locale, perso al reload.
+  const [localScale, setLocalScale] = useState<CookingScale | null>(null);
+  const activeScale = cooking ? (cookingEntry?.scale ?? null) : localScale;
+  const factor = activeScale?.factor ?? 1;
+  const anchorId = activeScale?.anchorId ?? null;
+  const setScale = (next: CookingScale | null) => {
+    if (cooking) setRecipeScale(recipeId, next);
+    else setLocalScale(next);
+  };
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const servings = defaultServings ? defaultServings * factor : null;
+  const scaled = Math.abs(factor - 1) > 1e-9;
+  const setServingsTo = (n: number) => {
+    if (!defaultServings) return;
+    setScale({ factor: n / defaultServings, anchorId: null });
+  };
+  const applyIngredientQty = (ing: Ingredient, value: number) => {
+    if (!ing.qty) return;
+    setScale({ factor: value / ing.qty, anchorId: ing.id });
+  };
+  const resetScale = () => {
+    setScale(null);
+    setEditingId(null);
+  };
+  const anchor = anchorId != null ? ingredientByIdRaw(ingredients, anchorId) : undefined;
   // La procedura può essere lunga: dropdown chiuso di default (la barra di progresso resta visibile)
   const [stepsOpen, setStepsOpen] = useState(false);
   // Progresso per INDICE di step, persistito: admin → DB, visitatori → localStorage
@@ -129,6 +265,53 @@ export function RecipeProcedure({ recipeId, defaultServings, servingsUnit, ingre
   const [dismissed, setDismissed] = useState(false); // ha chiuso il banner (con "No" o dopo conferma cottura)
   const [cookConfirmed, setCookConfirmed] = useState(false); // la cottura è stata davvero registrata
   const [cookLoading, setCookLoading] = useState(false);
+
+  const snapshot = useMemo(
+    () => ({
+      recipeId,
+      name: recipeName,
+      photo: recipePhoto,
+      steps: steps.map((s) => ({ text: s.text, mins: s.mins, kind: toStepKind(s.kind) })),
+    }),
+    [recipeId, recipeName, recipePhoto, steps]
+  );
+  // Visita del dettaglio: se la ricetta è già in lista ne rinfresca i passi (modifiche alla ricetta)
+  useEffect(() => {
+    refreshRecipe(snapshot);
+  }, [snapshot]);
+
+  // Ingresso in lista: si porta dietro un eventuale ricalcolo già fatto a schermo
+  // (da qui in poi lo tiene la sessione; lo stato locale si azzera così all'uscita
+  // dalla lista si torna alle quantità originali)
+  const enterCooking = () => {
+    if (cooking) return;
+    addRecipe(snapshot, localScale);
+    setLocalScale(null);
+  };
+  const startCooking = () => {
+    enterCooking();
+    setStepsOpen(true);
+  };
+
+  // «Finito e rimuovi»: admin → registra la cottura (+1); visitatore → toglie e basta
+  const [finishing, setFinishing] = useState(false);
+  const [finishError, setFinishError] = useState(false);
+  const finishAndRemove = async () => {
+    setFinishing(true);
+    setFinishError(false);
+    const ok = await finishRecipe(recipeId, isAdmin);
+    setFinishing(false);
+    if (!ok) {
+      setFinishError(true);
+      return;
+    }
+    setDone(new Set());
+    setPendingIdx(null);
+    if (isAdmin) {
+      setCookConfirmed(true);
+      router.refresh(); // aggiorna il contatore "volte cucinata"
+    }
+  };
 
   // Ingredienti raggruppati per sezione/preparazione (un solo gruppo = nessuna sezione)
   const sections = useMemo(() => groupIngredientsBySection(ingredients), [ingredients]);
@@ -141,11 +324,10 @@ export function RecipeProcedure({ recipeId, defaultServings, servingsUnit, ingre
   // quantità ("tutto" → "il resto"), vedi `linkQtyLabel`
   const splitIds = useMemo(() => splitIngredientIds(steps), [steps]);
 
-  // Scala la quantità in base alle porzioni selezionate
+  // Scala la quantità col fattore corrente (porzioni o ingrediente di riferimento)
   const scaledQty = (qty: number | null): string => {
     if (qty == null) return "";
-    if (!defaultServings || servings === defaultServings) return formatQty(qty);
-    return formatQty((qty * servings) / defaultServings);
+    return formatQty(scaled ? qty * factor : qty);
   };
 
   // Toggle di uno step (per indice: gli id degli step cambiano ad ogni salvataggio ricetta)
@@ -162,6 +344,7 @@ export function RecipeProcedure({ recipeId, defaultServings, servingsUnit, ingre
       setPendingIdx(stepIndex);
     } else {
       setDone(new Set(done).add(stepIndex));
+      enterCooking();
     }
   };
 
@@ -172,6 +355,7 @@ export function RecipeProcedure({ recipeId, defaultServings, servingsUnit, ingre
     for (let i = 0; i <= pendingIdx; i++) next.add(i);
     setDone(next);
     setPendingIdx(null);
+    enterCooking();
   };
 
   const restart = () => {
@@ -187,11 +371,17 @@ export function RecipeProcedure({ recipeId, defaultServings, servingsUnit, ingre
     setCookLoading(false);
     if (res.ok) {
       setCookConfirmed(true);
+      // Cucinata: esce da «Sto cucinando» e i passi si azzerano per la prossima volta
+      removeRecipe(recipeId);
+      setDone(new Set());
       router.refresh(); // aggiorna il contatore "volte cucinata" (RecipeActions è un server component)
     }
   };
 
-  const dismiss = () => setDismissed(true);
+  const dismiss = () => {
+    setDismissed(true);
+    removeRecipe(recipeId);
+  };
 
   return (
     <div className="space-y-6 sm:space-y-5">
@@ -201,46 +391,70 @@ export function RecipeProcedure({ recipeId, defaultServings, servingsUnit, ingre
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <SectionHeader title="Ingredienti" icon={<Carrot size={20} />} tone="emerald" size="lg" />
 
-          {/* Controllo porzioni */}
-          {defaultServings && (
-            <div className="flex items-center gap-2 self-start sm:self-auto">
-              {/* Undo button — appare solo quando le porzioni sono cambiate */}
-              <button
-                type="button"
-                onClick={() => setServings(defaultServings)}
-                title={`Ripristina ${defaultServings} porzioni`}
-                className={`flex h-7 w-7 items-center justify-center rounded-full border border-white/50 bg-white/50 text-sky-700 backdrop-blur-sm hover:bg-white/80 hover:text-sky-950 transition-all duration-200 ${
-                  servings !== defaultServings ? "opacity-100 scale-100" : "opacity-0 scale-75 pointer-events-none"
-                }`}
-              >
-                <RotateCcw className="h-3.5 w-3.5" />
-              </button>
+          {/* Controllo porzioni + ripristino scala */}
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            {/* Undo — appare solo quando le quantità sono state ricalcolate */}
+            <button
+              type="button"
+              onClick={resetScale}
+              title="Ripristina le quantità originali"
+              aria-label="Ripristina le quantità originali"
+              className={`flex h-7 w-7 items-center justify-center rounded-full border border-white/50 bg-white/50 text-sky-700 backdrop-blur-sm hover:bg-white/80 hover:text-sky-950 transition-all duration-200 ${
+                scaled ? "opacity-100 scale-100" : "opacity-0 scale-75 pointer-events-none"
+              }`}
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+            </button>
 
+            {defaultServings && servings != null && (
               <div className="flex items-center gap-2 rounded-xl border border-white/40 bg-white/40 backdrop-blur-sm px-3 py-1.5">
                 <span className="text-xs text-sky-700 font-medium mr-1 max-w-36 truncate">
                   {servingsUnit?.trim() || "Porzioni"}
                 </span>
                 <button
                   type="button"
-                  onClick={() => setServings((s) => Math.max(1, s - 1))}
+                  onClick={() => setServingsTo(Math.max(1, Math.ceil(servings - 1e-9) - 1))}
                   className="flex h-6 w-6 items-center justify-center rounded-full border border-white/50 bg-white/60 text-sky-900 font-bold text-sm hover:bg-white/80 transition-colors disabled:opacity-30"
                   disabled={servings <= 1}
                 >−</button>
-                <span className="w-6 text-center font-bold text-sky-950 text-sm tabular-nums">{servings}</span>
+                <span className="min-w-6 text-center font-bold text-sky-950 text-sm tabular-nums">{formatQty(servings)}</span>
                 <button
                   type="button"
-                  onClick={() => setServings((s) => s + 1)}
+                  onClick={() => setServingsTo(Math.floor(servings + 1e-9) + 1)}
                   className="flex h-6 w-6 items-center justify-center rounded-full border border-white/50 bg-white/60 text-sky-900 font-bold text-sm hover:bg-white/80 transition-colors"
                 >+</button>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
+
+        {/* Riproporzionamento: suggerimento, oppure riepilogo della scala attiva */}
+        {scaled ? (
+          <p className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-orange-200 bg-orange-50/90 px-3 py-1.5 text-xs text-orange-900">
+            <Scale size={13} className="shrink-0 text-orange-600" />
+            <span>
+              Quantità ricalcolate ×{formatQty(Math.round(factor * 100) / 100)}
+              {anchor && anchor.qty != null && (
+                <> su <strong>{formatQty(anchor.qty * factor)}{anchor.unit ? ` ${anchor.unit}` : ""} {anchor.name}</strong></>
+              )}
+              {" "}· la ricetta salvata non cambia
+            </span>
+            <button type="button" onClick={resetScale} className="font-semibold text-orange-700 underline underline-offset-2 hover:text-orange-800">
+              Ripristina
+            </button>
+          </p>
+        ) : (
+          ingredients.some((i) => i.qty != null && i.qty > 0) && (
+            <p className="mb-3 flex items-center gap-1.5 text-xs text-sky-700">
+              <Scale size={13} className="shrink-0" /> Tocca una quantità per scrivere quella che hai: il resto si ricalcola.
+            </p>
+          )
+        )}
 
         {/* Senza sezioni resta la lista piatta di sempre; con le sezioni ogni
             preparazione ha il suo titolo e la sua griglia */}
         {sections.length <= 1 ? (
-          <IngredientList items={ingredients} scaledQty={scaledQty} />
+          <IngredientList items={ingredients} scaledQty={scaledQty} editingId={editingId} onEdit={setEditingId} onApply={applyIngredientQty} anchorId={anchorId} />
         ) : (
           <div className="space-y-4">
             {sections.map((group, i) => (
@@ -253,7 +467,7 @@ export function RecipeProcedure({ recipeId, defaultServings, servingsUnit, ingre
                     <span className="h-px flex-1 bg-emerald-700/20" />
                   </div>
                 )}
-                <IngredientList items={group.items} scaledQty={scaledQty} />
+                <IngredientList items={group.items} scaledQty={scaledQty} editingId={editingId} onEdit={setEditingId} onApply={applyIngredientQty} anchorId={anchorId} />
               </div>
             ))}
           </div>
@@ -307,6 +521,47 @@ export function RecipeProcedure({ recipeId, defaultServings, servingsUnit, ingre
                 style={{ width: `${(done.size / steps.length) * 100}%` }}
               />
             </div>
+            {/* «Sto cucinando»: aggiunge la ricetta al pannello globale (timer + passo corrente) */}
+            {session.hydrated && (
+              cooking ? (
+                <div className="mt-3 rounded-xl border border-orange-300/60 bg-orange-50/90 px-3 py-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <CookingPot size={16} className="shrink-0 text-orange-600" />
+                    <p className="min-w-0 flex-1 text-sm font-medium text-orange-900">Stai cucinando questa ricetta</p>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => removeRecipe(recipeId)}
+                        title="Toglie la ricetta dalla lista senza registrare la cottura"
+                        className="inline-flex items-center gap-1 rounded-lg border border-orange-300/60 bg-white/80 px-2.5 py-1 text-xs font-medium text-orange-800 hover:bg-white transition-colors"
+                      >
+                        <X size={12} /> Togli
+                      </button>
+                      <button
+                        type="button"
+                        onClick={finishAndRemove}
+                        disabled={finishing}
+                        title={isAdmin ? "Registra una cottura e toglie la ricetta dalla lista" : "Toglie la ricetta dalla lista"}
+                        className="inline-flex items-center gap-1 rounded-lg bg-orange-500 px-2.5 py-1 text-xs font-medium text-white hover:bg-orange-600 disabled:opacity-50 transition-colors"
+                      >
+                        <Check size={12} /> {finishing ? "…" : "Finito e rimuovi"}
+                      </button>
+                    </div>
+                  </div>
+                  {finishError && (
+                    <p className="mt-1.5 text-xs text-rose-700">Non sono riuscito a registrare la cottura, riprova.</p>
+                  )}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={startCooking}
+                  className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-orange-500 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-orange-600 transition-colors"
+                >
+                  <CookingPot size={15} /> Inizia a cucinare
+                </button>
+              )
+            )}
           </div>
         ) : (
           <SectionHeader title="Procedura" icon={<ListOrdered size={20} />} tone="sky" size="lg" className="mb-5" />
@@ -393,6 +648,19 @@ export function RecipeProcedure({ recipeId, defaultServings, servingsUnit, ingre
                     )}
                   </div>
                 </button>
+
+                {/* Timer del passo (Attesa/Cottura con minuti): fratello del bottone, mai annidato.
+                    Sui passi già fatti resta solo se c'è un timer attivo o scaduto. */}
+                {isTimerStep({ mins: step.mins, kind: step.kind ?? "PREP" }) && !!step.mins && (!checked || (session.hydrated && findTimer(session, recipeId, i))) && (
+                  <div className="ml-11">
+                    <StepTimer
+                      recipeId={recipeId}
+                      stepIndex={i}
+                      mins={step.mins}
+                      ensureRecipe={enterCooking}
+                    />
+                  </div>
+                )}
 
                 {/* Avviso inline step intermedio */}
                 {isPending && (

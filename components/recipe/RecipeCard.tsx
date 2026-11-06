@@ -4,6 +4,7 @@ import Image from "next/image";
 import { EyeOff, Star, CookingPot, Clock, Users, ChefHat } from "lucide-react";
 import { type RecipeSummary, formatMinutes, formatServings } from "@/lib/types";
 import { FavoriteButton } from "./FavoriteButton";
+import { CookingButton } from "@/components/cooking/CookingButton";
 import { useAuth } from "@/components/AuthProvider";
 
 /** Pill voto (oro) — media recensioni ospiti. */
@@ -83,7 +84,10 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
             )}
           </div>
 
-          <FavoriteButton recipeId={recipe.id} />
+          <div className="flex shrink-0 items-center gap-1.5">
+            <CookingButton recipeId={recipe.id} />
+            <FavoriteButton recipeId={recipe.id} />
+          </div>
         </div>
 
         {/* Pannello info frosted: sopra la foto, ma la foto resta visibile (blur).
