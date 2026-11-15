@@ -55,7 +55,10 @@ export function Modal({ open, onClose, title, children, size = "md", bodyClassNa
           </button>
         </div>
       )}
-      <div className={`flex-1 overflow-y-auto p-5 sm:p-6 ${bodyClassName}`}>{children}</div>
+      {/* `flex-auto`, NON `flex-1`: il dialog ha altezza automatica (solo maxHeight) e con
+          `flex-basis: 0%` + overflow Safari/iPad collassa il corpo a 0 (si vedeva solo il titolo).
+          Base = contenuto; `min-h-0` lo lascia restringere e scorrere quando tocca maxHeight. */}
+      <div className={`min-h-0 flex-auto overflow-y-auto p-5 sm:p-6 ${bodyClassName}`}>{children}</div>
     </dialog>,
     document.body
   );
