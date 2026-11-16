@@ -109,7 +109,7 @@
 - [x] **Statistiche ingredienti per tutti**, calcolate solo su ciò che chi guarda può vedere: ricette che lo usano (e % del ricettario), menù, distribuzione per categoria, «spesso insieme a» (esclusi gli ingredienti fuori statistica). Niente quantità tipiche né cotture: verranno dopo se servono.
 - [x] **«Cerca» per tutti**: voce nella navigazione (barra laterale e barra in basso, anche admin), ⌘K / Ctrl+K e «/», campo nella vetrina attuale (da rimettere nella vetrina nuova in fase 6).
 - [x] Overlay (`components/search/SearchOverlay.tsx`): ambiti Tutto/Ricette/Menù/Ingredienti, gruppi ordinati per pertinenza, anteprima affiancata da 760px (prima voce già aperta) e a tutto pannello su iPhone con «‹ Risultati»; dalle anteprime si salta fra ricetta → ingrediente → menù con «Indietro».
-- [ ] Da valutare dopo la prova: cercare anche nel testo dei passi e nelle note (oggi solo nomi, categorie, tag, ingredienti; il vecchio `/api/search` resta ma non è usato); ricerche recenti; quantità tipiche negli ingredienti.
+- [ ] Valutazione ed estensioni: rimandate alla **fase 8** (decisione del 16/11/2026).
 
 
 ---
@@ -165,6 +165,11 @@
 - [ ] Revisione finale con la skill `impeccable` (polish e audit) e confronto con le foto in `.playwright-mcp/before/`.
 - [ ] Rigenerare `DESIGN.md` dal codice rilasciato (impeccable `document`), tenendo le decisioni D1–D8.
 - [ ] Aggiornare `CLAUDE.md`: classi base, componenti nuovi, regole su icone e logo; eliminare le note sullo stile vetro e sul gradiente.
+- [ ] **Ricerca globale (fase 3B), da riprendere a fine restyle:** rivedere insieme la prima versione e decidere le estensioni:
+  - [ ] cercare anche nel testo dei passi e nelle note (oggi solo nomi, categorie, tag, ingredienti);
+  - [ ] ricerche recenti nello stato iniziale;
+  - [ ] quantità tipiche e cotture nelle statistiche degli ingredienti;
+  - [ ] eliminare il vecchio `/api/search` se resta inutilizzato.
 - [ ] Anteprima al proprietario, raccolta del feedback, ultime correzioni.
 - [ ] Unione in `main` e rilascio.
 
