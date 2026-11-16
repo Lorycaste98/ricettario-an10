@@ -1,10 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="80" fill="#0A7EA4"/>
-  <line x1="228" y1="100" x2="228" y2="280" stroke="#ffffff" stroke-width="28" stroke-linecap="round"/>
-  <line x1="200" y1="100" x2="200" y2="164" stroke="#ffffff" stroke-width="22" stroke-linecap="round"/>
-  <line x1="256" y1="100" x2="256" y2="164" stroke="#ffffff" stroke-width="22" stroke-linecap="round"/>
-  <path d="M200 164 Q228 196 256 164" fill="#ffffff"/>
-  <line x1="284" y1="100" x2="284" y2="280" stroke="#ffffff" stroke-width="28" stroke-linecap="round"/>
-  <path d="M284 100 Q336 140 284 200" fill="#ffffff"/>
-  <text x="256" y="390" font-family="Courier New,Courier,monospace" font-size="120" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="8">AN10</text>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="t"><title id="t">AN10</title><rect width="256" height="256" rx="57.6" fill="#0A7EA4"/><svg x="33.3" y="33.3" width="189.4" height="189.4" viewBox="450 -4 264 264"><defs><mask id="an10s-a" maskUnits="userSpaceOnUse" x="-50" y="-50" width="900" height="400"><rect x="-50" y="-50" width="900" height="400" fill="#fff"/><g fill="#000" stroke="#000" stroke-linecap="round"><circle cx="512" cy="172" r="27.0"/></g></mask><mask id="an10s-b" maskUnits="userSpaceOnUse" x="-50" y="-50" width="900" height="400"><rect x="-50" y="-50" width="900" height="400" fill="#fff"/><g fill="#000"></g></mask></defs><g fill="none" stroke="#FFFFFF" stroke-linecap="round" stroke-linejoin="round" mask="url(#an10s-a)"><path d="M470 82 L512 40 V172" stroke-width="34"/><path d="M632 40 C672 40 694 96 694 146 C694 190 668 218 632 218 C596 218 570 190 570 146 C570 96 592 40 632 40 Z" stroke-width="34"/><circle cx="632" cy="140" r="21" stroke="none" fill="#FFFFFF"/></g><g fill="none" stroke="#FFFFFF" stroke-linecap="round" stroke-linejoin="round" mask="url(#an10s-b)"><path d="M512 172 V208" stroke-width="34"/></g></svg></svg>

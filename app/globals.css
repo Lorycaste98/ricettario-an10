@@ -1,4 +1,6 @@
 @import "tailwindcss";
+/* Token del restyle (stile 1A): colori OKLCH, misure fluide. Vedi DESIGN.md */
+@import "./design-tokens.css";
 
 @keyframes shrink {
   from { width: 100%; }

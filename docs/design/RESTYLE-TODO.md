@@ -13,9 +13,9 @@
 
 ## Prima di iniziare (fase 0)
 - [ ] Decidere cosa fare dell'anteprima dei passi successivi in «Sto cucinando» (`CookingDock.tsx`, oggi non committata su `main`): committarla su `main` o portarla nel restyle.
-- [ ] Commit dei documenti di design già pronti: `PRODUCT.md`, `DESIGN.md`, `docs/design/`, skill `ricettario-design`, `.gitignore`, `public/brand/`, `components/brand/An10Logo.tsx`.
-- [ ] Verificare su Vercel che le anteprime del branch funzionino. Da decidere: anteprime sul database di produzione o su uno separato; link condivisibile per il proprietario.
-- [ ] Fare la foto di com'è oggi (screenshot già in `.playwright-mcp/before/`), per il confronto finale.
+- [x] Commit dei documenti di design già pronti: `PRODUCT.md`, `DESIGN.md`, `docs/design/`, skill `ricettario-design`, `.gitignore`, `public/brand/`, `components/brand/An10Logo.tsx`.
+- [x] Verificare su Vercel che le anteprime del branch funzionino: `an10recipes-git-feat-restyle-frontend-lorycaste98s-projects.vercel.app`. ⚠️ Usa il **database di produzione** (scelta del 16/11/2026): dall'anteprima, da admin, non eliminare né modificare dati veri.
+- [x] Fare la foto di com'è oggi (screenshot già in `.playwright-mcp/before/`), per il confronto finale.
 
 ### Domande aperte da chiudere prima della fase 3
 - [ ] **Pagina iniziale:** oggi `/` è una vetrina per i visitatori e l'admin viene rimandato a `/admin`. Proposta: per chi è loggato `/` diventa la libreria ricette (con la fila «in corso» in alto); la vetrina pubblica resta, semplificata.
@@ -28,34 +28,39 @@
 **Obiettivo:** tutto quello che le pagine useranno, pronto e controllato in una pagina di prova.
 
 ### Token e stile globale
-- [ ] Portare `docs/design/tokens.css` in `app/globals.css` come `@theme` di Tailwind v4 (colori OKLCH, scala dei blu, colori di area, cornice admin, misure fluide in rem).
-- [ ] **Togliere** il gradiente fisso `.page-bg` e lo stile «vetro» (`backdrop-blur`, `bg-white/xx`); sfondo pieno `--blu-50`. *(Oggi 66 file usano `backdrop-blur`/`bg-white/`: si sistemano pagina per pagina nelle fasi successive.)*
-- [ ] Scala tipografica fluida (2.1–2.9), `tabular-nums` per timer, quantità e voti.
-- [ ] Mantenere la guardia anti-zoom iOS a 16px sui campi (vedi `CLAUDE.md`); verificare che i campi sottili (34→40px) la rispettino.
-- [ ] `prefers-reduced-motion` globale per le animazioni.
+- [x] Portare `docs/design/tokens.css` in `app/design-tokens.css` (importato da `globals.css`) come `@theme` di Tailwind v4 (colori OKLCH, scala dei blu, colori di area, cornice admin, misure fluide in rem).
+- [ ] → *spostato alla fase 2*: **togliere** il gradiente fisso `.page-bg` e lo stile «vetro» (`backdrop-blur`, `bg-white/xx`); sfondo pieno `blu-50`. Rimandato perché molte pagine vecchie hanno testo bianco pensato per il gradiente: si toglie quando il guscio nuovo è pronto, e le pagine si sistemano una per una (oggi 66 file usano `backdrop-blur`/`bg-white/`).
+- [x] Scala tipografica fluida (2.1–2.9), `tabular-nums` per timer, quantità e voti.
+- [x] Mantenere la guardia anti-zoom iOS a 16px sui campi (vedi `CLAUDE.md`); verificare che i campi sottili (34→40px) la rispettino.
+- [x] `prefers-reduced-motion`: ogni componente nuovo ha `motion-reduce:` sulle animazioni.
 
 ### Icone e logo
-- [ ] `components/icons/`: le 9 icone del progetto (5.19–5.27: pentola, tagliere, fornello, ciotola, cloche, sacchetto, piatto, posate, mestolo) come componenti con la stessa interfaccia di lucide (`size`, `className`, `strokeWidth`). Sorgente in `docs/design/build-elementi.mjs` (`CUSTOM`).
-- [ ] Aggiornare la regola «Icone: solo lucide-react» in `CLAUDE.md`.
-- [ ] Favicon, icona dell'app e manifest: usare i file di `public/brand/web/` tramite le convenzioni di Next (`app/icon.svg`, `app/apple-icon.png`, `app/favicon.ico`, manifest), sostituendo quelli attuali; `themeColor` = blu del logo.
-- [ ] Sostituire il vecchio logo (`public/an10.svg`, `public/an10.webp`, immagine OG) con `<An10Logo>` e i file di `public/brand/`.
+- [x] `components/icons/`: le 9 icone del progetto (5.19–5.27: pentola, tagliere, fornello, ciotola, cloche, sacchetto, piatto, posate, mestolo) come componenti con la stessa interfaccia di lucide (`size`, `className`, `strokeWidth`). Sorgente in `docs/design/build-elementi.mjs` (`CUSTOM`).
+- [x] Aggiornare la regola «Icone: solo lucide-react» in `CLAUDE.md`.
+- [x] Favicon, icona dell'app e manifest: usare i file di `public/brand/web/` tramite le convenzioni di Next (`app/icon.svg`, `app/apple-icon.png`, `app/favicon.ico`, manifest), sostituendo quelli attuali; `themeColor` = blu del logo.
+- [ ] → *fasi 2, 3, 6*: sostituire il vecchio logo (`public/an10.webp` in `Navbar`, `RecipeCard`, home, dettaglio menù; `public/an10.svg`; immagine OG) con `<An10Logo>` / `public/brand/`, man mano che si rifanno quelle parti.
 
 ### Componenti base (tavola, sezioni 2–7 e 10)
-- [ ] `Button` (3.1–3.9) con le varianti primario, secondario, tonale, testo, elimina, disattivo, piccolo e grande da cucina.
-- [ ] `IconButton` (3.10–3.12), `Stepper` dosi (3.13).
-- [ ] `Field`, `Input`, `Textarea`, `Select`, `SearchField`, campo calcolato in sola lettura (4.1–4.7).
-- [ ] `VisibilityToggle` con l'occhio (4.8), che **sostituisce** `PublishSwitch` e i toggle «Visibile» di lista ricette admin, `RecipeAdminBar` e `MenuAdminBar`.
-- [ ] `Checkbox` (4.9), `Segmented` (4.10), `Chip` filtro (4.11), `RatingInput` 1-10 (4.12), `Switch` impostazioni (4.13).
-- [ ] `Tag` per tipo di passo, voto ospiti, mio voto, non pronta, opzionale, veloce, dosi, ruolo, sforamento (6.1–6.10); `Counter` (6.7). Sostituisce `Badge`, `PriceTag`, `QuickTag`, `ReviewStats`.
-- [ ] `StepProgress` (7.1), `StepNumber` (7.2), `ProgressBar` (7.3), `TimerRing` (7.4), `Skeleton` (7.5).
-- [ ] `Modal` e `ConfirmModal` restyle (10.1), mantenendo il portale e la correzione per Safari/iPad. `Toast` (10.2), `EmptyState` (10.3), `Banner` (10.4), `TimerAlert` (10.5).
-- [ ] Pagina di prova interna (solo in sviluppo) con tutti i componenti, da confrontare con `docs/design/elementi-*.png`.
+- [x] `Button` (3.1–3.9) con le varianti primario, secondario, tonale, testo, elimina, disattivo, piccolo e grande da cucina.
+- [x] `IconButton` (3.10–3.12), `Stepper` dosi (3.13).
+- [x] `Field`, `Input`, `Textarea`, `Select`, `SearchField`, campo calcolato in sola lettura (4.1–4.7).
+- [x] `VisibilityToggle` con l'occhio (4.8), che **sostituisce** `PublishSwitch` e i toggle «Visibile» di lista ricette admin, `RecipeAdminBar` e `MenuAdminBar`.
+- [x] `Checkbox` (4.9), `Segmented` (4.10), `Chip` filtro (4.11), `RatingInput` 1-10 (4.12), `Switch` impostazioni (4.13).
+- [x] `Tag` per tipo di passo, voto ospiti, mio voto, non pronta, opzionale, veloce, dosi, ruolo, sforamento (6.1–6.10); `Counter` (6.7). Sostituisce `Badge`, `PriceTag`, `QuickTag`, `ReviewStats`.
+- [x] `StepProgress` (7.1), `StepNumber` (7.2), `ProgressBar` (7.3), `TimerRing` (7.4), `Skeleton` (7.5).
+- [x] `Toast` (10.2), `EmptyState` (10.3), `Banner` (10.4), `TimerAlert` (10.5).
+- [ ] → *fase 2*: `Modal` e `ConfirmModal` restyle (10.1), mantenendo il portale e la correzione per Safari/iPad (cambiarli ora cambierebbe tutte le finestre delle pagine vecchie).
+- [x] Pagina di prova interna (solo in sviluppo) con tutti i componenti, da confrontare con `docs/design/elementi-*.png`.
 
 **Fatto quando:** la pagina di prova coincide con la tavola su iPhone, iPad e PC; lint e `tsc` puliti.
+
+> **Stato 16/11/2026:** fatta. Componenti in `components/ds/`, icone in `components/icons/`, token in `app/design-tokens.css`, pagina di prova `/prova-elementi` (in locale e sull'anteprima). Restano per le fasi successive: gradiente, `Modal`, vecchio logo nelle pagine.
 
 ---
 
 ## Fase 2 · Guscio dell'app e «Sto cucinando»
+- [ ] Togliere il gradiente `.page-bg` e passare `body` allo sfondo pieno e al carattere di sistema (classe `.ds` sul layout); `themeColor` = blu del logo.
+- [ ] Restyle di `Modal`/`ConfirmModal` (10.1).
 - [ ] `AppShell` nuovo: **barra laterale** (9.1) da 700px in su, **barra in basso** (9.2) sotto; safe area di iPhone e iPad; logo nella barra laterale.
 - [ ] Togliere `Navbar.tsx` (menu a hamburger e sottomenu Dashboard); le voci admin passano in «Gestione» (fase 5).
 - [ ] «Sto cucinando»: la **fila delle ricette in corso** (8.4) in cima alle pagine su iPad e PC e la **mini-barra** (9.3) su iPhone **sostituiscono** il bottone flottante di `CookingDock`. Il pannello con timer, Fatto/Indietro e anteprima dei passi resta, restilizzato. `lib/cooking-session.ts` non cambia.

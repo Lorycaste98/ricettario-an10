@@ -1,0 +1,101 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Token di design · stile 1A (restyle). Sorgente: docs/design/tokens.css + DESIGN.md (D2, D4).
+   - Colori in OKLCH dentro @theme: Tailwind genera le classi (bg-blu-50, text-arancio,
+     border-blu-200, …) e le variabili --color-*. I nomi sono italiani apposta: non
+     collidono con la palette di Tailwind (sky, orange…) ancora usata dalle pagine vecchie.
+   - Misure fluide in rem nelle variabili --h-*, --fs-*: si usano con la sintassi
+     Tailwind v4 per le variabili, es. h-(--h-btn), text-(length:--fs-body).
+     --f vale 0 a 390px di larghezza (iPhone) e 1px a 1440px (PC).
+   ───────────────────────────────────────────────────────────────────────────── */
+
+@theme {
+  /* Scala dei blu: stessa tinta (228°), cambia solo la chiarezza (elemento 1.14) */
+  --color-blu-950: oklch(25% 0.038 228);
+  --color-blu-800: oklch(40% 0.075 228);
+  --color-blu-700: oklch(52% 0.091 228);
+  --color-blu-600: oklch(55.5% 0.107 228.5);
+  --color-blu-300: oklch(83.5% 0.062 222);
+  --color-blu-250: oklch(78.8% 0.041 226);
+  --color-blu-200: oklch(86% 0.028 226);
+  --color-blu-150: oklch(91% 0.021 224);
+  --color-blu-120: oklch(91.7% 0.026 224);
+  --color-blu-100: oklch(95% 0.017 225);
+  --color-blu-50: oklch(98% 0.006 224);
+  --color-grigio: oklch(51% 0.038 226);
+  --color-grigio-chiaro: oklch(65% 0.034 225);
+  --color-nav-ink: oklch(92.3% 0.027 221);
+  --color-nav-muted: oklch(80% 0.05 223);
+
+  /* Colori con un solo significato */
+  --color-arancio: oklch(64.4% 0.192 41.7);       /* azione principale, quantità */
+  --color-arancio-scuro: oklch(57.8% 0.172 41.6);
+  --color-arancio-50: oklch(96.7% 0.019 55);
+  --color-arancio-200: oklch(87% 0.08 50);
+  --color-giallo-100: oklch(96.1% 0.068 96.6);    /* tempo, attese */
+  --color-giallo-400: oklch(88.3% 0.165 92);
+  --color-giallo-ink: oklch(49% 0.1 85);
+  --color-ambra: oklch(53.1% 0.119 65);           /* timer su fondo chiaro */
+  --color-verde: oklch(52.9% 0.106 154);          /* fatto, comprato, pronto */
+  --color-verde-50: oklch(94% 0.04 154);
+  --color-verde-200: oklch(80% 0.07 154);
+  --color-rosa: oklch(53.9% 0.193 6.5);           /* elimina, errori, timer finiti */
+  --color-rosa-50: oklch(95% 0.03 6);
+  --color-rosa-200: oklch(85% 0.08 6);
+
+  /* Etichette (6.x) */
+  --color-cottura-50: oklch(92% 0.05 50);
+  --color-cottura-ink: oklch(50% 0.15 42);
+  --color-oro-50: oklch(95% 0.07 95);
+  --color-mio-50: oklch(93.5% 0.03 270);
+  --color-mio-ink: oklch(45% 0.15 270);
+  --color-neutro-50: oklch(94% 0.008 225);
+
+  /* Colori di area (13.2): solo per riconoscere un'area, mai per uno stato */
+  --color-area-ricette: oklch(55.5% 0.107 228.5);
+  --color-area-ricette-50: oklch(95% 0.03 228);
+  --color-area-menu: oklch(52% 0.13 330);
+  --color-area-menu-50: oklch(95.5% 0.025 330);
+  --color-area-ingredienti: oklch(55% 0.11 135);
+  --color-area-ingredienti-50: oklch(95.5% 0.035 135);
+  --color-area-vocabolario: oklch(58% 0.12 70);
+  --color-area-vocabolario-50: oklch(96% 0.035 75);
+
+  /* Cornice dell'area admin (D7) */
+  --color-adm-900: oklch(27% 0.05 255);
+  --color-adm-150: oklch(90% 0.02 255);
+  --color-adm-100: oklch(94.5% 0.016 255);
+  --color-adm-50: oklch(97.5% 0.007 255);
+
+  --radius-ctl: 0.75rem;
+  --radius-card: 1rem;
+  --radius-dlg: 1.25rem;
+
+  --font-system: -apple-system, "SF Pro Text", system-ui, "Segoe UI", Roboto, sans-serif;
+}
+
+:root {
+  --f: calc((100vw - 390px) / 1050);
+  --h-field: clamp(2.125rem, calc(2.125rem + 6 * var(--f)), 2.5rem);
+  --h-btn: clamp(2.375rem, calc(2.375rem + 6 * var(--f)), 2.75rem);
+  --h-btn-lg: clamp(2.75rem, calc(2.75rem + 10 * var(--f)), 3.375rem);
+  --h-sm: clamp(1.875rem, calc(1.875rem + 4 * var(--f)), 2.125rem);
+  --h-icon: var(--h-btn);
+  --fs-page: clamp(1.375rem, calc(1.375rem + 8 * var(--f)), 1.875rem);
+  --fs-sec: clamp(1.0625rem, calc(1.0625rem + 3 * var(--f)), 1.25rem);
+  --fs-step: clamp(1.0625rem, calc(1.0625rem + 5 * var(--f)), 1.375rem);
+  --fs-body: clamp(0.9375rem, calc(0.9375rem + 1 * var(--f)), 1rem);
+  --fs-meta: clamp(0.75rem, calc(0.75rem + 1 * var(--f)), 0.8125rem);
+  --fs-timer: clamp(1.625rem, calc(1.625rem + 10 * var(--f)), 2.25rem);
+  --gap: clamp(0.75rem, calc(0.75rem + 10 * var(--f)), 1.375rem);
+  --pad: clamp(0.875rem, calc(0.875rem + 10 * var(--f)), 1.5rem);
+}
+
+/* Radice di una zona già nel nuovo stile: carattere di sistema, testo e fondo pieno.
+   Le pagine vecchie restano sul gradiente finché non vengono rifatte. */
+.ds {
+  font-family: var(--font-system);
+  font-size: var(--fs-body);
+  line-height: 1.4;
+  color: var(--color-blu-950);
+}
+.ds .tabular { font-variant-numeric: tabular-nums; }

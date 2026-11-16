@@ -18,7 +18,9 @@
 | `an10-simbolo-piccolo-{blu,bianco}.svg` | «10» semplificato per le misure piccole |
 | `an10-icona-app.svg` | tessera blu con il «10» bianco |
 | `favicon.svg` | favicon vettoriale (tessera blu, versione piccola) |
-| `web/` | `favicon.ico` (16/32/48), `favicon-16/32/48.png`, `apple-touch-icon.png` (180), `icon-192.png`, `icon-512.png`, `maskable-512.png`, `site.webmanifest`, `head-snippet.html` |
+| `web/` | `favicon.ico` (16/32/48), `favicon-16/32/48.png`, `apple-touch-icon.png` (180), `icon-192.png`, `icon-512.png`, `maskable-512.png` |
+
+Nel sito sono collegate con le convenzioni di Next: `app/favicon.ico`, `app/icon.svg` (= `favicon.svg`), `app/apple-icon.png` (= `apple-touch-icon.png`) e `app/manifest.ts` (che usa le PNG di `web/`). Se rigeneri le icone, ricopia questi tre file in `app/`.
 
 Nel codice si usa il componente **`<An10Logo variant="orizzontale|impilato|simbolo" />`** (`components/brand/An10Logo.tsx`): prende il colore del testo (`text-…`), quindi un solo componente vale per tutti i fondi.
 
