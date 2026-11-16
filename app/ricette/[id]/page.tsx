@@ -1,22 +1,19 @@
 import { notFound } from "next/navigation";
-import type { ReactNode } from "react";
-import { Clock, Flame, Hourglass, Sigma, Users, ExternalLink, CalendarDays, ImageIcon, UtensilsCrossed, StickyNote, Link2 } from "lucide-react";
+import { ExternalLink, CalendarDays, StickyNote, Link2 } from "lucide-react";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { flattenRecipe, recipeDetailSelect } from "@/lib/api";
-import { Badge } from "@/components/ui/Badge";
 import { BackLink } from "@/components/ui/BackLink";
 import { ViewerImage } from "@/components/ui/ViewerImage";
-import { SectionHeader } from "@/components/ui/SectionHeader";
 import { ReviewSection } from "@/components/recipe/ReviewSection";
 import { PersonalRatingCard } from "@/components/recipe/PersonalRatingCard";
 import { MyRatingLink } from "@/components/recipe/MyRatingLink";
 import { RecipeProcedure } from "@/components/recipe/RecipeProcedure";
-import { FavoriteButton } from "@/components/recipe/FavoriteButton";
-import { RecipePdfButton } from "@/components/recipe/RecipePdfButton";
 import { RecipeActions } from "./RecipeActions";
 import { RecipeAdminBar } from "./RecipeAdminBar";
 import { formatMinutes, formatServings } from "@/lib/types";
+import { PageHeader } from "@/components/ds/PageHeader";
+import { An10Logo } from "@/components/brand/An10Logo";
 import type { StepIngredientLink } from "@/lib/step-ingredients";
 import type { Metadata } from "next";
 
@@ -86,103 +83,41 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
     })),
   };
 
+  const facts: { label: string; value: string; strong?: boolean }[] = [];
+  if (recipe.prep) facts.push({ label: "Preparazione", value: formatMinutes(recipe.prep) });
+  if (recipe.cook && recipe.cook > 0) facts.push({ label: "Cottura", value: formatMinutes(recipe.cook) });
+  if (waitTime > 0) facts.push({ label: "Attesa", value: formatMinutes(waitTime) });
+  if (totalTime > 0) facts.push({ label: "Totale", value: formatMinutes(totalTime), strong: true });
+  const meta = [
+    recipe.categories.map((c: { name: string }) => c.name).join(", "),
+    totalTime > 0 ? formatMinutes(totalTime) : null,
+    recipe.servings ? formatServings(recipe.servings, recipe.servingsUnit) : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   return (
-    <article className="mx-auto max-w-4xl space-y-6 sm:space-y-5">
-      {/* Back: bottone condiviso (BackLink), identico su ricetta/menù/modalità cucina */}
-      <BackLink href="/ricette" label="Tutte le ricette" />
-
-      {/* Azioni admin (solo admin): pronta/non pronta + modifica + elimina, in cima */}
-      <RecipeAdminBar recipeId={recipe.id} published={recipe.published} />
-
-      {/* Header */}
-      <div className="fade-up grid gap-6 lg:grid-cols-2 lg:gap-8" style={{ animationDelay: "0ms" }}>
-        {/* Photo — slim su mobile, quadrata su desktop */}
-        <div className="relative aspect-video sm:aspect-4/3 overflow-hidden rounded-2xl bg-white/20 backdrop-blur-sm">
-          {allPhotos.length > 0 ? (
-            <ViewerImage photos={allPhotos} index={0} src={allPhotos[0]} alt={recipe.name} className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" priority />
+    <article className="flex flex-col gap-4">
+      <PageHeader
+        back={<BackLink href="/ricette" label="Tutte le ricette" />}
+        thumb={
+          allPhotos[0] ? (
+            <div className="relative size-full">
+              <ViewerImage photos={allPhotos} index={0} src={allPhotos[0]} alt={recipe.name} className="object-cover" sizes="64px" priority />
+            </div>
           ) : (
-            <div className="flex h-full items-center justify-center text-sky-300"><UtensilsCrossed size={72} /></div>
-          )}
-
-          {/* Azioni rapide in alto a destra: preferiti + esporta PDF */}
-          <div className="absolute right-2 top-2 flex items-center gap-2">
-            <FavoriteButton recipeId={recipe.id} variant="overlay" />
-            <RecipePdfButton recipe={pdfData} overlay />
-          </div>
-
-          {/* Data in basso a sinistra */}
-          <div className="absolute bottom-2 left-2 inline-flex items-center gap-1.5 rounded-full bg-black/45 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm backdrop-blur-md">
-            <CalendarDays size={13} className="shrink-0" />
-            {new Date(recipe.createdAt ?? "2020-01-01").toLocaleDateString("it-IT", {
-              day: "numeric",
-              month: "short",
-              year: "numeric",
-            })}
-          </div>
-        </div>
-
-        {/* Info */}
-        <div className="flex flex-col gap-4">
-          <div>
-            <div className="mb-2 flex flex-wrap gap-1.5">
-              {recipe.categories.map((c: { id: number; name: string; color: string }) => (
-                <Badge key={c.id} label={c.name} color={c.color} />
-              ))}
+            <div className="flex size-full items-center justify-center bg-blu-100">
+              <An10Logo variant="simbolo" title="" className="w-3/5 text-blu-600" />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-sky-950 leading-tight">{recipe.name}</h1>
-          </div>
+          )
+        }
+        title={recipe.name}
+        meta={meta || undefined}
+        actions={<RecipeAdminBar recipeId={recipe.id} published={recipe.published} pdf={pdfData} />}
+      />
 
-          {/* Meta grid — colonne dinamiche in base ai tile presenti */}
-          {(() => {
-            const tiles: ReactNode[] = [];
-            if (recipe.prep)
-              tiles.push(<MetaTile key="prep" icon={<Clock size={16} />} label="Preparazione" value={formatMinutes(recipe.prep)} />);
-            if (recipe.cook && recipe.cook > 0)
-              tiles.push(<MetaTile key="cook" icon={<Flame size={16} />} label="Cottura" value={formatMinutes(recipe.cook)} />);
-            if (waitTime > 0)
-              tiles.push(<MetaTile key="wait" icon={<Hourglass size={16} />} label="Attesa" value={formatMinutes(waitTime)} />);
-            if (totalTime > 0)
-              tiles.push(<MetaTile key="total" icon={<Sigma size={16} />} label="Totale" value={formatMinutes(totalTime)} accent />);
-            if (recipe.servings)
-              tiles.push(<MetaTile key="serv" icon={<Users size={16} />} label="Porzioni" value={formatServings(recipe.servings, recipe.servingsUnit)} />);
-            const cols: Record<number, string> = {
-              1: "sm:grid-cols-2", 2: "sm:grid-cols-2", 3: "sm:grid-cols-3",
-              4: "sm:grid-cols-4", 5: "sm:grid-cols-5",
-            };
-            return (
-              <div className={`grid grid-cols-2 gap-2 sm:gap-3 ${cols[tiles.length] ?? "sm:grid-cols-4"}`}>
-                {tiles}
-              </div>
-            );
-          })()}
-
-          {/* Voto personale (solo admin, prima) + link ricetta originale, sulla stessa riga */}
-          {(isAdmin || recipe.links) && (
-            <div className="flex flex-wrap items-center gap-2">
-              {isAdmin && <MyRatingLink rating={myRating?.rating ?? null} />}
-              {recipe.links && (
-                <a href={recipe.links} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex w-fit items-center gap-2 rounded-full border border-orange-200/70 bg-orange-50/70 px-3.5 py-2 text-sm font-medium text-orange-700 backdrop-blur-sm transition-colors hover:bg-orange-100/80">
-                  <Link2 size={15} className="shrink-0" /> Ricetta originale
-                  <ExternalLink size={13} className="opacity-70" />
-                </a>
-              )}
-            </div>
-          )}
-
-          {recipe.notes && (
-            <p className="flex items-start gap-2 rounded-xl bg-amber-100/60 border border-amber-200/50 backdrop-blur-sm px-4 py-3 text-sm text-amber-900 leading-relaxed">
-              <StickyNote size={16} className="mt-0.5 shrink-0" /> <span>{recipe.notes}</span>
-            </p>
-          )}
-
-          {/* Volte cucinata (solo admin) */}
-          <RecipeActions recipeId={recipe.id} cookCount={recipe.cookCount} />
-        </div>
-      </div>
-
-      {/* Ingredienti compatti + Procedura interattiva */}
-      <div className="fade-up" style={{ animationDelay: "80ms" }}>
+      {/* Corpo: ingredienti + procedura (2 colonne da 620px) · da 1000px terza colonna con foto e dettagli */}
+      <div className="grid items-start gap-(--gap) @min-[1000px]:grid-cols-[1fr_clamp(16rem,26cqi,20rem)]">
         <RecipeProcedure
           recipeId={recipe.id}
           recipeName={recipe.name}
@@ -192,62 +127,68 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
           ingredients={recipe.ingredients}
           steps={recipe.steps}
         />
-      </div>
 
-      {/* Altre foto */}
-      {allPhotos.length > 1 && (
-        <section className="fade-up" style={{ animationDelay: "160ms" }}>
-          <SectionHeader title="Foto" icon={<ImageIcon size={20} />} tone="violet" size="lg" className="mb-4" />
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {allPhotos.slice(1).map((url: string, i: number) => (
-              <div key={i} className="relative aspect-square overflow-hidden rounded-xl bg-white/20 transition-transform duration-300 hover:scale-[1.02]">
-                <ViewerImage photos={allPhotos} index={i + 1} src={url} alt={`${recipe.name} foto ${i + 2}`} className="object-cover" sizes="33vw" />
+        <aside className="flex flex-col gap-3">
+          {allPhotos.length > 0 && (
+            <div className="grid grid-cols-3 gap-2">
+              <div className="relative col-span-3 aspect-4/3 overflow-hidden rounded-card bg-blu-100">
+                <ViewerImage photos={allPhotos} index={0} src={allPhotos[0]} alt={recipe.name} className="object-cover" sizes="(max-width: 1000px) 100vw, 20rem" />
               </div>
-            ))}
+              {allPhotos.slice(1).map((url: string, i: number) => (
+                <div key={url} className="relative aspect-square overflow-hidden rounded-ctl bg-blu-100">
+                  <ViewerImage photos={allPhotos} index={i + 1} src={url} alt={`${recipe.name} foto ${i + 2}`} className="object-cover" sizes="7rem" />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {facts.length > 0 && (
+            <dl className="grid grid-cols-2 gap-2">
+              {facts.map((f) => (
+                <div key={f.label} className={f.strong ? "rounded-ctl bg-blu-800 px-3 py-2 text-white" : "rounded-ctl border border-blu-150 bg-white px-3 py-2"}>
+                  <dt className={f.strong ? "text-xs text-nav-ink" : "text-xs text-grigio"}>{f.label}</dt>
+                  <dd className="tabular font-bold">{f.value}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+
+          {recipe.notes && (
+            <p className="flex items-start gap-2 rounded-card border border-giallo-400/60 bg-giallo-100 px-3.5 py-3 text-[0.875rem] whitespace-pre-line text-giallo-ink">
+              <StickyNote className="mt-0.5 size-4 shrink-0" aria-hidden /> <span>{recipe.notes}</span>
+            </p>
+          )}
+
+          <div className="flex flex-wrap items-center gap-2">
+            {isAdmin && <MyRatingLink rating={myRating?.rating ?? null} />}
+            {recipe.links && (
+              <a
+                href={recipe.links}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-(--h-sm) items-center gap-1.5 rounded-full border border-blu-200 bg-white px-3 text-[0.875rem] font-semibold text-blu-600 hover:bg-blu-100"
+              >
+                <Link2 className="size-4" aria-hidden /> Ricetta originale <ExternalLink className="size-3.5" aria-hidden />
+              </a>
+            )}
+            <span className="inline-flex items-center gap-1.5 text-xs text-grigio">
+              <CalendarDays className="size-3.5" aria-hidden />
+              {new Date(recipe.createdAt ?? "2020-01-01").toLocaleDateString("it-IT", { day: "numeric", month: "short", year: "numeric" })}
+            </span>
           </div>
-        </section>
-      )}
 
-      {/* Voto personale dell'admin (card dedicata, stile distinto dalle recensioni) */}
-      {isAdmin && (
-        <div id="mio-voto" className="fade-up scroll-mt-24" style={{ animationDelay: "220ms" }}>
-          <PersonalRatingCard recipeId={recipe.id} initial={myRating} />
-        </div>
-      )}
+          {/* Volte cucinata (solo admin) */}
+          <RecipeActions recipeId={recipe.id} cookCount={recipe.cookCount} />
 
-      {/* Recensioni */}
-      <div className="fade-up" style={{ animationDelay: "300ms" }}>
-        <ReviewSection initialReviews={recipe.reviews} />
+          {isAdmin && (
+            <div id="mio-voto" className="scroll-mt-24">
+              <PersonalRatingCard recipeId={recipe.id} initial={myRating} />
+            </div>
+          )}
+        </aside>
       </div>
-    </article>
-  );
-}
 
-// ---------------------------------------------------------------------------
-// Tile meta (tempo prep/cottura/totale/porzioni) — vetro con icona
-// ---------------------------------------------------------------------------
-function MetaTile({
-  icon,
-  label,
-  value,
-  accent = false,
-}: {
-  icon: ReactNode;
-  label: string;
-  value: string;
-  accent?: boolean;
-}) {
-  return (
-    <div
-      className={`flex flex-col items-center gap-1 rounded-xl border p-3 text-center ${
-        accent
-          ? "border-orange-500 bg-gradient-to-br from-orange-500 to-orange-600 shadow-md shadow-orange-500/30"
-          : "border-white/40 bg-white/50 backdrop-blur-sm"
-      }`}
-    >
-      <span className={accent ? "text-white" : "text-sky-500"}>{icon}</span>
-      <p className={`text-[11px] ${accent ? "font-medium text-orange-50" : "text-sky-600"}`}>{label}</p>
-      <p className={`text-sm font-bold ${accent ? "text-white" : "font-semibold text-sky-950"}`}>{value}</p>
-    </div>
+      <ReviewSection initialReviews={recipe.reviews} />
+    </article>
   );
 }

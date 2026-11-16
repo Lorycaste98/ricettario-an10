@@ -5,7 +5,7 @@ import { useFavorites } from "@/lib/favorites";
 
 interface Props {
   recipeId: number;
-  variant?: "card" | "detail" | "overlay";
+  variant?: "card" | "detail" | "overlay" | "icon";
 }
 
 export function FavoriteButton({ recipeId, variant = "card" }: Props) {
@@ -38,6 +38,25 @@ export function FavoriteButton({ recipeId, variant = "card" }: Props) {
     );
   }
 
+  if (variant === "icon") {
+    // 3.10 / 3.11 · tondo con sola icona, per la testata del dettaglio
+    return (
+      <button
+        type="button"
+        onClick={handleClick}
+        aria-label={active ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti"}
+        aria-pressed={active}
+        title={active ? "Nei preferiti: tocca per toglierla" : "Salva tra i preferiti"}
+        className={clsx(
+          "inline-flex size-(--h-icon) shrink-0 items-center justify-center rounded-full border transition-colors",
+          active ? "border-arancio bg-arancio text-white" : "border-blu-200 bg-white text-blu-800 hover:bg-blu-100"
+        )}
+      >
+        <Heart size={20} className={clsx(active && "fill-current")} />
+      </button>
+    );
+  }
+
   if (variant === "detail") {
     return (
       <button
@@ -63,13 +82,12 @@ export function FavoriteButton({ recipeId, variant = "card" }: Props) {
       aria-label={active ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti"}
       aria-pressed={active}
       className={clsx(
-        "flex h-7 w-7 items-center justify-center rounded-full backdrop-blur-sm transition-colors",
-        active
-          ? "bg-rose-500/90 text-white hover:bg-rose-500"
-          : "bg-black/50 text-white hover:bg-black/70"
+        // 3.10 / 3.11 · gemello del bottone pentola sulla card
+        "flex size-8 items-center justify-center rounded-full shadow-sm transition-colors",
+        active ? "bg-arancio text-white hover:bg-arancio-scuro" : "bg-white/95 text-blu-800 hover:bg-white"
       )}
     >
-      <Heart size={14} className={clsx(active && "fill-current")} />
+      <Heart size={16} className={clsx(active && "fill-current")} />
     </button>
   );
 }

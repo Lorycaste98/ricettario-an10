@@ -17,10 +17,10 @@
 - [x] Verificare su Vercel che le anteprime del branch funzionino: `an10recipes-git-feat-restyle-frontend-lorycaste98s-projects.vercel.app`. ⚠️ Usa il **database di produzione** (scelta del 16/11/2026): dall'anteprima, da admin, non eliminare né modificare dati veri.
 - [x] Fare la foto di com'è oggi (screenshot già in `.playwright-mcp/before/`), per il confronto finale.
 
-### Domande aperte da chiudere prima della fase 3
-- [ ] **Pagina iniziale:** oggi `/` è una vetrina per i visitatori e l'admin viene rimandato a `/admin`. Proposta: per chi è loggato `/` diventa la libreria ricette (con la fila «in corso» in alto); la vetrina pubblica resta, semplificata.
-- [ ] **Voce «Cerca»** nella navigazione: pagina dedicata o pannello sopra la pagina? (Oggi c'è `/api/search`.)
-- [ ] **Preferiti:** voce nella navigazione o filtro della libreria?
+### Decisioni prese prima della fase 3
+- [x] **Pagina iniziale** (deciso 16/11/2026): admin loggato → libreria ricette (`/` rimanda a `/ricette`); visitatori → vetrina, da rifare in fase 6.
+- [x] **Ricerca globale** (deciso 16/11/2026): la vuoi, come overlay dalla vetrina → vedi **Fase 3B**, da approvare dopo la valutazione dei costi.
+- [x] **Preferiti** (deciso 16/11/2026): restano voce di navigazione con il contatore.
 
 ---
 
@@ -75,19 +75,37 @@
 ---
 
 ## Fase 3 · Ricette
-- [ ] **Libreria** (`/ricette`, `RecipeGrid`, `RecipeCard`): ricerca, chip categoria, ordinamento, griglia elastica; card 8.1, card senza foto con il logo (8.2), non pronta offuscata; filtri su iPhone in un pannello dal basso. Filtri in sessionStorage invariati.
-- [ ] **Dettaglio ricetta** (`/ricette/[id]`, `RecipeProcedure`), come da prototipo `docs/design/ricetta.html`:
-  - [ ] testata con miniatura e azioni (occhio, Modifica, PDF, cuore);
-  - [ ] **ingredienti e procedura affiancati** da 620px in su, schede a segmenti sotto; terza colonna (foto, voto, recensioni) da 1000px in su;
-  - [ ] passo corrente 8.7 con timer e «Fatto» (3.1), passi fatti e futuri (7.2), «Ti servono», anteprima dei passi successivi;
-  - [ ] riproporzionamento: stepper delle dosi (3.13), quantità toccabili, banner 10.4;
-  - [ ] sezioni degli ingredienti, opzionali, quantità per passo;
-  - [ ] foto con `PhotoViewer` (non toccare le tre trappole descritte in `CLAUDE.md`);
-  - [ ] recensioni ospiti (8.9, `ReviewSection`/`ReviewBubble`/`ReviewCarousel`) e «Il mio voto» (`PersonalRatingCard`).
-- [ ] **Preferiti** (`/preferiti`) con la stessa griglia della libreria.
-- [ ] Tutti i `loading.tsx` della sezione con la nuova forma.
+- [x] **Libreria** (`/ricette`, `RecipeGrid`, `RecipeCard`): ricerca, chip categoria, ordinamento, griglia elastica; card 8.1, card senza foto con il logo (8.2), non pronta offuscata; filtri su iPhone in un pannello dal basso. Filtri in sessionStorage invariati.
+- [x] **Dettaglio ricetta** (`/ricette/[id]`, `RecipeProcedure`), come da prototipo `docs/design/ricetta.html`:
+  - [x] testata con miniatura e azioni (occhio, Modifica, PDF, cuore);
+  - [x] **ingredienti e procedura affiancati** da 620px in su, schede a segmenti sotto; terza colonna (foto, voto, recensioni) da 1000px in su;
+  - [x] passo corrente 8.7 con timer e «Fatto» (3.1), passi fatti e futuri (7.2), «Ti servono», anteprima dei passi successivi;
+  - [x] riproporzionamento: stepper delle dosi (3.13), quantità toccabili, banner 10.4;
+  - [x] sezioni degli ingredienti, opzionali, quantità per passo;
+  - [x] foto con `PhotoViewer` (non toccare le tre trappole descritte in `CLAUDE.md`);
+  - [~] recensioni ospiti e «Il mio voto»: contenitori già nel nuovo stile (card bianche); l'interno (`ReviewBubble`, `ReviewCarousel`, voto 4.12 nel `PersonalRatingCard`) si rifinisce con la fase 8.
+- [x] **Preferiti** (`/preferiti`) con la stessa griglia della libreria.
+- [x] Tutti i `loading.tsx` della sezione con la nuova forma.
 
 **Fatto quando:** con il prototipo affiancato, la ricetta si segue con le mani occupate su iPad in verticale e in orizzontale e su iPhone.
+
+> **Stato 16/11/2026:** fatta. Libreria con chip e griglia elastica, card 8.1/8.2, dettaglio con testata 9.5 (azioni: occhio, Modifica, PDF, preferito, Elimina), ingredienti e procedura affiancati da 620px / a schede sotto, terza colonna da 1000px, passo corrente 8.7 con timer grande. `/` rimanda l'admin a `/ricette`. Il pannello «Sto cucinando» ha ancora le card interne vecchie (stessa forma da rifare con 8.7) → in fase 4 insieme alla modalità cucina, che usa gli stessi elementi.
+
+---
+
+## Fase 3B · Ricerca globale (da approvare)
+**Cosa:** nella vetrina un campo «Cerca» che apre un **overlay** (si intravede la vetrina sotto, bloccata) e cerca insieme **ricette, menù e ingredienti**. Per ricette e menù mostra un'**anteprima** della pagina; per gli ingredienti una **scheda statistica** (in quante ricette compare, in quali menù, quantità tipiche, quante volte cucinato).
+
+**Valutazione dei costi (16/11/2026):**
+- **Dati in gioco** (produzione): ~224 ricette, 6 menù, 1154 ingredienti a catalogo. Sono numeri piccoli: ogni ricerca è una manciata di query `contains` (come `/api/search`, che già cerca su nome, note, ingredienti e passi) che rispondono in pochi millisecondi.
+- **Traffico per ricerca:** con un ritardo di ~250ms dopo l'ultima lettera e minimo 2 caratteri, una ricerca = 1 chiamata, risposta di ~5–15 KB (10 risultati per tipo, solo campi del riepilogo). Anche con 1000 ricerche al giorno sono ~15 MB/giorno, ~450 MB/mese: dentro i limiti gratuiti di Supabase (5 GB di traffico) e senza effetti sul piano Vercel.
+- **Anteprime:** si caricano solo per il risultato scelto/evidenziato (dettaglio ricetta ~10–30 KB, già cachato lato server per le ricette pubblicate). Nessun costo se non si apre nulla.
+- **Statistiche ingrediente:** una query di aggregazione per ingrediente scelto (conteggi su `Ingredient` per nome + `CookLog`), economica con questi volumi.
+- **Alternativa ancora più leggera:** scaricare una volta un indice compatto (nomi di ricette/menù/ingredienti, ~100–200 KB, in cache) e cercare nel browser: zero chiamate per lettera, risultati istantanei anche offline; le anteprime restano a richiesta.
+- **Visitatori:** la ricerca pubblica deve restare su ricette e menù **pubblicati**; le statistiche degli ingredienti vanno bene anche in pubblico (non espongono dati personali) ma va deciso.
+
+**Da decidere prima di costruirla:** indice nel browser (consigliato: più veloce, costo quasi zero) o ricerca sul server; statistiche ingredienti visibili anche ai visitatori o solo all'admin; voce «Cerca» anche nella navigazione dell'admin oltre che nella vetrina.
+
 
 ---
 

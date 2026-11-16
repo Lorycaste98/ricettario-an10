@@ -1,7 +1,8 @@
 "use client";
 import { useState } from "react";
 import { clsx } from "clsx";
-import { CookingPot, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { PotIcon } from "@/components/icons";
 import { addRecipeById, isCooking, openCookingDock, useCookingSession } from "@/lib/cooking-session";
 
 /**
@@ -44,15 +45,16 @@ export function CookingButton({ recipeId }: { recipeId: number }) {
       title={label}
       aria-pressed={active}
       className={clsx(
-        "flex h-7 w-7 items-center justify-center rounded-full backdrop-blur-sm transition-colors",
+        // 3.10 / 3.11 · bottone tondo su foto: bianco, attivo = arancio
+        "flex size-8 items-center justify-center rounded-full shadow-sm transition-colors",
         active
-          ? "bg-orange-500/95 text-white hover:bg-orange-500"
+          ? "bg-arancio text-white hover:bg-arancio-scuro"
           : failed
-            ? "bg-rose-500/80 text-white hover:bg-rose-500"
-            : "bg-black/50 text-white hover:bg-black/70"
+            ? "bg-rosa text-white"
+            : "bg-white/95 text-blu-800 hover:bg-white"
       )}
     >
-      {loading ? <Loader2 size={14} className="animate-spin" /> : <CookingPot size={14} />}
+      {loading ? <Loader2 size={16} className="animate-spin motion-reduce:animate-none" /> : <PotIcon size={17} />}
     </button>
   );
 }

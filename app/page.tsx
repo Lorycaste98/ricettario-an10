@@ -22,9 +22,10 @@ const fraunces = Fraunces({
 });
 
 export default async function LandingPage() {
-  // Gli admin loggati hanno la loro landing dedicata: la dashboard gestionale.
+  // Admin loggato: la pagina iniziale è la libreria ricette (decisione del 16/11/2026).
+  // I visitatori vedono la vetrina (da rifare nella fase 6 del restyle).
   const session = await getSession();
-  if (session) redirect("/admin");
+  if (session) redirect("/ricette");
 
   // Dati pubblici serviti dalla cache (invalidata sui mutate admin)
   const [recipes, menus] = await Promise.all([getHomeRecipes(), getHomeMenus()]);

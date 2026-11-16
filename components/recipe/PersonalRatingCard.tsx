@@ -71,7 +71,7 @@ export function PersonalRatingCard({
   };
 
   return (
-    <section className="space-y-4 rounded-2xl border border-sky-300/40 bg-gradient-to-br from-sky-50/70 to-indigo-50/50 p-5 shadow-sm backdrop-blur-sm sm:p-6">
+    <section className="space-y-4 rounded-card border border-blu-150 bg-white p-3.5">
       <div className="flex items-center gap-3">
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-indigo-500 text-white shadow-md shadow-sky-500/30">
           <ChefHat size={18} />
@@ -91,7 +91,7 @@ export function PersonalRatingCard({
       {saved && !editing ? (
         <div className="space-y-3">
           {saved.note && (
-            <p className="flex items-start gap-2 rounded-xl border border-sky-200/50 bg-white/50 px-4 py-3 text-sm text-sky-900 leading-relaxed">
+            <p className="flex items-start gap-2 rounded-ctl bg-mio-50 px-3.5 py-2.5 text-sm text-blu-950 leading-relaxed">
               <StickyNote size={16} className="mt-0.5 shrink-0 text-sky-500" /> <span>{saved.note}</span>
             </p>
           )}

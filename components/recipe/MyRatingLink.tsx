@@ -21,15 +21,15 @@ export function MyRatingLink({
     <button
       type="button"
       onClick={scrollToCard}
-      className="inline-flex w-fit items-center gap-2 rounded-full border border-sky-300/70 bg-sky-100/90 px-3.5 py-2 text-sm font-medium text-sky-800 shadow-sm backdrop-blur-sm transition-colors hover:bg-sky-200/90"
+      className="inline-flex h-(--h-sm) w-fit items-center gap-1.5 rounded-full bg-mio-50 px-3 text-[0.875rem] font-semibold text-mio-ink transition-colors hover:brightness-[.97]"
     >
-      <ChefHat size={15} className="shrink-0 text-sky-600" />
+      <ChefHat size={15} className="shrink-0" aria-hidden />
       {rating != null ? (
         <>
-          Il mio voto <span className="font-bold text-sky-900">{rating}/10</span>
+          Il mio voto <span className="tabular font-bold">{rating}/10</span>
         </>
       ) : (
-        <span className="text-sky-700">Dai il tuo voto</span>
+        <span>Dai il tuo voto</span>
       )}
     </button>
   );

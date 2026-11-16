@@ -1,8 +1,8 @@
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
-import { RecipeGrid } from "@/components/recipe/RecipeGrid";
+import { NewRecipeLink, RecipeGrid } from "@/components/recipe/RecipeGrid";
 import { getRecipeSummaries } from "@/lib/queries";
-import { BookOpen } from "lucide-react";
+import { PageHeader } from "@/components/ds/PageHeader";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Ricette — Ricettario" };
@@ -18,15 +18,12 @@ export default async function RicettePage() {
   ]);
 
   return (
-    <div>
-      <div className="text-center space-y-2 mb-8">
-        <div className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/30 px-4 py-1.5 text-xs font-semibold text-sky-700 backdrop-blur-sm">
-          <BookOpen size={12} />
-          Ricette
-        </div>
-        <h1 className="text-3xl font-bold text-sky-50 drop-shadow">Le mie ricette</h1>
-        <p className="text-sky-200/80 text-sm">Prova una delle mie ricette</p>
-      </div>
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        title="Ricette"
+        meta={session ? `${recipes.length} ricette nel ricettario` : "Le ricette del ricettario AN10"}
+        actions={<NewRecipeLink />}
+      />
       <RecipeGrid recipes={recipes} categories={categories} tags={tags} />
     </div>
   );

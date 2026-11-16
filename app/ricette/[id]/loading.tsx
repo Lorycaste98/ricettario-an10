@@ -1,77 +1,39 @@
-import { getSession } from "@/lib/session";
+import { Skeleton } from "@/components/ds/Progress";
+import { backLinkCls } from "@/components/ui/BackLink";
 
-export default async function RecipeDetailLoading() {
-  // Solo lettura cookie (nessun DB): distingue lo skeleton admin da quello visitatore
-  const isAdmin = !!(await getSession());
-
+/**
+ * Caricamento del dettaglio ricetta: stessa forma della pagina (testata 9.5, ingredienti +
+ * procedura affiancati da 620px, colonna foto da 1000px). Il BackLink usa le sue classi vere.
+ */
+export default function RicettaLoading() {
   return (
-    <div className="mx-auto max-w-4xl space-y-6 sm:space-y-5 animate-pulse">
-      {/* Back link — stessa forma/altezza del bottone reale (pill h-[34px]) */}
-      <div className="h-[34px] w-40 rounded-full bg-white/20" />
-
-      {/* Barra azioni admin: Pronta (flex-1) + Modifica + Elimina */}
-      {isAdmin && (
-        <div className="flex items-stretch gap-2">
-          <div className="h-[54px] flex-1 rounded-xl bg-white/20" />
-          <div className="h-[54px] w-11 rounded-xl bg-white/15 sm:w-28" />
-          <div className="h-[54px] w-11 rounded-xl bg-white/15 sm:w-28" />
+    <div className="flex flex-col gap-4" aria-busy>
+      <span className={`${backLinkCls} w-36`} aria-hidden />
+      <div className="flex items-center gap-3">
+        <Skeleton className="size-14 shrink-0" />
+        <div className="flex flex-1 flex-col gap-2">
+          <Skeleton className="h-7 w-3/5" />
+          <Skeleton className="h-3.5 w-2/5" />
         </div>
-      )}
-
-      {/* Header grid — foto sinistra, info destra */}
-      <div className="grid gap-6 lg:grid-cols-2 lg:gap-8">
-        {/* Foto — con badge azioni (alto-dx) e data (basso-sx) in sovrimpressione */}
-        <div className="relative aspect-video sm:aspect-4/3 rounded-2xl bg-white/20">
-          <div className="absolute right-2 top-2 flex gap-2">
-            <div className="h-9 w-9 rounded-full bg-white/25" />
-            <div className="h-9 w-9 rounded-full bg-white/25" />
-          </div>
-          <div className="absolute bottom-2 left-2 h-6 w-28 rounded-full bg-white/25" />
-        </div>
-
-        {/* Info */}
-        <div className="flex flex-col gap-4">
-          {/* Badges categoria */}
-          <div className="flex gap-2">
-            <div className="h-5 w-16 rounded-full bg-white/20" />
-            <div className="h-5 w-20 rounded-full bg-white/20" />
-          </div>
-          {/* Titolo */}
-          <div className="h-8 w-3/4 rounded-xl bg-white/25" />
-          {/* Tile meta (prep / cottura / attesa / totale / porzioni) —
-              il 4° (Totale) è la card piena/accentata */}
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div
-                key={i}
-                className={`h-20 rounded-xl ${i === 3 ? "bg-orange-400/30" : "bg-white/20"}`}
-              />
+      </div>
+      <div className="grid items-start gap-(--gap) @min-[1000px]:grid-cols-[1fr_clamp(16rem,26cqi,20rem)]">
+        <div className="grid gap-x-(--gap) gap-y-4 @min-[620px]:grid-cols-[clamp(13rem,36%,20rem)_1fr]">
+          <div className="flex flex-col gap-2.5 rounded-card bg-blu-100 p-3.5">
+            <Skeleton className="h-3 w-24 bg-blu-150" />
+            {Array.from({ length: 7 }).map((_, i) => (
+              <Skeleton key={i} className="h-5 bg-blu-150" />
             ))}
           </div>
-          {/* Chip fonte */}
-          <div className="h-9 w-40 rounded-full bg-white/20" />
-          {/* Note */}
-          <div className="h-14 rounded-xl bg-white/15" />
+          <div className="flex flex-col gap-3">
+            <Skeleton className="h-2 w-full" />
+            <Skeleton className="h-(--h-btn) w-48" />
+            <Skeleton className="h-36 rounded-card" />
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-12" />
+            ))}
+          </div>
         </div>
-      </div>
-
-      {/* Card ingredienti */}
-      <div className="rounded-2xl bg-white/20 p-5 sm:p-6 space-y-4">
-        <div className="h-6 w-32 rounded-xl bg-white/25" />
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-4 rounded-lg bg-white/15" />
-          ))}
-        </div>
-      </div>
-
-      {/* Card procedura */}
-      <div className="rounded-2xl bg-white/20 p-5 sm:p-6 space-y-3">
-        <div className="h-6 w-28 rounded-xl bg-white/25" />
-        <div className="h-2 w-full rounded-full bg-white/15" />
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-16 rounded-xl bg-white/10" />
-        ))}
+        <Skeleton className="hidden aspect-4/3 rounded-card @min-[1000px]:block" />
       </div>
     </div>
   );

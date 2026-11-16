@@ -17,10 +17,13 @@ import { CookingMiniBar, CookingRow, useHasCooking } from "@/components/shell/Co
  *   testi chiari pensati per quel fondo. A restyle finito `RESTYLED` e `.page-bg` spariscono.
  * La home pubblica `/` resta fuori dalla cornice (ha la sua vetrina).
  */
-const RESTYLED: string[] = ["/prova-elementi"];
+// Voce esatta ("/ricette") o con tutte le sotto-pagine ("/ricette/*")
+const RESTYLED: string[] = ["/prova-elementi", "/ricette/*", "/preferiti"];
 
 function isRestyled(pathname: string) {
-  return RESTYLED.some((p) => pathname === p || pathname.startsWith(p + "/"));
+  return RESTYLED.some((p) =>
+    p.endsWith("/*") ? pathname === p.slice(0, -2) || pathname.startsWith(p.slice(0, -1)) : pathname === p
+  );
 }
 
 export function AppShell({ children }: { children: ReactNode }) {

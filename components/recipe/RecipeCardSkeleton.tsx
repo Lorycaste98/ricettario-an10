@@ -1,26 +1,19 @@
-interface Props { index?: number }
+interface Props {
+  index?: number;
+}
 
+/** Segnaposto della card ricetta (8.1): stessa forma, foto 4:3 + due righe sotto. */
 export function RecipeCardSkeleton({ index = 0 }: Props) {
   return (
     <div
-      className="relative flex flex-col overflow-hidden rounded-2xl bg-zinc-900/50 shadow-lg"
-      style={{ animation: `skeleton-reveal 0.4s ease-out ${index * 80}ms both` }}
+      aria-hidden
+      className="flex flex-col overflow-hidden rounded-card border border-blu-150 bg-white"
+      style={{ animation: `skeleton-reveal 0.4s ease-out ${index * 60}ms both` }}
     >
-      <div className="relative aspect-4/3 animate-pulse bg-white/12">
-        {/* Badge in alto */}
-        <div className="absolute top-2.5 left-2.5 h-4 w-16 rounded-full bg-white/20" />
-        <div className="absolute top-2.5 right-2.5 h-7 w-7 rounded-full bg-white/15" />
-        {/* Pannello info frosted in basso */}
-        <div className="absolute inset-x-0 bottom-0 space-y-1.5 border-t border-white/10 bg-black/20 px-2 py-1.5 backdrop-blur-sm sm:space-y-2 sm:px-3 sm:py-2">
-          <div className="flex items-start justify-between gap-1.5">
-            <div className="min-w-0 flex-1 space-y-1 sm:space-y-1.5">
-              <div className="h-2.5 w-3/4 rounded bg-white/20 sm:h-3" />
-              <div className="h-2.5 w-1/2 rounded bg-white/15 sm:h-3" />
-            </div>
-            <div className="h-4 w-10 shrink-0 rounded-md bg-amber-300/25 sm:h-5 sm:w-12" />
-          </div>
-          <div className="h-2 w-1/2 rounded-lg bg-white/15 sm:h-2.5" />
-        </div>
+      <div className="aspect-4/3 animate-pulse bg-blu-150 motion-reduce:animate-none" />
+      <div className="flex flex-col gap-2 px-[0.7em] pt-[0.6em] pb-[0.75em]">
+        <div className="h-3.5 w-4/5 animate-pulse rounded bg-blu-150 motion-reduce:animate-none" />
+        <div className="h-3 w-1/2 animate-pulse rounded bg-blu-100 motion-reduce:animate-none" />
       </div>
     </div>
   );
