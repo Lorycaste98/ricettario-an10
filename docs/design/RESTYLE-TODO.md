@@ -59,16 +59,18 @@
 ---
 
 ## Fase 2 · Guscio dell'app e «Sto cucinando»
-- [ ] Togliere il gradiente `.page-bg` e passare `body` allo sfondo pieno e al carattere di sistema (classe `.ds` sul layout); `themeColor` = blu del logo.
-- [ ] Restyle di `Modal`/`ConfirmModal` (10.1).
-- [ ] `AppShell` nuovo: **barra laterale** (9.1) da 700px in su, **barra in basso** (9.2) sotto; safe area di iPhone e iPad; logo nella barra laterale.
-- [ ] Togliere `Navbar.tsx` (menu a hamburger e sottomenu Dashboard); le voci admin passano in «Gestione» (fase 5).
-- [ ] «Sto cucinando»: la **fila delle ricette in corso** (8.4) in cima alle pagine su iPad e PC e la **mini-barra** (9.3) su iPhone **sostituiscono** il bottone flottante di `CookingDock`. Il pannello con timer, Fatto/Indietro e anteprima dei passi resta, restilizzato. `lib/cooking-session.ts` non cambia.
-- [ ] `BackLink` (9.4) e testata di pagina con azioni (9.5).
-- [ ] Contenitore di pagina con container query (`container-type: inline-size`); punto di rottura unico a 700px solo per la navigazione.
-- [ ] `nav-history`: verificare che continui a funzionare con la nuova navigazione.
+- [x] `body` con sfondo pieno e carattere di sistema (classe `.ds`), `themeColor` = blu scuro della cornice. Il gradiente `.page-bg` ora è **per pagina**: resta sulle pagine non ancora rifatte (lista `RESTYLED` in `AppShell`) e sparisce man mano.
+- [x] Restyle di `Modal`/`ConfirmModal` (10.1).
+- [x] `AppShell` nuovo: **barra laterale** (9.1) da 700px in su, **barra in basso** (9.2) sotto; safe area di iPhone e iPad; logo nella barra laterale.
+- [x] Togliere `Navbar.tsx` (menu a hamburger e sottomenu Dashboard); le voci admin passano in «Gestione» (fase 5).
+- [x] «Sto cucinando»: la **fila delle ricette in corso** (8.4) in cima alle pagine su iPad e PC e la **mini-barra** (9.3) su iPhone **sostituiscono** il bottone flottante di `CookingDock`. Il pannello con timer, Fatto/Indietro e anteprima dei passi resta, restilizzato. `lib/cooking-session.ts` non cambia.
+- [x] `BackLink` (9.4) e testata di pagina con azioni (9.5).
+- [x] Contenitore di pagina con container query (`container-type: inline-size`); punto di rottura unico a 700px solo per la navigazione.
+- [x] `nav-history`: verificare che continui a funzionare con la nuova navigazione.
 
 **Fatto quando:** si naviga in tutta l'app con la nuova cornice, e su iPhone la mini-barra non copre contenuti né la barra in basso.
+
+> **Stato 16/11/2026:** fatta. `components/shell/` (navigazione, fila e mini-barra), `AppShell` nuovo, `Navbar` eliminata, `Modal` e `BackLink` restilizzati, `PageHeader` (9.5) in `components/ds`. Il pannello «Sto cucinando» ha solo la cornice nuova: le sue card si rifanno con il passo corrente (8.7) nella fase 3. Da verificare su iPhone e iPad veri (safe area, mini-barra) e da admin loggato (Gestione, Account).
 
 ---
 

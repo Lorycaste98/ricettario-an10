@@ -6,16 +6,12 @@ import { useRouter } from "next/navigation";
 import { BellRing, Check, ChevronLeft, CookingPot, PartyPopper, Scale, Sun, Timer, X } from "lucide-react";
 import {
   finishRecipe,
-  finishedCount,
-  formatCountdown,
   isTimerStep,
-  remainingMs,
   removeRecipe,
   requestNotificationPermission,
   useCookingScheduler,
   useCookingSession,
   useKeepAwake,
-  useNow,
   useOpenCookingDockListener,
   wakeLockSupported,
   type CookingRecipe,
@@ -28,8 +24,9 @@ import { Modal, ConfirmModal } from "@/components/ui/Modal";
 import { StepTimer } from "@/components/cooking/StepTimer";
 
 /**
- * «Sto cucinando»: bottone flottante globale (montato una volta in app/layout.tsx)
- * + dialog con una card per ricetta in corso. Monta anche lo scheduler dei timer
+ * «Sto cucinando»: pannello (dialog) con una card per ricetta in corso, montato una volta in
+ * app/layout.tsx. Si apre dalla fila / mini-barra della cornice (`components/shell/CookingBar.tsx`)
+ * e dal bottone pentola delle card, tutti via `openCookingDock()`. Monta anche lo scheduler dei timer
  * (`useCookingScheduler`): scadenze, suono e notifiche passano tutti da qui.
  */
 
@@ -65,44 +62,10 @@ export function CookingDock() {
   useOpenCookingDockListener(useCallback(() => setOpen(true), []));
   const count = session.recipes.length;
 
-  const running = session.timers.filter((t) => t.status === "running" && t.endsAt !== null);
-  const nearest = running.reduce<CookingTimer | null>(
-    (min, t) => (min === null || (t.endsAt ?? 0) < (min.endsAt ?? 0) ? t : min),
-    null
-  );
-  const now = useNow(nearest !== null);
-  const finished = finishedCount(session);
-
   if (!session.hydrated || session.recipes.length === 0) return null;
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-label={`Sto cucinando: ${session.recipes.length} ricette${finished ? `, ${finished} timer finiti` : ""}`}
-        className="fixed right-4 z-40 flex items-center gap-2 rounded-full bg-orange-500 py-2.5 pl-3 pr-3.5 text-white shadow-lg shadow-orange-900/30 ring-1 ring-white/40 transition-colors hover:bg-orange-600 active:bg-orange-700"
-        style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 1rem)" }}
-      >
-        <span className="relative">
-          <CookingPot size={22} />
-          {finished > 0 && (
-            <span className="absolute -top-2 -right-2.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold leading-none text-white shadow ring-2 ring-orange-500">
-              {finished > 99 ? "99+" : finished}
-            </span>
-          )}
-        </span>
-        {/* Numero di ricette in lista */}
-        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1.5 text-[11px] font-bold tabular-nums text-orange-600">
-          {count}
-        </span>
-        {nearest ? (
-          <span className="text-xs font-semibold tabular-nums">{formatCountdown(remainingMs(nearest, now))}</span>
-        ) : (
-          <span className="hidden text-xs font-semibold sm:inline">Sto cucinando</span>
-        )}
-      </button>
-
       <Modal open={open} onClose={() => setOpen(false)} title={`Sto cucinando (${count})`} size="md" bodyClassName="space-y-3">
         <FinishedTimers timers={session.timers.filter((t) => t.status === "done")} />
         {[...session.recipes]

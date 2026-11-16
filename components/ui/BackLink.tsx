@@ -1,13 +1,13 @@
 "use client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { entryLabel, usePreviousPage } from "@/lib/nav-history";
 
-/** Classi del bottone "torna indietro": pill "vetro chiaro" alta 34px.
+/** Classi del bottone "torna indietro" (tavola 9.4): pill bianca alta --h-sm (30→34px).
  *  Esportate per gli skeleton (`loading.tsx`), che devono avere la stessa forma. */
 export const backLinkCls =
-  "inline-flex max-w-full items-center gap-1.5 rounded-full border border-white/50 bg-white/70 px-3 py-1.5 text-sm font-medium text-sky-900 shadow-sm backdrop-blur-sm transition-colors hover:bg-white/90";
+  "inline-flex h-(--h-sm) max-w-full items-center gap-1 rounded-full border border-blu-200 bg-white pr-[0.9em] pl-[0.55em] text-[0.875rem] font-semibold text-blu-800 transition-colors hover:bg-blu-100";
 
 /**
  * Bottone "torna indietro" condiviso (dettaglio ricetta, dettaglio menù,
@@ -36,7 +36,7 @@ export function BackLink({
     const backLabel = entryLabel(previous);
     return (
       <button type="button" onClick={() => router.back()} title={`Torna a ${backLabel}`} className={cls}>
-        <ArrowLeft size={16} className="shrink-0" />
+        <ChevronLeft size={18} className="shrink-0" aria-hidden />
         <span className="truncate">{backLabel}</span>
       </button>
     );
@@ -44,7 +44,7 @@ export function BackLink({
 
   return (
     <Link href={href} title={label} className={cls}>
-      <ArrowLeft size={16} className="shrink-0" />
+      <ChevronLeft size={18} className="shrink-0" aria-hidden />
       <span className="truncate">{label}</span>
     </Link>
   );

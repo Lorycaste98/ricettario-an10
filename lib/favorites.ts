@@ -13,7 +13,7 @@ import { useAuth } from "@/components/AuthProvider";
  * lista dell'account. Il set locale resta però intatto nello storage, quindi al
  * logout ricompaiono i preferiti "del dispositivo".
  *
- * Store module-level condiviso da tutti i consumatori (badge Navbar, cuore sulle
+ * Store module-level condiviso da tutti i consumatori (badge della navigazione, cuore sulle
  * card, pagina /preferiti) via `useSyncExternalStore`: un solo fetch e un solo
  * stato, senza provider. Finché `useAuth().loading` è vero la sorgente non è
  * ancora nota e `hydrated` resta `false` — è il gate che evita di disegnare

@@ -73,12 +73,12 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-system);
+  --font-mono: ui-monospace, Menlo, monospace;
 }
 
 html {
-  background-color: #1e3a5c; /* sky-950 — colore navbar; riempie safe-area (notch, barra iOS) dove body::before non arriva */
+  background-color: var(--color-blu-50); /* fondo pieno del restyle; il notch è coperto da AppShell */
   overscroll-behavior: none;
   overscroll-behavior-y: none;
 }
@@ -86,7 +86,7 @@ html {
 body {
   background-color: transparent; /* trasparente: body::before con z-index:-1 deve emergere */
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-system);
   min-height: 100dvh;
   overscroll-behavior: none;
   overscroll-behavior-y: none;

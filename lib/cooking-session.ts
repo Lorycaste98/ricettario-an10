@@ -9,7 +9,7 @@ import { useLocalStore } from "@/lib/local-store";
  * visitatori, sincronizzato fra schede via evento `storage`.
  *
  * Store module-level con `useSyncExternalStore` (stesso pattern di
- * `lib/favorites.ts`): badge Navbar/bottone flottante, pannello e pagina
+ * `lib/favorites.ts`): badge della navigazione, fila/mini-barra «Sto cucinando», pannello e pagina
  * ricetta leggono lo stesso stato senza provider.
  *
  * - La ricetta porta con sé uno **snapshot dei passi** (testo/minuti/tipo): il

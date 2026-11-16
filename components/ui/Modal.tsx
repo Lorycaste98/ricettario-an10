@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
-import { Button } from "./Button";
+import { X } from "lucide-react";
+import { Button } from "@/components/ds/Button";
 
 interface Props {
   open: boolean;
@@ -39,19 +40,23 @@ export function Modal({ open, onClose, title, children, size = "md", bodyClassNa
       ref={ref}
       onClose={onClose}
       onClick={(e) => { if (e.target === ref.current) onClose(); }}
-      className="fixed inset-0 z-50 m-auto rounded-2xl border border-white/30 bg-white/85 backdrop-blur-xl p-0 shadow-2xl backdrop:bg-sky-950/40 open:flex open:flex-col"
+      className="ds fixed inset-0 z-50 m-auto rounded-dlg border border-blu-150 bg-white p-0 text-blu-950 shadow-[0_18px_50px_oklch(25%_0.038_228/.22)] backdrop:bg-blu-950/45 open:flex open:flex-col"
       style={{
         width: `min(${SIZE_PX[size]}px, calc(100vw - 2rem))`,
         maxHeight: "calc(100dvh - 2rem)",
       }}
     >
       {title && (
-        <div className="flex items-center justify-between border-b border-white/30 px-5 py-3.5 sm:px-6 sm:py-4">
-          <h2 className="text-base sm:text-lg font-semibold text-sky-950">{title}</h2>
-          <button onClick={onClose} className="rounded-lg p-1.5 text-sky-600 hover:bg-white/50 hover:text-sky-900">
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+        <div className="flex items-center justify-between gap-3 border-b border-blu-150 px-5 py-3 sm:px-6">
+          <h2 className="text-(length:--fs-sec) font-bold">{title}</h2>
+          {/* 10.1 · chiudi: bersaglio pieno, non solo la ✕ */}
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Chiudi"
+            className="-mr-1.5 flex size-(--h-icon) shrink-0 items-center justify-center rounded-full text-blu-800 hover:bg-blu-100"
+          >
+            <X className="size-5" aria-hidden />
           </button>
         </div>
       )}
@@ -83,10 +88,11 @@ export function ConfirmModal({
 }) {
   return (
     <Modal open={open} onClose={onClose} title={title} size="sm">
-      <p className="text-sm text-sky-800">{message}</p>
-      <div className="mt-6 flex justify-end gap-3">
+      {/* 10.1 · finestra di conferma */}
+      <p className="text-grigio">{message}</p>
+      <div className="mt-5 flex justify-end gap-2.5">
         <Button variant="secondary" onClick={onClose} disabled={loading}>Annulla</Button>
-        <Button variant="danger" onClick={onConfirm} loading={loading}>{confirmLabel}</Button>
+        <Button variant="dangerSolid" onClick={onConfirm} loading={loading}>{confirmLabel}</Button>
       </div>
     </Modal>
   );

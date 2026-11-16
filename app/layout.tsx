@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { Geist } from "next/font/google";
 import "./globals.css";
 import { AppShell } from "@/components/AppShell";
 import { AuthProvider } from "@/components/AuthProvider";
@@ -7,8 +6,6 @@ import { DialogProvider } from "@/components/ui/ConfirmDialog";
 import { PhotoViewer } from "@/components/ui/PhotoViewer";
 import { CookingDock } from "@/components/cooking/CookingDock";
 import { getSiteUrl } from "@/lib/site-url";
-
-const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
 
 const siteUrl = getSiteUrl();
 
@@ -38,20 +35,20 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#082f49",
+  themeColor: "#0B4F68", // blu scuro della cornice (blu-800)
   viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="it" className={`${geist.variable} h-full antialiased`}>
-      <body className="min-h-screen font-sans page-bg">
+    <html lang="it" className="h-full antialiased">
+      <body className="ds min-h-screen">
         <AuthProvider>
           <DialogProvider>
             <AppShell>{children}</AppShell>
             {/* Visore foto a schermo intero: montato una volta, si apre via evento (ViewerImage) */}
             <PhotoViewer />
-            {/* «Sto cucinando»: bottone flottante + pannello + scheduler dei timer */}
+            {/* «Sto cucinando»: pannello + scheduler dei timer (fila e mini-barra stanno in AppShell) */}
             <CookingDock />
           </DialogProvider>
         </AuthProvider>
