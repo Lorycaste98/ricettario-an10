@@ -1,7 +1,8 @@
 import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
-import { ChefHat } from "lucide-react";
+import { PageHeader } from "@/components/ds/PageHeader";
+import { PotIcon } from "@/components/icons";
 import { BackLink } from "@/components/ui/BackLink";
 import { CookPlanner } from "@/components/menu/CookPlanner";
 import type { Metadata } from "next";
@@ -92,21 +93,27 @@ export default async function MenuCookModePage({ params }: Params) {
     };
   });
 
-  return (
-    // Stesso ritmo verticale del dettaglio ricetta/menù (back → header → contenuto)
-    <div className="mx-auto max-w-5xl space-y-6 sm:space-y-5">
-      {/* Back: bottone condiviso (BackLink), identico su ricetta/menù/modalità cucina */}
-      <BackLink href={`/menu/${menu.id}`} label={menu.name} />
+  const serveLabel = menu.date
+    ? [
+        new Date(menu.date).toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "long" }),
+        menu.servingTime ? `servizio alle ${menu.servingTime}` : null,
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : null;
 
-      <div className="flex items-center gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-orange-400 to-rose-500 text-white shadow-md shadow-orange-500/30">
-          <ChefHat size={20} />
-        </span>
-        <div>
-          <h1 className="text-lg sm:text-xl font-bold text-sky-50 leading-tight drop-shadow">Modalità cucina</h1>
-          <p className="text-xs text-sky-100">Segui la procedura di ogni ricetta passo dopo passo</p>
-        </div>
-      </div>
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        back={<BackLink href={`/menu/${menu.id}`} label={menu.name} />}
+        thumb={
+          <div className="flex size-full items-center justify-center bg-arancio-50 text-arancio-scuro [&>svg]:size-3/5">
+            <PotIcon />
+          </div>
+        }
+        title="Modalità cucina"
+        meta={[menu.name, serveLabel].filter(Boolean).join(" · ")}
+      />
 
       <CookPlanner
         menuId={menu.id}

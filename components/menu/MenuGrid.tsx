@@ -1,11 +1,20 @@
 "use client";
-import { useMemo, useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
+/**
+ * Lista menù (restyle fase 4, schermata `docs/design/schermate/2-menu`). Logica invariata
+ * (ricerca, visibilità admin, ordinamento, filtri per scheda, paginazione); interfaccia gemella
+ * della libreria ricette: ricerca 4.5, «Ordina e filtra» su contenitore stretto, griglia di card 8.5.
+ */
+import { useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import ReactPaginate from "react-paginate";
 import { clsx } from "clsx";
-import { Search, Plus, ArrowUpDown, ArrowUp, ArrowDown, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Eye, EyeOff, Plus, Search, SlidersHorizontal } from "lucide-react";
 import { MenuCard } from "./MenuCard";
+import { Modal } from "@/components/ui/Modal";
+import { Button, IconButton } from "@/components/ds/Button";
+import { SearchField, Select } from "@/components/ds/Field";
+import { Segmented } from "@/components/ds/Controls";
+import { EmptyState } from "@/components/ds/Feedback";
 import { type MenuSummary } from "@/lib/types";
 import { useAuth } from "@/components/AuthProvider";
 import { useLocalStore } from "@/lib/local-store";
@@ -21,10 +30,10 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: "name", label: "Nome" },
 ];
 
-const PUBLISHED_OPTIONS: { value: PublishedFilter; label: string }[] = [
+const PUBLISHED_OPTIONS: { value: PublishedFilter; label: string; icon?: ReactNode }[] = [
   { value: "all", label: "Tutti" },
-  { value: "published", label: "Solo pronti" },
-  { value: "draft", label: "Solo non pronti" },
+  { value: "published", label: "Pronti", icon: <Eye aria-hidden /> },
+  { value: "draft", label: "Non pronti", icon: <EyeOff aria-hidden /> },
 ];
 
 // Persistenza filtri: restano salvati anche tornando indietro dalla pagina di dettaglio
@@ -67,6 +76,7 @@ export function MenuGrid({ menus }: Props) {
   );
   const [page, setPage] = useLocalStore<number>(K + "page", 0, parsePage, undefined, "session");
   const [filterOpen, setFilterOpen] = useState(false);
+  const sortLabel = SORT_OPTIONS.find((o) => o.value === sort)?.label ?? "";
 
   const resetPage = () => setPage(0);
   const isFilterActive =
@@ -111,139 +121,105 @@ export function MenuGrid({ menus }: Props) {
     resetPage();
   };
 
+  const sortControls = (
+    <>
+      <Select
+        aria-label="Ordina per"
+        value={sort}
+        onChange={(e) => {
+          setSort(e.target.value as SortKey);
+          resetPage();
+        }}
+        className="w-40"
+      >
+        {SORT_OPTIONS.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </Select>
+      <IconButton
+        shape="square"
+        label={order === "asc" ? "Crescente: tocca per decrescente" : "Decrescente: tocca per crescente"}
+        onClick={toggleOrder}
+      >
+        {order === "asc" ? <ArrowUp /> : <ArrowDown />}
+      </IconButton>
+    </>
+  );
+
+  const visibility = isAdmin && (
+    <Segmented
+      label="Visibilità"
+      value={publishedFilter}
+      onChange={(v) => {
+        setPublishedFilter(v);
+        resetPage();
+      }}
+      options={PUBLISHED_OPTIONS}
+    />
+  );
+
   return (
-    <div className="space-y-5">
-      {/* ── Toolbar ── */}
-      <div className="flex gap-2 items-center">
-        {/* Search */}
-        <div className="relative flex-1">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-sky-600 pointer-events-none z-10" />
-          <input
-            type="search"
-            value={q}
-            onChange={(e) => {
-              setQ(e.target.value);
-              resetPage();
-            }}
-            placeholder="Cerca menù..."
-            className="w-full h-9 rounded-lg border border-white/40 bg-white/60 backdrop-blur-sm pl-9 pr-4 text-sm text-sky-950 placeholder:text-sky-600/50 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-300/30"
-          />
-        </div>
-
-        {/* Mobile: filter button */}
-        <button
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-2">
+        <SearchField
+          value={q}
+          onChange={(e) => {
+            setQ(e.target.value);
+            resetPage();
+          }}
+          placeholder="Cerca menù…"
+          aria-label="Cerca menù"
+          className="flex-1"
+        />
+        <IconButton
+          shape="square"
+          label="Ordina e filtra"
           onClick={() => setFilterOpen(true)}
-          className={clsx(
-            "relative sm:hidden flex h-9 w-9 items-center justify-center rounded-lg border backdrop-blur-sm transition-colors",
-            isFilterActive
-              ? "border-orange-400 bg-orange-100/60 text-orange-700"
-              : "border-white/40 bg-white/60 text-sky-800 hover:bg-white/80"
-          )}
-          title="Ordina"
+          className={clsx("@min-[860px]:hidden", isFilterActive && "border-arancio text-arancio")}
         >
-          <ArrowUpDown size={16} />
-          {isFilterActive && (
-            <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-orange-500 border-2 border-white" />
-          )}
-        </button>
-
-        {/* Desktop: visibilità (solo admin) + sort + order */}
-        <div className="hidden sm:flex items-center gap-2 shrink-0">
-          {/* Visibilità (solo admin) */}
-          {isAdmin && (
-            <div className="flex h-9 items-center rounded-lg border border-white/40 bg-white/60 backdrop-blur-sm p-0.5">
-              {PUBLISHED_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => { setPublishedFilter(opt.value); resetPage(); }}
-                  className={clsx(
-                    "h-full rounded-md px-2.5 text-xs font-medium transition-colors whitespace-nowrap",
-                    publishedFilter === opt.value
-                      ? "bg-orange-500 text-white shadow-sm"
-                      : "text-sky-800 hover:bg-white/70"
-                  )}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          )}
-
-          <select
-            value={sort}
-            onChange={(e) => {
-              setSort(e.target.value as SortKey);
-              resetPage();
-            }}
-            className="h-9 rounded-lg border border-white/40 bg-white/60 backdrop-blur-sm px-3 text-sm text-sky-950 focus:border-sky-400 focus:outline-none"
-          >
-            {SORT_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-          <button
-            onClick={toggleOrder}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/40 bg-white/60 backdrop-blur-sm text-sky-800 hover:bg-white/80 transition-colors"
-            title={order === "asc" ? "Crescente" : "Decrescente"}
-          >
-            {order === "asc" ? <ArrowUp size={16} /> : <ArrowDown size={16} />}
-          </button>
+          <SlidersHorizontal />
+        </IconButton>
+        <div className="hidden items-center gap-2 @min-[860px]:flex">
+          {visibility}
+          {sortControls}
         </div>
-
-        {/* Aggiungi menù — visibile se admin */}
-        {isAdmin && (
-          <Link
-            href="/admin/menu/nuovo"
-            className="inline-flex items-center gap-1.5 h-9 rounded-lg bg-orange-500 px-3 text-sm font-medium text-white hover:bg-orange-600 transition-colors whitespace-nowrap shrink-0"
-          >
-            <Plus size={15} />
-            <span className="hidden sm:inline">Nuovo</span>
-          </Link>
-        )}
       </div>
 
-      {/* Results count */}
-      <p className="text-sm font-medium text-sky-950 [text-shadow:0_1px_3px_rgba(255,255,255,0.6)]">
-        {filtered.length} menù
-        {q && " trovati"}
-        {pageCount > 1 && (
-          <span className="ml-2 opacity-70">
-            — pagina {safePage + 1} di {pageCount}
-          </span>
-        )}
+      <p className="text-xs font-semibold tracking-[0.08em] text-grigio uppercase">
+        {q ? `${filtered.length} menù trovati` : "Tutti i menù"} · per {sortLabel.toLowerCase()}
+        {pageCount > 1 && ` · pagina ${safePage + 1} di ${pageCount}`}
       </p>
 
-      {/* Grid */}
       {paginated.length > 0 ? (
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(clamp(15rem,30cqi,20rem),1fr))] gap-(--gap)">
           {paginated.map((m) => (
             <MenuCard key={m.id} menu={m} />
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center gap-4 rounded-2xl border border-white/20 bg-white/20 backdrop-blur-sm py-20">
-          <Search size={48} className="text-sky-400" />
-          <p className="font-medium text-sky-950 [text-shadow:0_1px_3px_rgba(255,255,255,0.6)]">
-            Nessun menù trovato
-          </p>
-          {(q || (isAdmin && publishedFilter !== "all")) && (
-            <button
-              onClick={() => {
-                setQ("");
-                setPublishedFilter("all");
-                resetPage();
-              }}
-              className="text-sm font-semibold text-orange-700 hover:underline"
-            >
-              Rimuovi filtri
-            </button>
-          )}
-        </div>
+        <EmptyState
+          icon={<Search />}
+          title="Nessun menù trovato"
+          action={
+            (q || (isAdmin && publishedFilter !== "all")) && (
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  setQ("");
+                  setPublishedFilter("all");
+                  resetPage();
+                }}
+              >
+                Togli i filtri
+              </Button>
+            )
+          }
+        />
       )}
 
-      {/* Pagination — only when more than PAGE_SIZE items */}
       {pageCount > 1 && (
         <ReactPaginate
           pageCount={pageCount}
@@ -257,156 +233,49 @@ export function MenuGrid({ menus }: Props) {
           previousLabel="‹"
           nextLabel="›"
           breakLabel="…"
-          containerClassName="flex items-center justify-center gap-1 pt-4"
-          pageLinkClassName="flex h-9 w-9 items-center justify-center rounded-lg border border-white/40 bg-white/50 backdrop-blur-sm text-sm text-sky-900 hover:bg-white/70 transition-colors"
-          activeLinkClassName="!bg-orange-500 !border-orange-500 !text-white font-semibold"
-          previousLinkClassName="flex h-9 w-9 items-center justify-center rounded-lg border border-white/40 bg-white/50 backdrop-blur-sm text-sky-800 hover:bg-white/70 transition-colors"
-          nextLinkClassName="flex h-9 w-9 items-center justify-center rounded-lg border border-white/40 bg-white/50 backdrop-blur-sm text-sky-800 hover:bg-white/70 transition-colors"
-          breakLinkClassName="flex h-9 w-9 items-center justify-center text-sky-700 text-sm"
-          disabledClassName="opacity-40 cursor-not-allowed"
+          previousAriaLabel="Pagina precedente"
+          nextAriaLabel="Pagina successiva"
+          containerClassName="flex items-center justify-center gap-1 pt-3"
+          pageLinkClassName="tabular flex size-(--h-btn) items-center justify-center rounded-ctl border border-blu-200 bg-white text-sm font-semibold hover:bg-blu-100"
+          activeLinkClassName="border-arancio! bg-arancio! text-white!"
+          previousLinkClassName="flex size-(--h-btn) items-center justify-center rounded-ctl border border-blu-200 bg-white text-lg text-blu-800 hover:bg-blu-100"
+          nextLinkClassName="flex size-(--h-btn) items-center justify-center rounded-ctl border border-blu-200 bg-white text-lg text-blu-800 hover:bg-blu-100"
+          breakLinkClassName="flex size-(--h-btn) items-center justify-center text-sm text-grigio"
+          disabledClassName="opacity-40 [&>a]:cursor-not-allowed"
         />
       )}
 
-      {/* ── Filter Bottom Sheet (mobile only) ── */}
-      <AnimatePresence>
-        {filterOpen && (
-          <motion.div
-            key="menu-filter-sheet"
-            className="fixed inset-0 z-50 flex items-end justify-center px-3 pb-5 sm:hidden"
-            onClick={() => setFilterOpen(false)}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
-          >
-            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-            <motion.div
-              className="relative flex max-h-[88dvh] w-full flex-col rounded-3xl bg-white/95 backdrop-blur-xl border border-white/40 shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-              initial={{ y: "110%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "110%" }}
-              transition={{ type: "tween", duration: 0.35, ease: [0.32, 0.72, 0, 1] }}
-            >
-              {/* Handle + header */}
-              <div className="shrink-0 px-6 pt-6">
-                <div className="absolute top-3 left-1/2 -translate-x-1/2 h-1 w-10 rounded-full bg-sky-200" />
-                <div className="flex items-center justify-between pt-2">
-                  <div className="flex items-center gap-2 text-sky-950 font-bold text-lg">
-                    <ArrowUpDown size={18} />
-                    Ordina
-                  </div>
-                  <button
-                    onClick={() => setFilterOpen(false)}
-                    className="flex h-8 w-8 items-center justify-center rounded-full bg-sky-100 text-sky-700 hover:bg-sky-200 transition-colors"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-              </div>
-
-              {/* Scrollable body */}
-              <div className="flex-1 overflow-y-auto overscroll-contain px-6 py-5 space-y-6">
-                {/* Visibilità (solo admin) */}
-                {isAdmin && (
-                  <div className="space-y-2.5">
-                    <p className="text-[11px] font-semibold text-sky-600 uppercase tracking-wider">
-                      Visibilità
-                    </p>
-                    <div className="grid grid-cols-3 gap-2">
-                      {PUBLISHED_OPTIONS.map((opt) => (
-                        <button
-                          key={opt.value}
-                          onClick={() => { setPublishedFilter(opt.value); resetPage(); }}
-                          className={clsx(
-                            "rounded-xl border px-2 py-2.5 text-xs font-medium transition-all",
-                            publishedFilter === opt.value
-                              ? "border-orange-400 bg-orange-50 text-orange-700"
-                              : "border-sky-100 bg-sky-50/50 text-sky-900"
-                          )}
-                        >
-                          {opt.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div className="space-y-2.5">
-                  <p className="text-[11px] font-semibold text-sky-600 uppercase tracking-wider">
-                    Ordina per
-                  </p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {SORT_OPTIONS.map((opt) => (
-                      <button
-                        key={opt.value}
-                        onClick={() => {
-                          setSort(opt.value);
-                          resetPage();
-                        }}
-                        className={clsx(
-                          "rounded-xl border px-4 py-2.5 text-sm font-medium text-left transition-all",
-                          sort === opt.value
-                            ? "border-orange-400 bg-orange-50 text-orange-700"
-                            : "border-sky-100 bg-sky-50/50 text-sky-900"
-                        )}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="space-y-2.5">
-                  <p className="text-[11px] font-semibold text-sky-600 uppercase tracking-wider">
-                    Direzione
-                  </p>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => {
-                        setOrder("desc");
-                        resetPage();
-                      }}
-                      className={clsx(
-                        "flex-1 rounded-xl border py-2.5 text-sm font-medium transition-all",
-                        order === "desc"
-                          ? "border-orange-400 bg-orange-50 text-orange-700"
-                          : "border-sky-100 bg-sky-50/50 text-sky-900"
-                      )}
-                    >
-                      <span className="inline-flex items-center justify-center gap-1.5"><ArrowDown size={15} /> Decrescente</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        setOrder("asc");
-                        resetPage();
-                      }}
-                      className={clsx(
-                        "flex-1 rounded-xl border py-2.5 text-sm font-medium transition-all",
-                        order === "asc"
-                          ? "border-orange-400 bg-orange-50 text-orange-700"
-                          : "border-sky-100 bg-sky-50/50 text-sky-900"
-                      )}
-                    >
-                      <span className="inline-flex items-center justify-center gap-1.5"><ArrowUp size={15} /> Crescente</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Applica */}
-              <div className="shrink-0 px-6 pb-6 pt-2">
-                <button
-                  onClick={() => setFilterOpen(false)}
-                  className="w-full rounded-xl bg-sky-950 text-white py-3 font-semibold text-sm hover:bg-sky-900 transition-colors"
-                >
-                  Applica
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <Modal open={filterOpen} onClose={() => setFilterOpen(false)} title="Ordina e filtra" size="sm">
+        <div className="flex flex-col gap-4">
+          {isAdmin && (
+            <div className="flex flex-col gap-1.5">
+              <p className="text-[0.8125rem] font-semibold text-grigio">Visibilità</p>
+              {visibility}
+            </div>
+          )}
+          <div className="flex flex-col gap-1.5">
+            <p className="text-[0.8125rem] font-semibold text-grigio">Ordina per</p>
+            <div className="flex gap-2">{sortControls}</div>
+          </div>
+          <Button onClick={() => setFilterOpen(false)}>Mostra {filtered.length} menù</Button>
+        </div>
+      </Modal>
     </div>
+  );
+}
+
+/** Bottone «Nuovo menù» della testata (solo admin): pieno da contenitore largo, «Nuovo» su stretto */
+export function NewMenuLink() {
+  const { isAdmin } = useAuth();
+  if (!isAdmin) return null;
+  return (
+    <Link
+      href="/admin/menu/nuovo"
+      className="inline-flex h-(--h-btn) items-center justify-center gap-[0.45em] rounded-ctl bg-arancio px-[1.05em] font-semibold text-white hover:bg-arancio-scuro [&_svg]:size-[1.15em]"
+    >
+      <Plus aria-hidden />
+      <span className="hidden @min-[620px]:inline">Nuovo menù</span>
+      <span className="@min-[620px]:hidden">Nuovo</span>
+    </Link>
   );
 }

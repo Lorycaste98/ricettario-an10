@@ -115,10 +115,13 @@
 ---
 
 ## Fase 4 · Menù
-- [ ] **Lista menù** (`/menu`, `MenuGrid`, `MenuCard`): in alto il **prossimo menù** con conto alla rovescia, avanzamento di spesa e ricette e azioni rapide; sotto le schede 8.5 con il filo del colore di area.
-- [ ] **Dettaglio menù** (`/menu/[id]`): testata e barra admin (`MenuAdminBar`, con l'occhio), card delle ricette, lista della spesa (8.8, `MenuShoppingList`), costi e prezzo (13.4, `MenuCosts`), note (13.7, `MenuNotesCard`/`MenuNoteQuickLink`), recensioni ricevute, link e QR per le recensioni (13.5).
-- [ ] **Modalità cucina** (`/menu/[id]/cucina`): timeline (13.6, `CookTimeline`, `StartTimeEditor`) e stepper (`MenuCookMode`) con gli stessi elementi del dettaglio ricetta (8.7). Zoom e trascinamento della timeline invariati.
-- [ ] `loading.tsx` della sezione.
+- [x] **Lista menù** (`/menu`, `MenuGrid`, `MenuCard`): in alto il **prossimo menù** (`NextMenuCard`) con conto alla rovescia, spesa e ricette pronte (admin) e azioni rapide; sotto le schede 8.5 con il filo del colore di area.
+- [x] **Dettaglio menù** (`/menu/[id]`): testata 9.5 con azioni (`MenuAdminBar`: occhio, Modifica, PDF, Elimina), riga Modalità cucina + Recensioni ospiti (13.5), nota rapida (13.7), ricette come righe 8.3, lista spesa (8.8), costi e prezzo (13.4) e note nella colonna laterale da 1000px, recensioni ricevute (solo contenitore).
+- [x] **Modalità cucina** (`/menu/[id]/cucina`): timeline (13.6) e stepper con il passo corrente 8.7, ora componente unico `CurrentStep`. Zoom e trascinamento invariati.
+- [x] Card interne del pannello «Sto cucinando» con `CurrentStep`, `TimerAlert` e `Switch`.
+- [x] `loading.tsx` della sezione.
+
+> **Stato 16/11/2026:** fatta. Verificata a vista da visitatore (lista, dettaglio) e con dati finti per le parti admin (spesa, costi, note, modalità cucina, pannello). Da verificare da admin loggato sui dati veri. L'interno delle recensioni (`ReviewBubble`, `Collapsible`) resta per la fase 8.
 
 ---
 

@@ -49,10 +49,11 @@ function toPdfData(r: RecipeDetailResponse): RecipePdfData {
   };
 }
 
-export function MenuPdfButton({
-  menu,
-  variant = "default",
-}: MenuPdfProps & { variant?: "default" | "overlay" | "bar" }) {
+/**
+ * Esporta il menù in PDF: bottone tondo con icona (3.10), gemello del PDF del dettaglio ricetta
+ * (`RecipePdfButton icon`), nelle azioni della testata.
+ */
+export function MenuPdfButton({ menu }: MenuPdfProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
 
@@ -113,61 +114,17 @@ export function MenuPdfButton({
     }
   };
 
-  // Variante "barra azioni admin": stessa resa dei bottoni Modifica/Elimina della
-  // MenuAdminBar (vetro chiaro, icona sempre visibile, testo "Esporta" solo da sm+)
-  if (variant === "bar") {
-    return (
-      <button
-        onClick={handleExport}
-        disabled={loading || menu.recipeIds.length === 0}
-        title={error ? "Riprova esporta PDF" : "Esporta in PDF"}
-        className="flex shrink-0 items-center justify-center gap-1.5 rounded-xl border border-white/50 bg-white/70 px-3 text-sm font-medium text-sky-900 backdrop-blur-sm transition-colors hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {loading ? (
-          <Loader2 size={16} className="shrink-0 animate-spin" />
-        ) : (
-          <FileDown size={16} className="shrink-0" />
-        )}
-        <span className="hidden sm:inline">{loading ? "PDF…" : error ? "Riprova" : "Esporta"}</span>
-      </button>
-    );
-  }
-
-  // Badge in sovrimpressione sulla foto: identico all'export della pagina ricetta
-  // (vetro scuro, icona sempre visibile, testo "PDF" solo da desktop)
-  if (variant === "overlay") {
-    return (
-      <button
-        onClick={handleExport}
-        disabled={loading || menu.recipeIds.length === 0}
-        title={error ? "Riprova esporta PDF" : "Esporta in PDF"}
-        className="inline-flex items-center gap-1.5 rounded-full bg-black/45 px-2.5 py-2 text-xs font-medium text-white shadow-sm backdrop-blur-md transition-colors hover:bg-black/65 disabled:cursor-not-allowed disabled:opacity-60 lg:px-3"
-      >
-        {loading ? <Loader2 size={16} className="animate-spin" /> : <FileDown size={16} />}
-        <span className="hidden lg:inline">{loading ? "PDF…" : error ? "Riprova" : "PDF"}</span>
-      </button>
-    );
-  }
-
+  const label = error ? "Riprova a esportare in PDF" : "Esporta in PDF";
   return (
     <button
+      type="button"
       onClick={handleExport}
       disabled={loading || menu.recipeIds.length === 0}
-      className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-white/30 bg-white/15 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm transition hover:bg-white/25 disabled:cursor-not-allowed disabled:opacity-60"
+      aria-label={label}
+      title={label}
+      className="inline-flex size-(--h-icon) shrink-0 items-center justify-center rounded-full border border-blu-200 bg-white text-blu-800 transition-colors hover:bg-blu-100 disabled:opacity-60"
     >
-      {loading ? (
-        <>
-          <Loader2 size={11} className="animate-spin" /> Generazione…
-        </>
-      ) : error ? (
-        <>
-          <FileDown size={11} /> Riprova PDF
-        </>
-      ) : (
-        <>
-          <FileDown size={11} /> Esporta PDF
-        </>
-      )}
+      {loading ? <Loader2 size={20} className="animate-spin motion-reduce:animate-none" /> : <FileDown size={20} />}
     </button>
   );
 }

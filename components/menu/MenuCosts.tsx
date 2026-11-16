@@ -1,10 +1,12 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Calculator, Plus, Trash2, ShoppingCart, Clock, Tag, Percent, Users, TrendingUp, RotateCcw } from "lucide-react";
-import { SectionHeader } from "@/components/ui/SectionHeader";
-import { Button } from "@/components/ui/Button";
+import { Calculator, Plus, Trash2, RotateCcw, Check } from "lucide-react";
 import { ConfirmModal } from "@/components/ui/Modal";
+import { Panel } from "@/components/ds/Panel";
+import { Button, IconButton } from "@/components/ds/Button";
+import { TextInput } from "@/components/ds/Field";
+import { Chip } from "@/components/ds/Controls";
 import { useLocalStore } from "@/lib/local-store";
 import type { MenuCostLine } from "@/lib/types";
 
@@ -43,6 +45,11 @@ interface Line {
   amount: string;
 }
 
+/**
+ * 13.4 · costi e prezzo del menù (solo admin). Righe etichetta/valore separate da filetti, totale
+ * in grassetto, prezzo con ricarico nel riquadro blu-800, sotto «a persona» e «margine» affiancati.
+ * Logica invariata (calcoli live, PATCH /api/menus/[id]/costs, «Azzera» con conferma).
+ */
 export function MenuCosts({
   menuId,
   people,
@@ -145,259 +152,158 @@ export function MenuCosts({
   const hasAnyCost =
     ingredientsCost > 0 || hours.trim() !== "" || rate.trim() !== "" || markup.trim() !== "" || lines.length > 0;
 
-  const rowCls = "flex items-center justify-between gap-3 rounded-xl border border-white/40 bg-white/40 px-4 py-3";
-  const inputCls =
-    "w-full rounded-lg border border-white/40 bg-white/60 px-2.5 py-1.5 text-sm text-sky-950 tabular-nums placeholder:text-sky-700/40 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-300/30";
+  /** campo numerico con unità a destra (€, %, h) */
+  const numField = (value: string, set: (v: string) => void, label: string, unit: string, cls: string, step = "0.01") => (
+    <div className={`relative shrink-0 ${cls}`}>
+      <TextInput
+        type="number"
+        inputMode="decimal"
+        min="0"
+        step={step}
+        value={value}
+        onChange={(e) => set(e.target.value)}
+        placeholder="0"
+        aria-label={label}
+        className="tabular pr-[1.9em] text-right"
+      />
+      <span className="pointer-events-none absolute top-1/2 right-[0.6em] -translate-y-1/2 text-[0.8125rem] text-grigio">{unit}</span>
+    </div>
+  );
+  const row = "flex min-h-11 flex-wrap items-center justify-between gap-x-3 gap-y-1.5 border-b border-blu-150 py-1.5";
 
   return (
-    // Sfondo "carta" come la lista della spesa: il gradiente di pagina è fisso, su
-    // una card molto trasparente i numeri scuri sparivano nella fascia bassa del
-    // viewport (vedi MenuShoppingList).
-    <section className="rounded-2xl border border-white/60 bg-white/75 backdrop-blur-md p-5 sm:p-6 shadow-sm">
-      <SectionHeader
-        title="Costi e prezzo"
-        icon={<Calculator size={20} />}
-        tone="violet"
-        size="lg"
-        titleClassName="text-sky-950"
-        hint="Somma i costi del menù e calcola il prezzo di vendita"
-        className="mb-4"
-      />
-
-      <div className="space-y-2.5">
-        {/* Ingredienti — dalla lista spesa (sola lettura qui) */}
-        <div className={rowCls}>
-          <span className="flex items-center gap-2 text-sm font-medium text-sky-900">
-            <ShoppingCart size={15} className="text-emerald-600" /> Ingredienti
+    <Panel icon={<Calculator />} title="Costi e prezzo" meta="Somma i costi del menù e calcola il prezzo di vendita">
+      <div className="flex flex-col text-[0.9375rem]">
+        <div className={row}>
+          <span>
+            Ingredienti <span className="text-xs text-grigio">· dalla lista spesa</span>
           </span>
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-sky-950 tabular-nums">{fmt(ingredientsCost)}</span>
-          </div>
-        </div>
-        <p className="-mt-1 px-1 text-[11px] text-sky-700">
-          Dal “totale speso” nella lista della spesa qui sopra.
-        </p>
-
-        {/* Manodopera — ore × €/h */}
-        <div className={rowCls}>
-          <span className="flex items-center gap-2 text-sm font-medium text-sky-900">
-            <Clock size={15} className="text-sky-600" /> Manodopera
-          </span>
-          <div className="flex items-center gap-1.5">
-            <input
-              type="number"
-              inputMode="decimal"
-              min="0"
-              step="0.5"
-              value={hours}
-              onChange={(e) => setHours(e.target.value)}
-              placeholder="h"
-              className={`${inputCls} w-16 text-right`}
-              aria-label="Ore di lavoro"
-            />
-            <span className="text-xs text-sky-600">×</span>
-            <input
-              type="number"
-              inputMode="decimal"
-              min="0"
-              step="0.5"
-              value={rate}
-              onChange={(e) => setRate(e.target.value)}
-              placeholder="€/h"
-              className={`${inputCls} w-20 text-right`}
-              aria-label="Prezzo orario"
-            />
-            <span className="ml-1 w-20 text-right text-sm font-semibold text-sky-950 tabular-nums">{fmt(laborCost)}</span>
-          </div>
+          <b className="tabular">{fmt(ingredientsCost)}</b>
         </div>
 
-        {/* Altri costi — voci generiche */}
-        <div className="rounded-xl border border-white/40 bg-white/40 px-4 py-3">
-          <span className="flex items-center gap-2 text-sm font-medium text-sky-900">
-            <Tag size={15} className="text-orange-600" /> Altri costi
+        <div className={row}>
+          <span>Manodopera</span>
+          <span className="flex items-center gap-1.5">
+            {numField(hours, setHours, "Ore di lavoro", "h", "w-20", "0.5")}
+            <span className="text-grigio">×</span>
+            {numField(rate, setRate, "Prezzo orario", "€/h", "w-24", "0.5")}
+            <b className="tabular w-22 text-right">{fmt(laborCost)}</b>
           </span>
-          {lines.length > 0 && (
-            <div className="mt-2.5 space-y-2">
-              {lines.map((l) => (
-                <div key={l.uid} className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={l.label}
-                    onChange={(e) => updateLine(l.uid, { label: e.target.value })}
-                    placeholder="Voce di costo"
-                    className={`${inputCls} flex-1`}
-                  />
-                  <div className="relative w-24 shrink-0">
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      min="0"
-                      step="0.01"
-                      value={l.amount}
-                      onChange={(e) => updateLine(l.uid, { amount: e.target.value })}
-                      placeholder="0,00"
-                      className={`${inputCls} pr-6 text-right`}
-                      aria-label={`Importo ${l.label || "voce"}`}
-                    />
-                    <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-sky-500">€</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => removeLine(l.uid)}
-                    className="shrink-0 rounded-lg p-1.5 text-rose-500 transition-colors hover:bg-rose-50"
-                    aria-label="Rimuovi voce"
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                </div>
-              ))}
+        </div>
+
+        <div className="flex flex-col gap-2 border-b border-blu-150 py-2">
+          <div className="flex items-center justify-between gap-3">
+            <span>Altri costi</span>
+            <b className="tabular">{fmt(otherCost)}</b>
+          </div>
+          {lines.map((l) => (
+            <div key={l.uid} className="flex items-center gap-1.5">
+              <TextInput
+                value={l.label}
+                onChange={(e) => updateLine(l.uid, { label: e.target.value })}
+                placeholder="Voce di costo"
+                aria-label="Voce di costo"
+                className="flex-1"
+              />
+              {numField(l.amount, (v) => updateLine(l.uid, { amount: v }), `Importo ${l.label || "voce"}`, "€", "w-26")}
+              <IconButton size="row" tone="danger" label="Togli la voce" onClick={() => removeLine(l.uid)}>
+                <Trash2 />
+              </IconButton>
             </div>
-          )}
-          <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => addLine()}
-              className="inline-flex items-center gap-1 rounded-lg border border-orange-300/60 bg-white/60 px-2.5 py-1 text-xs font-medium text-orange-700 transition-colors hover:bg-white/90"
-            >
-              <Plus size={13} /> Aggiungi voce
-            </button>
+          ))}
+          <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none]">
+            <Chip icon={<Plus aria-hidden />} onClick={() => addLine()}>
+              Voce
+            </Chip>
             {QUICK_LABELS.filter((q) => !usedQuick.has(q.toLowerCase())).map((q) => (
-              <button
-                key={q}
-                type="button"
-                onClick={() => addLine(q)}
-                className="rounded-full border border-white/50 bg-white/40 px-2.5 py-1 text-xs text-sky-700 transition-colors hover:bg-white/70"
-              >
-                + {q}
-              </button>
+              <Chip key={q} onClick={() => addLine(q)}>
+                {q}
+              </Chip>
             ))}
           </div>
         </div>
 
-        {/* Totale costi */}
-        <div className="flex items-center justify-between gap-3 rounded-xl border border-sky-300/50 bg-sky-500/10 px-4 py-3">
-          <span className="text-sm font-semibold text-sky-900">Totale costi</span>
-          <span className="text-lg font-extrabold text-sky-950 tabular-nums">{fmt(totalCost)}</span>
+        <div className={`${row} font-bold`}>
+          <span>Totale costi</span>
+          <span className="tabular text-[1.0625rem]">{fmt(totalCost)}</span>
+        </div>
+
+        <div className="flex min-h-11 items-center justify-between gap-3 py-1.5">
+          <span>Ricarico</span>
+          {numField(markup, setMarkup, "Ricarico percentuale", "%", "w-24", "5")}
         </div>
       </div>
 
-      {/* Ricarico + risultati */}
-      <div className="mt-4 space-y-3 rounded-xl border border-violet-300/40 bg-gradient-to-br from-violet-50/60 to-indigo-50/40 p-4">
-        <div className="flex items-center justify-between gap-3">
-          <span className="flex items-center gap-2 text-sm font-medium text-sky-900">
-            <Percent size={15} className="text-violet-600" /> Ricarico
-          </span>
-          <div className="relative w-24">
-            <input
-              type="number"
-              inputMode="decimal"
-              min="0"
-              step="5"
-              value={markup}
-              onChange={(e) => setMarkup(e.target.value)}
-              placeholder="0"
-              className={`${inputCls} pr-6 text-right`}
-              aria-label="Ricarico percentuale"
-            />
-            <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-sky-500">%</span>
-          </div>
-        </div>
-
-        {/* Selezione inline di cosa mostrare */}
-        <div className="flex flex-wrap gap-1.5">
-          {([
-            ["markup", "Prezzo con ricarico"],
+      {/* Cosa mostrare: preferenza del dispositivo */}
+      <div className="flex flex-wrap gap-1.5" role="group" aria-label="Risultati da mostrare">
+        {(
+          [
+            ["markup", "Prezzo"],
             ["perPerson", "A persona"],
             ["margin", "Margine"],
-          ] as [OutputKey, string][]).map(([k, label]) => {
-            const on = outputs.includes(k);
-            return (
-              <button
-                key={k}
-                type="button"
-                onClick={() => toggleOutput(k)}
-                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                  on
-                    ? "bg-violet-500 text-white shadow-sm"
-                    : "border border-violet-300/50 bg-white/50 text-violet-700 hover:bg-white/80"
-                }`}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="space-y-2.5">
-          {/* Prezzo di vendita: risultato principale, in risalto */}
-          {outputs.includes("markup") && (
-            <div className="flex items-center justify-between gap-3 rounded-xl border border-violet-400/50 bg-gradient-to-br from-violet-500/15 to-indigo-500/10 px-4 py-3.5">
-              <span className="flex items-center gap-2 text-sm font-semibold text-sky-900">
-                <Tag size={16} className="text-violet-600" /> Prezzo di vendita
-              </span>
-              <span className="text-2xl font-extrabold text-violet-700 tabular-nums">{fmt(sellingPrice)}</span>
-            </div>
-          )}
-
-          {/* A persona + Margine: due card gemelle affiancate */}
-          {(outputs.includes("perPerson") || outputs.includes("margin")) && (
-            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-              {outputs.includes("perPerson") && (
-                <div className="flex flex-col justify-between rounded-xl border border-violet-300/40 bg-white/60 px-4 py-3">
-                  <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-sky-800">
-                    <Users size={13} className="text-violet-600" /> A persona{people ? ` · ${people}` : ""}
-                  </span>
-                  {people ? (
-                    <>
-                      <span className="mt-1.5 text-xl font-extrabold text-violet-700 tabular-nums">
-                        {fmt(sellingPrice / people)}
-                      </span>
-                      <span className="text-[11px] text-sky-600">costo {fmt(totalCost / people)}</span>
-                    </>
-                  ) : (
-                    <span className="mt-1.5 text-xs text-sky-700">Imposta le persone del menù.</span>
-                  )}
-                </div>
-              )}
-              {outputs.includes("margin") && (
-                <div className="flex flex-col justify-between rounded-xl border border-violet-300/40 bg-white/60 px-4 py-3">
-                  <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-sky-800">
-                    <TrendingUp size={13} className="text-emerald-600" /> Margine
-                  </span>
-                  <span className="mt-1.5 text-xl font-extrabold text-emerald-700 tabular-nums">
-                    {marginPct.toFixed(1)}%
-                  </span>
-                  <span className="text-[11px] text-sky-600">guadagno {fmt(profit)}</span>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+          ] as [OutputKey, string][]
+        ).map(([k, label]) => (
+          <Chip key={k} active={outputs.includes(k)} onClick={() => toggleOutput(k)}>
+            {label}
+          </Chip>
+        ))}
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        <Button onClick={save} loading={busy}>
-          Salva costi
+      {outputs.includes("markup") && (
+        <div className="flex items-center justify-between gap-3 rounded-ctl bg-blu-800 px-[0.85em] py-[0.7em] text-white">
+          <span className="text-[0.875rem] text-nav-ink">Prezzo con ricarico {markupPct ? `${markupPct}%` : ""}</span>
+          <b className="tabular text-[1.5rem] leading-none">{fmt(sellingPrice)}</b>
+        </div>
+      )}
+      {(outputs.includes("perPerson") || outputs.includes("margin")) && (
+        <div className="grid grid-cols-2 gap-2">
+          {outputs.includes("perPerson") && (
+            <div className="rounded-ctl bg-blu-100 px-[0.75em] py-[0.55em]">
+              <small className="block text-xs text-grigio">A persona{people ? ` · ${people}` : ""}</small>
+              {people ? (
+                <>
+                  <b className="tabular block text-[1.125rem]">{fmt(sellingPrice / people)}</b>
+                  <span className="tabular text-xs text-grigio">costo {fmt(totalCost / people)}</span>
+                </>
+              ) : (
+                <span className="text-xs text-grigio">Imposta le persone del menù.</span>
+              )}
+            </div>
+          )}
+          {outputs.includes("margin") && (
+            <div className="rounded-ctl bg-blu-100 px-[0.75em] py-[0.55em]">
+              <small className="block text-xs text-grigio">Margine</small>
+              <b className="tabular block text-[1.125rem]">
+                {fmt(profit)} · {marginPct.toFixed(0)}%
+              </b>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Button onClick={() => void save()} loading={busy}>
+          Salva i costi
         </Button>
-        <button
-          type="button"
-          onClick={() => setConfirmReset(true)}
-          disabled={busy || !hasAnyCost}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white/60 px-3 py-2 text-sm font-medium text-rose-600 transition-colors hover:bg-rose-50 disabled:opacity-50"
-        >
-          <RotateCcw size={15} /> Azzera
-        </button>
-        {savedAt && !busy && <span className="text-xs text-emerald-600">Salvato ✓</span>}
+        <Button variant="danger" icon={<RotateCcw />} onClick={() => setConfirmReset(true)} disabled={busy || !hasAnyCost}>
+          Azzera
+        </Button>
+        {savedAt && !busy && (
+          <span className="inline-flex items-center gap-1 text-[0.875rem] font-semibold text-verde">
+            <Check className="size-4" aria-hidden /> Salvato
+          </span>
+        )}
       </div>
 
       <ConfirmModal
         open={confirmReset}
         onClose={() => setConfirmReset(false)}
         onConfirm={reset}
-        title="Azzera i costi"
-        message="Vuoi azzerare tutti i costi di questo menù (spesa alimentari, manodopera, ricarico e altre voci)? L'operazione non è reversibile."
+        title="Azzerare i costi?"
+        message="Cancella spesa registrata, manodopera, ricarico e altre voci di questo menù. Non si può annullare."
+        confirmLabel="Azzera"
         loading={busy}
       />
-    </section>
+    </Panel>
   );
 }

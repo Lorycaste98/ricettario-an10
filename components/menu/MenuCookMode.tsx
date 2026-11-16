@@ -2,8 +2,9 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, RotateCcw, PartyPopper, UtensilsCrossed, Check, CookingPot, AlarmClock, Timer, ListX, Carrot } from "lucide-react";
-import { formatMinutes, toStepKind, STEP_KIND_LABEL, type StepKind } from "@/lib/types";
+import { AlarmClock, Check, ChevronLeft, ListX, PartyPopper, RotateCcw } from "lucide-react";
+import { clsx } from "clsx";
+import { toStepKind } from "@/lib/types";
 import {
   formatQty,
   resolveLinkQty,
@@ -12,21 +13,18 @@ import {
 } from "@/lib/step-ingredients";
 import { formatClock } from "@/lib/cook-timeline";
 import { useLocalStore } from "@/lib/local-store";
-import { QuickTag } from "@/components/ui/QuickTag";
 import { StartTimeEditor } from "@/components/menu/StartTimeEditor";
+import { CurrentStep, StepNeeds } from "@/components/cooking/CurrentStep";
+import { An10Logo } from "@/components/brand/An10Logo";
+import { PotIcon } from "@/components/icons";
+import { Button, IconButton } from "@/components/ds/Button";
+import { StepProgress } from "@/components/ds/Progress";
+import { QuickRecipeTag, Tag } from "@/components/ds/Tag";
 
-// Card ricetta della modalità cucina: stesso "vetro chiaro" leggibile delle altre
-// card con testo scuro (lista spesa, costi, dettaglio ricetta). Con bg-white/30 il
-// testo sparisce nella fascia bassa del gradiente di pagina.
+// Card ricetta della modalità cucina (restyle fase 4): bianca come le altre schede.
 // `min-w-0`: senza, la traccia della griglia si allarga alla min-content della card
 // (parole lunghe nel testo dello step) e la card finisce oltre il bordo dello schermo.
-const cookCardCls =
-  "min-w-0 rounded-2xl border border-white/60 bg-white/75 backdrop-blur-md p-3.5 sm:p-5 shadow-sm";
-
-const KIND_BADGE: Partial<Record<StepKind, string>> = {
-  COOK: "bg-red-100 text-red-700",
-  WAIT: "bg-amber-100 text-amber-700",
-};
+const cookCardCls = "flex min-w-0 flex-col gap-3 rounded-card border border-blu-150 bg-white p-[1em]";
 
 interface Step {
   id: number;
@@ -130,11 +128,11 @@ export function MenuCookMode({
   };
 
   if (recipes.length === 0) {
-    return <p className="text-sm text-sky-100">Questo menù non ha ancora ricette.</p>;
+    return <p className="text-[0.9375rem] text-grigio">Questo menù non ha ancora ricette.</p>;
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
+    <div className="grid gap-(--gap) @min-[760px]:grid-cols-2">
       {recipes.map((recipe) =>
         recipe.quick ? (
           <QuickRecipeCookCard
@@ -190,48 +188,41 @@ function QuickRecipeCookCard({
   };
 
   return (
-    <div className={`${cookCardCls} flex flex-col gap-3`}>
-      {/* Header: stessa anatomia della card con stepper */}
+    <div className={cookCardCls}>
+      {/* Testata: stessa anatomia della card con i passi */}
       <div className="flex items-center gap-3">
-        <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-sky-100">
-          {recipe.photo ? (
-            <Image src={recipe.photo} alt={recipe.name} fill className="object-cover" sizes="44px" />
-          ) : (
-            <div className="flex h-full items-center justify-center text-sky-500"><UtensilsCrossed size={18} /></div>
-          )}
-        </div>
+        <Thumb photo={recipe.photo} />
         <div className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-semibold text-sky-950">{recipe.name}</span>
-          <QuickTag className="mt-0.5" />
+          <span className="block truncate font-bold">{recipe.name}</span>
+          <QuickRecipeTag />
         </div>
       </div>
 
-      {/* Al posto del riquadro dello step: qui non c'è nulla da seguire */}
-      <div className="flex flex-1 items-center gap-2 rounded-xl border border-dashed border-sky-300/70 bg-white/45 p-3 text-[13px] text-sky-700">
-        <ListX size={16} className="shrink-0 text-sky-600" />
+      {/* Al posto del passo corrente: qui non c'è nulla da seguire */}
+      <div className="flex flex-1 items-center gap-2 rounded-card border border-dashed border-blu-200 bg-blu-50 p-3 text-[0.875rem] text-grigio">
+        <ListX className="size-4 shrink-0" aria-hidden />
         Nessuna procedura da seguire.
       </div>
 
       {cooked ? (
-        <button
-          type="button"
-          onClick={undoCooked}
-          disabled={cookLoading}
-          className="flex w-full items-center justify-center gap-1 rounded-lg border border-green-400/50 bg-green-100/60 px-3 py-2 text-xs font-medium text-green-800 hover:bg-green-100 disabled:opacity-50 transition-colors"
-        >
-          <Check size={13} /> Cucinata
-        </button>
+        <Button variant="secondary" icon={<Check />} onClick={() => void undoCooked()} loading={cookLoading} className="border-verde-200 text-verde">
+          Cucinata · annulla
+        </Button>
       ) : (
-        <button
-          type="button"
-          onClick={markCooked}
-          disabled={cookLoading}
-          className="flex w-full items-center justify-center rounded-lg bg-orange-500 px-3 py-2 text-xs font-medium text-white hover:bg-orange-600 disabled:opacity-50 transition-colors"
-        >
-          {cookLoading ? "…" : <span className="inline-flex items-center gap-1"><CookingPot size={13} /> Segna cucinata</span>}
-        </button>
+        <Button icon={<PotIcon />} onClick={() => void markCooked()} loading={cookLoading}>
+          Segna cucinata
+        </Button>
       )}
     </div>
+  );
+}
+
+/** Miniatura 44px della card: foto o logo AN10 su azzurro (come le card senza foto) */
+function Thumb({ photo }: { photo: string | null }) {
+  return (
+    <span className="relative flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-ctl bg-blu-100 text-blu-600">
+      {photo ? <Image src={photo} alt="" fill className="object-cover" sizes="44px" /> : <An10Logo variant="simbolo" title="" className="w-1/2" />}
+    </span>
   );
 }
 
@@ -291,26 +282,24 @@ function RecipeCookCard({
     if (res.ok) onChange({ cooked: false });
   };
 
+  const needs = stepIngredients.map(({ ing, qty }) => {
+    const { amount, name } = ingredientParts(ing, qty, splitIds.has(ing.id));
+    return { key: ing.id, amount, name, optional: ing.optional };
+  });
+
   return (
-    <div className={`${cookCardCls} flex flex-col gap-3`}>
-      {/* Header */}
+    <div className={cookCardCls}>
       <div className="flex items-center gap-3">
-        <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-sky-100">
-          {recipe.photo ? (
-            <Image src={recipe.photo} alt={recipe.name} fill className="object-cover" sizes="44px" />
-          ) : (
-            <div className="flex h-full items-center justify-center text-sky-500"><UtensilsCrossed size={18} /></div>
-          )}
-        </div>
+        <Thumb photo={recipe.photo} />
         <div className="min-w-0 flex-1">
-          <Link href={`/ricette/${recipe.id}`} className="block truncate text-sm font-semibold text-sky-950 hover:text-orange-600 transition-colors">
+          <Link href={`/ricette/${recipe.id}`} className="block truncate font-bold hover:text-blu-700">
             {recipe.name}
           </Link>
           <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
             {total > 0 && (
-              <p className="text-[11px] text-sky-700 tabular-nums">
-                {atCompletion ? "Procedura completata" : `Passo ${progress.stepIdx + 1}/${total}`}
-              </p>
+              <span className="tabular text-(length:--fs-meta) text-grigio">
+                {atCompletion ? "Procedura completata" : `Passo ${progress.stepIdx + 1} di ${total}`}
+              </span>
             )}
             {/* Ora di inizio: modificabile a mano anche da qui (stesso editor della timeline) */}
             {start && onStartChange && onStartReset && (
@@ -328,130 +317,75 @@ function RecipeCookCard({
           </div>
         </div>
         {(progress.stepIdx > 0 || progress.cooked) && (
-          <button
-            type="button"
-            onClick={restart}
-            title="Ricomincia"
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/40 bg-white/50 text-sky-700 hover:bg-white/80 transition-colors"
-          >
-            <RotateCcw size={13} />
-          </button>
+          <IconButton size="row" label="Ricomincia" onClick={restart}>
+            <RotateCcw />
+          </IconButton>
         )}
       </div>
 
-      {/* Barra di progresso */}
       {total > 0 && (
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/50">
-          <div
-            className="h-full rounded-full bg-gradient-to-r from-orange-400 to-orange-500 transition-all duration-500"
-            style={{ width: `${(Math.min(progress.stepIdx, total) / total) * 100}%` }}
-          />
-        </div>
+        <StepProgress total={total} done={Math.min(progress.stepIdx, total)} current={atCompletion ? undefined : progress.stepIdx} />
       )}
 
-      {/* Step corrente o banner di completamento */}
       {step ? (
-        <div className="min-w-0 rounded-xl bg-white/60 border border-white/50 p-3 sm:p-3.5 flex-1">
-          <p className="text-[13px] sm:text-sm leading-relaxed text-sky-900 [overflow-wrap:anywhere]">{step.text}</p>
-          {(() => {
-            const kind = toStepKind(step.kind);
-            const badge = KIND_BADGE[kind];
-            if (!step.mins && !badge && !stepAt) return null;
-            return (
-              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-                {stepAt && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-1.5 py-0.5 text-[10px] font-semibold text-orange-700">
-                    <AlarmClock size={11} /> inizia alle {formatClock(stepAt)}
-                  </span>
-                )}
-                {badge && <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${badge}`}>{STEP_KIND_LABEL[kind]}</span>}
-                {step.mins && step.mins > 0 && <span className="inline-flex items-center gap-1 text-sky-600"><Timer size={11} /> {formatMinutes(step.mins)}</span>}
-              </div>
-            );
-          })()}
-          {stepIngredients.length > 0 && (
-            <div className="mt-2.5 rounded-lg border border-emerald-200/80 bg-emerald-50/70 px-2.5 py-2">
-              <p className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-700">
-                <Carrot size={11} /> Ti servono
-              </p>
-              {/* Una pastiglia per ingrediente: affiancati a testo nudo due nomi
-                  corti sembrano una cosa sola ("100 g burro 2 uova"). Quantità
-                  in evidenza e nome in tono normale — in cucina si cerca il numero */}
-              <ul className="mt-1.5 flex flex-wrap gap-1.5">
-                {stepIngredients.map(({ ing, qty }) => {
-                  const { amount, name } = ingredientParts(ing, qty, splitIds.has(ing.id));
-                  return (
-                    <li
-                      key={ing.id}
-                      className="inline-flex items-baseline gap-1.5 rounded-lg border border-emerald-200 bg-white/80 px-2 py-1 text-[13px]"
-                    >
-                      {amount && (
-                        <span className="shrink-0 font-bold tabular-nums text-emerald-700">{amount}</span>
-                      )}
-                      <span className="text-emerald-950">{name}</span>
-                      {ing.optional && <span className="text-[10px] text-emerald-600">(opz.)</span>}
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          )}
-          {nextAt && (
-            <p className="mt-2 border-t border-white/60 pt-1.5 text-[11px] text-sky-700">
-              Prossimo passo alle <strong className="tabular-nums">{formatClock(nextAt)}</strong>
-            </p>
-          )}
-        </div>
+        <CurrentStep
+          size="sm"
+          className="flex-1"
+          n={progress.stepIdx + 1}
+          kind={toStepKind(step.kind)}
+          mins={step.mins}
+          text={step.text}
+          tags={
+            stepAt && (
+              <Tag tone="wait" icon={<AlarmClock />}>
+                <span className="tabular">inizia alle {formatClock(stepAt)}</span>
+              </Tag>
+            )
+          }
+          needs={needs.length > 0 ? <StepNeeds items={needs} /> : undefined}
+          footer={
+            nextAt && (
+              <>
+                Prossimo passo alle <b className="tabular text-blu-950">{formatClock(nextAt)}</b>
+              </>
+            )
+          }
+          actions={
+            <>
+              <Button variant="secondary" icon={<ChevronLeft />} onClick={goBack} disabled={progress.stepIdx === 0}>
+                Indietro
+              </Button>
+              <Button size="lg" icon={<Check />} onClick={goNext} className="ml-auto">
+                Fatto
+              </Button>
+            </>
+          }
+        />
       ) : (
-        <div className="min-w-0 rounded-xl border border-green-300/50 bg-green-100/60 backdrop-blur-sm p-3 sm:p-3.5 flex-1 flex items-center gap-2.5 sm:gap-3">
-          <PartyPopper size={20} className="text-green-700 shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-[13px] sm:text-sm font-semibold text-green-900">
-              {progress.cooked ? "Cottura registrata!" : "Tutti i passi completati"}
-            </p>
-            {!progress.cooked && <p className="text-xs text-green-800">Segna la ricetta come cucinata?</p>}
+        <div
+          className={clsx(
+            "flex flex-1 flex-wrap items-center gap-3 rounded-card border p-[0.875em]",
+            progress.cooked ? "border-verde-200 bg-verde-50" : "border-blu-150 bg-blu-50"
+          )}
+        >
+          <PartyPopper className={clsx("size-6 shrink-0", progress.cooked ? "text-verde" : "text-blu-700")} aria-hidden />
+          <div className="min-w-0 flex-1">
+            <p className="font-bold">{progress.cooked ? "Cottura registrata" : "Tutti i passi fatti"}</p>
+            {!progress.cooked && <p className="text-[0.875rem] text-grigio">La segno come cucinata?</p>}
           </div>
           {progress.cooked ? (
-            <button
-              type="button"
-              onClick={undoCooked}
-              disabled={cookLoading}
-              className="shrink-0 rounded-lg border border-green-400/50 bg-white/60 px-3 py-1.5 text-xs font-medium text-green-800 hover:bg-white/80 disabled:opacity-50 transition-colors"
-            >
+            <Button size="sm" variant="secondary" onClick={() => void undoCooked()} loading={cookLoading}>
               Annulla
-            </button>
+            </Button>
           ) : (
-            <button
-              type="button"
-              onClick={markCooked}
-              disabled={cookLoading}
-              className="shrink-0 rounded-lg bg-orange-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-orange-600 disabled:opacity-50 transition-colors"
-            >
-              {cookLoading ? "…" : <span className="inline-flex items-center gap-1"><CookingPot size={13} /> Segna cucinata</span>}
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Navigazione step */}
-      {total > 0 && (
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={goBack}
-            disabled={progress.stepIdx === 0}
-            className="flex-1 flex items-center justify-center gap-1 rounded-lg border border-white/40 bg-white/40 px-3 py-2 text-xs font-medium text-sky-800 hover:bg-white/60 disabled:opacity-30 transition-colors"
-          >
-            <ChevronLeft size={14} /> Indietro
-          </button>
-          {!atCompletion && (
-            <button
-              type="button"
-              onClick={goNext}
-              className="flex-1 flex items-center justify-center gap-1 rounded-lg bg-orange-500 px-3 py-2 text-xs font-medium text-white hover:bg-orange-600 transition-colors"
-            >
-              Fatto <ChevronRight size={14} />
-            </button>
+            <>
+              <Button size="sm" variant="ghost" icon={<ChevronLeft />} onClick={goBack}>
+                Indietro
+              </Button>
+              <Button icon={<PotIcon />} onClick={() => void markCooked()} loading={cookLoading}>
+                Segna cucinata
+              </Button>
+            </>
           )}
         </div>
       )}

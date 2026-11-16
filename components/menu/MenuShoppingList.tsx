@@ -1,9 +1,15 @@
 "use client";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, ShoppingCart, ChevronDown, ChevronUp, Check, Plus, Trash2 } from "lucide-react";
-import { SectionHeader } from "@/components/ui/SectionHeader";
-import { PriceTag } from "@/components/ui/PriceTag";
+import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
+import { clsx } from "clsx";
+import { Panel } from "@/components/ds/Panel";
+import { SearchField, TextInput } from "@/components/ds/Field";
+import { Button, IconButton } from "@/components/ds/Button";
+import { Checkbox } from "@/components/ds/Controls";
+import { ProgressBar } from "@/components/ds/Progress";
+import { Tag } from "@/components/ds/Tag";
+import { GroceryBagIcon } from "@/components/icons";
 import type { ShoppingListItem } from "@/lib/shopping-list";
 import type { MenuExtraItem } from "@/lib/types";
 import { useLocalStore } from "@/lib/local-store";
@@ -145,224 +151,158 @@ export function MenuShoppingList({
   };
 
   const totalCount = items.length + extra.length;
+  const keys = new Set([...items.map((i) => i.key), ...extra.map((e) => `extra:${e.id}`)]);
+  const doneCount = [...checked].filter((k) => keys.has(k)).length;
 
-  const inputCls =
-    "rounded-lg border border-white/40 bg-white/60 px-2.5 py-1.5 text-sm text-sky-950 placeholder:text-sky-700/60 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-300/30";
+  const qtyLabel = (qty: number | null, unit: string | null) =>
+    qty != null ? `${formatQty(qty)}${unit ? ` ${unit}` : ""}` : (unit ?? "q.b.");
 
-  // Voce già presa: barratura leggera (tratto sottile) e testo comunque leggibile.
-  // Il "fatto" lo dà soprattutto la spunta verde, la riga resta rileggibile a colpo d'occhio.
-  const checkedTextCls = "text-sky-500 line-through decoration-1 decoration-emerald-900/80";
-
-  // Riga cliccabile: niente `hover` su touch (resta appiccicato dopo il tap) e niente
-  // tap-highlight nativo — era quel lampo grigio che sembrava uno sfarfallio.
-  const rowBtnCls =
-    "flex w-full items-center gap-2 rounded-lg px-1.5 py-1.5 text-left select-none touch-manipulation " +
-    "[-webkit-tap-highlight-color:transparent] transition-colors sm:hover:bg-white/40";
-
-  const checkboxCls = (isChecked: boolean) =>
-    `flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[10px] transition-colors ${
-      isChecked ? "border-green-500 bg-green-500 text-white" : "border-sky-400/50 bg-white/60"
-    }`;
+  /** 8.8 · riga della lista spesa: spunta, nome (ricette sotto), quantità a destra in arancio */
+  const row = (key: string, name: string, qty: string, opts: { optional?: boolean; recipes?: string[]; onRemove?: () => void }) => {
+    const isChecked = checked.has(key);
+    return (
+      <li key={key} className="flex min-w-0 items-center gap-1 border-b border-blu-100 last:border-b-0">
+        <Checkbox
+          checked={isChecked}
+          onChange={() => toggle(key)}
+          className="min-h-11 min-w-0 flex-1 py-1 select-none [-webkit-tap-highlight-color:transparent]"
+          label={
+            <span className="flex min-w-0 flex-col">
+              <span className={clsx("flex min-w-0 flex-wrap items-center gap-x-1.5", isChecked && "text-grigio-chiaro line-through")}>
+                {name}
+                {opts.optional && <Tag tone="optional">opzionale</Tag>}
+              </span>
+              {opts.recipes && opts.recipes.length > 0 && (
+                <span className="truncate text-xs text-grigio">{opts.recipes.join(", ")}</span>
+              )}
+            </span>
+          }
+        />
+        <span className={clsx("tabular shrink-0 text-right text-[0.875rem] font-semibold whitespace-nowrap", isChecked ? "text-grigio-chiaro" : "text-arancio-scuro")}>
+          {qty}
+        </span>
+        {opts.onRemove && (
+          <IconButton size="row" tone="danger" label={`Togli ${name}`} onClick={opts.onRemove} disabled={savingExtra} className="ml-1">
+            <Trash2 />
+          </IconButton>
+        )}
+      </li>
+    );
+  };
 
   return (
-    // Sfondo "carta": il gradiente di pagina è `position: fixed`, quindi una card
-    // molto trasparente passa dal quasi-bianco (alto viewport) al blu notte (basso)
-    // e il testo scuro spariva a metà scroll. Qui serve una superficie chiara
-    // stabile — è una lista da leggere mentre si fa la spesa, non una vetrina.
-    <section className="rounded-2xl border border-white/60 bg-white/75 backdrop-blur-md p-5 sm:p-6 shadow-sm">
-      <SectionHeader
-        title="Lista della spesa"
-        icon={<ShoppingCart size={20} />}
-        tone="emerald"
-        size="lg"
-        titleClassName="text-sky-950"
-        hint={`${checked.size}/${totalCount} spuntati`}
-        className="mb-4"
-      />
+    <Panel
+      id="spesa"
+      icon={<GroceryBagIcon />}
+      title="Lista della spesa"
+      meta={`${doneCount} di ${totalCount} presi`}
+    >
+      <ProgressBar value={doneCount} max={totalCount} label="Spesa fatta" />
+      <SearchField value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Cerca un ingrediente…" aria-label="Cerca nella lista" />
 
-      <div className="relative mb-4">
-        <Search size={15} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sky-600" />
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Cerca un ingrediente…"
-          className="w-full rounded-xl border border-white/40 bg-white/70 py-2.5 pl-10 pr-3 text-sm text-sky-950 placeholder:text-sky-700/60 backdrop-blur-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-300/30"
-        />
+      <div className="@container">
+        {filtered.length === 0 && filteredExtra.length === 0 ? (
+          <p className="text-[0.875rem] text-grigio">Nessun ingrediente {query.trim() ? "trovato" : "nel menù"}.</p>
+        ) : (
+          <ul className="grid grid-cols-1 gap-x-6 @min-[34rem]:grid-cols-2">
+            {visible.map((item) => row(item.key, item.name, qtyLabel(item.qty, item.unit), { optional: item.optional, recipes: item.recipeNames }))}
+          </ul>
+        )}
       </div>
 
-      {filtered.length === 0 && filteredExtra.length === 0 ? (
-        <p className="text-sm text-sky-700">Nessun ingrediente {query.trim() ? "trovato" : "nel menù"}.</p>
-      ) : (
-        <ul className="grid grid-cols-1 gap-x-6 gap-y-1 sm:grid-cols-2">
-          {visible.map((item) => {
-            const isChecked = checked.has(item.key);
-            const label = item.qty != null ? `${formatQty(item.qty)}${item.unit ? ` ${item.unit}` : ""}` : (item.unit ?? "q.b.");
-            return (
-              <li key={item.key}>
-                <button
-                  type="button"
-                  onClick={() => toggle(item.key)}
-                  title={item.recipeNames.join(", ")}
-                  className={rowBtnCls}
-                >
-                  <span className={checkboxCls(isChecked)}>
-                    {isChecked ? <Check size={11} /> : ""}
-                  </span>
-                  <span className="shrink-0 text-xs font-semibold text-orange-600 tabular-nums whitespace-nowrap">
-                    {label}
-                  </span>
-                  {/* Ingrediente e ricette sulla stessa riga, centrati in altezza:
-                      le ricette si accorciano per prime (min-w-0 + truncate) */}
-                  <span className={`shrink-0 text-sm ${isChecked ? checkedTextCls : "text-sky-900"}`}>
-                    {item.name}
-                  </span>
-                  {item.optional && <PriceTag className="shrink-0" />}
-                  {item.recipeNames.length > 0 && (
-                    <span className="min-w-0 flex-1 truncate text-[11px] font-normal text-sky-700">
-                      ({item.recipeNames.join(", ")})
-                    </span>
-                  )}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-
       {showToggle && (
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="sm"
+          className="self-start"
+          icon={expanded ? <ChevronUp /> : <ChevronDown />}
           onClick={() => setExpanded((v) => !v)}
-          className="mt-3 flex items-center gap-1.5 text-xs font-medium text-orange-600 hover:text-orange-700 transition-colors"
         >
-          {expanded ? (
-            <>
-              <ChevronUp size={14} /> Mostra meno
-            </>
-          ) : (
-            <>
-              <ChevronDown size={14} /> Vedi tutta la lista ({hiddenCount} altri)
-            </>
-          )}
-        </button>
+          {expanded ? "Mostra meno" : `Vedi tutta la lista (altri ${hiddenCount})`}
+        </Button>
       )}
 
       {/* Ingredienti aggiunti a mano (extra), non presenti nelle ricette */}
-      <div className="mt-5 border-t border-white/40 pt-4">
-        <h3 className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-sky-800">
-          Aggiunti a mano
-        </h3>
+      <div className="flex flex-col gap-2 border-t border-blu-150 pt-3">
+        <h3 className="text-xs font-bold tracking-[0.08em] text-grigio uppercase">Aggiunti a mano</h3>
         {filteredExtra.length > 0 && (
-          <ul className="mb-3 grid grid-cols-1 gap-x-6 gap-y-1 sm:grid-cols-2">
-            {filteredExtra.map((item) => {
-              const key = `extra:${item.id}`;
-              const isChecked = checked.has(key);
-              const label =
-                item.qty != null ? `${formatQty(item.qty)}${item.unit ? ` ${item.unit}` : ""}` : (item.unit ?? "q.b.");
-              return (
-                <li key={key} className="flex items-center gap-1">
-                  <button type="button" onClick={() => toggle(key)} className={`${rowBtnCls} min-w-0 flex-1`}>
-                    <span className={checkboxCls(isChecked)}>
-                      {isChecked ? <Check size={11} /> : ""}
-                    </span>
-                    <span className="shrink-0 text-xs font-semibold text-orange-600 tabular-nums whitespace-nowrap">{label}</span>
-                    <span className={`min-w-0 flex-1 truncate text-sm ${isChecked ? checkedTextCls : "text-sky-900"}`}>
-                      {item.name}
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => removeExtra(item.id)}
-                    disabled={savingExtra}
-                    className="shrink-0 rounded-lg p-1.5 text-rose-500 transition-colors hover:bg-rose-50 disabled:opacity-50"
-                    aria-label={`Rimuovi ${item.name}`}
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </li>
-              );
-            })}
+          <ul className="@container grid grid-cols-1 gap-x-6">
+            {filteredExtra.map((item) =>
+              row(`extra:${item.id}`, item.name, qtyLabel(item.qty, item.unit), { onRemove: () => void removeExtra(item.id) })
+            )}
           </ul>
         )}
         <div className="flex flex-wrap items-center gap-1.5">
-          <input
-            type="text"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && addExtra()}
-            placeholder="Ingrediente…"
-            className={`${inputCls} min-w-32 flex-1`}
-          />
-          <input
-            type="number"
-            inputMode="decimal"
-            min="0"
-            step="0.01"
-            value={newQty}
-            onChange={(e) => setNewQty(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && addExtra()}
-            placeholder="qtà"
-            className={`${inputCls} w-16 text-right`}
-            aria-label="Quantità"
-          />
-          <input
-            type="text"
-            value={newUnit}
-            onChange={(e) => setNewUnit(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && addExtra()}
-            placeholder="unità"
-            className={`${inputCls} w-20`}
-            aria-label="Unità"
-          />
-          <button
-            type="button"
-            onClick={addExtra}
-            disabled={savingExtra || !newName.trim()}
-            className="inline-flex items-center gap-1 rounded-lg border border-orange-300/60 bg-white/60 px-2.5 py-1.5 text-sm font-medium text-orange-700 transition-colors hover:bg-white/90 disabled:opacity-50"
-          >
-            <Plus size={15} /> Aggiungi
-          </button>
+          <div className="min-w-32 flex-1">
+            <TextInput
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && addExtra()}
+              placeholder="Ingrediente…"
+              aria-label="Ingrediente da aggiungere"
+            />
+          </div>
+          <div className="w-18 shrink-0">
+            <TextInput
+              type="number"
+              inputMode="decimal"
+              min="0"
+              step="0.01"
+              value={newQty}
+              onChange={(e) => setNewQty(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && addExtra()}
+              placeholder="qtà"
+              aria-label="Quantità"
+              className="text-right"
+            />
+          </div>
+          <div className="w-20 shrink-0">
+            <TextInput
+              value={newUnit}
+              onChange={(e) => setNewUnit(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && addExtra()}
+              placeholder="unità"
+              aria-label="Unità"
+            />
+          </div>
+          <Button variant="tonal" icon={<Plus />} onClick={() => void addExtra()} disabled={savingExtra || !newName.trim()}>
+            Aggiungi
+          </Button>
         </div>
       </div>
 
-      {/* Totale speso — confluisce nella sezione Costi (voce "Ingredienti") */}
-      <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-white/40 pt-4">
-        <label htmlFor="grocery-spent" className="text-sm font-medium text-sky-900">
-          Totale speso
-        </label>
-        {groceryCost != null && (
-          <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-500/10 px-2 py-1 text-xs font-semibold text-emerald-700">
-            registrato: {eur.format(groceryCost)}
-          </span>
-        )}
-        <div className="relative w-28">
-          <input
-            id="grocery-spent"
-            type="number"
-            inputMode="decimal"
-            min="0"
-            step="0.01"
-            value={spent}
-            onChange={(e) => setSpent(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && saveSpent()}
-            placeholder="0,00"
-            className={`${inputCls} w-full pr-6 text-right`}
-          />
-          <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-sky-500">€</span>
+      {/* Totale speso: confluisce nella sezione Costi (voce «Ingredienti») */}
+      <div className="flex flex-col gap-2 border-t border-blu-150 pt-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <label htmlFor="grocery-spent" className="text-[0.875rem] font-semibold">
+            Totale speso
+          </label>
+          {groceryCost != null && <Tag tone="prep">registrato: {eur.format(groceryCost)}</Tag>}
         </div>
-        <button
-          type="button"
-          onClick={saveSpent}
-          disabled={savingSpent || !spent.trim()}
-          className="rounded-lg bg-emerald-500 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-600 disabled:opacity-50"
-        >
-          Salva
-        </button>
-        <span className="text-[11px] text-sky-700">
-          {groceryCost != null ? "Salvando sostituisci il valore registrato." : "Finisce nei “Costi” del menù."}
-        </span>
+        <div className="flex items-center gap-2">
+          <div className="relative w-32">
+            <TextInput
+              id="grocery-spent"
+              type="number"
+              inputMode="decimal"
+              min="0"
+              step="0.01"
+              value={spent}
+              onChange={(e) => setSpent(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && saveSpent()}
+              placeholder="0,00"
+              className="pr-7 text-right"
+            />
+            <span className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-[0.875rem] text-grigio">€</span>
+          </div>
+          <Button variant="secondary" onClick={() => void saveSpent()} loading={savingSpent} disabled={!spent.trim()}>
+            Salva
+          </Button>
+        </div>
+        <p className="text-xs text-grigio">
+          {groceryCost != null ? "Salvando sostituisci il valore registrato." : "Finisce nei «Costi» del menù."}
+        </p>
       </div>
-    </section>
+    </Panel>
   );
 }

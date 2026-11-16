@@ -358,3 +358,99 @@ export function getMenuDetail(id: number, isAdmin: boolean) {
     { tags: [MENUS_TAG], revalidate: REVALIDATE_SECONDS }
   )();
 }
+
+// ---------------------------------------------------------------------------
+// Menù — il prossimo in programma (scheda in cima a /menu, restyle fase 4)
+// ---------------------------------------------------------------------------
+export interface NextMenu {
+  id: number;
+  name: string;
+  date: string;
+  servingTime: string | null;
+  people: number | null;
+  published: boolean;
+  recipes: number;
+  reviews: number;
+  /** Inizio più presto fra le ricette (ISO): pianificato o calcolato all'indietro dal servizio. Calcolato nel browser se null */
+  recipeLeads: { leadMins: number; cookStartAt: string | null }[];
+  /** Chiavi delle voci della lista spesa (solo admin), per contare le spunte salvate nel browser */
+  shoppingKeys: string[] | null;
+  /** Id delle ricette con passi (per «ricette pronte» della modalità cucina) */
+  recipeIds: number[];
+}
+
+/**
+ * Il primo menù con data da ieri in poi (il giorno esatto lo decide il browser, che conosce
+ * il fuso orario). Admin: anche i non pronti e le voci della lista spesa.
+ */
+export async function getNextMenu(isAdmin: boolean): Promise<NextMenu | null> {
+  const since = new Date(Date.now() - 36 * 3600_000);
+  const menu = await db.menu.findFirst({
+    where: { date: { gte: since }, ...(isAdmin ? {} : { published: true }) },
+    orderBy: { date: "asc" },
+    select: {
+      id: true,
+      name: true,
+      date: true,
+      servingTime: true,
+      people: true,
+      published: true,
+      _count: { select: { recipeReviews: true } },
+      extraItems: isAdmin ? { select: { id: true } } : false,
+      recipes: {
+        where: isAdmin ? {} : { recipe: { published: true } },
+        orderBy: { order: "asc" },
+        select: {
+          servings: true,
+          cookStartAt: true,
+          recipe: {
+            select: {
+              id: true,
+              name: true,
+              quick: true,
+              prep: true,
+              cook: true,
+              servings: true,
+              steps: { select: { mins: true } },
+              ingredients: isAdmin
+                ? { select: { name: true, qty: true, unit: true, optional: true }, orderBy: { order: "asc" } }
+                : false,
+            },
+          },
+        },
+      },
+    },
+  });
+  if (!menu || !menu.date) return null;
+
+  const shoppingKeys = isAdmin
+    ? [
+        ...buildShoppingList(
+          menu.recipes.map((mr) => ({ name: mr.recipe.name, ingredients: mr.recipe.ingredients ?? [] }))
+        ).map((i) => i.key),
+        ...(menu.extraItems ?? []).map((e) => `extra:${e.id}`),
+      ]
+    : null;
+
+  return {
+    id: menu.id,
+    name: menu.name,
+    date: menu.date.toISOString(),
+    servingTime: menu.servingTime,
+    people: menu.people,
+    published: menu.published,
+    recipes: menu.recipes.length,
+    reviews: menu._count.recipeReviews,
+    recipeLeads: menu.recipes
+      .filter((mr) => !mr.recipe.quick)
+      .map((mr) => {
+        const steps = mr.recipe.steps.reduce((s, st) => s + (st.mins ?? 0), 0);
+        return {
+          leadMins: steps > 0 ? steps : (mr.recipe.prep ?? 0) + (mr.recipe.cook ?? 0),
+          cookStartAt: mr.cookStartAt ? mr.cookStartAt.toISOString() : null,
+        };
+      }),
+    shoppingKeys,
+    recipeIds: menu.recipes.filter((mr) => !mr.recipe.quick).map((mr) => mr.recipe.id),
+  };
+}

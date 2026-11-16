@@ -1,16 +1,19 @@
 import { MenuCardSkeleton } from "@/components/menu/MenuCardSkeleton";
+import { Skeleton } from "@/components/ds/Progress";
 
+/** Caricamento della lista menù: testata, scheda del prossimo menù, ricerca e griglia di card 8.5. */
 export default function MenuLoading() {
   return (
-    <div className="mx-auto max-w-7xl space-y-8">
-      <div className="text-center space-y-2">
-        <div className="mx-auto h-6 w-24 rounded-full bg-white/20 animate-pulse" />
-        <div className="mx-auto h-8 w-48 rounded-xl bg-white/20 animate-pulse" />
-        <div className="mx-auto h-4 w-64 rounded-xl bg-white/10 animate-pulse" />
+    <div className="flex flex-col gap-4" aria-busy>
+      <div className="flex flex-col gap-2">
+        <Skeleton className="h-7 w-32" />
+        <Skeleton className="h-3.5 w-40" />
       </div>
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <MenuCardSkeleton key={i} index={i} />
+      <Skeleton className="h-48 rounded-card bg-blu-150" />
+      <Skeleton className="h-(--h-field)" />
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(clamp(15rem,30cqi,20rem),1fr))] gap-(--gap)">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <MenuCardSkeleton key={i} />
         ))}
       </div>
     </div>

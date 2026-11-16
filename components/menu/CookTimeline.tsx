@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, useMotionValue } from "motion/react";
-import { ZoomIn, ZoomOut, RotateCcw, AlarmClock, X, Timer, ArrowRight } from "lucide-react";
+import { ZoomIn, ZoomOut, RotateCcw, AlarmClock, X, ArrowRight } from "lucide-react";
 import {
   formatClock,
   formatDayShort,
@@ -12,7 +12,8 @@ import {
 } from "@/lib/cook-timeline";
 import { formatMinutes, STEP_KIND_LABEL, type StepKind } from "@/lib/types";
 import { PALETTE } from "@/components/ui/ColorPicker";
-import { QuickTag } from "@/components/ui/QuickTag";
+import { QuickRecipeTag, StepKindTag, Tag } from "@/components/ds/Tag";
+import { IconButton } from "@/components/ds/Button";
 import { StartTimeEditor } from "@/components/menu/StartTimeEditor";
 
 // Timeline "Gantt" della modalità cucina: una corsia per ricetta, barra
@@ -27,10 +28,12 @@ const MIN_SEG_PX = 14; // larghezza minima cliccabile per step con durata
 const MAX_INITIAL_WIDTH = 3200; // tetto di sicurezza quando non si conosce la larghezza reale
 const ZOOM_TRANSITION_MS = 300; // deve combaciare con la classe duration-300 sotto
 
+// Colori dei tipi di passo (6.1) in versione piena per le barre: preparazione blu, cottura
+// arancio scuro, attesa giallo. Il testo dentro la barra segue il fondo.
 const SEGMENT_COLOR: Record<StepKind, string> = {
-  PREP: "bg-sky-400/80",
-  COOK: "bg-red-400/85",
-  WAIT: "bg-amber-300/85",
+  PREP: "bg-blu-700 text-white",
+  COOK: "bg-cottura-ink text-white",
+  WAIT: "bg-giallo-400 text-giallo-ink",
 };
 
 /**
@@ -181,15 +184,15 @@ export function CookTimeline({
   }, [spanMins, gridStep, pxPerMin, windowStart]);
 
   return (
-    // Stesso "vetro chiaro" leggibile delle card ricetta dello stepper
-    <section className="rounded-2xl border border-white/60 bg-white/75 backdrop-blur-md p-4 sm:p-5 shadow-sm space-y-3">
+    // 13.6 · timeline cucina: scheda bianca come le card dello stepper
+    <section className="flex min-w-0 flex-col gap-3 rounded-card border border-blu-150 bg-white p-[1em]">
       {/* Header: titolo + legenda + zoom */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <h2 className="text-sm font-semibold text-sky-950">Timeline</h2>
-        <div className="flex items-center gap-3 text-[10px] text-sky-800">
+        <h2 className="text-(length:--fs-sec) font-bold">Timeline</h2>
+        <div className="flex items-center gap-3 text-xs text-grigio">
           {(Object.keys(SEGMENT_COLOR) as StepKind[]).map((k) => (
             <span key={k} className="flex items-center gap-1">
-              <span className={`h-2 w-2 rounded-sm ${SEGMENT_COLOR[k]}`} />
+              <span className={`size-2.5 rounded-sm ${SEGMENT_COLOR[k]}`} />
               {STEP_KIND_LABEL[k]}
             </span>
           ))}
@@ -200,23 +203,25 @@ export function CookTimeline({
             onClick={() => canZoomOut && changeZoom(ZOOM_PRESETS[zoomIdx + 1])}
             disabled={!canZoomOut}
             title="Riduci zoom"
-            className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/40 bg-white/50 text-sky-700 hover:bg-white/80 active:scale-90 disabled:opacity-30 disabled:active:scale-100 transition-all duration-150"
+            aria-label="Riduci zoom"
+            className="flex size-(--h-sm) items-center justify-center rounded-[0.625rem] border border-blu-200 bg-white text-blu-800 transition-[transform,background-color] duration-150 hover:bg-blu-100 active:scale-90 disabled:opacity-40 disabled:active:scale-100"
           >
-            <ZoomOut size={13} />
+            <ZoomOut className="size-4" />
           </button>
           <button
             type="button"
             onClick={() => canZoomIn && changeZoom(ZOOM_PRESETS[zoomIdx - 1])}
             disabled={!canZoomIn}
             title="Aumenta zoom"
-            className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/40 bg-white/50 text-sky-700 hover:bg-white/80 active:scale-90 disabled:opacity-30 disabled:active:scale-100 transition-all duration-150"
+            aria-label="Aumenta zoom"
+            className="flex size-(--h-sm) items-center justify-center rounded-[0.625rem] border border-blu-200 bg-white text-blu-800 transition-[transform,background-color] duration-150 hover:bg-blu-100 active:scale-90 disabled:opacity-40 disabled:active:scale-100"
           >
-            <ZoomIn size={13} />
+            <ZoomIn className="size-4" />
           </button>
         </div>
       </div>
 
-      <p className="text-[11px] text-sky-700">
+      <p className="text-(length:--fs-meta) text-grigio">
         Tocca l&apos;orario di una ricetta per impostare l&apos;inizio a mano, oppure trascina la sua barra
         per aggiustarlo (scatti di 5 minuti).
       </p>
@@ -224,25 +229,24 @@ export function CookTimeline({
       {/* Canvas scrollabile — scrollbar custom: pollice scuro, nessuno sfondo sul binario */}
       <div
         ref={scrollRef}
-        className="overflow-x-auto overscroll-x-contain rounded-xl border border-white/30 bg-white/25 pb-2
-          [scrollbar-width:thin] [scrollbar-color:#0c4a6e66_transparent]
+        className="overflow-x-auto overscroll-x-contain rounded-ctl border border-blu-150 bg-blu-50 pb-2
+          [scrollbar-width:thin] [scrollbar-color:var(--color-blu-250)_transparent]
           [&::-webkit-scrollbar]:h-2.5 [&::-webkit-scrollbar-track]:bg-transparent
-          [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-sky-900/40
-          [&::-webkit-scrollbar-thumb]:hover:bg-sky-900/55"
+          [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-blu-250"
       >
         <div className={`relative ${zoomTransitionCls}`} style={{ width: widthPx }}>
           {/* Asse orario */}
-          <div className="sticky top-0 h-7 border-b border-sky-900/10">
+          <div className="sticky top-0 h-7 border-b border-blu-150">
             {ticks.map((t) => {
               const isMidnight = t.date.getHours() === 0 && t.date.getMinutes() === 0;
               return (
                 <span
                   key={t.px}
-                  className="absolute top-1 text-[10px] tabular-nums text-sky-700 whitespace-nowrap"
+                  className="tabular absolute top-1.5 text-[0.6875rem] whitespace-nowrap text-grigio"
                   style={{ left: t.px + 3 }}
                 >
                   {formatClock(t.date)}
-                  {isMidnight && <span className="ml-1 font-semibold text-sky-800">{formatDayShort(t.date)}</span>}
+                  {isMidnight && <span className="ml-1 font-bold text-blu-950">{formatDayShort(t.date)}</span>}
                 </span>
               );
             })}
@@ -252,18 +256,18 @@ export function CookTimeline({
           {ticks.map((t) => (
             <span
               key={`g${t.px}`}
-              className="pointer-events-none absolute bottom-0 top-7 w-px bg-sky-900/10"
+              className="pointer-events-none absolute top-7 bottom-0 w-px bg-blu-150"
               style={{ left: t.px }}
             />
           ))}
 
           {/* Linea del servizio */}
           <div
-            className={`pointer-events-none absolute bottom-0 top-0 z-10 w-0.5 bg-orange-500/80 ${zoomTransitionCls}`}
+            className={`pointer-events-none absolute top-0 bottom-0 z-10 w-0.5 bg-blu-950 ${zoomTransitionCls}`}
             style={{ left: servePx }}
           >
-            <span className="absolute left-1 top-0.5 flex items-center gap-1 rounded bg-orange-500 px-1.5 py-0.5 text-[10px] font-semibold text-white whitespace-nowrap">
-              <AlarmClock size={10} /> Servizio {formatClock(serveAt)}
+            <span className="tabular absolute top-1 left-1 flex items-center gap-1 rounded-md bg-blu-950 px-1.5 py-0.5 text-[0.6875rem] font-bold whitespace-nowrap text-white">
+              <AlarmClock className="size-3" aria-hidden /> Servizio {formatClock(serveAt)}
             </span>
           </div>
 
@@ -296,34 +300,32 @@ export function CookTimeline({
 
       {/* Ricette veloci: nessuno step da pianificare, elencate senza corsia */}
       {quickRecipes.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 text-[11px] text-sky-800">
-          <span className="font-medium">Senza tempistica:</span>
+        <div className="flex flex-wrap items-center gap-1.5 text-(length:--fs-meta) text-grigio">
+          <span className="font-semibold">Senza tempistica:</span>
           {quickRecipes.map((r) => (
-            <QuickTag key={r.id} label={r.name} />
+            <QuickRecipeTag key={r.id} label={r.name} />
           ))}
         </div>
       )}
 
       {/* Dettaglio step selezionato (pannello sotto la timeline: mobile-friendly) */}
       {selected && (
-        <div className="flex items-start gap-3 rounded-xl border border-sky-200/60 bg-white/60 p-3">
-          <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-semibold text-sky-600">
-              {selected.recipeName} · passo {selected.segment.stepIdx + 1} · {STEP_KIND_LABEL[selected.segment.kind]}
+        <div className="flex items-start gap-3 rounded-ctl border border-blu-150 bg-blu-50 p-3">
+          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+            <p className="text-(length:--fs-meta) font-semibold text-grigio">
+              {selected.recipeName} · passo {selected.segment.stepIdx + 1}
             </p>
-            <p className="mt-0.5 text-sm leading-relaxed text-sky-900">{selected.segment.text}</p>
-            <p className="mt-1 flex flex-wrap items-center gap-1 text-xs font-medium text-orange-700">
-              <AlarmClock size={12} /> Inizia alle {formatClock(selected.segment.startsAt)}
-              {selected.segment.mins > 0 && <span className="inline-flex items-center gap-1 text-sky-600 font-normal"> · <Timer size={12} /> {formatMinutes(selected.segment.mins)}</span>}
-            </p>
+            <p className="leading-relaxed">{selected.segment.text}</p>
+            <span className="flex flex-wrap items-center gap-1.5">
+              <StepKindTag kind={selected.segment.kind} duration={selected.segment.mins > 0 ? formatMinutes(selected.segment.mins) : undefined} />
+              <Tag tone="wait" icon={<AlarmClock />}>
+                <span className="tabular">inizia alle {formatClock(selected.segment.startsAt)}</span>
+              </Tag>
+            </span>
           </div>
-          <button
-            type="button"
-            onClick={() => setSelected(null)}
-            className="shrink-0 rounded p-1 text-sky-400 hover:text-sky-700 transition-colors"
-          >
-            <X size={14} />
-          </button>
+          <IconButton size="row" label="Chiudi il dettaglio" onClick={() => setSelected(null)}>
+            <X />
+          </IconButton>
         </div>
       )}
     </section>
@@ -379,12 +381,12 @@ function TimelineLane({
     <div className="px-0.5">
       {/* Etichetta: sticky a sinistra così resta visibile durante lo scroll orizzontale */}
       <div className="sticky left-1 z-[5] flex w-max max-w-[85vw] items-center gap-2 pb-0.5">
-        <span className="h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-white/60" style={{ backgroundColor: color }} />
-        <span className="truncate text-xs font-semibold text-sky-950">{recipe.name}</span>
+        <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: color }} />
+        <span className="truncate text-[0.8125rem] font-bold">{recipe.name}</span>
         {dragMins != null ? (
           // Durante il trascinamento l'orario è "live": niente bottone, solo il testo
-          <span className="inline-flex items-center gap-1 text-[10px] font-bold tabular-nums text-orange-700">
-            {formatClock(liveStart)} <ArrowRight size={10} /> {formatClock(new Date(liveStart.getTime() + schedule.leadMins * 60_000))}
+          <span className="tabular inline-flex items-center gap-1 text-xs font-bold text-blu-700">
+            {formatClock(liveStart)} <ArrowRight className="size-3" aria-hidden /> {formatClock(new Date(liveStart.getTime() + schedule.leadMins * 60_000))}
           </span>
         ) : (
           <StartTimeEditor
@@ -403,13 +405,14 @@ function TimelineLane({
             type="button"
             onClick={() => onReset(recipe.id)}
             title="Torna all'orario automatico"
-            className="flex h-5 w-5 items-center justify-center rounded-full border border-white/50 bg-white/60 text-sky-600 hover:text-sky-900 transition-colors"
+            aria-label="Torna all'orario automatico"
+            className="flex size-6 items-center justify-center rounded-full border border-blu-200 bg-white text-blu-800 hover:bg-blu-100"
           >
-            <RotateCcw size={10} />
+            <RotateCcw className="size-3" />
           </button>
         )}
         {schedule.overshoot && dragMins == null && (
-          <span className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-700 whitespace-nowrap">
+          <span className="rounded-full border border-rosa-200 bg-rosa-50 px-2 py-0.5 text-[0.6875rem] font-bold whitespace-nowrap text-rosa">
             finisce dopo il servizio
           </span>
         )}
@@ -434,7 +437,7 @@ function TimelineLane({
             }
           }}
           className={`absolute top-0 flex h-8 cursor-grab items-stretch overflow-hidden rounded-lg shadow-sm active:cursor-grabbing ${zoomTransitionCls} ${
-            schedule.overshoot ? "ring-2 ring-red-400" : "ring-1 ring-sky-900/10"
+            schedule.overshoot ? "ring-2 ring-rosa" : "ring-1 ring-blu-950/10"
           }`}
         >
           {schedule.segments.length > 0 ? (
@@ -456,12 +459,12 @@ function TimelineLane({
                         }
                       : {}),
                   }}
-                  className={`relative shrink-0 border-r border-white/50 last:border-r-0 ${SEGMENT_COLOR[seg.kind]} hover:brightness-110 ${
+                  className={`relative shrink-0 border-r border-white/60 last:border-r-0 ${SEGMENT_COLOR[seg.kind]} hover:brightness-110 ${
                     zooming ? "transition-[filter,width] duration-300 ease-out" : "transition-[filter]"
                   }`}
                 >
                   {!compressed && seg.mins * pxPerMin > 44 && (
-                    <span className="pointer-events-none absolute inset-0 flex items-center justify-center px-1 text-[9px] font-semibold text-white/95 tabular-nums truncate">
+                    <span className="tabular pointer-events-none absolute inset-0 flex items-center justify-center truncate px-1 text-[0.625rem] font-bold">
                       {formatClock(seg.startsAt)}
                     </span>
                   )}
@@ -469,7 +472,7 @@ function TimelineLane({
               );
             })
           ) : (
-            <span className="flex-1 bg-sky-400/70" />
+            <span className="flex-1 bg-blu-250" />
           )}
         </motion.div>
       </div>

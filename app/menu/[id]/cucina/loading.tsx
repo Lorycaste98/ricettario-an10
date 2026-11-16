@@ -1,53 +1,31 @@
-export default function MenuCookModeLoading() {
-  // Rispecchia il layout della pagina cucina: back pill + header + timeline + card ricette
+import { Skeleton } from "@/components/ds/Progress";
+import { backLinkCls } from "@/components/ui/BackLink";
+
+/** Caricamento della modalità cucina: testata 9.5, timeline (13.6) e card con il passo corrente (8.7). */
+export default function CucinaLoading() {
   return (
-    <div className="mx-auto max-w-5xl space-y-6 sm:space-y-5 animate-pulse">
-      {/* Back link — stessa forma/altezza del BackLink reale (pill h-[34px]) */}
-      <div className="h-[34px] w-44 rounded-full bg-white/20" />
-
-      {/* Header: badge ChefHat + titolo/sottotitolo */}
+    <div className="flex flex-col gap-4" aria-busy>
+      <span className={`${backLinkCls} w-36`} aria-hidden />
       <div className="flex items-center gap-3">
-        <div className="h-10 w-10 shrink-0 rounded-xl bg-orange-400/30" />
-        <div className="space-y-1.5">
-          <div className="h-5 w-40 rounded-lg bg-white/25" />
-          <div className="h-3 w-56 rounded bg-white/15" />
+        <Skeleton className="size-14 shrink-0" />
+        <div className="flex flex-1 flex-col gap-2">
+          <Skeleton className="h-7 w-1/2" />
+          <Skeleton className="h-3.5 w-1/3" />
         </div>
       </div>
-
-      {/* Timeline */}
-      <div className="rounded-2xl bg-white/25 p-4 sm:p-5 space-y-3">
-        <div className="flex items-center gap-3">
-          <div className="h-4 w-20 rounded bg-white/30" />
-          <div className="ml-auto flex gap-1">
-            <div className="h-7 w-7 rounded-lg bg-white/30" />
-            <div className="h-7 w-7 rounded-lg bg-white/30" />
-          </div>
-        </div>
-        <div className="h-3 w-3/4 rounded bg-white/20" />
-        <div className="h-36 rounded-xl bg-white/20" />
+      <div className="flex flex-col gap-3 rounded-card border border-blu-150 bg-white p-4">
+        <Skeleton className="h-5 w-24" />
+        <Skeleton className="h-40 rounded-ctl" />
       </div>
-
-      {/* Card ricette dello stepper */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="rounded-2xl bg-white/25 p-4 sm:p-5 space-y-3">
-            {/* Header card: thumb + nome + passo */}
+      <div className="grid gap-(--gap) @min-[760px]:grid-cols-2">
+        {Array.from({ length: 2 }).map((_, i) => (
+          <div key={i} className="flex flex-col gap-3 rounded-card border border-blu-150 bg-white p-4">
             <div className="flex items-center gap-3">
-              <div className="h-11 w-11 shrink-0 rounded-xl bg-white/30" />
-              <div className="flex-1 space-y-1.5">
-                <div className="h-4 w-2/3 rounded bg-white/30" />
-                <div className="h-3 w-24 rounded bg-white/20" />
-              </div>
+              <Skeleton className="size-11" />
+              <Skeleton className="h-4 flex-1" />
             </div>
-            {/* Barra di progresso */}
-            <div className="h-1.5 w-full rounded-full bg-white/30" />
-            {/* Step corrente */}
-            <div className="h-20 rounded-xl bg-white/20" />
-            {/* Navigazione */}
-            <div className="flex gap-2">
-              <div className="h-8 flex-1 rounded-lg bg-white/25" />
-              <div className="h-8 flex-1 rounded-lg bg-orange-400/30" />
-            </div>
+            <Skeleton className="h-2" />
+            <Skeleton className="h-36 rounded-card" />
           </div>
         ))}
       </div>

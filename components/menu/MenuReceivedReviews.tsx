@@ -50,7 +50,7 @@ export function MenuReceivedReviews({ initialReviews, avgRating }: { initialRevi
   };
 
   return (
-    <section className="rounded-2xl border border-white/40 bg-white/60 p-5 shadow-sm backdrop-blur-sm sm:p-6">
+    <section className="rounded-card border border-blu-150 bg-white p-(--pad)">
       {/* Header = toggle del dropdown generico (aperto di default) */}
       <button
         type="button"

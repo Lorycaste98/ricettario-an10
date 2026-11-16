@@ -24,6 +24,7 @@ import { resolveLinkQty, splitIngredientIds, type StepIngredientLink } from "@/l
 import { Button, Stepper } from "@/components/ds/Button";
 import { Segmented } from "@/components/ds/Controls";
 import { StepKindTag, Tag } from "@/components/ds/Tag";
+import { CurrentStep } from "@/components/cooking/CurrentStep";
 import { StepNumber, StepProgress } from "@/components/ds/Progress";
 import { Banner } from "@/components/ds/Feedback";
 import { PotIcon } from "@/components/icons";
@@ -511,24 +512,24 @@ export function RecipeProcedure({ recipeId, recipeName, recipePhoto, defaultServ
 
           if (isCurrent) {
             return (
-              <li key={step.id} className="my-1.5 rounded-card border-2 border-arancio bg-white p-3.5">
-                {(kind !== "PREP" || step.mins) && (
-                  <div className="mb-2">
-                    <StepKindTag kind={kind} duration={step.mins ? formatMinutes(step.mins) : undefined} />
-                  </div>
-                )}
-                <div className="flex gap-2.5">
-                  <StepNumber n={i + 1} state="current" />
-                  <p className="min-w-0 text-(length:--fs-step) leading-snug whitespace-pre-line">{step.text}</p>
-                </div>
-                <div className="mt-2 pl-[2.375rem]">{stepChips(step, false)}</div>
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  {timerStep && <StepTimer recipeId={recipeId} stepIndex={i} mins={step.mins!} ensureRecipe={enterCooking} size="lg" />}
-                  <Button size="lg" icon={<Check />} onClick={() => handleStepClick(i)} className={timerStep ? "" : "ml-auto"}>
-                    Fatto
-                  </Button>
-                </div>
-              </li>
+              <CurrentStep
+                as="li"
+                key={step.id}
+                className="my-1.5"
+                n={i + 1}
+                kind={kind}
+                mins={step.mins}
+                text={step.text}
+                needs={stepChips(step, false)}
+                actions={
+                  <>
+                    {timerStep && <StepTimer recipeId={recipeId} stepIndex={i} mins={step.mins!} ensureRecipe={enterCooking} size="lg" />}
+                    <Button size="lg" icon={<Check />} onClick={() => handleStepClick(i)} className={timerStep ? "" : "ml-auto"}>
+                      Fatto
+                    </Button>
+                  </>
+                }
+              />
             );
           }
 

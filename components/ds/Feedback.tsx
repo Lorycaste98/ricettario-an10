@@ -65,13 +65,14 @@ export function Banner({ children, action, className }: { children: ReactNode; a
 /** 10.5 · timer finito: giallo pieno, si vede da lontano */
 export function TimerAlert({ title, detail, action }: { title: ReactNode; detail?: ReactNode; action?: ReactNode }) {
   return (
-    <div role="alert" className="flex items-center gap-3 rounded-card bg-giallo-400 px-3.5 py-3 text-[oklch(30%_0.06_85)]">
+    // Su spazio stretto l'azione va a capo sotto il testo invece di schiacciarlo
+    <div role="alert" className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-card bg-giallo-400 px-3.5 py-3 text-[oklch(30%_0.06_85)]">
       <Timer className="size-6 shrink-0" aria-hidden />
-      <div className="min-w-0 flex-1">
+      <div className="min-w-[9rem] flex-1">
         <p className="font-bold">{title}</p>
         {detail && <p className="text-xs">{detail}</p>}
       </div>
-      {action}
+      {action && <div className="ml-auto">{action}</div>}
     </div>
   );
 }

@@ -2,6 +2,7 @@
 import { useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { CalendarClock } from "lucide-react";
+import { Banner } from "@/components/ds/Feedback";
 import { MenuCookMode, type CookIngredient } from "@/components/menu/MenuCookMode";
 import { CookTimeline } from "@/components/menu/CookTimeline";
 import { resolveServeAt } from "@/lib/cook-schedule";
@@ -103,7 +104,7 @@ export function CookPlanner({
   }, [hasTimeline, recipes, schedules]);
 
   return (
-    <div className="space-y-6 sm:space-y-5">
+    <div className="flex flex-col gap-(--gap)">
       {hasTimeline && serve ? (
         <CookTimeline
           recipes={recipes}
@@ -115,15 +116,21 @@ export function CookPlanner({
       ) : (
         hydrated &&
         recipes.length > 0 && (
-          <div className="flex items-center gap-3 rounded-2xl border border-white/60 bg-white/75 backdrop-blur-md p-4 shadow-sm text-sm text-sky-900">
-            <CalendarClock size={18} className="shrink-0 text-orange-600" />
-            <p>
-              Imposta <strong>data e ora di servizio</strong> del menù per pianificare le ricette sulla timeline.{" "}
-              <Link href={`/admin/menu/${menuId}/modifica`} className="font-semibold text-orange-600 hover:underline">
+          <Banner
+            action={
+              <Link
+                href={`/admin/menu/${menuId}/modifica`}
+                className="inline-flex h-(--h-sm) items-center rounded-[0.625rem] border border-blu-200 bg-white px-[0.8em] text-[0.875rem] font-semibold text-blu-950 hover:bg-blu-100"
+              >
                 Modifica menù
               </Link>
-            </p>
-          </div>
+            }
+          >
+            <span className="flex items-center gap-2">
+              <CalendarClock className="size-4 shrink-0" aria-hidden />
+              Imposta data e ora di servizio del menù per pianificare le ricette sulla timeline.
+            </span>
+          </Banner>
         )
       )}
 

@@ -1,12 +1,19 @@
 "use client";
 import { useState } from "react";
 import Image from "next/image";
-import { Share2, Copy, Check } from "lucide-react";
+import { Check, Copy, QrCode, Share2 } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
+import { Button } from "@/components/ds/Button";
 
-export function ShareReviewLink({ url, qrDataUrl }: { url: string; qrDataUrl: string }) {
+/**
+ * 13.5 · link per le recensioni degli ospiti (solo admin). Bottone «Recensioni ospiti» nella riga
+ * azioni del dettaglio menù; la finestra mostra il QR, il link, «Copia» e «Invia» (condivisione
+ * di sistema, dove c'è).
+ */
+export function ShareReviewLink({ url, qrDataUrl, menuName }: { url: string; qrDataUrl: string; menuName?: string }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const canShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
 
   const copy = async () => {
     await navigator.clipboard.writeText(url);
@@ -14,39 +21,32 @@ export function ShareReviewLink({ url, qrDataUrl }: { url: string; qrDataUrl: st
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const share = () => {
+    void navigator.share({ title: menuName ? `Vota il menù «${menuName}»` : "Vota il menù", url }).catch(() => {});
+  };
+
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl border border-sky-400/40 bg-linear-to-br from-sky-500 to-indigo-500 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-sky-500/20 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-sky-500/30 active:translate-y-0 active:shadow-sm"
-      >
-        {/* Shine sweep all'hover */}
-        <span className="pointer-events-none absolute inset-0 -translate-x-full bg-linear-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" />
-        <Share2 size={16} className="shrink-0 transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110" />
+      <Button variant="secondary" icon={<QrCode />} onClick={() => setOpen(true)}>
         Recensioni ospiti
-      </button>
+      </Button>
 
-      <Modal open={open} onClose={() => setOpen(false)} title="Condividi per farti recensire">
-        <div className="space-y-4 p-6 pt-2">
-          <p className="text-sm text-sky-800">
-            Chi ha questo link (o scansiona il QR) può votare da 1 a 10 le ricette di questo menù, senza dover accedere.
+      <Modal open={open} onClose={() => setOpen(false)} title="Recensioni degli ospiti" size="sm">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <p className="text-[0.9375rem] text-grigio">
+            Chi apre il link o inquadra il QR vota da 1 a 10 le ricette del menù, senza accedere.
           </p>
-
-          <div className="flex justify-center">
-            <Image src={qrDataUrl} alt="QR code recensione" width={200} height={200} className="rounded-xl border border-sky-100" unoptimized />
-          </div>
-
-          <div className="flex items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2">
-            <span className="min-w-0 flex-1 truncate text-xs text-sky-800">{url}</span>
-            <button
-              type="button"
-              onClick={copy}
-              className="flex shrink-0 items-center gap-1 rounded-lg bg-orange-500 px-2.5 py-1.5 text-xs font-medium text-white active:bg-orange-700 sm:hover:bg-orange-600 transition-colors"
-            >
-              {copied ? <Check size={13} /> : <Copy size={13} />}
-              {copied ? "Copiato" : "Copia"}
-            </button>
+          <Image src={qrDataUrl} alt="QR per le recensioni" width={200} height={200} className="rounded-ctl border border-blu-150" unoptimized />
+          <p className="w-full truncate rounded-ctl bg-blu-100 px-3 py-2 text-[0.8125rem] text-blu-800">{url}</p>
+          <div className="flex flex-wrap justify-center gap-2">
+            <Button variant="secondary" icon={copied ? <Check /> : <Copy />} onClick={() => void copy()}>
+              {copied ? "Copiato" : "Copia link"}
+            </Button>
+            {canShare && (
+              <Button variant="tonal" icon={<Share2 />} onClick={share}>
+                Invia
+              </Button>
+            )}
           </div>
         </div>
       </Modal>

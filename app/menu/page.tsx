@@ -1,32 +1,32 @@
-import { MenuGrid } from "@/components/menu/MenuGrid";
-import { getMenuSummaries } from "@/lib/queries";
+import { MenuGrid, NewMenuLink } from "@/components/menu/MenuGrid";
+import { NextMenuCard } from "@/components/menu/NextMenuCard";
+import { getMenuSummaries, getNextMenu } from "@/lib/queries";
 import { getSession } from "@/lib/session";
+import { PageHeader } from "@/components/ds/PageHeader";
 import type { Metadata } from "next";
-import { UtensilsCrossed } from "lucide-react";
 
 export const metadata: Metadata = { title: "Menù — Ricettario" };
 
+/** Menù con data da ieri in poi (fuori dal componente: Date.now non è una funzione pura) */
+function countUpcoming(menus: { date: string | null }[]) {
+  const since = Date.now() - 36 * 3600_000;
+  return menus.filter((m) => m.date && new Date(m.date).getTime() > since).length;
+}
+
 export default async function MenuListPage() {
   const isAdmin = !!(await getSession());
-  const menus = await getMenuSummaries(isAdmin);
+  const [menus, next] = await Promise.all([getMenuSummaries(isAdmin), getNextMenu(isAdmin)]);
+  const upcoming = countUpcoming(menus);
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8">
-      {/* Header */}
-      <div className="text-center space-y-2">
-        <div className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/30 px-4 py-1.5 text-xs font-semibold text-sky-700 backdrop-blur-sm">
-          <UtensilsCrossed size={12} />
-          Menù
-        </div>
-        <h1 className="text-3xl font-bold text-sky-50 drop-shadow">I miei menù</h1>
-        <p className="text-sky-200/80 text-sm">
-          Raccolte di ricette per ogni occasione
-        </p>
-      </div>
-
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        title="Menù"
+        meta={`${menus.length} menù${upcoming ? ` · ${upcoming} in programma` : ""}`}
+        actions={<NewMenuLink />}
+      />
+      {next && <NextMenuCard menu={next} />}
       <MenuGrid menus={menus} />
     </div>
   );
 }
-
-
