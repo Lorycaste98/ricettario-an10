@@ -12,7 +12,7 @@
 - A ogni fase si aggiornano `CLAUDE.md` (in particolare la sezione «Classi base ricorrenti», che descrive lo stile vecchio) e `DESIGN.md`.
 
 ## Prima di iniziare (fase 0)
-- [ ] Decidere cosa fare dell'anteprima dei passi successivi in «Sto cucinando» (`CookingDock.tsx`, oggi non committata su `main`): committarla su `main` o portarla nel restyle.
+- [x] Anteprima dei passi successivi in «Sto cucinando» (`CookingDock.tsx`): portata nel restyle (deciso il 16/11/2026), arriva su `main` con l'unione del restyle.
 - [x] Commit dei documenti di design già pronti: `PRODUCT.md`, `DESIGN.md`, `docs/design/`, skill `ricettario-design`, `.gitignore`, `public/brand/`, `components/brand/An10Logo.tsx`.
 - [x] Verificare su Vercel che le anteprime del branch funzionino: `an10recipes-git-feat-restyle-frontend-lorycaste98s-projects.vercel.app`. ⚠️ Usa il **database di produzione** (scelta del 16/11/2026): dall'anteprima, da admin, non eliminare né modificare dati veri.
 - [x] Fare la foto di com'è oggi (screenshot già in `.playwright-mcp/before/`), per il confronto finale.

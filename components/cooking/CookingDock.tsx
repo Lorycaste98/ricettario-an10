@@ -19,15 +19,15 @@ import {
 } from "@/lib/cooking-session";
 import { useRecipeProgress } from "@/lib/recipe-progress";
 import { useAuth } from "@/components/AuthProvider";
-import { toStepKind } from "@/lib/types";
+import { formatMinutes, toStepKind } from "@/lib/types";
 import { Modal, ConfirmModal } from "@/components/ui/Modal";
 import { StepTimer } from "@/components/cooking/StepTimer";
 import { CurrentStep } from "@/components/cooking/CurrentStep";
 import { An10Logo } from "@/components/brand/An10Logo";
 import { Button, IconButton } from "@/components/ds/Button";
 import { Switch } from "@/components/ds/Controls";
-import { StepProgress } from "@/components/ds/Progress";
-import { Tag } from "@/components/ds/Tag";
+import { StepNumber, StepProgress } from "@/components/ds/Progress";
+import { StepKindTag, Tag } from "@/components/ds/Tag";
 import { TimerAlert } from "@/components/ds/Feedback";
 
 /**
@@ -129,6 +129,47 @@ function KeepAwakeToggle() {
     <div className="flex items-center justify-between gap-3 border-t border-blu-150 pt-3">
       <p className="text-[0.8125rem] text-grigio">Schermo acceso mentre un timer è in corso, così suona anche se non tocchi il telefono.</p>
       <Switch checked={keepAwake} onChange={setKeepAwake} label="Schermo acceso" hideLabel />
+    </div>
+  );
+}
+
+const NEXT_PREVIEW = 2;
+
+/**
+ * «Poi»: i prossimi passi in una riga ciascuno (testo troncato). Il tap su una riga
+ * mostra il testo completo sotto, senza aprire altri dialog. Nessun «Fatto» qui:
+ * non deve sembrare un passo da spuntare.
+ */
+function NextSteps({ steps, from }: { steps: CookingRecipe["steps"]; from: number }) {
+  const [expanded, setExpanded] = useState<number | null>(null);
+  const next = steps.slice(from, from + NEXT_PREVIEW);
+  if (next.length === 0) return null;
+  return (
+    <div className="flex flex-col gap-1">
+      <p className="text-xs font-bold tracking-[0.08em] text-grigio uppercase">Poi</p>
+      <ul className="flex flex-col">
+        {next.map((s, i) => {
+          const idx = from + i;
+          const open = expanded === idx;
+          const kind = toStepKind(s.kind);
+          return (
+            <li key={idx}>
+              <button
+                type="button"
+                onClick={() => setExpanded(open ? null : idx)}
+                aria-expanded={open}
+                className="flex min-h-11 w-full min-w-0 items-center gap-2.5 rounded-ctl px-1 py-1 text-left text-[0.875rem] hover:bg-blu-100"
+              >
+                <StepNumber n={idx + 1} state="todo" />
+                <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
+                  <span className={open ? "whitespace-pre-line" : "w-full truncate"}>{s.text}</span>
+                  {(kind !== "PREP" || s.mins) && <StepKindTag kind={kind} duration={s.mins ? formatMinutes(s.mins) : undefined} />}
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
@@ -253,6 +294,9 @@ function CookingRecipeCard({
           />
         )
       )}
+
+      {/* Anteprima dei prossimi passi: solo lettura, si avanza sempre dal passo corrente */}
+      {step && <NextSteps steps={steps} from={current + 1} />}
 
       {/* Timer di altri passi ancora vivi */}
       {otherTimers.length > 0 && (
