@@ -1,0 +1,54 @@
+/* Token di design · Ricettario AN10 · stile 1A
+   ─────────────────────────────────────────────────────────────────────────
+   COLORI in OKLCH. I blu sono una scala con la stessa tinta (228°).
+   MISURE in rem (seguono la dimensione del testo scelta dall'utente) e FLUIDE:
+   clamp(minimo, rem + quota che cresce con la larghezza, massimo).
+   --f vale 0 a 390px di larghezza (iPhone) e 1px a 1440px (PC).
+   Dentro i componenti padding, spazi e icone sono in em, così seguono il testo
+   del componente. Bordi, linee sottili e ombre restano in px. */
+:root{
+  --blu-950:oklch(25% 0.038 228);
+  --blu-800:oklch(40% 0.075 228);
+  --blu-700:oklch(52% 0.091 228);
+  --blu-600:oklch(55.5% 0.107 228.5);
+  --blu-300:oklch(83.5% 0.062 222);
+  --blu-250:oklch(78.8% 0.041 226);
+  --blu-200:oklch(86% 0.028 226);
+  --blu-150:oklch(91% 0.021 224);
+  --blu-120:oklch(91.7% 0.026 224);
+  --blu-100:oklch(95% 0.017 225);
+  --blu-50:oklch(98% 0.006 224);
+  --grigio:oklch(51% 0.038 226);
+  --grigio-chiaro:oklch(65% 0.034 225);
+  --nav-ink:oklch(92.3% 0.027 221);--nav-muted:oklch(80% 0.05 223);
+  --arancio:oklch(64.4% 0.192 41.7);--arancio-h:oklch(57.8% 0.172 41.6);--arancio-50:oklch(96.7% 0.019 55);--arancio-200:oklch(87% 0.08 50);
+  --giallo-100:oklch(96.1% 0.068 96.6);--giallo-400:oklch(88.3% 0.165 92);--giallo-ink:oklch(49% 0.1 85);--ambra:oklch(53.1% 0.119 65);
+  --verde:oklch(52.9% 0.106 154);--verde-50:oklch(94% 0.04 154);
+  --rosa:oklch(53.9% 0.193 6.5);--rosa-50:oklch(95% 0.03 6);--rosa-200:oklch(85% 0.08 6);
+  --bianco:#fff;
+  /* colori di AREA (13.2): solo per riconoscere a colpo d'occhio un'area nelle
+     scorciatoie e nelle icone della dashboard. Non indicano mai uno stato. */
+  --area-ricette:oklch(55.5% 0.107 228.5);--area-ricette-50:oklch(95% 0.03 228);
+  --area-menu:oklch(52% 0.13 330);--area-menu-50:oklch(95.5% 0.025 330);
+  --area-ingredienti:oklch(55% 0.11 135);--area-ingredienti-50:oklch(95.5% 0.035 135);
+  --area-vocabolario:oklch(58% 0.12 70);--area-vocabolario-50:oklch(96% 0.035 75);
+
+  /* cornice dell'area admin: stessa scala, tinta spostata verso l'indaco (250°) */
+  --adm-900:oklch(27% 0.05 255);--adm-150:oklch(90% 0.02 255);--adm-100:oklch(94.5% 0.016 255);--adm-50:oklch(97.5% 0.007 255);
+
+  --f:calc((100vw - 390px) / 1050);
+  --h-field:clamp(2.125rem, calc(2.125rem + 6 * var(--f)), 2.5rem);
+  --h-btn:clamp(2.375rem, calc(2.375rem + 6 * var(--f)), 2.75rem);
+  --h-btn-lg:clamp(2.75rem, calc(2.75rem + 10 * var(--f)), 3.375rem);
+  --h-sm:clamp(1.875rem, calc(1.875rem + 4 * var(--f)), 2.125rem);
+  --h-icon:var(--h-btn);
+  --fs-page:clamp(1.375rem, calc(1.375rem + 8 * var(--f)), 1.875rem);
+  --fs-sec:clamp(1.0625rem, calc(1.0625rem + 3 * var(--f)), 1.25rem);
+  --fs-step:clamp(1.0625rem, calc(1.0625rem + 5 * var(--f)), 1.375rem);
+  --fs-body:clamp(0.9375rem, calc(0.9375rem + 1 * var(--f)), 1rem);
+  --fs-meta:clamp(0.75rem, calc(0.75rem + 1 * var(--f)), 0.8125rem);
+  --fs-timer:clamp(1.625rem, calc(1.625rem + 10 * var(--f)), 2.25rem);
+  --gap:clamp(0.75rem, calc(0.75rem + 10 * var(--f)), 1.375rem);
+  --pad:clamp(0.875rem, calc(0.875rem + 10 * var(--f)), 1.5rem);
+  --r-ctl:0.75rem;--r-card:1rem;--r-dlg:1.25rem;
+}

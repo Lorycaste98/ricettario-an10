@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ricetta · layout fluido</title>
+<style>
+/*TOKENS*/
+/* ── Layout fluido ────────────────────────────────────────────────────────
+   Un solo punto di rottura per la NAVIGAZIONE (barra in basso ↔ barra laterale,
+   a 700px). Tutto il resto decide in base allo spazio del proprio contenitore
+   (container query), non del dispositivo:
+   · pagina < 620px   → ingredienti e procedura in due schede (segmenti 4.10)
+   · pagina ≥ 620px   → ingredienti e procedura affiancati
+   · pagina ≥ 1000px  → terza colonna: foto, voto, recensioni
+   · fila in corso    → schede che scorrono; sotto 620px diventa la mini-barra 9.3 */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--blu-50);font:var(--fs-body)/1.4 -apple-system,"SF Pro Text",system-ui,sans-serif;color:var(--blu-950);overflow:hidden}
+svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}svg.s{width:16px;height:16px}
+.app{height:100%;display:grid;grid-template-rows:1fr auto}
+.rail{display:none}
+.tabs{display:flex;background:#fff;border-top:1px solid var(--blu-150);padding:6px 0 20px}.tabs div{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--grigio)}.tabs .on{color:var(--arancio);font-weight:700}
+@media (min-width:700px){
+  .app{grid-template-columns:auto 1fr;grid-template-rows:1fr}
+  .tabs{display:none}
+  .rail{display:flex;flex-direction:column;align-items:center;gap:14px;width:clamp(72px,calc(72px + 12 * var(--f)),84px);background:var(--blu-800);color:var(--nav-ink);padding:16px 0;font-size:11px}
+  .rail div{display:flex;flex-direction:column;align-items:center;gap:4px}.rail span{width:44px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center}
+  .rail .on span{background:var(--arancio);color:#fff}.rail .on{color:#fff;font-weight:700}.rail .end{margin-top:auto}
+}
+.main{container-type:inline-size;min-width:0;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+
+/* fila «in corso» */
+.pass{display:flex;gap:8px;padding:10px var(--pad);background:var(--blu-600);overflow-x:auto;flex:none;scrollbar-width:none}
+.tk{flex:0 0 clamp(170px,26cqi,240px);background:oklch(98% 0.009 222);border-radius:12px;padding:8px 11px;border-top:4px solid var(--arancio)}
+.tk.w{border-top-color:oklch(75% 0.15 85)}.tk small{display:block;color:var(--grigio);font-size:11px}.tk .t{font-size:clamp(18px,calc(18px + 4*var(--f)),22px);font-weight:700;font-variant-numeric:tabular-nums;color:var(--ambra)}
+.tk.add{flex:0 0 110px;background:none;border:2px dashed var(--blu-300);color:var(--nav-ink);display:flex;align-items:center;justify-content:center;font-weight:600}
+.mini{display:none;margin:0 10px 8px;background:var(--blu-600);color:#fff;border-radius:14px;padding:9px 12px;align-items:center;gap:10px;flex:none}
+.mini small{display:block;color:var(--nav-ink);font-size:11px}.mini .t{margin-left:auto;font-size:19px;font-weight:700;color:var(--giallo-400);font-variant-numeric:tabular-nums}
+@container (max-width:619px){.pass{display:none}.mini{display:flex;order:9}}
+
+/* testata */
+.head{display:flex;align-items:center;gap:12px;padding:12px var(--pad);background:#fff;border-bottom:1px solid var(--blu-150);flex:none;flex-wrap:wrap}
+.thumb{width:clamp(44px,8cqi,60px);aspect-ratio:1;border-radius:12px;background:linear-gradient(135deg,#c9b48a,#a8895a);flex:none}
+.head h1{font-size:var(--fs-page);line-height:1.15}.head p{color:var(--grigio);font-size:var(--fs-meta)}
+.acts{margin-left:auto;display:flex;gap:8px}
+.ib{width:var(--h-icon);height:var(--h-icon);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:#fff;border:1px solid var(--blu-200);color:var(--blu-800)}
+.vis{height:var(--h-sm);width:var(--h-sm);border-radius:99px;display:inline-flex;align-items:center;justify-content:center;background:var(--verde-50);border:1px solid oklch(80% 0.07 154);color:var(--verde);align-self:center}
+.b{height:var(--h-btn);padding:0 calc(var(--h-btn)*.4);border-radius:12px;display:inline-flex;align-items:center;gap:7px;font-weight:600;border:1px solid var(--blu-200);background:#fff;white-space:nowrap}
+.hide-narrow{display:none}@container (min-width:620px){.hide-narrow{display:inline-flex}}
+
+/* area di lavoro */
+.seg{display:flex;background:var(--blu-120);border-radius:11px;padding:3px;margin:10px var(--pad) 0;flex:none}.seg div{flex:1;text-align:center;padding:7px;border-radius:8px;font-weight:600;font-size:14px;color:var(--blu-800)}.seg .on{background:#fff;color:var(--blu-950)}
+.work{flex:1;min-height:0;display:grid;grid-template-columns:1fr;overflow:hidden}
+.col{padding:14px var(--pad);overflow:hidden;min-width:0}
+.ingc{background:var(--blu-100);display:none}
+.side{display:none;background:var(--blu-100)}
+@container (min-width:620px){.seg{display:none}.work{grid-template-columns:clamp(220px,32cqi,320px) 1fr}.ingc{display:block;border-right:1px solid var(--blu-150)}}
+@container (min-width:1000px){.work{grid-template-columns:clamp(240px,26cqi,320px) 1fr clamp(240px,24cqi,320px)}.side{display:block;border-left:1px solid var(--blu-150)}}
+h2{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--grigio);font-weight:600;margin-bottom:8px}
+.srv{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-weight:700}.srv .ib{border-radius:12px;width:var(--h-btn);height:var(--h-btn);font-size:20px}
+.ir{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--blu-150);align-items:center}
+.cb{width:24px;height:24px;border-radius:7px;border:2px solid var(--blu-250);background:#fff;flex:none;display:flex;align-items:center;justify-content:center;color:#fff}.done .cb{background:var(--verde);border-color:var(--verde)}
+.done{color:var(--grigio-chiaro);text-decoration:line-through}
+.q{width:62px;font-weight:700;color:var(--arancio);font-variant-numeric:tabular-nums;flex:none}.done .q{color:var(--grigio-chiaro)}
+.segbar{display:flex;gap:4px;margin:0 0 10px}.segbar i{flex:1;height:7px;border-radius:99px;background:var(--blu-150)}.segbar .ok{background:var(--verde)}.segbar .now{background:var(--arancio)}
+.st{display:flex;gap:10px;padding:8px 0;color:var(--grigio)}
+.n{width:28px;height:28px;border-radius:50%;border:2px solid var(--blu-250);flex:none;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+.st.ok .n{background:var(--verde);border-color:var(--verde);color:#fff}
+.cur{background:#fff;border:2px solid var(--arancio);border-radius:16px;padding:12px 14px;color:var(--blu-950);margin:4px 0 6px}
+.cur .n{background:var(--arancio);border-color:var(--arancio);color:#fff}.cur p{font-size:var(--fs-step);line-height:1.35}
+.tag{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 9px;border-radius:99px;font-size:12px;font-weight:700;background:var(--giallo-100);color:var(--giallo-ink);margin-bottom:8px}
+.need{font-size:13px;color:var(--grigio);margin-top:6px}.need b{color:var(--blu-950)}
+.cta{display:flex;gap:10px;margin-top:10px}
+.tbox{flex:1;height:var(--h-btn-lg);border-radius:12px;background:var(--giallo-100);display:flex;align-items:center;gap:8px;padding:0 12px;font-size:clamp(18px,calc(18px + 4*var(--f)),22px);font-weight:700;font-variant-numeric:tabular-nums;color:var(--giallo-ink)}
+.big{height:var(--h-btn-lg);padding:0 calc(var(--h-btn-lg)*.45);border-radius:12px;background:var(--arancio);color:#fff;font-weight:700;display:flex;align-items:center;gap:6px;font-size:calc(var(--fs-body) + 1px)}
+.photo{aspect-ratio:4/3;border-radius:14px;background:linear-gradient(135deg,#c9b48a,#a8895a);margin-bottom:12px}
+.rate{background:#fff;border-radius:14px;padding:10px 12px;margin-bottom:10px;border:1px solid var(--blu-150)}.rate b{font-size:22px}
+.rv{background:oklch(98.5% 0.02 90);border:1px solid oklch(90% 0.06 90);border-radius:14px;padding:9px 11px;margin-bottom:8px;font-size:13px}.rv b{font-size:14px}
+.lbl{position:fixed;right:10px;bottom:10px;font:700 11px ui-monospace,Menlo,monospace;background:var(--blu-950);color:#fff;padding:4px 8px;border-radius:6px;opacity:.85;z-index:9}
+</style></head><body>
+<div class="lbl" id="lbl"></div><script>document.getElementById('lbl').textContent=innerWidth+'×'+innerHeight</script>
+<div class="app">
+  <nav class="rail"><div class="on"><span>{{l:book-open}}</span>Ricette</div><div><span>{{c:cloche}}</span>Menù</div><div><span>{{l:heart}}</span>Preferiti</div><div><span>{{l:search}}</span>Cerca</div><div class="end"><span>{{l:settings}}</span>Gestione</div></nav>
+  <div class="main">
+    <div class="pass">
+      <div class="tk w"><small>Focaccia barese · passo 3 di 6</small>Lievitazione<div class="t">1:03:00</div></div>
+      <div class="tk"><small>Ragù alla bolognese · 5 di 5</small>Sobbollire<div class="t">2:18:40</div></div>
+      <div class="tk"><small>Tiramisù · passo 4 di 5</small>Componi gli strati<div class="t" style="color:var(--grigio)">—</div></div>
+      <div class="tk add">+ ricetta</div>
+    </div>
+    <div class="head"><div class="thumb"></div><div style="min-width:0"><h1>Focaccia barese</h1><p>Pane · 2h 22min · 1 teglia da 32 cm</p></div>
+      <div class="acts"><span class="vis">{{s:eye}}</span><span class="b hide-narrow">{{s:pencil}} Modifica</span><span class="ib hide-narrow">{{s:file-down}}</span><span class="ib">{{s:heart}}</span></div></div>
+    <div class="seg"><div>Ingredienti</div><div class="on">Procedura</div></div>
+    <div class="work">
+      <div class="col ingc"><h2>Ingredienti</h2>
+        <div class="srv"><span class="ib">−</span>1 teglia<span class="ib">+</span></div>
+        <div class="ir done"><div class="cb">{{s:check}}</div><span class="q">500 g</span>Farina 0</div>
+        <div class="ir done"><div class="cb">{{s:check}}</div><span class="q">350 ml</span>Acqua tiepida</div>
+        <div class="ir done"><div class="cb">{{s:check}}</div><span class="q">8 g</span>Lievito di birra</div>
+        <div class="ir"><div class="cb"></div><span class="q">300 g</span>Pomodorini</div>
+        <div class="ir"><div class="cb"></div><span class="q">80 g</span>Olive baresi</div>
+        <div class="ir"><div class="cb"></div><span class="q">40 ml</span>Olio extravergine</div>
+        <div class="ir"><div class="cb"></div><span class="q">q.b.</span>Origano</div>
+      </div>
+      <div class="col"><h2>Procedura · 2 di 6 fatti</h2>
+        <div class="segbar"><i class="ok"></i><i class="ok"></i><i class="now"></i><i></i><i></i><i></i></div>
+        <div class="st ok"><div class="n">{{s:check}}</div>Sciogli il lievito nell'acqua tiepida con lo zucchero.</div>
+        <div class="st ok"><div class="n">{{s:check}}</div>Aggiungi farina e semola, poi olio e sale. Impasta 10 minuti.</div>
+        <div class="cur"><span class="tag">{{s:c:rise}} Attesa · 1h 30min</span><div style="display:flex;gap:10px"><div class="n">3</div><p>Lascia lievitare coperto in un luogo tiepido finché non raddoppia di volume.</p></div>
+          <div class="need">Ti servono: <b>l'impasto</b> · <b>un canovaccio</b></div>
+          <div class="cta"><div class="tbox">{{l:timer}} 1:03:00</div><div class="big">{{l:check}} Fatto</div></div></div>
+        <div class="st"><div class="n">4</div>Ungi la teglia, stendi l'impasto con le dita, distribuisci pomodorini e olive.</div>
+        <div class="st"><div class="n">5</div>Inforna a 230°C nella parte bassa per 25 minuti.</div>
+        <div class="st"><div class="n">6</div>Condisci con origano e olio a crudo.</div>
+      </div>
+      <div class="col side"><div class="photo"></div>
+        <div class="rate"><h2 style="margin:0">Voto ospiti</h2><b>9.0</b> <span style="color:var(--grigio);font-size:13px">· 4 recensioni · il mio 9</span></div>
+        <div class="rv"><b>Giulia · 9</b><br>Croccante sotto e morbida dentro.</div>
+        <div class="rv"><b>Marco · 9</b><br>Da rifare con più olive.</div>
+      </div>
+    </div>
+    <div class="mini">{{c:pot}}<div><small>Sto cucinando · 3 ricette</small>Ragù · sobbollire</div><div class="t">2:18:40</div></div>
+  </div>
+  <nav class="tabs"><div class="on">{{l:book-open}}Ricette</div><div>{{c:cloche}}Menù</div><div>{{l:heart}}Preferiti</div><div>{{l:search}}Cerca</div><div>{{l:ellipsis}}Altro</div></nav>
+</div>
+</body></html>

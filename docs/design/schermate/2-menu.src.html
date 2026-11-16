@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Menù</title>
+<style>
+/*TOKENS*/
+/*APP*/
+
+.scroll{padding:0 var(--pad) var(--pad);display:flex;flex-direction:column;gap:var(--gap)}
+.next{background:var(--blu-800);color:#fff;border-radius:var(--r-card);padding:1em 1.1em;display:grid;gap:.8em}
+.next small{color:var(--nav-muted);font-size:.8125rem}.next h2{font-size:var(--fs-page)}
+.next .cd{font-size:var(--fs-timer);font-weight:800;color:var(--giallo-400);font-variant-numeric:tabular-nums;line-height:1}
+.next .row{display:flex;gap:.5rem;flex-wrap:wrap}
+.next .b.sec{background:oklch(100% 0 0 / .1);border-color:oklch(100% 0 0 / .25);color:#fff}
+.prog{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem}.prog div{background:oklch(100% 0 0 / .08);border-radius:.75rem;padding:.5em .7em;font-size:.75rem;color:var(--nav-ink)}.prog b{display:block;font-size:1.0625rem;color:#fff}
+@container (min-width:620px){.next{grid-template-columns:1fr auto;align-items:end}.next .row{grid-column:1/-1}}
+.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(clamp(15rem,30cqi,20rem),1fr));gap:var(--gap)}
+.mcard{background:#fff;border:1px solid var(--blu-150);border-radius:var(--r-card);overflow:hidden}
+.mcard .hd{background:var(--blu-100);padding:.7em .9em;border-left:4px solid var(--area-menu)}.mcard .hd small{display:block;font-size:.75rem;color:var(--grigio)}.mcard .hd b{font-size:1.0625rem}
+.mcard .bd{padding:.6em .9em;display:flex;justify-content:space-between;align-items:center;font-size:.8125rem;color:var(--grigio)}.mcard .bd span:first-child{display:flex;gap:.35em;align-items:center}
+</style></head><body><div class="lbl" id="lbl"></div><script>document.getElementById("lbl").textContent=innerWidth+"×"+innerHeight</script>
+<div class="app">{{rail:menu}}
+<div class="main">{{pass}}
+  <div class="pagehead"><div><h1>Menù</h1><p>6 menù · 1 in programma</p></div><div class="acts"><span class="b pri">{{s:plus}} <span class="hide-narrow">Nuovo menù</span><span class="only-narrow">Nuovo</span></span></div></div>
+  <div class="scroll">
+    <div class="next"><div><small>Prossimo · sabato 22 novembre · servizio alle 20:30</small><h2>Compleanno Alessia</h2><small>8 persone · 5 ricette</small></div><div><small>si inizia tra</small><div class="cd">4h 12m</div></div>
+      <div class="prog" style="grid-column:1/-1"><div>Spesa<b>21 / 26</b></div><div>Ricette pronte<b>1 / 5</b></div><div>Recensioni<b>—</b></div></div>
+      <div class="row"><span class="b pri">{{c:pot}} Modalità cucina</span><span class="b sec">{{c:bag}} Lista spesa</span><span class="b sec">{{l:qr-code}} Recensioni</span></div></div>
+    <div class="t-cap">Tutti i menù</div>
+    <div class="mgrid"><div class="mcard"><div class="hd"><small>sab 13 dic · 20:00</small><b>Cena di Natale</b></div><div class="bd"><span>{{s:users}} 12 persone · 7 ricette</span><span class="tag st-hide">{{s:eye-off}} Non pronto</span></div></div><div class="mcard"><div class="hd"><small>6 set · 19:30</small><b>Grigliata di fine estate</b></div><div class="bd"><span>{{s:users}} 10 persone · 5 ricette</span><span class="tag r-gold">{{s:star}} 8.7</span></div></div><div class="mcard"><div class="hd"><small>12 lug · 20:30</small><b>Cena dai Rossi</b></div><div class="bd"><span>{{s:users}} 6 persone · 4 ricette</span><span class="tag r-gold">{{s:star}} 9.1</span></div></div><div class="mcard"><div class="hd"><small>20 apr · 13:00</small><b>Pranzo di Pasqua</b></div><div class="bd"><span>{{s:users}} 14 persone · 8 ricette</span><span class="tag r-gold">{{s:star}} 9.4</span></div></div></div>
+  </div>
+  {{mini}}
+</div>{{tabs:menu}}</div></body></html>

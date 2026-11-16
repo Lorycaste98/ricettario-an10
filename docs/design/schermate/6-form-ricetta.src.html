@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Modifica ricetta</title>
+<style>
+/*TOKENS*/
+/*APP*/
+
+.formbar{display:flex;align-items:center;gap:.5rem;background:#fff;border-bottom:1px solid var(--blu-150);padding:.5rem var(--pad);flex:none;box-shadow:0 6px 18px oklch(25% 0.038 228 / .06)}
+.formbar b{font-size:var(--fs-sec);margin-right:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.scroll{padding:var(--gap) var(--pad);display:grid;grid-template-columns:1fr;gap:var(--gap);align-content:start}
+@container (min-width:860px){.scroll{grid-template-columns:minmax(17rem,.85fr) 1.4fr}.colA{grid-column:1}.colB{grid-column:2;grid-row:1/span 3}}
+.colA,.colB{display:flex;flex-direction:column;gap:var(--gap);min-width:0}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:.625rem}.fgrid .full{grid-column:1/-1}
+.photos{display:flex;gap:.5rem;flex-wrap:wrap}.photos i{width:4.25rem;height:4.25rem;border-radius:.75rem}.photos .add{background:var(--blu-100);border:2px dashed var(--blu-250);display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--blu-800);font-size:.6875rem;font-style:normal}
+.step{display:flex;gap:.5rem;align-items:flex-start;padding:.5em 0;border-bottom:1px solid var(--blu-150)}.step:last-of-type{border:0}
+.step .body{flex:1;display:flex;flex-direction:column;gap:.4rem;min-width:0}
+.step .top{display:flex;gap:.375rem;align-items:center;flex-wrap:wrap}
+</style></head><body class="admin"><div class="lbl" id="lbl"></div><script>document.getElementById("lbl").textContent=innerWidth+"×"+innerHeight</script>
+<div class="app">{{rail:gestione}}
+<div class="main">
+  <div class="formbar"><span class="ib xs only-narrow" style="border:0">{{s:x}}</span><b>Focaccia barese</b><span class="vis on"><span>{{s:eye}}</span><span class="hide-narrow">Pronta</span></span><span class="b sec hide-narrow">Annulla</span><span class="b pri">Salva</span></div>
+  <div class="scroll">
+    <div class="colA">
+      <div class="card"><h3><span class="ic">{{s:info}}</span>Informazioni</h3><div class="fgrid">
+        <div class="fld full"><label>Nome ricetta</label><div class="in">Focaccia barese</div></div>
+        <div class="fld"><label>Porzioni</label><div class="in">1</div></div><div class="fld"><label>Unità</label><div class="in">teglia da 32 cm</div></div>
+        <div class="fld"><label>Prep. · auto</label><div class="in ro">{{s:lock}} 27 min</div></div><div class="fld"><label>Cottura · auto</label><div class="in ro">{{s:lock}} 25 min</div></div>
+        <div class="fld full"><label>Categoria e tag</label><div style="display:flex;gap:.375rem;flex-wrap:wrap"><span class="chip"><i class="dot" style="background:oklch(70% .15 60)"></i>Pane e focacce {{s:x}}</span><span class="chip">#lievitati {{s:x}}</span><span class="chip" style="border-style:dashed;color:var(--blu-600)">{{s:plus}} Tag</span></div></div>
+      </div></div>
+      <div class="card"><h3><span class="ic">{{s:image}}</span>Foto</h3><div class="photos"><i class="p1"></i><i class="p3"></i><i class="add">{{l:image-plus}}Aggiungi</i></div></div>
+    </div>
+    <div class="colB">
+      <div class="card"><h3><span class="ic">{{s:c:bag}}</span>Ingredienti<span class="r"><span class="sw2 off"></span>Sezioni</span></h3>
+        <div class="erow"><span class="grip">{{s:grip-vertical}}</span><div class="in" style="width:3.5rem">500</div><div class="in" style="width:3rem">g</div><div class="in" style="flex:1;min-width:7rem">Farina 0</div><div class="ib xs d">{{s:x}}</div></div>
+        <div class="erow"><span class="grip">{{s:grip-vertical}}</span><div class="in" style="width:3.5rem">350</div><div class="in" style="width:3rem">ml</div><div class="in" style="flex:1;min-width:7rem">Acqua tiepida</div><div class="ib xs d">{{s:x}}</div></div>
+        <div class="erow"><span class="grip">{{s:grip-vertical}}</span><div class="in" style="width:3.5rem">8</div><div class="in" style="width:3rem">g</div><div class="in" style="flex:1;min-width:7rem">Lievito di birra</div><div class="ib xs d">{{s:x}}</div></div>
+        <div class="erow"><span class="grip">{{s:grip-vertical}}</span><div class="in" style="width:3.5rem">300</div><div class="in" style="width:3rem">g</div><div class="in" style="flex:1;min-width:7rem">Pomodorini</div><span class="tag over">320 / 300 g</span><div class="ib xs d">{{s:x}}</div></div>
+        <div class="erow"><span class="grip">{{s:grip-vertical}}</span><div class="in" style="width:3.5rem"></div><div class="in" style="width:3rem">q.b.</div><div class="in" style="flex:1;min-width:7rem">Origano</div><span class="mchip on">opz.</span><div class="ib xs d">{{s:x}}</div></div>
+        <div style="margin-top:.5rem"><span class="b sm ton">{{s:plus}} Ingrediente</span></div></div>
+      <div class="card"><h3><span class="ic">{{s:list-ordered}}</span>Procedura<span class="r">6 passi · 2h 22min</span></h3>
+        <div class="step"><span class="grip">{{s:grip-vertical}}</span><span class="n">1</span><div class="body"><div class="top"><div class="kind"><div class="on">{{s:c:board}}</div><div>{{s:c:stove}}</div><div>{{s:c:rise}}</div></div><div class="in" style="width:3.5rem;height:1.875rem">5</div><span class="t-meta">min</span><span class="ib xs d" style="margin-left:auto">{{s:x}}</span></div><div class="in ta">Sciogli il lievito nell'acqua tiepida con lo zucchero.</div><div style="display:flex;gap:.375rem;flex-wrap:wrap"><span class="mchip on">Acqua · 350 ml</span><span class="mchip on">Lievito</span><span class="mchip">{{s:plus}} ingrediente</span></div></div></div>
+        <div class="step"><span class="grip">{{s:grip-vertical}}</span><span class="n">2</span><div class="body"><div class="top"><div class="kind"><div>{{s:c:board}}</div><div>{{s:c:stove}}</div><div class="on">{{s:c:rise}}</div></div><div class="in" style="width:3.5rem;height:1.875rem">90</div><span class="t-meta">min</span><span class="ib xs d" style="margin-left:auto">{{s:x}}</span></div><div class="in ta">Lascia lievitare coperto finché non raddoppia.</div></div></div>
+        <div style="margin-top:.5rem"><span class="b sm ton">{{s:plus}} Passo</span></div></div>
+    </div>
+  </div>
+</div>{{tabs:gestione}}</div></body></html>

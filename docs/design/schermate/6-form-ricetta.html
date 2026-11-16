@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Modifica ricetta</title>
+<style>
+/* Token di design · Ricettario AN10 · stile 1A
+   ─────────────────────────────────────────────────────────────────────────
+   COLORI in OKLCH. I blu sono una scala con la stessa tinta (228°).
+   MISURE in rem (seguono la dimensione del testo scelta dall'utente) e FLUIDE:
+   clamp(minimo, rem + quota che cresce con la larghezza, massimo).
+   --f vale 0 a 390px di larghezza (iPhone) e 1px a 1440px (PC).
+   Dentro i componenti padding, spazi e icone sono in em, così seguono il testo
+   del componente. Bordi, linee sottili e ombre restano in px. */
+:root{
+  --blu-950:oklch(25% 0.038 228);
+  --blu-800:oklch(40% 0.075 228);
+  --blu-700:oklch(52% 0.091 228);
+  --blu-600:oklch(55.5% 0.107 228.5);
+  --blu-300:oklch(83.5% 0.062 222);
+  --blu-250:oklch(78.8% 0.041 226);
+  --blu-200:oklch(86% 0.028 226);
+  --blu-150:oklch(91% 0.021 224);
+  --blu-120:oklch(91.7% 0.026 224);
+  --blu-100:oklch(95% 0.017 225);
+  --blu-50:oklch(98% 0.006 224);
+  --grigio:oklch(51% 0.038 226);
+  --grigio-chiaro:oklch(65% 0.034 225);
+  --nav-ink:oklch(92.3% 0.027 221);--nav-muted:oklch(80% 0.05 223);
+  --arancio:oklch(64.4% 0.192 41.7);--arancio-h:oklch(57.8% 0.172 41.6);--arancio-50:oklch(96.7% 0.019 55);--arancio-200:oklch(87% 0.08 50);
+  --giallo-100:oklch(96.1% 0.068 96.6);--giallo-400:oklch(88.3% 0.165 92);--giallo-ink:oklch(49% 0.1 85);--ambra:oklch(53.1% 0.119 65);
+  --verde:oklch(52.9% 0.106 154);--verde-50:oklch(94% 0.04 154);
+  --rosa:oklch(53.9% 0.193 6.5);--rosa-50:oklch(95% 0.03 6);--rosa-200:oklch(85% 0.08 6);
+  --bianco:#fff;
+  /* colori di AREA (13.2): solo per riconoscere a colpo d'occhio un'area nelle
+     scorciatoie e nelle icone della dashboard. Non indicano mai uno stato. */
+  --area-ricette:oklch(55.5% 0.107 228.5);--area-ricette-50:oklch(95% 0.03 228);
+  --area-menu:oklch(52% 0.13 330);--area-menu-50:oklch(95.5% 0.025 330);
+  --area-ingredienti:oklch(55% 0.11 135);--area-ingredienti-50:oklch(95.5% 0.035 135);
+  --area-vocabolario:oklch(58% 0.12 70);--area-vocabolario-50:oklch(96% 0.035 75);
+
+  /* cornice dell'area admin: stessa scala, tinta spostata verso l'indaco (250°) */
+  --adm-900:oklch(27% 0.05 255);--adm-150:oklch(90% 0.02 255);--adm-100:oklch(94.5% 0.016 255);--adm-50:oklch(97.5% 0.007 255);
+
+  --f:calc((100vw - 390px) / 1050);
+  --h-field:clamp(2.125rem, calc(2.125rem + 6 * var(--f)), 2.5rem);
+  --h-btn:clamp(2.375rem, calc(2.375rem + 6 * var(--f)), 2.75rem);
+  --h-btn-lg:clamp(2.75rem, calc(2.75rem + 10 * var(--f)), 3.375rem);
+  --h-sm:clamp(1.875rem, calc(1.875rem + 4 * var(--f)), 2.125rem);
+  --h-icon:var(--h-btn);
+  --fs-page:clamp(1.375rem, calc(1.375rem + 8 * var(--f)), 1.875rem);
+  --fs-sec:clamp(1.0625rem, calc(1.0625rem + 3 * var(--f)), 1.25rem);
+  --fs-step:clamp(1.0625rem, calc(1.0625rem + 5 * var(--f)), 1.375rem);
+  --fs-body:clamp(0.9375rem, calc(0.9375rem + 1 * var(--f)), 1rem);
+  --fs-meta:clamp(0.75rem, calc(0.75rem + 1 * var(--f)), 0.8125rem);
+  --fs-timer:clamp(1.625rem, calc(1.625rem + 10 * var(--f)), 2.25rem);
+  --gap:clamp(0.75rem, calc(0.75rem + 10 * var(--f)), 1.375rem);
+  --pad:clamp(0.875rem, calc(0.875rem + 10 * var(--f)), 1.5rem);
+  --r-ctl:0.75rem;--r-card:1rem;--r-dlg:1.25rem;
+}
+
+/* Componenti comuni delle schermate prototipo (stessi codici della tavola). */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--blu-50);font:var(--fs-body)/1.4 -apple-system,"SF Pro Text",system-ui,sans-serif;color:var(--blu-950);overflow:hidden}
+svg.i{width:1.375rem;height:1.375rem;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+svg.s{width:1rem;height:1rem}
+.b svg.i,.chip svg.i,.vis svg.i,.in svg.i{width:1.15em;height:1.15em}
+.lbl{position:fixed;right:.5rem;bottom:.5rem;font:700 11px ui-monospace,Menlo,monospace;background:var(--blu-950);color:#fff;padding:3px 7px;border-radius:6px;opacity:.8;z-index:9}
+
+/* shell: 9.1 / 9.2 — unico punto di rottura legato allo schermo (700px) */
+.app{height:100%;display:grid;grid-template-rows:1fr auto}
+.rail{display:none}
+.tabs{display:flex;background:#fff;border-top:1px solid var(--blu-150);padding:.375rem 0 1.25rem}.tabs div{flex:1;display:flex;flex-direction:column;align-items:center;gap:.15em;font-size:.6875rem;color:var(--grigio)}.tabs .on{color:var(--arancio);font-weight:700}
+@media (min-width:700px){
+  .app{grid-template-columns:auto 1fr;grid-template-rows:1fr}
+  .tabs{display:none}
+  .rail{display:flex;flex-direction:column;align-items:center;gap:.875rem;width:clamp(4.5rem,calc(4.5rem + 12 * var(--f)),5.25rem);background:var(--rail-bg,var(--blu-800));color:var(--nav-ink);padding:1rem 0;font-size:.6875rem}
+  .rail div{display:flex;flex-direction:column;align-items:center;gap:.25rem}.rail span{width:2.75rem;height:2.375rem;border-radius:.75rem;display:flex;align-items:center;justify-content:center}
+  .rail .on span{background:var(--arancio);color:#fff}.rail .on{color:#fff;font-weight:700}.rail .end{margin-top:auto}
+  .rail .logo{width:2.5rem;height:2.5rem;margin-bottom:.25rem}
+}
+.rail .logo svg{width:100%;height:100%}
+.main{container-type:inline-size;min-width:0;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.scroll{flex:1;min-height:0;overflow:hidden}
+
+/* 8.4 fila in corso / 9.3 mini-barra */
+.pass{display:flex;gap:.5rem;padding:.5rem var(--pad);background:var(--blu-600);overflow-x:auto;flex:none;scrollbar-width:none}
+.tk{flex:0 0 clamp(10rem,22cqi,13rem);background:oklch(98% 0.009 222);border-radius:.625rem;padding:.35em .7em;border-left:4px solid var(--arancio);display:flex;align-items:center;gap:.5em;font-size:.875rem}
+.tk.w{border-left-color:oklch(75% 0.15 85)}.tk small{display:block;color:var(--grigio);font-size:.6875rem}.tk .t{margin-left:auto;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ambra)}
+.mini{display:none;margin:0 .625rem .5rem;background:var(--blu-600);color:#fff;border-radius:.875rem;padding:.55em .75em;align-items:center;gap:.625em;flex:none}
+.mini small{display:block;color:var(--nav-ink);font-size:.6875rem}.mini .t{margin-left:auto;font-size:1.1875rem;font-weight:700;color:var(--giallo-400);font-variant-numeric:tabular-nums}
+@container (max-width:619px){.pass{display:none}.mini{display:flex;order:9}}
+
+/* testate */
+.pagehead{display:flex;align-items:center;gap:.75rem;padding:.875rem var(--pad) .625rem;flex:none;flex-wrap:wrap}
+.pagehead h1{font-size:var(--fs-page);line-height:1.15}.pagehead p{color:var(--grigio);font-size:var(--fs-meta)}
+.pagehead .acts{margin-left:auto;display:flex;gap:.5rem}
+.back{height:var(--h-sm);padding:0 .9em 0 .5em;border-radius:99px;background:#fff;border:1px solid var(--blu-200);display:inline-flex;align-items:center;gap:.2em;font-weight:600;font-size:.875rem;color:var(--blu-800)}
+.t-cap{font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--grigio);font-weight:600}
+.t-meta{font-size:var(--fs-meta);color:var(--grigio)}
+
+/* 3.x bottoni */
+.b{height:var(--h-btn);padding:0 1.05em;border-radius:var(--r-ctl);display:inline-flex;align-items:center;justify-content:center;gap:.45em;font-weight:600;font-size:var(--fs-body);border:1px solid transparent;white-space:nowrap}
+.b.pri{background:var(--arancio);color:#fff}.b.sec{background:#fff;border-color:var(--blu-200)}.b.ton{background:var(--blu-120);color:var(--blu-800)}.b.gho{color:var(--blu-600);padding:0 .4em}
+.b.sm{height:var(--h-sm);padding:0 .8em;font-size:.875rem;border-radius:.625rem}
+.ib{width:var(--h-icon);height:var(--h-icon);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:#fff;border:1px solid var(--blu-200);color:var(--blu-800);flex:none}
+.ib.xs{width:1.875rem;height:1.875rem;border-radius:.5625rem}.ib.xs.d{color:var(--rosa)}
+.hide-narrow{display:none}@container (min-width:620px){.hide-narrow{display:inline-flex}.only-narrow{display:none!important}}
+
+/* 4.x campi */
+.in{height:var(--h-field);border-radius:.625rem;border:1px solid var(--blu-200);background:#fff;padding:0 .6em;display:flex;align-items:center;gap:.5em;font-size:1rem;color:var(--blu-950);min-width:0}
+.in.search{background:var(--blu-100);border-color:transparent;color:var(--grigio)}
+.in.ro{background:var(--blu-100);border-style:dashed;color:var(--blu-800)}
+.in.ta{height:auto;min-height:3.5rem;align-items:flex-start;padding-top:.4em;padding-bottom:.4em}
+.fld{display:flex;flex-direction:column;gap:.3rem;min-width:0}.fld label{font-size:.8125rem;font-weight:600;color:var(--grigio)}
+.chip{height:var(--h-sm);padding:0 .85em;border-radius:99px;display:inline-flex;align-items:center;gap:.4em;font-size:.875rem;font-weight:600;background:#fff;border:1px solid var(--blu-200);white-space:nowrap;flex:none}
+.chip.on{background:var(--blu-800);border-color:var(--blu-800);color:#fff}.chip .dot{width:.6em;height:.6em;border-radius:50%}
+.chips{display:flex;gap:.375rem;overflow-x:auto;scrollbar-width:none}
+.seg{display:flex;background:var(--blu-120);border-radius:.6875rem;padding:3px}.seg div{flex:1;display:flex;align-items:center;justify-content:center;gap:.3em;height:calc(var(--h-field) - 6px);padding:0 .75em;border-radius:.5rem;font-weight:600;font-size:.875rem;color:var(--blu-800);white-space:nowrap}.seg .on{background:#fff;color:var(--blu-950);box-shadow:0 1px 2px oklch(25% 0.038 228 / .12)}
+.cb{width:1.5rem;height:1.5rem;border-radius:.4375rem;border:2px solid var(--blu-250);background:#fff;display:inline-flex;align-items:center;justify-content:center;color:#fff;flex:none}.cb.on{background:var(--verde);border-color:var(--verde)}
+.sw2{width:2.75rem;height:1.625rem;border-radius:99px;background:var(--verde);position:relative;flex:none}.sw2:after{content:"";position:absolute;right:3px;top:3px;width:1.25rem;height:1.25rem;border-radius:50%;background:#fff;box-shadow:0 1px 3px oklch(25% 0.038 228 / .25)}.sw2.off{background:var(--blu-200)}.sw2.off:after{right:auto;left:3px}
+.vis{height:var(--h-sm);padding:0 .85em 0 .65em;border-radius:99px;display:inline-flex;align-items:center;gap:.4em;font-size:.875rem;font-weight:700;border:1px solid;white-space:nowrap}
+.vis.on{background:var(--verde-50);border-color:oklch(80% 0.07 154);color:var(--verde)}.vis.off{background:oklch(94% 0.008 225);border-color:var(--blu-200);color:var(--grigio);border-style:dashed}
+.vis.icon{width:var(--h-sm);padding:0;justify-content:center}
+
+/* 6.x etichette */
+.tag{display:inline-flex;align-items:center;gap:.4em;height:2em;padding:0 .75em;border-radius:99px;font-size:.75rem;font-weight:700;white-space:nowrap}
+.r-gold{background:oklch(95% 0.07 95);color:var(--giallo-ink)}.r-mine{background:oklch(93.5% 0.03 270);color:oklch(45% 0.15 270)}
+.st-hide{background:oklch(94% 0.008 225);color:var(--grigio)}.role{background:var(--blu-800);color:#fff}
+.k-wait{background:var(--giallo-100);color:var(--giallo-ink)}.k-prep{background:var(--blu-120);color:var(--blu-800)}.k-cook{background:oklch(92% 0.05 50);color:oklch(50% 0.15 42)}
+.over{background:var(--rosa-50);color:var(--rosa);border:1px solid var(--rosa-200)}
+
+/* 8.1 / 8.2 schede ricetta */
+.rgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(clamp(9.5rem,24cqi,13rem),1fr));gap:var(--gap)}
+.rc{border-radius:var(--r-card);overflow:hidden;background:#fff;border:1px solid var(--blu-150);min-width:0}
+.rc .ph{aspect-ratio:4/3;position:relative}
+.rc .ph.none{background:var(--blu-100);display:flex;align-items:center;justify-content:center}.rc .ph.none svg.an{width:34%;height:auto}
+.rc .ph .ib{position:absolute;right:.4rem;top:.4rem;width:2rem;height:2rem;border:0}
+.rc .bd{padding:.55em .7em .7em}.rc b{display:block;font-size:.9375rem;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.rc .row2{display:flex;justify-content:space-between;align-items:center;margin-top:.35em;gap:.3em}.rc small{color:var(--grigio);font-size:.75rem}
+.rc.hidden .ph{filter:saturate(.3) opacity(.7)}
+.p1{background:linear-gradient(135deg,#c9b48a,#a8895a)}.p2{background:linear-gradient(135deg,#d98a5a,#a0482c)}.p3{background:linear-gradient(135deg,#e8d6a8,#c4a66a)}.p4{background:linear-gradient(135deg,#8fa86a,#5c7a3e)}.p5{background:linear-gradient(135deg,#6b3f2a,#3e2216)}.p6{background:linear-gradient(135deg,#f0c9a0,#d08f5a)}
+
+/* schede e tabelle */
+.card{background:#fff;border:1px solid var(--blu-150);border-radius:var(--r-card);padding:.875em 1em;min-width:0}
+.card h3{font-size:var(--fs-sec);display:flex;align-items:center;gap:.5em;margin-bottom:.6em}
+.card h3 .ic{width:1.875rem;height:1.875rem;border-radius:.5625rem;background:var(--blu-120);color:var(--blu-800);display:flex;align-items:center;justify-content:center}
+.card h3 .r{margin-left:auto;font-size:.8125rem;font-weight:600;color:var(--grigio);display:flex;gap:.5em;align-items:center}
+.table{background:#fff;border:1px solid var(--blu-150);border-radius:var(--r-card);overflow:hidden}
+.trow{display:flex;align-items:center;gap:.625rem;padding:.5em .75em;border-bottom:1px solid var(--blu-150);min-height:3.25rem}.trow:last-child{border:0}
+.trow.h{background:var(--blu-100);font-size:.75rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--grigio);min-height:0;padding:.55em .75em}
+.trow .th{width:2.375rem;height:2.375rem;border-radius:.5625rem;flex:none}.trow .th.none{background:var(--blu-100);display:flex;align-items:center;justify-content:center}.trow .th.none svg.an{width:60%;height:auto}
+.trow .grow{flex:1;min-width:0}.trow .grow b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.trow small{color:var(--grigio);font-size:.75rem}
+.trow .col{width:7rem;flex:none}.trow .num{width:4.5rem;text-align:right;font-variant-numeric:tabular-nums;flex:none}
+.trow.picked{background:var(--arancio-50)}
+.selbar{display:flex;align-items:center;gap:.625rem;background:var(--blu-950);color:#fff;border-radius:.875rem;padding:.5em .5em .5em .875em;font-size:.875rem}.selbar .b{margin-left:auto}
+.erow{display:flex;align-items:center;gap:.375rem;padding:.375em 0;border-bottom:1px solid var(--blu-150);flex-wrap:wrap}.erow:last-child{border:0}
+.grip{width:1.5rem;height:1.875rem;display:flex;align-items:center;justify-content:center;color:var(--grigio-chiaro);flex:none}
+.erow .in{height:1.875rem;font-size:.9375rem;padding:0 .5em;border-radius:.5rem}
+.mchip{height:1.625rem;padding:0 .6em;border-radius:99px;font-size:.75rem;font-weight:700;display:inline-flex;align-items:center;gap:.25em;border:1px dashed var(--blu-250);color:var(--grigio);background:#fff;white-space:nowrap}.mchip.on{border-style:solid;background:var(--blu-120);color:var(--blu-800);border-color:var(--blu-200)}
+.n{width:1.75rem;height:1.75rem;border-radius:50%;border:2px solid var(--blu-250);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8125rem;color:var(--grigio);flex:none}
+.kind{display:flex;background:var(--blu-120);border-radius:.5625rem;padding:2px}.kind div{width:1.875rem;height:1.625rem;border-radius:.4375rem;display:flex;align-items:center;justify-content:center;color:var(--blu-800)}.kind .on{background:#fff;box-shadow:0 1px 2px oklch(25% 0.038 228 / .15)}
+
+/* sotto-navigazione della Gestione (iPad/PC: colonna; iPhone: indietro) */
+.adm{flex:1;min-height:0;display:grid;grid-template-columns:1fr}
+.subnav{display:none;background:var(--blu-100);border-right:1px solid var(--blu-150);padding:.875rem .625rem;gap:.125rem;flex-direction:column}
+.subnav h4{font-size:.6875rem;letter-spacing:.08em;text-transform:uppercase;color:var(--grigio);margin:.75rem .5rem .25rem}
+.subnav a{display:flex;align-items:center;gap:.6em;padding:.5em .6em;border-radius:.625rem;font-size:.9375rem;color:var(--blu-950);text-decoration:none}
+.subnav a svg{color:var(--c,var(--blu-700))}.subnav a span{margin-left:auto;font-size:.75rem;color:var(--grigio)}
+.subnav a.on{background:#fff;font-weight:700;box-shadow:0 1px 2px oklch(25% 0.038 228 / .1)}
+@container (min-width:900px){.adm{grid-template-columns:clamp(12rem,20cqi,15rem) 1fr}.subnav{display:flex}}
+.admmain{min-width:0;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.tile{background:#fff;border:1px solid var(--blu-150);border-top:4px solid var(--c);border-radius:var(--r-card);padding:.75em .875em;display:flex;flex-direction:column;gap:.875em;font-weight:700;min-width:0}
+.tile .ic{width:2.5rem;height:2.5rem;border-radius:.75rem;background:var(--c50);color:var(--c);display:flex;align-items:center;justify-content:center}
+.tile small{display:block;font-weight:600;color:var(--grigio);font-size:.75rem}
+.kpi{background:#fff;border:1px solid var(--blu-150);border-radius:var(--r-card);padding:.75em .875em;min-width:0}.kpi small{color:var(--grigio);font-size:.75rem;display:flex;gap:.35em;align-items:center}.kpi small svg{color:var(--c,var(--grigio))}.kpi b{display:block;font-size:clamp(1.5rem,calc(1.5rem + 6*var(--f)),1.875rem);font-variant-numeric:tabular-nums}
+
+/* ── Area admin: stessi componenti, cornice di colore diverso ─────────────────
+   Il blu scuro della navigazione vira verso l'inchiostro-indaco e i fondi si
+   raffreddano: si capisce subito di essere "nel retro", senza un secondo stile. */
+body.admin{--rail-bg:var(--adm-900);background:var(--adm-50)}
+body.admin .subnav{background:var(--adm-100);border-right-color:var(--adm-150)}
+body.admin .formbar{border-bottom-color:var(--adm-150)}
+.admtag{display:inline-flex;align-items:center;gap:.35em;height:1.5rem;padding:0 .6em;border-radius:99px;background:var(--adm-900);color:#fff;font-size:.6875rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;vertical-align:middle}
+/* sotto-navigazione: le creazioni stanno sopra, come bottoni, separate dalla consultazione */
+.subnav .create{display:flex;flex-direction:column;gap:.375rem;padding-bottom:.75rem;margin-bottom:.25rem;border-bottom:1px solid var(--adm-150,var(--blu-150))}
+.subnav .create a{background:#fff;border:1px solid var(--blu-200);font-weight:600}
+.subnav .create a .plus{margin-left:auto;width:1.375rem;height:1.375rem;border-radius:50%;background:var(--arancio);color:#fff;display:flex;align-items:center;justify-content:center}
+.subnav .create a .plus svg{color:#fff;width:.875rem;height:.875rem}
+/* card «Crea»: azione, con il + arancio; diversa dalle tessere di consultazione */
+.ccard{background:#fff;border:1px solid var(--blu-150);border-radius:var(--r-card);padding:.875em 1em;display:flex;align-items:center;gap:.875em;min-width:0}
+.ccard .ic{width:2.75rem;height:2.75rem;border-radius:.875rem;background:var(--c50);color:var(--c);display:flex;align-items:center;justify-content:center;flex:none}
+.ccard b{display:block}.ccard small{display:block;color:var(--grigio);font-size:.75rem}
+.ccard .plus{margin-left:auto;width:var(--h-btn);height:var(--h-btn);border-radius:50%;background:var(--arancio);color:#fff;display:flex;align-items:center;justify-content:center;flex:none}
+/* tessera di consultazione: numero grande, nessun +, freccia */
+.ctile{background:#fff;border:1px solid var(--blu-150);border-top:4px solid var(--c);border-radius:var(--r-card);padding:.75em .875em;display:flex;flex-direction:column;gap:.35em;min-width:0}
+.ctile .top{display:flex;align-items:center;gap:.5em;color:var(--c);font-weight:700;font-size:.875rem}.ctile .top span{color:var(--blu-950)}
+.ctile .top svg:last-child{margin-left:auto;color:var(--grigio-chiaro)}
+.ctile b{font-size:clamp(1.5rem,calc(1.5rem + 6*var(--f)),1.875rem);font-variant-numeric:tabular-nums;line-height:1.1}.ctile small{color:var(--grigio);font-size:.75rem}
+
+
+.formbar{display:flex;align-items:center;gap:.5rem;background:#fff;border-bottom:1px solid var(--blu-150);padding:.5rem var(--pad);flex:none;box-shadow:0 6px 18px oklch(25% 0.038 228 / .06)}
+.formbar b{font-size:var(--fs-sec);margin-right:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.scroll{padding:var(--gap) var(--pad);display:grid;grid-template-columns:1fr;gap:var(--gap);align-content:start}
+@container (min-width:860px){.scroll{grid-template-columns:minmax(17rem,.85fr) 1.4fr}.colA{grid-column:1}.colB{grid-column:2;grid-row:1/span 3}}
+.colA,.colB{display:flex;flex-direction:column;gap:var(--gap);min-width:0}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:.625rem}.fgrid .full{grid-column:1/-1}
+.photos{display:flex;gap:.5rem;flex-wrap:wrap}.photos i{width:4.25rem;height:4.25rem;border-radius:.75rem}.photos .add{background:var(--blu-100);border:2px dashed var(--blu-250);display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--blu-800);font-size:.6875rem;font-style:normal}
+.step{display:flex;gap:.5rem;align-items:flex-start;padding:.5em 0;border-bottom:1px solid var(--blu-150)}.step:last-of-type{border:0}
+.step .body{flex:1;display:flex;flex-direction:column;gap:.4rem;min-width:0}
+.step .top{display:flex;gap:.375rem;align-items:center;flex-wrap:wrap}
+</style></head><body class="admin"><div class="lbl" id="lbl"></div><script>document.getElementById("lbl").textContent=innerWidth+"×"+innerHeight</script>
+<div class="app"><nav class="rail"><div class="logo"><svg class="an" viewBox="0 0 512 512" aria-label="AN10"><rect width="512" height="512" rx="80" fill="#0A7EA4"/><line x1="228" y1="100" x2="228" y2="280" stroke="#fff" stroke-width="28" stroke-linecap="round"/><line x1="200" y1="100" x2="200" y2="164" stroke="#fff" stroke-width="22" stroke-linecap="round"/><line x1="256" y1="100" x2="256" y2="164" stroke="#fff" stroke-width="22" stroke-linecap="round"/><path d="M200 164 Q228 196 256 164" fill="#fff"/><line x1="284" y1="100" x2="284" y2="280" stroke="#fff" stroke-width="28" stroke-linecap="round"/><path d="M284 100 Q336 140 284 200" fill="#fff"/><text x="256" y="390" font-family="Courier New,Courier,monospace" font-size="120" font-weight="700" fill="#fff" text-anchor="middle" letter-spacing="8">AN10</text></svg></div><div><span><svg class="i" viewBox="0 0 24 24"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg></span>Ricette</div><div><span><svg class="i" viewBox="0 0 24 24"><path d="M3 18h18"/><path d="M5 18a7 7 0 0 1 14 0"/><path d="M12 11V9M10.5 9h3"/><path d="M4 21h16"/></svg></span>Menù</div><div><span><svg class="i" viewBox="0 0 24 24"><path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5"/></svg></span>Preferiti</div><div><span><svg class="i" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg></span>Cerca</div><div class="end on"><span><svg class="i" viewBox="0 0 24 24"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg></span>Gestione</div></nav>
+<div class="main">
+  <div class="formbar"><span class="ib xs only-narrow" style="border:0"><svg class="i s" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></span><b>Focaccia barese</b><span class="vis on"><span><svg class="i s" viewBox="0 0 24 24"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg></span><span class="hide-narrow">Pronta</span></span><span class="b sec hide-narrow">Annulla</span><span class="b pri">Salva</span></div>
+  <div class="scroll">
+    <div class="colA">
+      <div class="card"><h3><span class="ic"><svg class="i s" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span>Informazioni</h3><div class="fgrid">
+        <div class="fld full"><label>Nome ricetta</label><div class="in">Focaccia barese</div></div>
+        <div class="fld"><label>Porzioni</label><div class="in">1</div></div><div class="fld"><label>Unità</label><div class="in">teglia da 32 cm</div></div>
+        <div class="fld"><label>Prep. · auto</label><div class="in ro"><svg class="i s" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> 27 min</div></div><div class="fld"><label>Cottura · auto</label><div class="in ro"><svg class="i s" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> 25 min</div></div>
+        <div class="fld full"><label>Categoria e tag</label><div style="display:flex;gap:.375rem;flex-wrap:wrap"><span class="chip"><i class="dot" style="background:oklch(70% .15 60)"></i>Pane e focacce <svg class="i s" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></span><span class="chip">#lievitati <svg class="i s" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></span><span class="chip" style="border-style:dashed;color:var(--blu-600)"><svg class="i s" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg> Tag</span></div></div>
+      </div></div>
+      <div class="card"><h3><span class="ic"><svg class="i s" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></span>Foto</h3><div class="photos"><i class="p1"></i><i class="p3"></i><i class="add"><svg class="i" viewBox="0 0 24 24"><path d="M16 5h6"/><path d="M19 2v6"/><path d="M21 11.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7.5"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/><circle cx="9" cy="9" r="2"/></svg>Aggiungi</i></div></div>
+    </div>
+    <div class="colB">
+      <div class="card"><h3><span class="ic"><svg class="i s" viewBox="0 0 24 24"><path d="M5 10h14l-1.2 9.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8Z"/><path d="M9 10V8a3 3 0 0 1 6 0v2"/><path d="m15.5 6.5 4-4.5"/></svg></span>Ingredienti<span class="r"><span class="sw2 off"></span>Sezioni</span></h3>
+        <div class="erow"><span class="grip"><svg class="i s" viewBox="0 0 24 24"><circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/></svg></span><div class="in" style="width:3.5rem">500</div><div class="in" style="width:3rem">g</div><div class="in" style="flex:1;min-width:7rem">Farina 0</div><div class="ib xs d"><svg class="i s" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></div></div>
+        <div class="erow"><span class="grip"><svg class="i s" viewBox="0 0 24 24"><circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/></svg></span><div class="in" style="width:3.5rem">350</div><div class="in" style="width:3rem">ml</div><div class="in" style="flex:1;min-width:7rem">Acqua tiepida</div><div class="ib xs d"><svg class="i s" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></div></div>
+        <div class="erow"><span class="grip"><svg class="i s" viewBox="0 0 24 24"><circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/></svg></span><div class="in" style="width:3.5rem">8</div><div class="in" style="width:3rem">g</div><div class="in" style="flex:1;min-width:7rem">Lievito di birra</div><div class="ib xs d"><svg class="i s" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></div></div>
+        <div class="erow"><span class="grip"><svg class="i s" viewBox="0 0 24 24"><circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/></svg></span><div class="in" style="width:3.5rem">300</div><div class="in" style="width:3rem">g</div><div class="in" style="flex:1;min-width:7rem">Pomodorini</div><span class="tag over">320 / 300 g</span><div class="ib xs d"><svg class="i s" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></div></div>
+        <div class="erow"><span class="grip"><svg class="i s" viewBox="0 0 24 24"><circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/></svg></span><div class="in" style="width:3.5rem"></div><div class="in" style="width:3rem">q.b.</div><div class="in" style="flex:1;min-width:7rem">Origano</div><span class="mchip on">opz.</span><div class="ib xs d"><svg class="i s" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></div></div>
+        <div style="margin-top:.5rem"><span class="b sm ton"><svg class="i s" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg> Ingrediente</span></div></div>
+      <div class="card"><h3><span class="ic"><svg class="i s" viewBox="0 0 24 24"><path d="M11 5h10"/><path d="M11 12h10"/><path d="M11 19h10"/><path d="M4 4h1v5"/><path d="M4 9h2"/><path d="M6.5 20H3.4c0-1 2.6-1.925 2.6-3.5a1.5 1.5 0 0 0-2.6-1.02"/></svg></span>Procedura<span class="r">6 passi · 2h 22min</span></h3>
+        <div class="step"><span class="grip"><svg class="i s" viewBox="0 0 24 24"><circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/></svg></span><span class="n">1</span><div class="body"><div class="top"><div class="kind"><div class="on"><svg class="i s" viewBox="0 0 24 24"><rect x="3" y="12" width="18" height="8" rx="2"/><circle cx="17.5" cy="16" r="1"/><path d="M4 9 15.5 4.2a1.6 1.6 0 0 1 2.1.9L18 6 5.6 9.9Z"/></svg></div><div><svg class="i s" viewBox="0 0 24 24"><path d="M5 6h14v5a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4Z"/><path d="M3 8h2M19 8h2"/><path d="M8 21c0-1.2 1.2-1.6 1.2-2.8M12 21c0-1.2 1.2-1.6 1.2-2.8M16 21c0-1.2 1.2-1.6 1.2-2.8"/></svg></div><div><svg class="i s" viewBox="0 0 24 24"><path d="M3 13h18a9 7 0 0 1-18 0Z"/><path d="M6.5 13a5.5 5 0 0 1 11 0"/><path d="M12 7V2.5M10 4.5l2-2 2 2"/></svg></div></div><div class="in" style="width:3.5rem;height:1.875rem">5</div><span class="t-meta">min</span><span class="ib xs d" style="margin-left:auto"><svg class="i s" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></span></div><div class="in ta">Sciogli il lievito nell'acqua tiepida con lo zucchero.</div><div style="display:flex;gap:.375rem;flex-wrap:wrap"><span class="mchip on">Acqua · 350 ml</span><span class="mchip on">Lievito</span><span class="mchip"><svg class="i s" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg> ingrediente</span></div></div></div>
+        <div class="step"><span class="grip"><svg class="i s" viewBox="0 0 24 24"><circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/></svg></span><span class="n">2</span><div class="body"><div class="top"><div class="kind"><div><svg class="i s" viewBox="0 0 24 24"><rect x="3" y="12" width="18" height="8" rx="2"/><circle cx="17.5" cy="16" r="1"/><path d="M4 9 15.5 4.2a1.6 1.6 0 0 1 2.1.9L18 6 5.6 9.9Z"/></svg></div><div><svg class="i s" viewBox="0 0 24 24"><path d="M5 6h14v5a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4Z"/><path d="M3 8h2M19 8h2"/><path d="M8 21c0-1.2 1.2-1.6 1.2-2.8M12 21c0-1.2 1.2-1.6 1.2-2.8M16 21c0-1.2 1.2-1.6 1.2-2.8"/></svg></div><div class="on"><svg class="i s" viewBox="0 0 24 24"><path d="M3 13h18a9 7 0 0 1-18 0Z"/><path d="M6.5 13a5.5 5 0 0 1 11 0"/><path d="M12 7V2.5M10 4.5l2-2 2 2"/></svg></div></div><div class="in" style="width:3.5rem;height:1.875rem">90</div><span class="t-meta">min</span><span class="ib xs d" style="margin-left:auto"><svg class="i s" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></span></div><div class="in ta">Lascia lievitare coperto finché non raddoppia.</div></div></div>
+        <div style="margin-top:.5rem"><span class="b sm ton"><svg class="i s" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg> Passo</span></div></div>
+    </div>
+  </div>
+</div><nav class="tabs"><div><svg class="i" viewBox="0 0 24 24"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>Ricette</div><div><svg class="i" viewBox="0 0 24 24"><path d="M3 18h18"/><path d="M5 18a7 7 0 0 1 14 0"/><path d="M12 11V9M10.5 9h3"/><path d="M4 21h16"/></svg>Menù</div><div><svg class="i" viewBox="0 0 24 24"><path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5"/></svg>Preferiti</div><div><svg class="i" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>Cerca</div><div class="on"><svg class="i" viewBox="0 0 24 24"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg>Gestione</div></nav></div></body></html>

@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ingredienti</title>
+<style>
+/* Token di design · Ricettario AN10 · stile 1A
+   ─────────────────────────────────────────────────────────────────────────
+   COLORI in OKLCH. I blu sono una scala con la stessa tinta (228°).
+   MISURE in rem (seguono la dimensione del testo scelta dall'utente) e FLUIDE:
+   clamp(minimo, rem + quota che cresce con la larghezza, massimo).
+   --f vale 0 a 390px di larghezza (iPhone) e 1px a 1440px (PC).
+   Dentro i componenti padding, spazi e icone sono in em, così seguono il testo
+   del componente. Bordi, linee sottili e ombre restano in px. */
+:root{
+  --blu-950:oklch(25% 0.038 228);
+  --blu-800:oklch(40% 0.075 228);
+  --blu-700:oklch(52% 0.091 228);
+  --blu-600:oklch(55.5% 0.107 228.5);
+  --blu-300:oklch(83.5% 0.062 222);
+  --blu-250:oklch(78.8% 0.041 226);
+  --blu-200:oklch(86% 0.028 226);
+  --blu-150:oklch(91% 0.021 224);
+  --blu-120:oklch(91.7% 0.026 224);
+  --blu-100:oklch(95% 0.017 225);
+  --blu-50:oklch(98% 0.006 224);
+  --grigio:oklch(51% 0.038 226);
+  --grigio-chiaro:oklch(65% 0.034 225);
+  --nav-ink:oklch(92.3% 0.027 221);--nav-muted:oklch(80% 0.05 223);
+  --arancio:oklch(64.4% 0.192 41.7);--arancio-h:oklch(57.8% 0.172 41.6);--arancio-50:oklch(96.7% 0.019 55);--arancio-200:oklch(87% 0.08 50);
+  --giallo-100:oklch(96.1% 0.068 96.6);--giallo-400:oklch(88.3% 0.165 92);--giallo-ink:oklch(49% 0.1 85);--ambra:oklch(53.1% 0.119 65);
+  --verde:oklch(52.9% 0.106 154);--verde-50:oklch(94% 0.04 154);
+  --rosa:oklch(53.9% 0.193 6.5);--rosa-50:oklch(95% 0.03 6);--rosa-200:oklch(85% 0.08 6);
+  --bianco:#fff;
+  /* colori di AREA (13.2): solo per riconoscere a colpo d'occhio un'area nelle
+     scorciatoie e nelle icone della dashboard. Non indicano mai uno stato. */
+  --area-ricette:oklch(55.5% 0.107 228.5);--area-ricette-50:oklch(95% 0.03 228);
+  --area-menu:oklch(52% 0.13 330);--area-menu-50:oklch(95.5% 0.025 330);
+  --area-ingredienti:oklch(55% 0.11 135);--area-ingredienti-50:oklch(95.5% 0.035 135);
+  --area-vocabolario:oklch(58% 0.12 70);--area-vocabolario-50:oklch(96% 0.035 75);
+
+  /* cornice dell'area admin: stessa scala, tinta spostata verso l'indaco (250°) */
+  --adm-900:oklch(27% 0.05 255);--adm-150:oklch(90% 0.02 255);--adm-100:oklch(94.5% 0.016 255);--adm-50:oklch(97.5% 0.007 255);
+
+  --f:calc((100vw - 390px) / 1050);
+  --h-field:clamp(2.125rem, calc(2.125rem + 6 * var(--f)), 2.5rem);
+  --h-btn:clamp(2.375rem, calc(2.375rem + 6 * var(--f)), 2.75rem);
+  --h-btn-lg:clamp(2.75rem, calc(2.75rem + 10 * var(--f)), 3.375rem);
+  --h-sm:clamp(1.875rem, calc(1.875rem + 4 * var(--f)), 2.125rem);
+  --h-icon:var(--h-btn);
+  --fs-page:clamp(1.375rem, calc(1.375rem + 8 * var(--f)), 1.875rem);
+  --fs-sec:clamp(1.0625rem, calc(1.0625rem + 3 * var(--f)), 1.25rem);
+  --fs-step:clamp(1.0625rem, calc(1.0625rem + 5 * var(--f)), 1.375rem);
+  --fs-body:clamp(0.9375rem, calc(0.9375rem + 1 * var(--f)), 1rem);
+  --fs-meta:clamp(0.75rem, calc(0.75rem + 1 * var(--f)), 0.8125rem);
+  --fs-timer:clamp(1.625rem, calc(1.625rem + 10 * var(--f)), 2.25rem);
+  --gap:clamp(0.75rem, calc(0.75rem + 10 * var(--f)), 1.375rem);
+  --pad:clamp(0.875rem, calc(0.875rem + 10 * var(--f)), 1.5rem);
+  --r-ctl:0.75rem;--r-card:1rem;--r-dlg:1.25rem;
+}
+
+/* Componenti comuni delle schermate prototipo (stessi codici della tavola). */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--blu-50);font:var(--fs-body)/1.4 -apple-system,"SF Pro Text",system-ui,sans-serif;color:var(--blu-950);overflow:hidden}
+svg.i{width:1.375rem;height:1.375rem;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+svg.s{width:1rem;height:1rem}
+.b svg.i,.chip svg.i,.vis svg.i,.in svg.i{width:1.15em;height:1.15em}
+.lbl{position:fixed;right:.5rem;bottom:.5rem;font:700 11px ui-monospace,Menlo,monospace;background:var(--blu-950);color:#fff;padding:3px 7px;border-radius:6px;opacity:.8;z-index:9}
+
+/* shell: 9.1 / 9.2 — unico punto di rottura legato allo schermo (700px) */
+.app{height:100%;display:grid;grid-template-rows:1fr auto}
+.rail{display:none}
+.tabs{display:flex;background:#fff;border-top:1px solid var(--blu-150);padding:.375rem 0 1.25rem}.tabs div{flex:1;display:flex;flex-direction:column;align-items:center;gap:.15em;font-size:.6875rem;color:var(--grigio)}.tabs .on{color:var(--arancio);font-weight:700}
+@media (min-width:700px){
+  .app{grid-template-columns:auto 1fr;grid-template-rows:1fr}
+  .tabs{display:none}
+  .rail{display:flex;flex-direction:column;align-items:center;gap:.875rem;width:clamp(4.5rem,calc(4.5rem + 12 * var(--f)),5.25rem);background:var(--rail-bg,var(--blu-800));color:var(--nav-ink);padding:1rem 0;font-size:.6875rem}
+  .rail div{display:flex;flex-direction:column;align-items:center;gap:.25rem}.rail span{width:2.75rem;height:2.375rem;border-radius:.75rem;display:flex;align-items:center;justify-content:center}
+  .rail .on span{background:var(--arancio);color:#fff}.rail .on{color:#fff;font-weight:700}.rail .end{margin-top:auto}
+  .rail .logo{width:2.5rem;height:2.5rem;margin-bottom:.25rem}
+}
+.rail .logo svg{width:100%;height:100%}
+.main{container-type:inline-size;min-width:0;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.scroll{flex:1;min-height:0;overflow:hidden}
+
+/* 8.4 fila in corso / 9.3 mini-barra */
+.pass{display:flex;gap:.5rem;padding:.5rem var(--pad);background:var(--blu-600);overflow-x:auto;flex:none;scrollbar-width:none}
+.tk{flex:0 0 clamp(10rem,22cqi,13rem);background:oklch(98% 0.009 222);border-radius:.625rem;padding:.35em .7em;border-left:4px solid var(--arancio);display:flex;align-items:center;gap:.5em;font-size:.875rem}
+.tk.w{border-left-color:oklch(75% 0.15 85)}.tk small{display:block;color:var(--grigio);font-size:.6875rem}.tk .t{margin-left:auto;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ambra)}
+.mini{display:none;margin:0 .625rem .5rem;background:var(--blu-600);color:#fff;border-radius:.875rem;padding:.55em .75em;align-items:center;gap:.625em;flex:none}
+.mini small{display:block;color:var(--nav-ink);font-size:.6875rem}.mini .t{margin-left:auto;font-size:1.1875rem;font-weight:700;color:var(--giallo-400);font-variant-numeric:tabular-nums}
+@container (max-width:619px){.pass{display:none}.mini{display:flex;order:9}}
+
+/* testate */
+.pagehead{display:flex;align-items:center;gap:.75rem;padding:.875rem var(--pad) .625rem;flex:none;flex-wrap:wrap}
+.pagehead h1{font-size:var(--fs-page);line-height:1.15}.pagehead p{color:var(--grigio);font-size:var(--fs-meta)}
+.pagehead .acts{margin-left:auto;display:flex;gap:.5rem}
+.back{height:var(--h-sm);padding:0 .9em 0 .5em;border-radius:99px;background:#fff;border:1px solid var(--blu-200);display:inline-flex;align-items:center;gap:.2em;font-weight:600;font-size:.875rem;color:var(--blu-800)}
+.t-cap{font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--grigio);font-weight:600}
+.t-meta{font-size:var(--fs-meta);color:var(--grigio)}
+
+/* 3.x bottoni */
+.b{height:var(--h-btn);padding:0 1.05em;border-radius:var(--r-ctl);display:inline-flex;align-items:center;justify-content:center;gap:.45em;font-weight:600;font-size:var(--fs-body);border:1px solid transparent;white-space:nowrap}
+.b.pri{background:var(--arancio);color:#fff}.b.sec{background:#fff;border-color:var(--blu-200)}.b.ton{background:var(--blu-120);color:var(--blu-800)}.b.gho{color:var(--blu-600);padding:0 .4em}
+.b.sm{height:var(--h-sm);padding:0 .8em;font-size:.875rem;border-radius:.625rem}
+.ib{width:var(--h-icon);height:var(--h-icon);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:#fff;border:1px solid var(--blu-200);color:var(--blu-800);flex:none}
+.ib.xs{width:1.875rem;height:1.875rem;border-radius:.5625rem}.ib.xs.d{color:var(--rosa)}
+.hide-narrow{display:none}@container (min-width:620px){.hide-narrow{display:inline-flex}.only-narrow{display:none!important}}
+
+/* 4.x campi */
+.in{height:var(--h-field);border-radius:.625rem;border:1px solid var(--blu-200);background:#fff;padding:0 .6em;display:flex;align-items:center;gap:.5em;font-size:1rem;color:var(--blu-950);min-width:0}
+.in.search{background:var(--blu-100);border-color:transparent;color:var(--grigio)}
+.in.ro{background:var(--blu-100);border-style:dashed;color:var(--blu-800)}
+.in.ta{height:auto;min-height:3.5rem;align-items:flex-start;padding-top:.4em;padding-bottom:.4em}
+.fld{display:flex;flex-direction:column;gap:.3rem;min-width:0}.fld label{font-size:.8125rem;font-weight:600;color:var(--grigio)}
+.chip{height:var(--h-sm);padding:0 .85em;border-radius:99px;display:inline-flex;align-items:center;gap:.4em;font-size:.875rem;font-weight:600;background:#fff;border:1px solid var(--blu-200);white-space:nowrap;flex:none}
+.chip.on{background:var(--blu-800);border-color:var(--blu-800);color:#fff}.chip .dot{width:.6em;height:.6em;border-radius:50%}
+.chips{display:flex;gap:.375rem;overflow-x:auto;scrollbar-width:none}
+.seg{display:flex;background:var(--blu-120);border-radius:.6875rem;padding:3px}.seg div{flex:1;display:flex;align-items:center;justify-content:center;gap:.3em;height:calc(var(--h-field) - 6px);padding:0 .75em;border-radius:.5rem;font-weight:600;font-size:.875rem;color:var(--blu-800);white-space:nowrap}.seg .on{background:#fff;color:var(--blu-950);box-shadow:0 1px 2px oklch(25% 0.038 228 / .12)}
+.cb{width:1.5rem;height:1.5rem;border-radius:.4375rem;border:2px solid var(--blu-250);background:#fff;display:inline-flex;align-items:center;justify-content:center;color:#fff;flex:none}.cb.on{background:var(--verde);border-color:var(--verde)}
+.sw2{width:2.75rem;height:1.625rem;border-radius:99px;background:var(--verde);position:relative;flex:none}.sw2:after{content:"";position:absolute;right:3px;top:3px;width:1.25rem;height:1.25rem;border-radius:50%;background:#fff;box-shadow:0 1px 3px oklch(25% 0.038 228 / .25)}.sw2.off{background:var(--blu-200)}.sw2.off:after{right:auto;left:3px}
+.vis{height:var(--h-sm);padding:0 .85em 0 .65em;border-radius:99px;display:inline-flex;align-items:center;gap:.4em;font-size:.875rem;font-weight:700;border:1px solid;white-space:nowrap}
+.vis.on{background:var(--verde-50);border-color:oklch(80% 0.07 154);color:var(--verde)}.vis.off{background:oklch(94% 0.008 225);border-color:var(--blu-200);color:var(--grigio);border-style:dashed}
+.vis.icon{width:var(--h-sm);padding:0;justify-content:center}
+
+/* 6.x etichette */
+.tag{display:inline-flex;align-items:center;gap:.4em;height:2em;padding:0 .75em;border-radius:99px;font-size:.75rem;font-weight:700;white-space:nowrap}
+.r-gold{background:oklch(95% 0.07 95);color:var(--giallo-ink)}.r-mine{background:oklch(93.5% 0.03 270);color:oklch(45% 0.15 270)}
+.st-hide{background:oklch(94% 0.008 225);color:var(--grigio)}.role{background:var(--blu-800);color:#fff}
+.k-wait{background:var(--giallo-100);color:var(--giallo-ink)}.k-prep{background:var(--blu-120);color:var(--blu-800)}.k-cook{background:oklch(92% 0.05 50);color:oklch(50% 0.15 42)}
+.over{background:var(--rosa-50);color:var(--rosa);border:1px solid var(--rosa-200)}
+
+/* 8.1 / 8.2 schede ricetta */
+.rgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(clamp(9.5rem,24cqi,13rem),1fr));gap:var(--gap)}
+.rc{border-radius:var(--r-card);overflow:hidden;background:#fff;border:1px solid var(--blu-150);min-width:0}
+.rc .ph{aspect-ratio:4/3;position:relative}
+.rc .ph.none{background:var(--blu-100);display:flex;align-items:center;justify-content:center}.rc .ph.none svg.an{width:34%;height:auto}
+.rc .ph .ib{position:absolute;right:.4rem;top:.4rem;width:2rem;height:2rem;border:0}
+.rc .bd{padding:.55em .7em .7em}.rc b{display:block;font-size:.9375rem;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.rc .row2{display:flex;justify-content:space-between;align-items:center;margin-top:.35em;gap:.3em}.rc small{color:var(--grigio);font-size:.75rem}
+.rc.hidden .ph{filter:saturate(.3) opacity(.7)}
+.p1{background:linear-gradient(135deg,#c9b48a,#a8895a)}.p2{background:linear-gradient(135deg,#d98a5a,#a0482c)}.p3{background:linear-gradient(135deg,#e8d6a8,#c4a66a)}.p4{background:linear-gradient(135deg,#8fa86a,#5c7a3e)}.p5{background:linear-gradient(135deg,#6b3f2a,#3e2216)}.p6{background:linear-gradient(135deg,#f0c9a0,#d08f5a)}
+
+/* schede e tabelle */
+.card{background:#fff;border:1px solid var(--blu-150);border-radius:var(--r-card);padding:.875em 1em;min-width:0}
+.card h3{font-size:var(--fs-sec);display:flex;align-items:center;gap:.5em;margin-bottom:.6em}
+.card h3 .ic{width:1.875rem;height:1.875rem;border-radius:.5625rem;background:var(--blu-120);color:var(--blu-800);display:flex;align-items:center;justify-content:center}
+.card h3 .r{margin-left:auto;font-size:.8125rem;font-weight:600;color:var(--grigio);display:flex;gap:.5em;align-items:center}
+.table{background:#fff;border:1px solid var(--blu-150);border-radius:var(--r-card);overflow:hidden}
+.trow{display:flex;align-items:center;gap:.625rem;padding:.5em .75em;border-bottom:1px solid var(--blu-150);min-height:3.25rem}.trow:last-child{border:0}
+.trow.h{background:var(--blu-100);font-size:.75rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--grigio);min-height:0;padding:.55em .75em}
+.trow .th{width:2.375rem;height:2.375rem;border-radius:.5625rem;flex:none}.trow .th.none{background:var(--blu-100);display:flex;align-items:center;justify-content:center}.trow .th.none svg.an{width:60%;height:auto}
+.trow .grow{flex:1;min-width:0}.trow .grow b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.trow small{color:var(--grigio);font-size:.75rem}
+.trow .col{width:7rem;flex:none}.trow .num{width:4.5rem;text-align:right;font-variant-numeric:tabular-nums;flex:none}
+.trow.picked{background:var(--arancio-50)}
+.selbar{display:flex;align-items:center;gap:.625rem;background:var(--blu-950);color:#fff;border-radius:.875rem;padding:.5em .5em .5em .875em;font-size:.875rem}.selbar .b{margin-left:auto}
+.erow{display:flex;align-items:center;gap:.375rem;padding:.375em 0;border-bottom:1px solid var(--blu-150);flex-wrap:wrap}.erow:last-child{border:0}
+.grip{width:1.5rem;height:1.875rem;display:flex;align-items:center;justify-content:center;color:var(--grigio-chiaro);flex:none}
+.erow .in{height:1.875rem;font-size:.9375rem;padding:0 .5em;border-radius:.5rem}
+.mchip{height:1.625rem;padding:0 .6em;border-radius:99px;font-size:.75rem;font-weight:700;display:inline-flex;align-items:center;gap:.25em;border:1px dashed var(--blu-250);color:var(--grigio);background:#fff;white-space:nowrap}.mchip.on{border-style:solid;background:var(--blu-120);color:var(--blu-800);border-color:var(--blu-200)}
+.n{width:1.75rem;height:1.75rem;border-radius:50%;border:2px solid var(--blu-250);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8125rem;color:var(--grigio);flex:none}
+.kind{display:flex;background:var(--blu-120);border-radius:.5625rem;padding:2px}.kind div{width:1.875rem;height:1.625rem;border-radius:.4375rem;display:flex;align-items:center;justify-content:center;color:var(--blu-800)}.kind .on{background:#fff;box-shadow:0 1px 2px oklch(25% 0.038 228 / .15)}
+
+/* sotto-navigazione della Gestione (iPad/PC: colonna; iPhone: indietro) */
+.adm{flex:1;min-height:0;display:grid;grid-template-columns:1fr}
+.subnav{display:none;background:var(--blu-100);border-right:1px solid var(--blu-150);padding:.875rem .625rem;gap:.125rem;flex-direction:column}
+.subnav h4{font-size:.6875rem;letter-spacing:.08em;text-transform:uppercase;color:var(--grigio);margin:.75rem .5rem .25rem}
+.subnav a{display:flex;align-items:center;gap:.6em;padding:.5em .6em;border-radius:.625rem;font-size:.9375rem;color:var(--blu-950);text-decoration:none}
+.subnav a svg{color:var(--c,var(--blu-700))}.subnav a span{margin-left:auto;font-size:.75rem;color:var(--grigio)}
+.subnav a.on{background:#fff;font-weight:700;box-shadow:0 1px 2px oklch(25% 0.038 228 / .1)}
+@container (min-width:900px){.adm{grid-template-columns:clamp(12rem,20cqi,15rem) 1fr}.subnav{display:flex}}
+.admmain{min-width:0;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.tile{background:#fff;border:1px solid var(--blu-150);border-top:4px solid var(--c);border-radius:var(--r-card);padding:.75em .875em;display:flex;flex-direction:column;gap:.875em;font-weight:700;min-width:0}
+.tile .ic{width:2.5rem;height:2.5rem;border-radius:.75rem;background:var(--c50);color:var(--c);display:flex;align-items:center;justify-content:center}
+.tile small{display:block;font-weight:600;color:var(--grigio);font-size:.75rem}
+.kpi{background:#fff;border:1px solid var(--blu-150);border-radius:var(--r-card);padding:.75em .875em;min-width:0}.kpi small{color:var(--grigio);font-size:.75rem;display:flex;gap:.35em;align-items:center}.kpi small svg{color:var(--c,var(--grigio))}.kpi b{display:block;font-size:clamp(1.5rem,calc(1.5rem + 6*var(--f)),1.875rem);font-variant-numeric:tabular-nums}
+
+/* ── Area admin: stessi componenti, cornice di colore diverso ─────────────────
+   Il blu scuro della navigazione vira verso l'inchiostro-indaco e i fondi si
+   raffreddano: si capisce subito di essere "nel retro", senza un secondo stile. */
+body.admin{--rail-bg:var(--adm-900);background:var(--adm-50)}
+body.admin .subnav{background:var(--adm-100);border-right-color:var(--adm-150)}
+body.admin .formbar{border-bottom-color:var(--adm-150)}
+.admtag{display:inline-flex;align-items:center;gap:.35em;height:1.5rem;padding:0 .6em;border-radius:99px;background:var(--adm-900);color:#fff;font-size:.6875rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;vertical-align:middle}
+/* sotto-navigazione: le creazioni stanno sopra, come bottoni, separate dalla consultazione */
+.subnav .create{display:flex;flex-direction:column;gap:.375rem;padding-bottom:.75rem;margin-bottom:.25rem;border-bottom:1px solid var(--adm-150,var(--blu-150))}
+.subnav .create a{background:#fff;border:1px solid var(--blu-200);font-weight:600}
+.subnav .create a .plus{margin-left:auto;width:1.375rem;height:1.375rem;border-radius:50%;background:var(--arancio);color:#fff;display:flex;align-items:center;justify-content:center}
+.subnav .create a .plus svg{color:#fff;width:.875rem;height:.875rem}
+/* card «Crea»: azione, con il + arancio; diversa dalle tessere di consultazione */
+.ccard{background:#fff;border:1px solid var(--blu-150);border-radius:var(--r-card);padding:.875em 1em;display:flex;align-items:center;gap:.875em;min-width:0}
+.ccard .ic{width:2.75rem;height:2.75rem;border-radius:.875rem;background:var(--c50);color:var(--c);display:flex;align-items:center;justify-content:center;flex:none}
+.ccard b{display:block}.ccard small{display:block;color:var(--grigio);font-size:.75rem}
+.ccard .plus{margin-left:auto;width:var(--h-btn);height:var(--h-btn);border-radius:50%;background:var(--arancio);color:#fff;display:flex;align-items:center;justify-content:center;flex:none}
+/* tessera di consultazione: numero grande, nessun +, freccia */
+.ctile{background:#fff;border:1px solid var(--blu-150);border-top:4px solid var(--c);border-radius:var(--r-card);padding:.75em .875em;display:flex;flex-direction:column;gap:.35em;min-width:0}
+.ctile .top{display:flex;align-items:center;gap:.5em;color:var(--c);font-weight:700;font-size:.875rem}.ctile .top span{color:var(--blu-950)}
+.ctile .top svg:last-child{margin-left:auto;color:var(--grigio-chiaro)}
+.ctile b{font-size:clamp(1.5rem,calc(1.5rem + 6*var(--f)),1.875rem);font-variant-numeric:tabular-nums;line-height:1.1}.ctile small{color:var(--grigio);font-size:.75rem}
+
+
+.tools{display:flex;gap:.5rem;padding:0 var(--pad) .625rem;flex-wrap:wrap;flex:none}.tools .search{flex:1;min-width:12rem}
+.scroll{padding:0 var(--pad) .5rem}
+.foot{padding:.5rem var(--pad) var(--pad);flex:none}
+</style></head><body class="admin"><div class="lbl" id="lbl"></div><script>document.getElementById("lbl").textContent=innerWidth+"×"+innerHeight</script>
+<div class="app"><nav class="rail"><div class="logo"><svg class="an" viewBox="0 0 512 512" aria-label="AN10"><rect width="512" height="512" rx="80" fill="#0A7EA4"/><line x1="228" y1="100" x2="228" y2="280" stroke="#fff" stroke-width="28" stroke-linecap="round"/><line x1="200" y1="100" x2="200" y2="164" stroke="#fff" stroke-width="22" stroke-linecap="round"/><line x1="256" y1="100" x2="256" y2="164" stroke="#fff" stroke-width="22" stroke-linecap="round"/><path d="M200 164 Q228 196 256 164" fill="#fff"/><line x1="284" y1="100" x2="284" y2="280" stroke="#fff" stroke-width="28" stroke-linecap="round"/><path d="M284 100 Q336 140 284 200" fill="#fff"/><text x="256" y="390" font-family="Courier New,Courier,monospace" font-size="120" font-weight="700" fill="#fff" text-anchor="middle" letter-spacing="8">AN10</text></svg></div><div><span><svg class="i" viewBox="0 0 24 24"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg></span>Ricette</div><div><span><svg class="i" viewBox="0 0 24 24"><path d="M3 18h18"/><path d="M5 18a7 7 0 0 1 14 0"/><path d="M12 11V9M10.5 9h3"/><path d="M4 21h16"/></svg></span>Menù</div><div><span><svg class="i" viewBox="0 0 24 24"><path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5"/></svg></span>Preferiti</div><div><span><svg class="i" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg></span>Cerca</div><div class="end on"><span><svg class="i" viewBox="0 0 24 24"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg></span>Gestione</div></nav>
+<div class="main">
+ <div class="adm"><nav class="subnav"><div class="create"><h4 style="margin-top:0">Crea</h4><a style="--c:var(--area-ricette)"><svg class="i s" viewBox="0 0 24 24"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>Nuova ricetta<span class="plus"><svg class="i s" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg></span></a><a style="--c:var(--area-menu)"><svg class="i s" viewBox="0 0 24 24"><path d="M3 18h18"/><path d="M5 18a7 7 0 0 1 14 0"/><path d="M12 11V9M10.5 9h3"/><path d="M4 21h16"/></svg>Nuovo menù<span class="plus"><svg class="i s" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg></span></a><a><svg class="i s" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>Importa ricette<span class="plus"><svg class="i s" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg></span></a></div><h4>Consulta e gestisci</h4><a><svg class="i s" viewBox="0 0 24 24"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>Panoramica</a><a style="--c:var(--area-ricette)"><svg class="i s" viewBox="0 0 24 24"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>Ricette<span>224</span></a><a style="--c:var(--area-menu)"><svg class="i s" viewBox="0 0 24 24"><path d="M3 18h18"/><path d="M5 18a7 7 0 0 1 14 0"/><path d="M12 11V9M10.5 9h3"/><path d="M4 21h16"/></svg>Menù<span>6</span></a><a class="on" style="--c:var(--area-ingredienti)"><svg class="i s" viewBox="0 0 24 24"><path d="M5 10h14l-1.2 9.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8Z"/><path d="M9 10V8a3 3 0 0 1 6 0v2"/><path d="m15.5 6.5 4-4.5"/></svg>Ingredienti<span>1154</span></a><a style="--c:var(--area-vocabolario)"><svg class="i s" viewBox="0 0 24 24"><path d="M13.172 2a2 2 0 0 1 1.414.586l6.71 6.71a2.4 2.4 0 0 1 0 3.408l-4.592 4.592a2.4 2.4 0 0 1-3.408 0l-6.71-6.71A2 2 0 0 1 6 9.172V3a1 1 0 0 1 1-1z"/><path d="M2 7v6.172a2 2 0 0 0 .586 1.414l6.71 6.71a2.4 2.4 0 0 0 3.191.193"/><circle cx="10.5" cy="6.5" r=".5" fill="currentColor"/></svg>Categorie e tag<span>115</span></a><h4>Persone</h4><a><svg class="i s" viewBox="0 0 24 24"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/></svg>Recensioni<span>48</span></a><a><svg class="i s" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M16 3.128a4 4 0 0 1 0 7.744"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/></svg>Utenti<span>2</span></a><h4>Account</h4><a><svg class="i s" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Profilo</a></nav>
+  <div class="admmain">
+  <div class="pagehead"><span class="back only-narrow"><svg class="i s" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg> Gestione</span><div style="flex-basis:100%;height:0" class="only-narrow"></div><div><h1>Ingredienti</h1><p>1154 a catalogo · 12 possibili doppioni</p></div></div>
+  <div class="tools"><div class="in search"><svg class="i s" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg> Cerca ingrediente</div><span class="chip"><svg class="i s" viewBox="0 0 24 24"><path d="m21 16-4 4-4-4"/><path d="M17 20V4"/><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/></svg> Più usati</span><span class="chip"><svg class="i s" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg> Doppioni</span></div>
+  <div class="scroll"><div class="table"><div class="trow h"><span style="width:1.5rem"></span><span class="grow">Nome</span><span class="num">Utilizzi</span><span class="hide-narrow" style="width:4.5rem;text-align:center">Statistiche</span><span style="width:4.5rem"></span></div><div class="trow picked"><span class="cb on"><svg class="i s" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span><div class="grow"><b>Farina 0</b></div><span class="num">64</span><span style="width:4.5rem;display:flex;justify-content:center" class="hide-narrow"><span class="sw2"></span></span><span class="ib xs"><svg class="i s" viewBox="0 0 24 24"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg></span><span class="ib xs d hide-narrow"><svg class="i s" viewBox="0 0 24 24"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span></div><div class="trow picked"><span class="cb on"><svg class="i s" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span><div class="grow"><b>farina tipo 0</b></div><span class="num">3</span><span style="width:4.5rem;display:flex;justify-content:center" class="hide-narrow"><span class="sw2"></span></span><span class="ib xs"><svg class="i s" viewBox="0 0 24 24"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg></span><span class="ib xs d hide-narrow"><svg class="i s" viewBox="0 0 24 24"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span></div><div class="trow"><span class="cb"></span><div class="grow"><b>Farina 00</b></div><span class="num">41</span><span style="width:4.5rem;display:flex;justify-content:center" class="hide-narrow"><span class="sw2"></span></span><span class="ib xs"><svg class="i s" viewBox="0 0 24 24"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg></span><span class="ib xs d hide-narrow"><svg class="i s" viewBox="0 0 24 24"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span></div><div class="trow"><span class="cb"></span><div class="grow"><b>Sale</b></div><span class="num">151</span><span style="width:4.5rem;display:flex;justify-content:center" class="hide-narrow"><span class="sw2 off"></span></span><span class="ib xs"><svg class="i s" viewBox="0 0 24 24"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg></span><span class="ib xs d hide-narrow"><svg class="i s" viewBox="0 0 24 24"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span></div><div class="trow"><span class="cb"></span><div class="grow"><b>Acqua</b></div><span class="num">120</span><span style="width:4.5rem;display:flex;justify-content:center" class="hide-narrow"><span class="sw2 off"></span></span><span class="ib xs"><svg class="i s" viewBox="0 0 24 24"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg></span><span class="ib xs d hide-narrow"><svg class="i s" viewBox="0 0 24 24"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span></div><div class="trow"><span class="cb"></span><div class="grow"><b>Olio extravergine d'oliva</b></div><span class="num">98</span><span style="width:4.5rem;display:flex;justify-content:center" class="hide-narrow"><span class="sw2"></span></span><span class="ib xs"><svg class="i s" viewBox="0 0 24 24"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg></span><span class="ib xs d hide-narrow"><svg class="i s" viewBox="0 0 24 24"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span></div><div class="trow"><span class="cb"></span><div class="grow"><b>olio evo</b></div><span class="num">6</span><span style="width:4.5rem;display:flex;justify-content:center" class="hide-narrow"><span class="sw2"></span></span><span class="ib xs"><svg class="i s" viewBox="0 0 24 24"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg></span><span class="ib xs d hide-narrow"><svg class="i s" viewBox="0 0 24 24"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span></div><div class="trow"><span class="cb"></span><div class="grow"><b>Lievito di birra fresco</b></div><span class="num">27</span><span style="width:4.5rem;display:flex;justify-content:center" class="hide-narrow"><span class="sw2"></span></span><span class="ib xs"><svg class="i s" viewBox="0 0 24 24"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg></span><span class="ib xs d hide-narrow"><svg class="i s" viewBox="0 0 24 24"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span></div><div class="trow"><span class="cb"></span><div class="grow"><b>Pomodorini</b></div><span class="num">38</span><span style="width:4.5rem;display:flex;justify-content:center" class="hide-narrow"><span class="sw2"></span></span><span class="ib xs"><svg class="i s" viewBox="0 0 24 24"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg></span><span class="ib xs d hide-narrow"><svg class="i s" viewBox="0 0 24 24"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span></div></div></div>
+  <div class="foot"><div class="selbar">2 selezionati · «Farina 0»<span class="b sm pri"><svg class="i s" viewBox="0 0 24 24"><path d="m8 6 4-4 4 4"/><path d="M12 2v10.3a4 4 0 0 1-1.172 2.872L4 22"/><path d="m20 22-5-5"/></svg> Unifica</span></div></div>
+  </div></div>
+</div><nav class="tabs"><div><svg class="i" viewBox="0 0 24 24"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>Ricette</div><div><svg class="i" viewBox="0 0 24 24"><path d="M3 18h18"/><path d="M5 18a7 7 0 0 1 14 0"/><path d="M12 11V9M10.5 9h3"/><path d="M4 21h16"/></svg>Menù</div><div><svg class="i" viewBox="0 0 24 24"><path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5"/></svg>Preferiti</div><div><svg class="i" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>Cerca</div><div class="on"><svg class="i" viewBox="0 0 24 24"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg>Gestione</div></nav></div></body></html>

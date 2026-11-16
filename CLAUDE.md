@@ -4,6 +4,10 @@ Next.js 16 (App Router) + React 19 + PostgreSQL/Supabase + Prisma 7 + Tailwind C
 
 ## ⚠️ Aggiorna questo file ogni volta che aggiungi feature, route, modelli o lib.
 
+## 🎨 Design
+
+Prima di toccare l'interfaccia usa la skill `ricettario-design` (`.claude/skills/ricettario-design/`): decisioni in `DESIGN.md`, tavola degli elementi numerati in `docs/design/elementi-*.png`. Restyle in corso su `feat/restyle-frontend` (piano e TODO: `docs/design/RESTYLE-TODO.md`): le «Classi base ricorrenti» più sotto descrivono lo stile **vecchio** (vetro + gradiente) e verranno sostituite.
+
 ## Comandi
 
 ```bash
@@ -36,6 +40,7 @@ npm run create-admin # crea utente admin
 | `components/cooking/StepTimer.tsx` | Controllo timer di un passo (Avvia / countdown + pausa, +1 min, annulla / scaduto: +5 min, OK). Condiviso fra dettaglio ricetta e `CookingDock`. ⚠️ Contiene bottoni: nel dettaglio ricetta va **fuori** dal `<button>` del passo, come fratello |
 | `components/ui/ReorderList.tsx` | `ReorderList`/`ReorderRow` — drag & drop riordino liste (`motion` Reorder) con maniglia grip (render prop `children(handle)`); `dragListener={false}` così input e scroll touch non vengono sequestrati; `layoutScroll` per contenitori scrollabili. Usato da RecipeForm (ingredienti+step, righe con `uid` client-side), MenuForm, vocabolario categorie (PUT reorder solo su dragEnd) |
 | `components/ui/PriceTag.tsx` | Etichetta "cartellino negozio con filo" (CSS clip-path + micro-SVG), label parametrica (default "opzionale") — riusabile; usata per `Ingredient.optional` in dettaglio ricetta e lista spesa |
+| `components/brand/An10Logo.tsx` | **Logo AN10** (restyle): `variant="orizzontale" \| "impilato" \| "simbolo"`, colore = `currentColor` (si colora con `text-…`), ritagli come maschere SVG con id da `useId` (più loghi nella stessa pagina non collidono). Stessa geometria dei file in `public/brand/` generati da `docs/design/loghi/kit/build_kit.py`: se cambi una coordinata, cambiala in entrambi. Guida d'uso: `docs/design/loghi/kit/GUIDA.md`. Non ancora montato nell'app (lo inserisce il restyle) |
 | `components/ui/QuickTag.tsx` | Etichetta ricetta `quick`: pill semplice + **contaminuti a pomodoro** (SVG custom, quadrante chiaro con lancetta — è quello a farlo leggere come timer e non come pomodoro). ⚠️ Niente `clip-path` sul contorno come in `PriceTag`: a 10px comanda strappata e bandierina si impastavano, la personalità sta nel glifo. Label parametrica (default "veloce") — tenerla **corta**: è un chip inline, non una frase |
 | `components/ui/Modal.tsx` | `Modal` + `ConfirmModal`. Il `<dialog>` è montato in **portale su `document.body`**: gli antenati con `backdrop-filter` (card "vetro chiaro", timeline cucina) creano un containing block per i figli `position: fixed` e su Safari/iPad il dialog veniva centrato — e ritagliato — dentro la card. Larghezza `min(<size>px, calc(100vw - 2rem))` |
 | `components/menu/CookPlanner.tsx` | Wrapper client della pagina cucina: possiede gli orari pianificati (`MenuRecipe.cookStartAt`, PATCH `/api/menus/[id]/schedule` con update ottimistico) e passa `stepTimes` allo stepper. Orari formattati solo client-side (server UTC): gate con `useSyncExternalStore` hydrated |

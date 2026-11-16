@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dashboard</title>
+<style>
+/*TOKENS*/
+/*APP*/
+
+.scroll{padding:0 var(--pad) var(--pad);display:flex;flex-direction:column;gap:var(--gap)}
+.cgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,15rem),1fr));gap:.625rem}
+.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(clamp(8.5rem,18cqi,11rem),1fr));gap:.625rem}
+.two{display:grid;grid-template-columns:1fr;gap:var(--gap)}@container (min-width:700px){.two{grid-template-columns:1.4fr 1fr}}
+.bars{display:flex;align-items:flex-end;gap:.4rem;height:8rem;border-bottom:1px solid var(--blu-150);margin-top:.5rem}.bars i{flex:1;background:var(--blu-600);border-radius:.35rem .35rem 0 0}.bars i:nth-child(odd){background:var(--blu-300)}
+.ax{display:flex;justify-content:space-between;font-size:.6875rem;color:var(--grigio);margin-top:.25rem}
+.rv{display:flex;gap:.6em;align-items:center;padding:.5em 0;border-bottom:1px solid var(--blu-150);font-size:.875rem}.rv:last-child{border:0}.rv div{flex:1;min-width:0}.rv small{display:block;color:var(--grigio);font-size:.75rem}
+</style></head><body class="admin"><div class="lbl" id="lbl"></div><script>document.getElementById("lbl").textContent=innerWidth+"×"+innerHeight</script>
+<div class="app">{{rail:gestione}}
+<div class="main">
+ <div class="adm">{{subnav:dashboard}}
+  <div class="admmain">
+  <div class="pagehead"><div><h1>Gestione <span class="admtag">{{s:lock}} admin</span></h1><p>Ciao cuoco · domenica 16 novembre</p></div></div>
+  <div class="scroll">
+    <section><div class="t-cap" style="margin-bottom:.5rem">Crea</div><div class="cgrid">
+      <div class="ccard" style="--c:var(--area-ricette);--c50:var(--area-ricette-50)"><span class="ic">{{l:book-open}}</span><div><b>Nuova ricetta</b><small>Ingredienti, passi, foto</small></div><span class="plus">{{l:plus}}</span></div>
+      <div class="ccard" style="--c:var(--area-menu);--c50:var(--area-menu-50)"><span class="ic">{{c:cloche}}</span><div><b>Nuovo menù</b><small>Ricette, data, persone</small></div><span class="plus">{{l:plus}}</span></div>
+      <div class="ccard" style="--c:var(--blu-800);--c50:var(--blu-120)"><span class="ic">{{l:upload}}</span><div><b>Importa ricette</b><small>Da file JSON</small></div><span class="plus">{{l:plus}}</span></div>
+    </div></section>
+    <section><div class="t-cap" style="margin-bottom:.5rem">Consulta e gestisci</div><div class="tgrid">
+      <div class="ctile" style="--c:var(--area-ricette)"><div class="top">{{s:book-open}}<span>Ricette</span>{{s:chevron-right}}</div><b>224</b><small>9 non pronte · 17 cotture in 30 giorni</small></div>
+      <div class="ctile" style="--c:var(--area-menu)"><div class="top">{{s:c:cloche}}<span>Menù</span>{{s:chevron-right}}</div><b>6</b><small>1 in programma</small></div>
+      <div class="ctile" style="--c:var(--area-ingredienti)"><div class="top">{{s:c:bag}}<span>Ingredienti</span>{{s:chevron-right}}</div><b>1154</b><small>12 possibili doppioni</small></div>
+      <div class="ctile" style="--c:var(--area-vocabolario)"><div class="top">{{s:tags}}<span>Categorie e tag</span>{{s:chevron-right}}</div><b>15 · 100</b><small>categorie · tag</small></div>
+      <div class="ctile" style="--c:var(--giallo-ink)"><div class="top">{{s:star}}<span>Recensioni</span>{{s:chevron-right}}</div><b>48</b><small>media 8,9</small></div>
+      <div class="ctile" style="--c:var(--adm-900)"><div class="top">{{s:users}}<span>Utenti</span>{{s:chevron-right}}</div><b>2</b><small>1 superadmin</small></div>
+    </div></section>
+    <div class="two">
+      <div class="card"><h3><span class="ic">{{s:chart-column}}</span>Cotture<span class="r"><span class="seg" style="font-size:.8rem"><div>7g</div><div class="on">30g</div><div>Anno</div></span></span></h3><div class="bars"><i style="height:30%"></i><i style="height:55%"></i><i style="height:40%"></i><i style="height:80%"></i><i style="height:62%"></i><i style="height:35%"></i><i style="height:90%"></i><i style="height:50%"></i><i style="height:44%"></i><i style="height:70%"></i></div><div class="ax"><span>17 ott</span><span>16 nov</span></div></div>
+      <div class="card"><h3><span class="ic">{{s:star}}</span>Ultime recensioni<span class="r b gho sm">Tutte</span></h3>
+        <div class="rv"><span class="tag r-gold">9</span><div>Focaccia barese<small>Giulia · Compleanno Alessia</small></div></div>
+        <div class="rv"><span class="tag r-gold">10</span><div>Tiramisù<small>Marco · Compleanno Alessia</small></div></div>
+        <div class="rv"><span class="tag r-gold">8</span><div>Ragù alla bolognese<small>Elena · Cena dai Rossi</small></div></div></div>
+    </div>
+  </div></div></div>
+</div>{{tabs:gestione}}</div></body></html>

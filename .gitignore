@@ -43,3 +43,14 @@ next-env.d.ts
 /app/generated/prisma
 
 .idea/
+
+# Skill e agenti di design installati in locale (Emil Kowalski, Impeccable, Taste) — non versionati
+.claude/skills/*
+!.claude/skills/ricettario-design/
+.claude/agents/
+
+# Screenshot Playwright MCP
+.playwright-mcp/
+
+# Stato di lavoro locale della skill Impeccable
+.impeccable/
