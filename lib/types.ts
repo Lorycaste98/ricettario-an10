@@ -196,3 +196,50 @@ export function formatMinutes(mins: number | null): string {
   return m > 0 ? `${h}h ${m}min` : `${h}h`;
 }
 
+
+// ---------------------------------------------------------------------------
+// Ricerca globale (overlay «Cerca»): indice compatto scaricato una volta e interrogato nel browser.
+// Contiene solo ciò che chi cerca può vedere (visitatore: solo ricette e menù pronti).
+// ---------------------------------------------------------------------------
+export interface SearchIndexRecipe {
+  id: number;
+  name: string;
+  photo: string | null;
+  /** prep + cook in minuti; 0 = non indicato */
+  time: number;
+  servings: number | null;
+  servingsUnit: string | null;
+  published: boolean;
+  avgRating: number | null;
+  reviews: number;
+  categories: { name: string; color: string }[];
+  tags: string[];
+  /** Nomi degli ingredienti, nell'ordine della ricetta */
+  ingredients: string[];
+  steps: number;
+}
+
+export interface SearchIndexMenu {
+  id: number;
+  name: string;
+  description: string | null;
+  date: string | null;
+  servingTime: string | null;
+  people: number | null;
+  /** Foto del menù o, in mancanza, della prima ricetta con foto */
+  photo: string | null;
+  published: boolean;
+  avgRating: number | null;
+  reviews: number;
+  /** Ricette con scheda (id in `recipes`), in ordine */
+  recipeIds: number[];
+  /** Ricette «veloci» (solo nome, senza scheda) */
+  quickRecipes: string[];
+}
+
+export interface SearchIndex {
+  recipes: SearchIndexRecipe[];
+  menus: SearchIndexMenu[];
+  /** Ingredienti esclusi dalle statistiche (IngredientMaster.excludedFromStats), già normalizzati */
+  excluded: string[];
+}

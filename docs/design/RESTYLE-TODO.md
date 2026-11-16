@@ -93,7 +93,7 @@
 
 ---
 
-## Fase 3B · Ricerca globale (da approvare)
+## Fase 3B · Ricerca globale (prima versione fatta, da provare)
 **Cosa:** nella vetrina un campo «Cerca» che apre un **overlay** (si intravede la vetrina sotto, bloccata) e cerca insieme **ricette, menù e ingredienti**. Per ricette e menù mostra un'**anteprima** della pagina; per gli ingredienti una **scheda statistica** (in quante ricette compare, in quali menù, quantità tipiche, quante volte cucinato).
 
 **Valutazione dei costi (16/11/2026):**
@@ -104,7 +104,12 @@
 - **Alternativa ancora più leggera:** scaricare una volta un indice compatto (nomi di ricette/menù/ingredienti, ~100–200 KB, in cache) e cercare nel browser: zero chiamate per lettera, risultati istantanei anche offline; le anteprime restano a richiesta.
 - **Visitatori:** la ricerca pubblica deve restare su ricette e menù **pubblicati**; le statistiche degli ingredienti vanno bene anche in pubblico (non espongono dati personali) ma va deciso.
 
-**Da decidere prima di costruirla:** indice nel browser (consigliato: più veloce, costo quasi zero) o ricerca sul server; statistiche ingredienti visibili anche ai visitatori o solo all'admin; voce «Cerca» anche nella navigazione dell'admin oltre che nella vetrina.
+**Scelte della prima versione (16/11/2026, «fai quello che consigli, poi valutiamo»):**
+- [x] **Indice nel browser**: `GET /api/search/index` (`lib/search-index.ts`), scaricato alla prima apertura e tenuto per 5 minuti. Misurato in locale: 140 ricette + 6 menù = 57 KB, **~9 KB compresso**, una volta per visita. Visitatore: versione cachata a tag; admin: fresca con i non pronti.
+- [x] **Statistiche ingredienti per tutti**, calcolate solo su ciò che chi guarda può vedere: ricette che lo usano (e % del ricettario), menù, distribuzione per categoria, «spesso insieme a» (esclusi gli ingredienti fuori statistica). Niente quantità tipiche né cotture: verranno dopo se servono.
+- [x] **«Cerca» per tutti**: voce nella navigazione (barra laterale e barra in basso, anche admin), ⌘K / Ctrl+K e «/», campo nella vetrina attuale (da rimettere nella vetrina nuova in fase 6).
+- [x] Overlay (`components/search/SearchOverlay.tsx`): ambiti Tutto/Ricette/Menù/Ingredienti, gruppi ordinati per pertinenza, anteprima affiancata da 760px (prima voce già aperta) e a tutto pannello su iPhone con «‹ Risultati»; dalle anteprime si salta fra ricetta → ingrediente → menù con «Indietro».
+- [ ] Da valutare dopo la prova: cercare anche nel testo dei passi e nelle note (oggi solo nomi, categorie, tag, ingredienti; il vecchio `/api/search` resta ma non è usato); ricerche recenti; quantità tipiche negli ingredienti.
 
 
 ---

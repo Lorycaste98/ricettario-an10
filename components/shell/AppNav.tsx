@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, type ComponentType } from "react";
+import { useState, type ComponentType, type ReactNode } from "react";
 import { clsx } from "clsx";
-import { BookOpen, ChefHat, Heart, LogIn, LogOut, Settings, User } from "lucide-react";
+import { BookOpen, ChefHat, Heart, LogIn, LogOut, Search, Settings, User } from "lucide-react";
+import { openSearch } from "@/lib/search";
 import { useAuth } from "@/components/AuthProvider";
 import { useFavorites } from "@/lib/favorites";
 import { An10Logo } from "@/components/brand/An10Logo";
@@ -15,10 +16,18 @@ import { Button } from "@/components/ds/Button";
 /**
  * Navigazione del restyle (tavola 9.1 e 9.2). Unico punto di rottura legato allo schermo (D1):
  * da 700px in su barra laterale, sotto barra in basso. Voci: Ricette, Menù, Preferiti (badge),
- * Gestione (solo admin) e account (Profilo/Esci per l'admin, Accedi per i visitatori).
+ * Cerca (apre l'overlay della ricerca globale, non è una pagina), Gestione (solo admin) e account (Profilo/Esci per l'admin, Accedi per i visitatori).
  * Le azioni admin del vecchio sottomenu «Dashboard» stanno nella pagina /admin.
  */
-type Item = { href: string; label: string; icon: ComponentType<{ className?: string }>; badge?: number; match?: string };
+type Item = {
+  href: string;
+  label: string;
+  icon: ComponentType<{ className?: string }>;
+  badge?: number;
+  match?: string;
+  /** voce-azione (Cerca): bottone invece di link, mai «attiva» */
+  onClick?: () => void;
+};
 
 function useNavItems() {
   const { isAdmin } = useAuth();
@@ -27,6 +36,7 @@ function useNavItems() {
   const main: Item[] = [
     { href: "/ricette", label: "Ricette", icon: BookOpen },
     { href: "/menu", label: "Menù", icon: ClocheIcon },
+    { href: "#cerca", label: "Cerca", icon: Search, onClick: () => openSearch() },
     { href: "/preferiti", label: "Preferiti", icon: Heart, badge: favCount },
   ];
   const admin: Item | null = isAdmin ? { href: "/admin", label: "Gestione", icon: Settings, match: "/admin" } : null;
@@ -36,6 +46,7 @@ function useNavItems() {
 function useIsActive() {
   const pathname = usePathname();
   return (item: Item) => {
+    if (item.onClick) return false;
     const base = item.match ?? item.href;
     return pathname === base || pathname.startsWith(base + "/");
   };
@@ -49,6 +60,22 @@ function useLogout() {
     router.refresh();
     window.location.reload();
   };
+}
+
+/** Voce di navigazione: link a una pagina, oppure bottone per le voci-azione (Cerca). */
+function NavTarget({ item, on, className, children }: { item: Item; on: boolean; className: string; children: ReactNode }) {
+  if (item.onClick) {
+    return (
+      <button type="button" onClick={item.onClick} className={className}>
+        {children}
+      </button>
+    );
+  }
+  return (
+    <Link href={item.href} aria-current={on ? "page" : undefined} className={className}>
+      {children}
+    </Link>
+  );
 }
 
 function Badge({ n }: { n?: number }) {
@@ -72,10 +99,10 @@ export function NavRail() {
     const on = isActive(item);
     const Icon = item.icon;
     return (
-      <Link
+      <NavTarget
         key={item.href}
-        href={item.href}
-        aria-current={on ? "page" : undefined}
+        item={item}
+        on={on}
         className={clsx("group flex flex-col items-center gap-1 text-[0.6875rem]", on ? "font-bold text-white" : "text-nav-ink hover:text-white")}
       >
         <span
@@ -88,7 +115,7 @@ export function NavRail() {
           <Badge n={item.badge} />
         </span>
         {item.label}
-      </Link>
+      </NavTarget>
     );
   };
 
@@ -137,10 +164,10 @@ export function TabBar() {
     const on = isActive(item);
     const Icon = item.icon;
     return (
-      <Link
+      <NavTarget
         key={item.href}
-        href={item.href}
-        aria-current={on ? "page" : undefined}
+        item={item}
+        on={on}
         className={clsx("flex min-w-0 flex-1 flex-col items-center gap-0.5 pt-1.5 text-[0.6875rem]", on ? "font-bold text-arancio" : "text-grigio")}
       >
         <span className="relative [--ring:white] [&>svg]:size-[1.375rem]">
@@ -148,7 +175,7 @@ export function TabBar() {
           <Badge n={item.badge} />
         </span>
         <span className="max-w-full truncate">{item.label}</span>
-      </Link>
+      </NavTarget>
     );
   };
 

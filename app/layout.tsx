@@ -5,6 +5,7 @@ import { AuthProvider } from "@/components/AuthProvider";
 import { DialogProvider } from "@/components/ui/ConfirmDialog";
 import { PhotoViewer } from "@/components/ui/PhotoViewer";
 import { CookingDock } from "@/components/cooking/CookingDock";
+import { SearchOverlay } from "@/components/search/SearchOverlay";
 import { getSiteUrl } from "@/lib/site-url";
 
 const siteUrl = getSiteUrl();
@@ -50,6 +51,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <PhotoViewer />
             {/* «Sto cucinando»: pannello + scheduler dei timer (fila e mini-barra stanno in AppShell) */}
             <CookingDock />
+            {/* Ricerca globale: overlay montato una volta, si apre con openSearch() / ⌘K */}
+            <SearchOverlay />
           </DialogProvider>
         </AuthProvider>
       </body>

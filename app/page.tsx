@@ -7,6 +7,7 @@ import { Fraunces } from "next/font/google";
 import { RecipeCard } from "@/components/recipe/RecipeCard";
 import { MenuCard } from "@/components/menu/MenuCard";
 import { FavoritesCta } from "@/components/home/FavoritesCta";
+import { SearchTrigger } from "@/components/search/SearchTrigger";
 import {
   BookOpen,
   UtensilsCrossed,
@@ -58,9 +59,12 @@ export default async function LandingPage() {
           Ricettario
         </h1>
 
-        <p className="text-sky-200/70 text-base sm:text-lg max-w-xs mb-10">
+        <p className="text-sky-200/70 text-base sm:text-lg max-w-xs mb-8">
           Le ricette di casa, sempre a portata di mano
         </p>
+
+        {/* Ricerca globale (overlay): la vetrina vera arriva con la fase 6 del restyle */}
+        <SearchTrigger className="mb-8 max-w-md" />
 
         {/* CTA */}
         <div className="flex flex-wrap gap-3 justify-center">
