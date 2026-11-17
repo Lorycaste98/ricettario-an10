@@ -141,6 +141,9 @@
   - [ ] foto (11.5), ricerca con creazione (11.6), categorie e tag (11.7), ricetta nel menù con porzioni (11.8), tempi automatici o a mano (11.9).
   - [ ] **Non toccare** la logica dei legami passo-ingrediente né `createRecipeContent`.
 - [ ] `FormSkeleton` e `loading.tsx` admin allineati.
+- [ ] A form rifatti: in `components/AppShell.tsx` sostituire l'elenco delle pagine `/admin/...` in `RESTYLED` con `"/admin/*"`.
+
+> **Stato 17/11/2026:** fatte le parti **5A** (cornice, sotto-navigazione, dashboard; commit a1ca5a0) e **5B** (tutte le liste di Gestione; commit e9ce2b1), pubblicate sull'anteprima. Verificate con dati finti su iPad e iPhone; il proprietario le controlla da admin sui dati veri prima della **5C** (form ricetta e menù, i file più lunghi: `components/recipe/RecipeForm.tsx` ~1500 righe, `components/menu/MenuForm.tsx`). Prototipo del form: `docs/design/schermate/6-form-ricetta*`. Pezzi già pronti da riusare: `AdminTable`, `buttonClasses`/`rowIconCls` (`components/ds/button-classes.ts`), `ColorSwatches`, maniglia di `ReorderList` già nel nuovo stile. Per vedere le pagine admin senza login si sono usate pagine temporanee sotto `app/prova-elementi/admin/` con dati finti (poi cancellate).
 
 ---
 
