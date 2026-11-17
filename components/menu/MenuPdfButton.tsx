@@ -52,7 +52,7 @@ function toPdfData(r: RecipeDetailResponse): RecipePdfData {
 
 /**
  * Esporta il menù in PDF: bottone tondo con icona (3.10), gemello del PDF del dettaglio ricetta
- * (`RecipePdfButton icon`), nelle azioni della testata.
+ * (`RecipePdfButton`), nelle azioni della testata.
  */
 export function MenuPdfButton({ menu }: MenuPdfProps) {
   const [loading, setLoading] = useState(false);

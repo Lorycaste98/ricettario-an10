@@ -1,9 +1,9 @@
 "use client";
 import { useMemo, useState } from "react";
-import { MessageSquareHeart, ChevronDown } from "lucide-react";
 import { ReviewBubble } from "@/components/recipe/ReviewBubble";
 import { ReviewCarousel } from "@/components/recipe/ReviewCarousel";
-import { RatingCountBadge, ReviewsSummary } from "@/components/recipe/ReviewStats";
+import { ReviewsHeader } from "@/components/recipe/ReviewStats";
+import { GuestRatingTag } from "@/components/ds/Tag";
 import { Collapsible } from "@/components/ui/Collapsible";
 import { ConfirmModal } from "@/components/ui/Modal";
 import type { MenuRecipeReview } from "@/lib/types";
@@ -52,40 +52,25 @@ export function MenuReceivedReviews({ initialReviews, avgRating }: { initialRevi
   return (
     <section className="rounded-card border border-blu-150 bg-white p-(--pad)">
       {/* Header = toggle del dropdown generico (aperto di default) */}
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className="flex w-full items-center gap-2.5 text-left sm:gap-3"
-      >
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-rose-400 to-pink-500 text-white shadow-md shadow-rose-500/30">
-          <MessageSquareHeart size={20} />
-        </span>
-        <h2 className="min-w-0 flex-1 truncate text-lg font-bold text-sky-950 sm:text-xl">Recensioni</h2>
-        {avgRating != null && <ReviewsSummary avg={avgRating} count={reviews.length} />}
-        <ChevronDown
-          size={18}
-          className={`shrink-0 text-sky-500 transition-transform duration-300 ${open ? "rotate-180" : ""}`}
-        />
-      </button>
+      <ReviewsHeader open={open} onToggle={() => setOpen((v) => !v)} avg={avgRating} count={reviews.length} />
 
-      <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+      <div className={`grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none ${open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
         {/* Un dropdown per ricetta (chiuso di default): chiuso mostra ricetta + media + n° recensioni */}
         <div className="overflow-hidden" inert={!open || undefined}>
-          <div className="space-y-2.5 pt-5">
+          <div className="flex flex-col gap-2 pt-3">
             {groups.map((group) => (
             <Collapsible
               key={group.recipe.id}
               header={
                 <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <span className="text-sm font-bold text-sky-950">{group.recipe.name}</span>
-                  <RatingCountBadge avg={group.avg} count={group.reviews.length} />
+                  <span className="font-bold">{group.recipe.name}</span>
+                  <GuestRatingTag value={group.avg} count={group.reviews.length} />
                 </span>
               }
             >
               <ReviewCarousel>
                 {group.reviews.map((r) => (
-                  <div key={r.id} className="w-[185px] shrink-0 snap-start sm:w-[250px]">
+                  <div key={r.id} className="w-[11.5rem] shrink-0 snap-start @min-[620px]:w-60">
                     <ReviewBubble
                       nickname={r.nickname}
                       rating={r.rating}

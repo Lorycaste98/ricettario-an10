@@ -5,7 +5,8 @@ import { useFavorites } from "@/lib/favorites";
 
 interface Props {
   recipeId: number;
-  variant?: "card" | "detail" | "overlay" | "icon";
+  /** card = tondo sulla foto della `RecipeCard` · icon = 3.10/3.11 nella testata del dettaglio */
+  variant?: "card" | "icon";
 }
 
 export function FavoriteButton({ recipeId, variant = "card" }: Props) {
@@ -17,26 +18,6 @@ export function FavoriteButton({ recipeId, variant = "card" }: Props) {
     e.stopPropagation();
     toggle(recipeId);
   };
-
-  if (variant === "overlay") {
-    // Badge in sovrimpressione sulla foto: vetro scuro leggibile su qualsiasi
-    // immagine; icona sempre, etichetta breve solo da desktop (lg).
-    return (
-      <button
-        onClick={handleClick}
-        aria-label={active ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti"}
-        aria-pressed={active}
-        title={active ? "Rimuovi dai preferiti" : "Salva tra i preferiti"}
-        className={clsx(
-          "inline-flex items-center gap-1.5 rounded-full px-2.5 py-2 text-xs font-medium text-white shadow-sm backdrop-blur-md transition-colors lg:px-3",
-          active ? "bg-rose-500/85 hover:bg-rose-500" : "bg-black/45 hover:bg-black/65"
-        )}
-      >
-        <Heart size={16} className={clsx(active && "fill-current")} />
-        <span className="hidden lg:inline">{active ? "Salvata" : "Preferiti"}</span>
-      </button>
-    );
-  }
 
   if (variant === "icon") {
     // 3.10 / 3.11 · tondo con sola icona, per la testata del dettaglio
@@ -57,27 +38,9 @@ export function FavoriteButton({ recipeId, variant = "card" }: Props) {
     );
   }
 
-  if (variant === "detail") {
-    return (
-      <button
-        onClick={handleClick}
-        aria-label={active ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti"}
-        aria-pressed={active}
-        className={clsx(
-          "inline-flex items-center gap-2 rounded-lg border backdrop-blur-sm px-4 py-2 text-sm font-medium transition-colors",
-          active
-            ? "border-rose-300/60 bg-rose-50/80 text-rose-600 hover:bg-rose-100/80"
-            : "border-white/40 bg-white/60 text-sky-900 hover:bg-white/80"
-        )}
-      >
-        <Heart size={16} className={clsx(active && "fill-current")} />
-        {active ? "Salvata tra i preferiti" : "Salva tra i preferiti"}
-      </button>
-    );
-  }
-
   return (
     <button
+      type="button"
       onClick={handleClick}
       aria-label={active ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti"}
       aria-pressed={active}

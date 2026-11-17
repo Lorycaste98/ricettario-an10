@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AppShell } from "@/components/AppShell";
 import { AuthProvider } from "@/components/AuthProvider";
-import { DialogProvider } from "@/components/ui/ConfirmDialog";
 import { PhotoViewer } from "@/components/ui/PhotoViewer";
 import { CookingDock } from "@/components/cooking/CookingDock";
 import { SearchOverlay } from "@/components/search/SearchOverlay";
@@ -54,15 +53,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="it" className="h-full antialiased">
       <body className="ds min-h-screen">
         <AuthProvider>
-          <DialogProvider>
-            <AppShell>{children}</AppShell>
-            {/* Visore foto a schermo intero: montato una volta, si apre via evento (ViewerImage) */}
-            <PhotoViewer />
-            {/* «Sto cucinando»: pannello + scheduler dei timer (fila e mini-barra stanno in AppShell) */}
-            <CookingDock />
-            {/* Ricerca globale: overlay montato una volta, si apre con openSearch() / ⌘K */}
-            <SearchOverlay />
-          </DialogProvider>
+          <AppShell>{children}</AppShell>
+          {/* Visore foto a schermo intero: montato una volta, si apre via evento (ViewerImage) */}
+          <PhotoViewer />
+          {/* «Sto cucinando»: pannello + scheduler dei timer (fila e mini-barra stanno in AppShell) */}
+          <CookingDock />
+          {/* Ricerca globale: overlay montato una volta, si apre con openSearch() / ⌘K */}
+          <SearchOverlay />
         </AuthProvider>
       </body>
     </html>

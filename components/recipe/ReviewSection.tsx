@@ -1,13 +1,14 @@
 "use client";
 import { useMemo, useState } from "react";
-import { MessageSquareHeart, CalendarDays, ChevronDown } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 import { type Review } from "@/lib/types";
 import { useAuth } from "@/components/AuthProvider";
 import { ConfirmModal } from "@/components/ui/Modal";
 import { Collapsible } from "@/components/ui/Collapsible";
 import { ReviewBubble } from "@/components/recipe/ReviewBubble";
 import { ReviewCarousel } from "@/components/recipe/ReviewCarousel";
-import { RatingCountBadge, ReviewsSummary } from "@/components/recipe/ReviewStats";
+import { ReviewsHeader } from "@/components/recipe/ReviewStats";
+import { GuestRatingTag } from "@/components/ds/Tag";
 
 // Giorno locale YYYY-MM-DD + etichetta leggibile (le review arrivate dallo stesso
 // menù condividono il timestamp: un gruppo-data ≈ "la volta che l'abbiamo cucinata").
@@ -74,53 +75,34 @@ export function ReviewSection({ initialReviews }: { initialReviews: Review[] }) 
   return (
     <section className="rounded-card border border-blu-150 bg-white p-(--pad)">
       {/* Header = toggle del dropdown generico (aperto di default) */}
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className="flex w-full items-center gap-2.5 text-left sm:gap-3"
-      >
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-rose-400 to-pink-500 text-white shadow-md shadow-rose-500/30">
-          <MessageSquareHeart size={20} />
-        </span>
-        <h2 className="min-w-0 flex-1 truncate text-lg font-bold text-sky-950 sm:text-xl">Recensioni</h2>
-        {avgRating != null && <ReviewsSummary avg={avgRating} count={reviews.length} />}
-        <ChevronDown
-          size={18}
-          className={`shrink-0 text-sky-500 transition-transform duration-300 ${open ? "rotate-180" : ""}`}
-        />
-      </button>
+      <ReviewsHeader open={open} onToggle={() => setOpen((v) => !v)} avg={avgRating} count={reviews.length} />
 
-      <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+      <div className={`grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none ${open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
         <div className="overflow-hidden" inert={!open || undefined}>
           {reviews.length === 0 ? (
-            <p className="pt-5 text-sm text-sky-700">
+            <p className="pt-3 text-[0.875rem] text-grigio">
               Le recensioni si lasciano dalla pagina di recensione del menù in cui è stata cucinata questa ricetta.
             </p>
           ) : (
             // Un dropdown per data (chiuso di default): chiuso mostra data + media + n° voti
-            <div className="space-y-2.5 pt-5">
+            <div className="flex flex-col gap-2 pt-3">
               {groups.map((g) => (
                 <Collapsible
                   key={g.key}
                   header={
                     <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                      <span className="inline-flex items-center gap-1.5 text-sm font-bold text-sky-950">
-                        <CalendarDays size={14} className="text-sky-400" />
+                      <span className="inline-flex items-center gap-1.5 font-bold">
+                        <CalendarDays className="size-4 text-blu-600" aria-hidden />
                         {g.label}
                       </span>
-                      <RatingCountBadge avg={g.avg} count={g.reviews.length} />
-                      {g.menu && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-600">
-                          dal menù {g.menu.name}
-                        </span>
-                      )}
+                      <GuestRatingTag value={g.avg} count={g.reviews.length} />
+                      {g.menu && <span className="text-(length:--fs-meta) text-grigio">dal menù {g.menu.name}</span>}
                     </span>
                   }
                 >
                   <ReviewCarousel>
                     {g.reviews.map((r) => (
-                      <div key={r.id} className="w-[185px] shrink-0 snap-start sm:w-[250px]">
+                      <div key={r.id} className="w-[11.5rem] shrink-0 snap-start @min-[620px]:w-60">
                         <ReviewBubble
                           nickname={r.nickname}
                           rating={r.rating}

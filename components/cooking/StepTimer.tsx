@@ -51,10 +51,12 @@ export function StepTimer({
     fn();
   };
 
+  // Versione piccola (righe dei passi, pannello «Sto cucinando»): stessi colori del timer grande,
+  // giallo = tempo (D2), controlli bianchi a 30px come le azioni di riga (3.12)
   const pill =
-    "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold shadow-sm transition-colors";
+    "inline-flex h-[1.875rem] items-center gap-1 rounded-full px-2.5 text-[0.8125rem] font-semibold transition-colors [&_svg]:size-3.5";
   const iconBtn =
-    "flex h-6 w-6 items-center justify-center rounded-full border border-white/60 bg-white/80 text-sky-700 shadow-sm hover:bg-white";
+    "flex size-[1.875rem] shrink-0 items-center justify-center rounded-full border border-blu-200 bg-white text-blu-800 hover:bg-blu-100 [&_svg]:size-3.5";
 
   if (!session.hydrated) return null;
 
@@ -88,9 +90,9 @@ export function StepTimer({
             startTimer(recipeId, stepIndex);
           }
         }}
-        className={`${pill} cursor-pointer border-orange-300/70 bg-orange-50 text-orange-700 hover:bg-orange-100 ${className}`}
+        className={`${pill} cursor-pointer bg-giallo-100 text-giallo-ink hover:brightness-[.98] ${className}`}
       >
-        <AlarmClock size={12} /> Avvia timer {formatMinutes(mins)}
+        <AlarmClock aria-hidden /> Avvia timer {formatMinutes(mins)}
       </span>
     );
   }
@@ -98,13 +100,13 @@ export function StepTimer({
   if (timer.status === "done") {
     return (
       <span className={`inline-flex flex-wrap items-center gap-1.5 ${className}`}>
-        <span className={`${pill} animate-pulse border-rose-300 bg-rose-100 text-rose-700`}>
-          <BellRing size={12} /> Tempo scaduto!
+        <span role="alert" className={`${pill} animate-pulse bg-giallo-400 text-[oklch(30%_0.06_85)] motion-reduce:animate-none`}>
+          <BellRing aria-hidden /> Tempo scaduto!
         </span>
-        <button type="button" onClick={stop(() => extendTimer(recipeId, stepIndex, 5))} className={`${pill} border-white/60 bg-white/80 text-sky-800 hover:bg-white`}>
-          <Plus size={11} /> 5 min
+        <button type="button" onClick={stop(() => extendTimer(recipeId, stepIndex, 5))} aria-label="Altri 5 minuti" className={`${pill} border border-blu-200 bg-white text-blu-800 hover:bg-blu-100`}>
+          <Plus aria-hidden /> 5 min
         </button>
-        <button type="button" onClick={stop(() => dismissTimer(recipeId, stepIndex))} className={`${pill} border-green-300 bg-green-100 text-green-800 hover:bg-green-200`}>
+        <button type="button" onClick={stop(() => dismissTimer(recipeId, stepIndex))} className={`${pill} border border-blu-200 bg-white text-blu-800 hover:bg-blu-100`}>
           OK
         </button>
       </span>
@@ -116,11 +118,9 @@ export function StepTimer({
   return (
     <span className={`inline-flex items-center gap-1.5 ${className}`}>
       <span
-        className={`${pill} tabular-nums ${
-          paused ? "border-sky-300 bg-sky-50 text-sky-700" : "border-orange-300 bg-orange-100 text-orange-800"
-        }`}
+        className={`${pill} tabular-nums ${paused ? "bg-blu-100 text-blu-800" : "bg-giallo-100 text-giallo-ink"}`}
       >
-        <AlarmClock size={12} /> {formatCountdown(left)}
+        <AlarmClock aria-hidden /> {formatCountdown(left)}
         {paused && <span className="font-medium">· in pausa</span>}
       </span>
       <button
@@ -129,13 +129,13 @@ export function StepTimer({
         onClick={stop(() => (paused ? resumeTimer(recipeId, stepIndex) : pauseTimer(recipeId, stepIndex)))}
         className={iconBtn}
       >
-        {paused ? <Play size={12} /> : <Pause size={12} />}
+        {paused ? <Play /> : <Pause />}
       </button>
       <button type="button" aria-label="Aggiungi 1 minuto" onClick={stop(() => extendTimer(recipeId, stepIndex, 1))} className={iconBtn}>
-        <Plus size={12} />
+        <Plus />
       </button>
-      <button type="button" aria-label="Annulla timer" onClick={stop(() => dismissTimer(recipeId, stepIndex))} className={`${iconBtn} text-rose-500`}>
-        <X size={12} />
+      <button type="button" aria-label="Annulla timer" onClick={stop(() => dismissTimer(recipeId, stepIndex))} className={`${iconBtn} text-rosa`}>
+        <X />
       </button>
     </span>
   );

@@ -13,35 +13,23 @@ import { CookingMiniBar, CookingRow, useHasCooking } from "@/components/shell/Co
  *   legato allo schermo). Tutto il resto decide in base allo spazio del contenitore: `main` è
  *   un container (`@container`), quindi le pagine usano le varianti `@min-[620px]:` ecc.
  * - «Sto cucinando»: fila blu in cima (contenitore largo) o mini-barra (stretto).
- * - Sfondo: le pagine già rifatte (`RESTYLED`) hanno il fondo pieno `blu-50`; le altre tengono
- *   ancora il vecchio gradiente fisso (`.page-bg`) finché non vengono rifatte, perché hanno
- *   testi chiari pensati per quel fondo. A restyle finito `RESTYLED` e `.page-bg` spariscono.
+ * - Sfondo pieno `blu-50` (in Gestione `adm-50`).
  * - Gestione (`/admin/*`, D7): barra laterale inchiostro-indaco `adm-900` e fondo `adm-50`; la
  *   sotto-navigazione di Gestione sta in `app/admin/layout.tsx`.
  * La vetrina pubblica `/` sta dentro la cornice come le altre pagine (fase 6).
  */
-// Voce esatta ("/ricette") o con tutte le sotto-pagine ("/ricette/*")
-const RESTYLED: string[] = ["/", "/prova-elementi", "/ricette/*", "/preferiti", "/menu/*", "/admin/*", "/login", "/recensisci/*"];
-
-function isRestyled(pathname: string) {
-  return RESTYLED.some((p) =>
-    p.endsWith("/*") ? pathname === p.slice(0, -2) || pathname.startsWith(p.slice(0, -1)) : pathname === p
-  );
-}
-
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   // Registra la provenienza di ogni pagina: la usa BackLink per tornare davvero indietro
   useNavHistoryTracker();
   const cooking = useHasCooking();
 
-  const restyled = isRestyled(pathname);
   // Gestione (D7): stessa cornice con la barra inchiostro-indaco e i fondi freddi
   const admin = pathname === "/admin" || pathname.startsWith("/admin/");
 
   return (
     <div
-      className={clsx("flex min-h-dvh [--tabs-h:3.75rem]", restyled ? (admin ? "bg-adm-50" : "bg-blu-50") : "page-bg")}
+      className={clsx("flex min-h-dvh [--tabs-h:3.75rem]", admin ? "bg-adm-50" : "bg-blu-50")}
       style={
         {
           // spazio in fondo su telefono: barra in basso (+ mini-barra se si sta cucinando)

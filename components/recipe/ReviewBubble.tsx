@@ -2,20 +2,34 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Trash2, MessageSquareText, Tag as TagIcon } from "lucide-react";
-import { ratingStyle } from "@/lib/review-style";
-import { RatingBadge } from "@/components/ui/Rating";
+import { Trash2, MessageSquareText } from "lucide-react";
+import { IconButton } from "@/components/ds/Button";
+import { ClocheIcon } from "@/components/icons";
 import { Modal } from "@/components/ui/Modal";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("it-IT", { day: "numeric", month: "short", year: "numeric" });
 }
 
+/** Voto ospite: pallino oro (6.2), come nelle recensioni di Gestione (`ReviewMiniCard`) */
+function RatingDot({ rating, size = "md" }: { rating: number; size?: "md" | "lg" }) {
+  return (
+    <span
+      className={`tabular flex shrink-0 items-center justify-center rounded-full bg-oro-50 font-bold text-giallo-ink ${size === "lg" ? "size-11 text-[1.125rem]" : "size-9"}`}
+      aria-label={`Voto ${rating} su 10`}
+    >
+      {rating}
+    </span>
+  );
+}
+
+const chipCls =
+  "inline-flex h-[1.75em] w-fit min-w-0 max-w-full items-center gap-[0.35em] rounded-full bg-area-menu-50 px-[0.65em] text-[0.75rem] font-bold text-area-menu hover:brightness-95 [&_svg]:size-[1.1em] [&_svg]:shrink-0";
+
 /**
- * Card recensione pubblica compatta (pagina ricetta/menù). A colpo d'occhio:
- * voto + autore (+ data/chip opzionali). Il commento è nascosto: se presente,
- * un'icona lo apre in un dialog (comodo dentro un carosello); se assente nulla.
- * Colorata per voto — il 10 eredita alone + sheen da `ratingStyle`.
+ * Card recensione pubblica compatta (dettaglio ricetta e menù, restyle fase 8): voto nel pallino
+ * oro, autore, data e menù d'origine (facoltativi). Il commento è nascosto: se c'è, «Leggi il
+ * commento» lo apre in una finestra (comoda dentro il carosello); se non c'è, niente.
  */
 export function ReviewBubble({
   nickname,
@@ -38,93 +52,60 @@ export function ReviewBubble({
   onDelete?: () => void;
 }) {
   const [open, setOpen] = useState(false);
-  const s = ratingStyle(rating);
   const text = comment?.trim() ?? "";
   const hasComment = text.length > 0;
 
   return (
     <>
-      <div
-        className={`relative flex h-full flex-col gap-1.5 overflow-hidden rounded-xl border p-2.5 shadow-sm sm:gap-2 sm:p-3 ${s.card} ${
-          s.top ? "rating-top" : ""
-        }`}
-      >
-        {/* Riga 1: voto (+ elimina admin) */}
-        <div className="flex items-center justify-between gap-2">
-          <RatingBadge rating={rating} size="sm" />
-          <div className="flex shrink-0 items-center gap-1">
-            {showDate && <span className="text-[11px] text-sky-600/80">{formatDate(createdAt)}</span>}
-            {isAdmin && onDelete && (
-              <button
-                type="button"
-                onClick={onDelete}
-                aria-label="Elimina recensione"
-                className="flex h-6 w-6 items-center justify-center rounded-lg text-sky-400 transition-colors active:bg-red-50 active:text-red-500 sm:hover:bg-red-50 sm:hover:text-red-500"
-              >
-                <Trash2 size={12} />
-              </button>
-            )}
+      <div className="flex h-full min-w-0 flex-col gap-2 rounded-ctl border border-blu-150 bg-white p-3">
+        <div className="flex items-center gap-2.5">
+          <RatingDot rating={rating} />
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-bold">{nickname}</p>
+            {showDate && <p className="text-(length:--fs-meta) text-grigio">{formatDate(createdAt)}</p>}
           </div>
+          {isAdmin && onDelete && (
+            <IconButton label="Elimina recensione" tone="danger" size="row" onClick={onDelete}>
+              <Trash2 />
+            </IconButton>
+          )}
         </div>
 
-        {/* Riga 2: autore */}
-        <div className="flex items-center gap-2">
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/70 text-[10px] font-bold text-sky-800 ring-1 ring-black/5">
-            {nickname[0]?.toUpperCase()}
-          </span>
-          <span className="truncate text-xs font-semibold text-sky-950">{nickname}</span>
-        </div>
-
-        {/* Chip contesto opzionale */}
         {chip && (
-          <Link
-            href={chip.href}
-            className="inline-flex w-fit items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-600 transition-colors active:bg-sky-200 sm:hover:bg-sky-200"
-          >
-            <TagIcon size={10} className="shrink-0" /> <span className="truncate">{chip.label}</span>
+          <Link href={chip.href} className={chipCls}>
+            <ClocheIcon aria-hidden />
+            <span className="truncate">{chip.label}</span>
           </Link>
         )}
 
-        {/* Commento: solo se presente, si apre in dialog */}
         {hasComment && (
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="mt-auto inline-flex w-fit items-center gap-1 text-[11px] font-semibold text-sky-500 transition-colors hover:text-orange-600"
+            className="mt-auto inline-flex w-fit items-center gap-1 text-[0.8125rem] font-semibold text-blu-600 hover:underline"
           >
-            <MessageSquareText size={13} /> Leggi commento
+            <MessageSquareText className="size-4" aria-hidden /> Leggi il commento
           </button>
         )}
       </div>
 
       {hasComment && (
-        <Modal
-          open={open}
-          onClose={() => setOpen(false)}
-          title="Recensione"
-          size="sm"
-          bodyClassName="min-h-[30dvh] sm:min-h-0"
-        >
-          <div className="space-y-3">
-            <div className="flex items-center justify-between gap-3">
-              <span className="flex items-center gap-2 text-sm">
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-sky-100 text-xs font-bold text-sky-700">
-                  {nickname[0]?.toUpperCase()}
-                </span>
-                <span className="font-semibold text-sky-950">{nickname}</span>
-                <span className="text-xs text-sky-500">· {formatDate(createdAt)}</span>
-              </span>
-              <RatingBadge rating={rating} />
+        <Modal open={open} onClose={() => setOpen(false)} title="Recensione" size="sm" bodyClassName="min-h-[30dvh] sm:min-h-0">
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-3">
+              <RatingDot rating={rating} size="lg" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-bold">{nickname}</p>
+                <p className="text-(length:--fs-meta) text-grigio">{formatDate(createdAt)}</p>
+              </div>
             </div>
             {chip && (
-              <Link
-                href={chip.href}
-                className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-bold text-sky-600"
-              >
-                <TagIcon size={11} /> {chip.label}
+              <Link href={chip.href} className={chipCls}>
+                <ClocheIcon aria-hidden />
+                <span className="truncate">{chip.label}</span>
               </Link>
             )}
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-sky-800">{text}</p>
+            <p className="rounded-[0.625rem] bg-blu-50 p-3 leading-relaxed whitespace-pre-wrap">{text}</p>
           </div>
         </Modal>
       )}

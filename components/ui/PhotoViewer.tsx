@@ -141,7 +141,7 @@ export function PhotoViewer() {
       // fra le foto) e la pinch nativa. Senza, il trascinamento verticale scorre la
       // pagina dietro — su iOS la barra di Safari si nasconde, `h-dvh` cambia e il
       // dialog sobbalza a metà gesto.
-      className="fixed inset-0 m-0 h-dvh max-h-none w-screen max-w-none border-0 bg-sky-950/95 p-0 backdrop:bg-sky-950/80 [touch-action:pan-x_pinch-zoom] open:flex open:flex-col"
+      className="fixed inset-0 m-0 h-dvh max-h-none w-screen max-w-none border-0 bg-blu-950/95 p-0 backdrop:bg-blu-950/80 [touch-action:pan-x_pinch-zoom] open:flex open:flex-col"
     >
       {/* Traccia scorrevole: una slide a schermo pieno per foto, snap nativo */}
       <div

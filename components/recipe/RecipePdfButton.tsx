@@ -16,8 +16,21 @@ export interface RecipePdfData {
   categories: { name: string; color: string }[];
   tags: { name: string }[];
   /** `id` serve solo a risolvere i legami `steps[].stepIngredients` */
-  ingredients: { id?: number; name: string; qty: number | null; unit: string | null; description: string | null; optional?: boolean; section?: string | null }[];
-  steps: { text: string; mins: number | null; kind?: string; stepIngredients?: StepIngredientLink[] }[];
+  ingredients: {
+    id?: number;
+    name: string;
+    qty: number | null;
+    unit: string | null;
+    description: string | null;
+    optional?: boolean;
+    section?: string | null;
+  }[];
+  steps: {
+    text: string;
+    mins: number | null;
+    kind?: string;
+    stepIngredients?: StepIngredientLink[];
+  }[];
 }
 
 /** Scarica un'immagine remota e la converte in data URL (per includerla nel PDF in modo affidabile). */
@@ -46,10 +59,9 @@ export async function logoPngDataUrl(): Promise<string | undefined> {
   let objectUrl: string | undefined;
   try {
     // Misure esplicite: senza width/height alcuni browser (Firefox) non disegnano l'SVG sul canvas
-    const svg = (await (await fetch("/brand/an10-orizzontale-blu.svg")).text()).replace(
-      "<svg ",
-      '<svg width="720" height="236" '
-    );
+    const svg = (
+      await (await fetch("/brand/an10-orizzontale-blu.svg")).text()
+    ).replace("<svg ", '<svg width="720" height="236" ');
     objectUrl = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
     const img = new window.Image();
     img.src = objectUrl;
@@ -73,16 +85,8 @@ export function safeFileName(name: string, fallback = "ricetta"): string {
   return (cleaned || fallback).slice(0, 80);
 }
 
-export function RecipePdfButton({
-  recipe,
-  overlay = false,
-  icon = false,
-}: {
-  recipe: RecipePdfData;
-  overlay?: boolean;
-  /** Bottone tondo con sola icona (tavola 3.10), per la testata del dettaglio */
-  icon?: boolean;
-}) {
+/** Bottone tondo con sola icona (tavola 3.10) nella testata del dettaglio ricetta */
+export function RecipePdfButton({ recipe }: { recipe: RecipePdfData }) {
   const [loading, setLoading] = useState(false);
 
   const handleExport = async () => {
@@ -99,7 +103,11 @@ export function RecipePdfButton({
         logoPngDataUrl(),
       ]);
       const blob = await pdf(
-        <RecipePdfDocument recipe={recipe} photoData={photoData} logoData={logoData} />
+        <RecipePdfDocument
+          recipe={recipe}
+          photoData={photoData}
+          logoData={logoData}
+        />,
       ).toBlob();
 
       const url = URL.createObjectURL(blob);
@@ -117,50 +125,22 @@ export function RecipePdfButton({
     }
   };
 
-  if (icon) {
-    return (
-      <button
-        type="button"
-        onClick={handleExport}
-        disabled={loading}
-        aria-label="Esporta in PDF"
-        title="Esporta in PDF"
-        className="inline-flex size-(--h-icon) shrink-0 items-center justify-center rounded-full border border-blu-200 bg-white text-blu-800 transition-colors hover:bg-blu-100 disabled:opacity-60"
-      >
-        {loading ? <Loader2 size={20} className="animate-spin motion-reduce:animate-none" /> : <FileDown size={20} />}
-      </button>
-    );
-  }
-
-  // Badge in sovrimpressione sulla foto: vetro scuro, icona sempre + "PDF" da desktop
-  if (overlay) {
-    return (
-      <button
-        onClick={handleExport}
-        disabled={loading}
-        title="Esporta in PDF"
-        className="inline-flex items-center gap-1.5 rounded-full bg-black/45 px-2.5 py-2 text-xs font-medium text-white shadow-sm backdrop-blur-md transition-colors hover:bg-black/65 disabled:cursor-not-allowed disabled:opacity-60 lg:px-3"
-      >
-        {loading ? <Loader2 size={16} className="animate-spin" /> : <FileDown size={16} />}
-        <span className="hidden lg:inline">{loading ? "PDF…" : "PDF"}</span>
-      </button>
-    );
-  }
-
   return (
     <button
+      type="button"
       onClick={handleExport}
       disabled={loading}
-      className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/40 bg-white/60 px-4 py-2 text-sm font-medium text-sky-900 backdrop-blur-sm transition-colors hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-60"
+      aria-label="Esporta in PDF"
+      title="Esporta in PDF"
+      className="inline-flex size-(--h-icon) shrink-0 items-center justify-center rounded-full border border-blu-200 bg-white text-blu-800 transition-colors hover:bg-blu-100 disabled:opacity-60"
     >
       {loading ? (
-        <>
-          <Loader2 size={15} className="animate-spin" /> Generazione PDF…
-        </>
+        <Loader2
+          size={20}
+          className="animate-spin motion-reduce:animate-none"
+        />
       ) : (
-        <>
-          <FileDown size={15} /> Esporta in PDF
-        </>
+        <FileDown size={20} />
       )}
     </button>
   );

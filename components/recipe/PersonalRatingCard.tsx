@@ -1,17 +1,20 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChefHat, Pencil, Trash2, StickyNote } from "lucide-react";
-import { RatingInput } from "@/components/ui/Rating";
-import { Textarea } from "@/components/ui/Input";
-import { Button } from "@/components/ui/Button";
+import { ChefHat, Pencil, Trash2 } from "lucide-react";
+import { Button } from "@/components/ds/Button";
+import { Field, TextArea } from "@/components/ds/Field";
+import { RatingInput } from "@/components/ds/Controls";
+import { MyRatingTag } from "@/components/ds/Tag";
+import { Panel } from "@/components/ds/Panel";
+import { FormError } from "@/components/admin/FormParts";
 import { ConfirmModal } from "@/components/ui/Modal";
 import type { PersonalRating } from "@/lib/types";
 
 /**
- * Card "Il mio voto": voto personale dell'admin su una ricetta (uno per account),
- * distinto dalle recensioni ospiti e fuori dalla media pubblica.
- * Identità visiva sky/indigo (le recensioni sono oro/amber) per distinguerli a colpo d'occhio.
+ * Scheda «Il mio voto» (restyle fase 8): voto personale dell'admin su una ricetta (uno per
+ * account), distinto dalle recensioni ospiti e fuori dalla media pubblica. Colore «mio» (6.3,
+ * indaco) contro l'oro degli ospiti (6.2); in modifica il voto si sceglie con 4.12.
  */
 export function PersonalRatingCard({
   recipeId,
@@ -71,73 +74,50 @@ export function PersonalRatingCard({
   };
 
   return (
-    <section className="space-y-4 rounded-card border border-blu-150 bg-white p-3.5">
-      <div className="flex items-center gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-indigo-500 text-white shadow-md shadow-sky-500/30">
-          <ChefHat size={18} />
-        </span>
-        <div className="min-w-0">
-          <h2 className="text-lg font-bold text-sky-950">Il mio voto</h2>
-          <p className="text-xs text-sky-700/70">Il tuo voto personale — non è una recensione degli ospiti.</p>
-        </div>
-        {saved && !editing && (
-          <span className="ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-gradient-to-br from-sky-500 to-indigo-500 px-3 py-1.5 text-white shadow-sm">
-            <span className="text-xl font-extrabold leading-none">{saved.rating}</span>
-            <span className="text-xs font-medium text-sky-100">/10</span>
-          </span>
-        )}
-      </div>
-
+    <Panel
+      title="Il mio voto"
+      icon={<ChefHat />}
+      meta="Il tuo voto personale: non entra nella media degli ospiti."
+      actions={saved && !editing ? <MyRatingTag value={saved.rating} /> : undefined}
+    >
       {saved && !editing ? (
-        <div className="space-y-3">
-          {saved.note && (
-            <p className="flex items-start gap-2 rounded-ctl bg-mio-50 px-3.5 py-2.5 text-sm text-blu-950 leading-relaxed">
-              <StickyNote size={16} className="mt-0.5 shrink-0 text-sky-500" /> <span>{saved.note}</span>
-            </p>
-          )}
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={startEdit}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-sky-300/60 bg-white/60 px-3 py-1.5 text-sm font-medium text-sky-800 transition-colors hover:bg-white/90"
-            >
-              <Pencil size={14} /> Modifica
-            </button>
-            <button
-              type="button"
-              onClick={() => setConfirmDelete(true)}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white/60 px-3 py-1.5 text-sm font-medium text-rose-600 transition-colors hover:bg-rose-50"
-            >
-              <Trash2 size={14} /> Rimuovi
-            </button>
+        <div className="flex flex-col gap-3">
+          {saved.note && <p className="rounded-ctl bg-mio-50 px-3.5 py-2.5 leading-relaxed whitespace-pre-wrap">{saved.note}</p>}
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="secondary" size="sm" icon={<Pencil />} onClick={startEdit}>
+              Modifica
+            </Button>
+            <Button variant="danger" size="sm" icon={<Trash2 />} onClick={() => setConfirmDelete(true)}>
+              Rimuovi
+            </Button>
           </div>
         </div>
       ) : (
-        <form onSubmit={save} className="space-y-4">
+        <form onSubmit={save} className="flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-sky-900">Voto</label>
-            <RatingInput value={rating} onChange={setRating} />
+            <span className="text-[0.8125rem] font-semibold text-grigio">Voto</span>
+            <RatingInput value={rating} onChange={setRating} label="Il mio voto, da 1 a 10" />
           </div>
-          <Textarea
-            label="Nota (opzionale)"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            rows={3}
-            placeholder="Un promemoria per te: come l'hai trovata?"
-          />
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <div className="flex items-center gap-2">
+          <Field label="Nota (facoltativa)">
+            {(p) => (
+              <TextArea
+                {...p}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                rows={3}
+                placeholder="Un promemoria per te: come l'hai trovata?"
+              />
+            )}
+          </Field>
+          {error && <FormError>{error}</FormError>}
+          <div className="flex flex-wrap items-center gap-2">
             <Button type="submit" loading={busy}>
               {saved ? "Salva voto" : "Salva il mio voto"}
             </Button>
             {saved && (
-              <button
-                type="button"
-                onClick={() => setEditing(false)}
-                className="rounded-lg border border-sky-200 bg-white/50 px-3 py-2 text-sm font-medium text-sky-700 transition-colors hover:bg-white/80"
-              >
+              <Button variant="ghost" onClick={() => setEditing(false)}>
                 Annulla
-              </button>
+              </Button>
             )}
           </div>
         </form>
@@ -151,6 +131,6 @@ export function PersonalRatingCard({
         message="Vuoi rimuovere il tuo voto personale per questa ricetta?"
         loading={busy}
       />
-    </section>
+    </Panel>
   );
 }

@@ -2,77 +2,12 @@
 /* Token del restyle (stile 1A): colori OKLCH, misure fluide. Vedi DESIGN.md */
 @import "./design-tokens.css";
 
-@keyframes shrink {
-  from { width: 100%; }
-  to { width: 0%; }
-}
-
 @keyframes skeleton-reveal {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
-@keyframes fade-up {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* Ingresso scaglionato — usato nella dashboard admin */
-.fade-up {
-  animation: fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .fade-up { animation: none; }
-}
-
-/* Voto 10 — "top del top": sheen scintillante che attraversa la card.
-   Richiede un contenitore `relative overflow-hidden` così lo sweep resta ritagliato. */
-@keyframes rating-sheen {
-  0%   { transform: translateX(-160%); }
-  100% { transform: translateX(160%); }
-}
-
-.rating-top::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    105deg,
-    transparent 40%,
-    rgba(255, 255, 255, 0.78) 50%,
-    transparent 60%
-  );
-  transform: translateX(-160%);
-  animation: rating-sheen 3s ease-in-out infinite;
-  animation-delay: 0.4s;
-  pointer-events: none;
-}
-
-/* Scintillio dell'icona del badge del 10 */
-@keyframes rating-twinkle {
-  0%, 100% { opacity: 1; transform: scale(1) rotate(0deg); }
-  45%      { opacity: 0.5; transform: scale(0.72) rotate(-18deg); }
-}
-
-.rating-twinkle {
-  transform-origin: center;
-  animation: rating-twinkle 1.6s ease-in-out infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .rating-top::after,
-  .rating-twinkle { animation: none; }
-}
-
-:root {
-  --background: #ffffff;
-  --foreground: #042537; /* dark teal — readable on the light part of the gradient */
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-system);
   --font-mono: ui-monospace, Menlo, monospace;
 }
@@ -84,8 +19,8 @@ html {
 }
 
 body {
-  background-color: transparent; /* trasparente: body::before con z-index:-1 deve emergere */
-  color: var(--foreground);
+  background-color: var(--color-blu-50);
+  color: var(--color-blu-950);
   font-family: var(--font-system);
   min-height: 100dvh;
   overscroll-behavior: none;
@@ -113,33 +48,3 @@ body {
     font-size: var(--field-font-size, inherit);
   }
 }
-
-/* Gradiente fisso per pagina — aggiungere la classe .page-bg al wrapper esterno di ogni pagina.
-   isolation:isolate crea un nuovo stacking context locale: il ::before con z-index:-1 rimane
-   dietro il contenuto ma davanti allo sfondo html/body, senza interferire con il canvas root.
-   height:100lvh = large viewport height, costante: non si ridimensiona quando appare la tastiera. */
-.page-bg {
-  isolation: isolate;
-}
-
-.page-bg::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100lvh;
-  z-index: -1;
-  pointer-events: none;
-  background: linear-gradient(
-    180deg,
-    #f0f9ff  0%,
-    #bae6fd 12%,
-    #38bdf8 30%,
-    #0284c7 48%,
-    #075985 62%,
-    #1e3a5c 74%,
-    #1e1b4b 86%
-  );
-}
-

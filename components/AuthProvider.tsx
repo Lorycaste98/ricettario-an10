@@ -1,7 +1,10 @@
 "use client";
 import { createContext, useContext, useEffect, useRef, useState, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { X, Heart, Timer } from "lucide-react";
+import { Heart, Timer } from "lucide-react";
+import { Modal } from "@/components/ui/Modal";
+import { Button } from "@/components/ds/Button";
+import { buttonClasses } from "@/components/ds/button-classes";
 
 const INACTIVITY_MS = 10 * 60 * 1000; // 10 minuti
 // Logout automatico per inattività: disattivato su richiesta (la sessione ora è stabile,
@@ -122,80 +125,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthCtx.Provider value={{ isAdmin, username, role, firstLogin, dedication, hasReviews, loading, refresh }}>
       {children}
 
-      {/* ── Modal dedica (primo accesso) ── */}
-      {showDedication && dedication && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-xl rounded-3xl bg-white shadow-2xl overflow-hidden flex flex-col max-h-[calc(100dvh-2rem)]">
-            <div className="bg-gradient-to-br from-orange-50 to-amber-50 px-8 pt-10 pb-6 text-center flex-shrink-0">
-              <div className="flex justify-center mb-4">
-                <span className="flex h-16 w-16 items-center justify-center rounded-full bg-orange-100 text-orange-500">
-                  <Heart size={32} fill="currentColor" />
-                </span>
-              </div>
-              <p className="text-xs font-semibold uppercase tracking-widest text-orange-400 mb-3">
-                Un messaggio per te
-              </p>
-            </div>
-            <div className="overflow-y-auto px-8 py-4 bg-gradient-to-br from-orange-50 to-amber-50">
-              <p className="text-gray-700 text-base leading-relaxed whitespace-pre-wrap text-center">
-                {dedication}
-              </p>
-            </div>
-            <div className="px-8 py-6 bg-white flex-shrink-0">
-              <p className="text-xs text-gray-400 text-center mb-4">
-                Troverai sempre questa dedica nella tua pagina profilo.
-              </p>
-              <button
-                onClick={closeDedication}
-                className="w-full rounded-xl bg-orange-500 px-4 py-3 text-sm font-semibold text-white hover:bg-orange-600 transition-colors"
-              >
-                Inizia a cucinare
-              </button>
-            </div>
-          </div>
+      {/* ── Dedica (primo accesso) · finestra 10.1 ── */}
+      <Modal open={showDedication && !!dedication} onClose={closeDedication} title="Un messaggio per te" size="md">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <span className="flex size-14 items-center justify-center rounded-full bg-blu-100 text-blu-800">
+            <Heart className="size-7" fill="currentColor" aria-hidden />
+          </span>
+          <p className="leading-relaxed whitespace-pre-wrap">{dedication}</p>
+          <p className="text-(length:--fs-meta) text-grigio">Troverai sempre questa dedica nella pagina del profilo.</p>
+          <Button size="lg" className="w-full" onClick={closeDedication}>
+            Inizia a cucinare
+          </Button>
         </div>
-      )}
+      </Modal>
 
-      {/* ── Modal logout per inattività ── */}
-      {autoLoggedOut && (
-        <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4"
-          onClick={dismissAutoLogout}
-        >
-          <div
-            className="w-full max-w-sm rounded-2xl bg-white shadow-2xl overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-6 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-100 text-orange-500">
-                  <Timer size={20} />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">Sessione scaduta</p>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    Sei stato disconnesso automaticamente dopo 10 minuti di inattività.
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-2 pt-1">
-                <a
-                  href="/login"
-                  className="flex-1 rounded-xl bg-orange-500 px-4 py-2.5 text-center text-sm font-medium text-white hover:bg-orange-600 transition-colors"
-                >
-                  Accedi nuovamente
-                </a>
-                <button
-                  onClick={dismissAutoLogout}
-                  className="rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
-                >
-                  <X size={15} />
-                </button>
-              </div>
-            </div>
-          </div>
+      {/* ── Logout per inattività (oggi disattivato, vedi INACTIVITY_LOGOUT_ENABLED) ── */}
+      <Modal open={autoLoggedOut} onClose={dismissAutoLogout} title="Sessione scaduta" size="sm">
+        <div className="flex flex-col gap-4">
+          <p className="flex items-start gap-3">
+            <Timer className="mt-0.5 size-5 shrink-0 text-blu-700" aria-hidden />
+            Sei stato disconnesso automaticamente dopo 10 minuti di inattività.
+          </p>
+          <a href="/login" className={buttonClasses("primary", "md", "w-full")}>
+            Accedi di nuovo
+          </a>
         </div>
-      )}
+      </Modal>
     </AuthCtx.Provider>
   );
 }

@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { clsx } from "clsx";
-import { Check, Search } from "lucide-react";
+import { Check } from "lucide-react";
+import { SearchField } from "@/components/ds/Field";
 import type { Tag } from "@/lib/types";
 
 interface Props {
@@ -12,34 +13,31 @@ interface Props {
   autoFocus?: boolean;
 }
 
-/** Combobox di filtro tag: ricerca + lista multi-selezione (selezione immediata, niente «#»). */
+/**
+ * Filtro tag della libreria (finestra «Filtra per tag» di `RecipeGrid`, restyle fase 8): ricerca 4.5
+ * + lista a scelta multipla, selezione immediata, niente «#». Scelto = quadratino `blu-800`, come i
+ * chip filtro attivi (4.11): il verde resta per «fatto».
+ */
 export function TagFilterCombobox({ tags, selectedIds, onToggle, autoFocus }: Props) {
   const [query, setQuery] = useState("");
   const q = query.trim().toLowerCase();
 
-  const filtered = useMemo(
-    () => (q ? tags.filter((t) => t.name.toLowerCase().includes(q)) : tags),
-    [tags, q]
-  );
+  const filtered = useMemo(() => (q ? tags.filter((t) => t.name.toLowerCase().includes(q)) : tags), [tags, q]);
 
   return (
-    <div className="space-y-2">
-      <div className="relative">
-        <Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-violet-500" />
-        <input
-          type="text"
-          autoFocus={autoFocus}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Cerca un tag…"
-          autoComplete="off"
-          className="h-9 w-full rounded-lg border border-violet-200 bg-white pl-8 pr-3 text-sm text-violet-950 placeholder:text-violet-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-300/30"
-        />
-      </div>
+    <div className="flex flex-col gap-2">
+      <SearchField
+        autoFocus={autoFocus}
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Cerca un tag…"
+        aria-label="Cerca un tag"
+        autoComplete="off"
+      />
 
-      <div className="max-h-52 divide-y divide-violet-50 overflow-y-auto rounded-lg border border-violet-100">
+      <div className="max-h-64 divide-y divide-blu-150 overflow-y-auto rounded-ctl border border-blu-150">
         {filtered.length === 0 ? (
-          <p className="px-3 py-4 text-center text-xs text-gray-400">Nessun tag trovato</p>
+          <p className="px-3 py-4 text-center text-[0.875rem] text-grigio">Nessun tag trovato</p>
         ) : (
           filtered.map((t) => {
             const sel = selectedIds.includes(t.id);
@@ -48,18 +46,20 @@ export function TagFilterCombobox({ tags, selectedIds, onToggle, autoFocus }: Pr
                 key={t.id}
                 type="button"
                 onClick={() => onToggle(t.id)}
+                aria-pressed={sel}
                 className={clsx(
-                  "flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors",
-                  sel ? "bg-violet-50 font-medium text-violet-800" : "text-gray-700 hover:bg-violet-50/60"
+                  "flex min-h-11 w-full items-center gap-2.5 px-3 text-left transition-colors",
+                  sel ? "bg-blu-100 font-semibold" : "hover:bg-blu-50"
                 )}
               >
                 <span
+                  aria-hidden
                   className={clsx(
-                    "flex h-4 w-4 shrink-0 items-center justify-center rounded border",
-                    sel ? "border-violet-500 bg-violet-500 text-white" : "border-gray-300"
+                    "flex size-5 shrink-0 items-center justify-center rounded-[0.375rem] border-2",
+                    sel ? "border-blu-800 bg-blu-800 text-white" : "border-blu-250 bg-white"
                   )}
                 >
-                  {sel && <Check size={11} />}
+                  {sel && <Check className="size-3.5" strokeWidth={3} />}
                 </span>
                 <span className="flex-1 truncate">{t.name}</span>
               </button>

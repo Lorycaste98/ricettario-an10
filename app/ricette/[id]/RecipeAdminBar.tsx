@@ -69,7 +69,7 @@ export function RecipeAdminBar({
           </Link>
         </>
       )}
-      <RecipePdfButton recipe={pdf} icon />
+      <RecipePdfButton recipe={pdf} />
       <FavoriteButton recipeId={recipeId} variant="icon" />
       {isAdmin && (
         <IconButton label="Elimina ricetta" tone="danger" onClick={() => setConfirmDelete(true)}>
