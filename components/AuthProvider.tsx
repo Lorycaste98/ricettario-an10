@@ -81,6 +81,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Lettura iniziale della sessione: `refresh` imposta lo stato solo dopo l'await del fetch,
+  // quindi nessun render a cascata (la regola non lo vede perché la funzione è esterna all'effetto)
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { refresh(); }, []);
 
   const closeDedication = async () => {

@@ -168,9 +168,12 @@ export const pdfStyles = StyleSheet.create({
   stepMins: { fontSize: 8, color: PDF.ambra, marginTop: 1, fontFamily: "Helvetica-Bold" },
   // Ingredienti necessari al passo (solo se la ricetta li ha legati)
   stepIngredients: { fontSize: 8, color: GRAY, marginTop: 1 },
+  // ⚠️ react-pdf 4.x: un elemento `fixed` ancorato con `bottom` che contiene un <Text render>
+  // finisce fuori pagina (o non viene disegnato). Quindi il piè di pagina si ancora con `top`
+  // (A4 = 841.89pt, sotto il paddingBottom del contenuto) e il numero di pagina è un Text a parte.
   footer: {
     position: "absolute",
-    bottom: 24,
+    top: 800,
     left: 44,
     right: 44,
     flexDirection: "row",
@@ -182,6 +185,7 @@ export const pdfStyles = StyleSheet.create({
     fontSize: 7.5,
     color: LIGHT,
   },
+  footerPage: { position: "absolute", top: 809, right: 44, fontSize: 7.5, color: LIGHT },
 });
 
 function fmtQty(qty: number | null, unit: string | null): string {
@@ -199,10 +203,12 @@ export function PdfFooter() {
     year: "numeric",
   });
   return (
-    <View style={pdfStyles.footer} fixed>
-      <Text>Ricettario AN10 · {today}</Text>
-      <Text render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />
-    </View>
+    <>
+      <View style={pdfStyles.footer} fixed>
+        <Text>Ricettario AN10 · {today}</Text>
+      </View>
+      <Text style={pdfStyles.footerPage} fixed render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />
+    </>
   );
 }
 
