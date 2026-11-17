@@ -1,30 +1,25 @@
 import { getSession } from "@/lib/session";
 import { getHomeRecipes, getHomeMenus } from "@/lib/queries";
 import { redirect } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
-import { Fraunces } from "next/font/google";
+import type { ReactNode } from "react";
+import { BookOpen, ChevronRight } from "lucide-react";
 import { RecipeCard } from "@/components/recipe/RecipeCard";
 import { MenuCard } from "@/components/menu/MenuCard";
 import { FavoritesCta } from "@/components/home/FavoritesCta";
 import { SearchTrigger } from "@/components/search/SearchTrigger";
-import {
-  BookOpen,
-  UtensilsCrossed,
-  LogIn,
-  ChevronRight,
-} from "lucide-react";
+import { An10Logo } from "@/components/brand/An10Logo";
+import { ClocheIcon } from "@/components/icons";
+import { EmptyState } from "@/components/ds/Feedback";
+import { buttonClasses } from "@/components/ds/button-classes";
 
-const fraunces = Fraunces({
-  subsets: ["latin"],
-  weight: "700",
-  style: "italic",
-  display: "swap",
-});
-
+/**
+ * Vetrina pubblica (restyle fase 6). Dentro la cornice come le altre pagine, così il visitatore
+ * ha la stessa navigazione (Ricette, Menù, Cerca, Preferiti, Accedi). In cima la fascia blu con
+ * logo e ricerca globale (overlay), sotto le ultime ricette e gli ultimi menù pronti.
+ * Admin loggato: la pagina iniziale è la libreria ricette (decisione del 16/11/2026).
+ */
 export default async function LandingPage() {
-  // Admin loggato: la pagina iniziale è la libreria ricette (decisione del 16/11/2026).
-  // I visitatori vedono la vetrina (da rifare nella fase 6 del restyle).
   const session = await getSession();
   if (session) redirect("/ricette");
 
@@ -32,128 +27,70 @@ export default async function LandingPage() {
   const [recipes, menus] = await Promise.all([getHomeRecipes(), getHomeMenus()]);
 
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Safe-area bar — copre la zona dynamic island/notch su iPhone/iPad */}
-      <div
-        className="fixed top-0 left-0 right-0 z-50 bg-sky-950 lg:hidden pointer-events-none"
-        style={{ height: "env(safe-area-inset-top, 0px)" }}
-      />
-
-      {/* ── Hero ── */}
-      <section className="fade-up flex flex-col items-center justify-center pt-24 pb-16 px-4 text-center">
-        <div className="mb-6 relative">
-          <div className="absolute inset-0 rounded-3xl bg-orange-500/20 blur-2xl scale-150" />
-          <Image
-            src="/an10.webp"
-            alt="AN10"
-            width={88}
-            height={88}
-            priority
-            className="relative rounded-2xl shadow-2xl ring-2 ring-white/20"
-          />
-        </div>
-
-        <h1
-          className={`${fraunces.className} text-6xl sm:text-7xl lg:text-8xl text-white drop-shadow-2xl mb-3 leading-none`}
-        >
-          Ricettario
-        </h1>
-
-        <p className="text-sky-200/70 text-base sm:text-lg max-w-xs mb-8">
-          Le ricette di casa, sempre a portata di mano
-        </p>
-
-        {/* Ricerca globale (overlay): la vetrina vera arriva con la fase 6 del restyle */}
-        <SearchTrigger className="mb-8 max-w-md" />
-
-        {/* CTA */}
-        <div className="flex flex-wrap gap-3 justify-center">
-          <Link
-            href="/login"
-            className="inline-flex items-center gap-2 rounded-xl border border-sky-600 bg-sky-900/60 backdrop-blur-sm px-6 py-2.5 text-sm font-semibold text-sky-100 hover:bg-sky-800/80 transition-colors shadow-lg"
-          >
-            <LogIn size={16} />
-            Accedi
-          </Link>
-          <FavoritesCta />
-        </div>
+    <div className="mx-auto flex max-w-6xl flex-col gap-[calc(var(--gap)*2)]">
+      <section className="flex flex-col items-center gap-4 rounded-card bg-blu-800 px-5 pt-8 pb-6 text-center text-white @min-[620px]:px-10 @min-[620px]:pt-12 @min-[620px]:pb-10">
+        <h1 className="sr-only">Ricettario AN10</h1>
+        <An10Logo variant="orizzontale" title="" className="h-[clamp(3rem,10cqi,4.5rem)] w-auto" />
+        <p className="max-w-[30ch] text-(length:--fs-sec) text-balance text-nav-muted">Le ricette di casa, sempre a portata di mano</p>
+        <SearchTrigger className="mt-2 max-w-md" />
+        <FavoritesCta />
       </section>
 
-      {/* ── Ricette ── */}
       {recipes.length > 0 && (
-        <section className="fade-up max-w-6xl mx-auto w-full px-4 pb-14" style={{ animationDelay: "80ms" }}>
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center gap-3 text-sky-50">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-orange-400 to-rose-500 text-white shadow-md shadow-orange-500/30">
-                <BookOpen size={17} />
-              </span>
-              <h2 className="text-xl font-bold drop-shadow">Ultime ricette</h2>
-            </div>
-            <Link
-              href="/ricette"
-              className="inline-flex items-center gap-1 text-sm font-medium text-sky-300 hover:text-sky-100 transition-colors"
-            >
-              Vedi tutte
-              <ChevronRight size={15} />
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 sm:gap-4">
+        <HomeSection title="Ultime ricette" icon={<BookOpen />} href="/ricette" linkLabel="Tutte le ricette">
+          <div className="grid grid-cols-2 gap-(--gap) @min-[620px]:grid-cols-4">
             {recipes.map((r) => (
               <RecipeCard key={r.id} recipe={r} />
             ))}
           </div>
-
-          <div className="mt-6 text-center">
-            <Link
-              href="/ricette"
-              className="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-rose-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-orange-500/30 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl active:scale-[0.98]"
-            >
-              <BookOpen size={15} />
-              Vedi tutte le ricette
-              <ChevronRight size={15} className="transition-transform duration-300 group-hover:translate-x-1" />
-            </Link>
-          </div>
-        </section>
+        </HomeSection>
       )}
 
-      {/* ── Menù ── */}
       {menus.length > 0 && (
-        <section className="fade-up max-w-6xl mx-auto w-full px-4 pb-20" style={{ animationDelay: "140ms" }}>
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center gap-3 text-sky-50">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 to-cyan-500 text-white shadow-md shadow-sky-500/30">
-                <UtensilsCrossed size={17} />
-              </span>
-              <h2 className="text-xl font-bold drop-shadow">Menù</h2>
-            </div>
-            <Link
-              href="/menu"
-              className="inline-flex items-center gap-1 text-sm font-medium text-sky-300 hover:text-sky-100 transition-colors"
-            >
-              Vedi tutti
-              <ChevronRight size={15} />
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 sm:gap-4">
+        <HomeSection title="Menù" icon={<ClocheIcon />} href="/menu" linkLabel="Tutti i menù">
+          <div className="grid gap-(--gap) @min-[620px]:grid-cols-2">
             {menus.map((m) => (
               <MenuCard key={m.id} menu={m} />
             ))}
           </div>
+        </HomeSection>
+      )}
 
-          <div className="mt-6 text-center">
-            <Link
-              href="/menu"
-              className="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-cyan-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-500/30 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl active:scale-[0.98]"
-            >
-              <UtensilsCrossed size={15} />
-              Vedi tutti i menù
-              <ChevronRight size={15} className="transition-transform duration-300 group-hover:translate-x-1" />
-            </Link>
-          </div>
-        </section>
+      {recipes.length === 0 && menus.length === 0 && (
+        <EmptyState icon={<BookOpen />} title="Ancora niente da mostrare">
+          Le ricette compariranno qui appena saranno pronte.
+        </EmptyState>
       )}
     </div>
+  );
+}
+
+function HomeSection({
+  title,
+  icon,
+  href,
+  linkLabel,
+  children,
+}: {
+  title: string;
+  icon: ReactNode;
+  href: string;
+  linkLabel: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="flex flex-col gap-3">
+      <div className="flex items-center gap-2.5">
+        <span className="flex size-[1.875rem] items-center justify-center rounded-[0.5625rem] bg-blu-120 text-blu-800 [&_svg]:size-[1.05rem]">
+          {icon}
+        </span>
+        <h2 className="min-w-0 flex-1 text-(length:--fs-sec) font-bold text-blu-950">{title}</h2>
+        <Link href={href} className={buttonClasses("ghost", "sm")}>
+          {linkLabel}
+          <ChevronRight />
+        </Link>
+      </div>
+      {children}
+    </section>
   );
 }

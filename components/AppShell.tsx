@@ -18,10 +18,10 @@ import { CookingMiniBar, CookingRow, useHasCooking } from "@/components/shell/Co
  *   testi chiari pensati per quel fondo. A restyle finito `RESTYLED` e `.page-bg` spariscono.
  * - Gestione (`/admin/*`, D7): barra laterale inchiostro-indaco `adm-900` e fondo `adm-50`; la
  *   sotto-navigazione di Gestione sta in `app/admin/layout.tsx`.
- * La home pubblica `/` resta fuori dalla cornice (ha la sua vetrina).
+ * La vetrina pubblica `/` sta dentro la cornice come le altre pagine (fase 6).
  */
 // Voce esatta ("/ricette") o con tutte le sotto-pagine ("/ricette/*")
-const RESTYLED: string[] = ["/prova-elementi", "/ricette/*", "/preferiti", "/menu/*", "/admin/*", "/login", "/recensisci/*"];
+const RESTYLED: string[] = ["/", "/prova-elementi", "/ricette/*", "/preferiti", "/menu/*", "/admin/*", "/login", "/recensisci/*"];
 
 function isRestyled(pathname: string) {
   return RESTYLED.some((p) =>
@@ -34,10 +34,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   // Registra la provenienza di ogni pagina: la usa BackLink per tornare davvero indietro
   useNavHistoryTracker();
   const cooking = useHasCooking();
-
-  if (pathname === "/") {
-    return <div className="page-bg min-h-dvh">{children}</div>;
-  }
 
   const restyled = isRestyled(pathname);
   // Gestione (D7): stessa cornice con la barra inchiostro-indaco e i fondi freddi

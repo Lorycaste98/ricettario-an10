@@ -4,7 +4,7 @@ import { Heart } from "lucide-react";
 import { useFavorites } from "@/lib/favorites";
 
 /**
- * CTA "Vedi preferiti" per la home pubblica.
+ * «I tuoi preferiti» nella vetrina (`app/page.tsx`), sulla fascia blu.
  * Renderizza null finché i preferiti non sono idratati o se sono vuoti,
  * così non c'è flash lato server (la home è un server component).
  */
@@ -18,13 +18,11 @@ export function FavoritesCta() {
   return (
     <Link
       href="/preferiti"
-      className="inline-flex items-center gap-2 rounded-xl border border-rose-400/40 bg-rose-500/15 backdrop-blur-sm px-6 py-2.5 text-sm font-semibold text-rose-100 hover:bg-rose-500/25 transition-colors shadow-lg"
+      className="inline-flex h-(--h-sm) items-center gap-[0.45em] rounded-full bg-blu-700 px-[0.9em] text-[0.875rem] font-semibold text-white transition-colors hover:bg-blu-600 [&_svg]:size-[1.05em]"
     >
-      <Heart size={16} className="fill-current text-rose-300" />
-      Vedi preferiti
-      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 text-xs font-bold leading-none text-white">
-        {count > 99 ? "99+" : count}
-      </span>
+      <Heart className="fill-current" aria-hidden />
+      I tuoi preferiti
+      <span className="tabular rounded-full bg-white px-1.5 text-xs font-bold text-blu-800">{count > 99 ? "99+" : count}</span>
     </Link>
   );
 }
