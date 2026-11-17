@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { db } from "@/lib/db";
 import { MenuReviewForm } from "@/components/menu/MenuReviewForm";
+import { ClocheIcon } from "@/components/icons";
 
 type Params = { params: Promise<{ token: string }> };
 
@@ -26,11 +27,14 @@ export default async function RecensisciMenuPage({ params }: Params) {
   const recipes = menu.recipes.map((mr) => mr.recipe);
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <div className="text-center space-y-1.5">
-        <h1 className="text-2xl sm:text-3xl font-bold text-sky-50">{menu.name}</h1>
-        <p className="text-sm text-sky-300/70">Vota le ricette che hai assaggiato — un voto da 1 a 10</p>
-      </div>
+    <div className="mx-auto flex max-w-2xl flex-col gap-5">
+      <header className="flex flex-col items-center gap-2 text-center">
+        <span className="flex size-11 items-center justify-center rounded-[0.875rem] bg-area-menu-50 text-area-menu">
+          <ClocheIcon className="size-6" aria-hidden />
+        </span>
+        <h1 className="text-(length:--fs-page) font-bold leading-tight text-blu-950">{menu.name}</h1>
+        <p className="max-w-[34ch] text-grigio">Vota le ricette che hai assaggiato, da 1 a 10. Non serve registrarsi.</p>
+      </header>
       <MenuReviewForm token={token} recipes={recipes} />
     </div>
   );

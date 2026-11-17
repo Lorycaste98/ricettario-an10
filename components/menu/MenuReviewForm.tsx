@@ -1,10 +1,20 @@
 "use client";
 import { useState } from "react";
 import Image from "next/image";
-import { MessageSquarePlus, PartyPopper, UtensilsCrossed } from "lucide-react";
-import { Input, Textarea } from "@/components/ui/Input";
-import { Button } from "@/components/ui/Button";
-import { RatingInput } from "@/components/ui/Rating";
+import { Check, MessageSquarePlus } from "lucide-react";
+import { clsx } from "clsx";
+import { Field, TextInput, TextArea } from "@/components/ds/Field";
+import { Button } from "@/components/ds/Button";
+import { Chip, RatingInput } from "@/components/ds/Controls";
+import { An10Logo } from "@/components/brand/An10Logo";
+import { FormError } from "@/components/admin/FormParts";
+
+/**
+ * Form pubblico «vota le ricette del menù» (`/recensisci/[token]`, restyle fase 6).
+ * Percorso breve da telefono: nome (facoltativo), una scheda per ricetta con il voto 4.12,
+ * «Non l'ho provato» e commento facoltativo, un solo bottone arancio in fondo. Campi a 16px.
+ * Logica e payload invariati.
+ */
 
 interface RecipeOption {
   id: number;
@@ -20,6 +30,8 @@ interface Entry {
 }
 
 const EMPTY_ENTRY: Entry = { rating: 0, comment: "", showComment: false, skipped: false };
+
+const cardCls = "rounded-card border border-blu-150 bg-white p-4";
 
 export function MenuReviewForm({ token, recipes }: { token: string; recipes: RecipeOption[] }) {
   const [nickname, setNickname] = useState("");
@@ -73,91 +85,99 @@ export function MenuReviewForm({ token, recipes }: { token: string; recipes: Rec
 
   if (done) {
     return (
-      <div className="rounded-2xl border border-green-300/50 bg-green-100/70 backdrop-blur-sm px-6 py-8 flex flex-col items-center gap-3 text-center">
-        <PartyPopper size={36} className="text-green-700" />
-        <p className="text-lg font-bold text-green-900">Grazie per la tua recensione, {done.nickname}!</p>
-        <p className="text-sm text-green-800/80">I tuoi voti sono stati registrati.</p>
-        <Button variant="secondary" onClick={restart}>Vota un&apos;altra persona</Button>
+      <div role="status" className="flex flex-col items-center gap-3 rounded-card border border-verde-200 bg-verde-50 px-5 py-8 text-center">
+        <span className="flex size-12 items-center justify-center rounded-full bg-verde text-white">
+          <Check className="size-6" strokeWidth={3} aria-hidden />
+        </span>
+        <p className="text-[1.125rem] font-bold text-blu-950">Grazie per i tuoi voti, {done.nickname}!</p>
+        <p className="text-[0.875rem] text-grigio">Sono stati registrati. Puoi chiudere la pagina.</p>
+        <Button variant="secondary" onClick={restart} className="mt-1">
+          Vota per un&apos;altra persona
+        </Button>
       </div>
     );
   }
 
   return (
-    <form onSubmit={submit} className="space-y-5">
-      <div className="rounded-2xl border border-white/25 bg-white/30 backdrop-blur-sm p-4 sm:p-5">
-        <Input
+    <form onSubmit={submit} className="flex flex-col gap-(--gap)">
+      <div className={cardCls}>
+        <Field
           label="Il tuo nome"
-          value={nickname}
-          onChange={(e) => setNickname(e.target.value)}
-          placeholder="Lascia vuoto per restare anonimo"
-        />
-        {!nickname.trim() && (
-          <p className="mt-1.5 text-xs text-sky-700/70">Comparirai come «Ospite» seguito da un numero.</p>
-        )}
+          hint={nickname.trim() ? undefined : "Facoltativo: senza nome comparirai come «Ospite» con un numero."}
+        >
+          {(p) => (
+            <TextInput
+              {...p}
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+              autoComplete="given-name"
+              placeholder="Come ti chiami?"
+            />
+          )}
+        </Field>
       </div>
 
-      <div className="space-y-3">
+      <ul className="flex flex-col gap-(--gap)">
         {recipes.map((recipe) => {
           const entry = entryFor(recipe.id);
           return (
-            <div key={recipe.id} className="rounded-2xl border border-white/25 bg-white/30 backdrop-blur-sm p-4 sm:p-5 space-y-3">
+            <li key={recipe.id} className={clsx(cardCls, "flex flex-col gap-3", entry.skipped && "bg-blu-50")}>
               <div className="flex items-center gap-3">
-                <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-sky-100">
+                <div className="relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-[0.75rem] bg-blu-100 text-blu-600">
                   {recipe.photo ? (
-                    <Image src={recipe.photo} alt={recipe.name} fill className="object-cover" sizes="44px" />
+                    <Image src={recipe.photo} alt="" fill className="object-cover" sizes="48px" />
                   ) : (
-                    <div className="flex h-full items-center justify-center text-sky-300"><UtensilsCrossed size={18} /></div>
+                    <An10Logo variant="simbolo" title="" className="size-7" />
                   )}
                 </div>
-                <h3 className="min-w-0 flex-1 truncate text-sm font-semibold text-sky-950">{recipe.name}</h3>
-                <button
-                  type="button"
-                  onClick={() => toggleSkip(recipe.id)}
-                  className={`shrink-0 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors ${
-                    entry.skipped
-                      ? "border-sky-400 bg-sky-500 text-white"
-                      : "border-white/40 bg-white/40 text-sky-700 active:bg-white/60"
-                  }`}
-                >
-                  Non l&apos;ho provato
-                </button>
+                <h2 className="line-clamp-2 min-w-0 flex-1 text-[1rem] font-bold leading-snug text-blu-950">{recipe.name}</h2>
               </div>
 
               {entry.skipped ? (
-                <p className="flex items-center gap-1.5 text-xs text-sky-700/70">
-                  <UtensilsCrossed size={12} /> Segnato come non provato — nessun voto verrà inviato per questa ricetta.
-                </p>
+                <p className="text-[0.875rem] text-grigio">Non l&apos;hai provata: per questa ricetta non mandiamo nessun voto.</p>
               ) : (
-                <>
-                  <RatingInput value={entry.rating} onChange={(rating) => setRating(recipe.id, rating)} />
-
-                  {entry.showComment ? (
-                    <Textarea
-                      value={entry.comment}
-                      onChange={(e) => update(recipe.id, { comment: e.target.value })}
-                      rows={2}
-                      placeholder="Un commento (opzionale)"
-                    />
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => update(recipe.id, { showComment: true })}
-                      className="inline-flex items-center gap-1.5 text-xs font-medium text-orange-600 active:text-orange-700 transition-colors"
-                    >
-                      <MessageSquarePlus size={13} /> Aggiungi un commento
-                    </button>
-                  )}
-                </>
+                <RatingInput
+                  value={entry.rating || null}
+                  onChange={(rating) => setRating(recipe.id, rating)}
+                  label={`Voto per ${recipe.name}, da 1 a 10`}
+                />
               )}
-            </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <Chip active={entry.skipped} onClick={() => toggleSkip(recipe.id)}>
+                  Non l&apos;ho provata
+                </Chip>
+                {!entry.skipped && !entry.showComment && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    icon={<MessageSquarePlus />}
+                    onClick={() => update(recipe.id, { showComment: true })}
+                  >
+                    Aggiungi un commento
+                  </Button>
+                )}
+              </div>
+
+              {!entry.skipped && entry.showComment && (
+                <TextArea
+                  value={entry.comment}
+                  onChange={(e) => update(recipe.id, { comment: e.target.value })}
+                  rows={2}
+                  placeholder="Un commento (facoltativo)"
+                  aria-label={`Commento su ${recipe.name}`}
+                  autoFocus
+                />
+              )}
+            </li>
           );
         })}
-      </div>
+      </ul>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <FormError>{error}</FormError>}
 
-      <Button type="submit" loading={submitting} className="w-full sm:w-auto">
-        Invia {ratedCount > 0 ? `(${ratedCount} ricett${ratedCount === 1 ? "a" : "e"} votat${ratedCount === 1 ? "a" : "e"})` : ""}
+      <Button type="submit" size="lg" loading={submitting} className="w-full @min-[620px]:w-auto @min-[620px]:self-end">
+        {ratedCount > 0 ? `Invia ${ratedCount} vot${ratedCount === 1 ? "o" : "i"}` : "Invia i voti"}
       </Button>
     </form>
   );
