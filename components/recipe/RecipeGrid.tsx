@@ -305,7 +305,7 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
           nextAriaLabel="Pagina successiva"
           containerClassName="flex items-center justify-center gap-1 pt-3"
           pageLinkClassName="tabular flex size-(--h-btn) items-center justify-center rounded-ctl border border-blu-200 bg-white text-sm font-semibold hover:bg-blu-100"
-          activeLinkClassName="border-arancio! bg-arancio! text-white!"
+          activeLinkClassName="border-arancio-pieno! bg-arancio-pieno! text-white!"
           previousLinkClassName="flex size-(--h-btn) items-center justify-center rounded-ctl border border-blu-200 bg-white text-lg text-blu-800 hover:bg-blu-100"
           nextLinkClassName="flex size-(--h-btn) items-center justify-center rounded-ctl border border-blu-200 bg-white text-lg text-blu-800 hover:bg-blu-100"
           breakLinkClassName="flex size-(--h-btn) items-center justify-center text-sm text-grigio"
@@ -366,7 +366,7 @@ export function NewRecipeLink() {
     <Link
       href="/admin/ricette/nuova"
       aria-label="Nuova ricetta"
-      className="inline-flex h-(--h-btn) items-center justify-center gap-[0.45em] rounded-ctl bg-arancio px-[1.05em] font-semibold text-white hover:bg-arancio-scuro [&_svg]:size-[1.15em]"
+      className="inline-flex h-(--h-btn) items-center justify-center gap-[0.45em] rounded-ctl bg-arancio-pieno px-[1.05em] font-semibold text-white hover:bg-arancio-scuro [&_svg]:size-[1.15em]"
     >
       <Plus aria-hidden />
       <span className="hidden @min-[620px]:inline">Nuova ricetta</span>

@@ -35,7 +35,7 @@ export function FavoritesClient({ recipes }: { recipes: RecipeSummary[] }) {
         action={
           <Link
             href="/ricette"
-            className="inline-flex h-(--h-sm) items-center rounded-[0.625rem] bg-arancio px-[0.8em] text-[0.875rem] font-semibold text-white hover:bg-arancio-scuro"
+            className="inline-flex h-(--h-sm) items-center rounded-[0.625rem] bg-arancio-pieno px-[0.8em] text-[0.875rem] font-semibold text-white hover:bg-arancio-scuro"
           >
             Sfoglia le ricette
           </Link>

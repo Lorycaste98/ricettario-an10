@@ -109,7 +109,7 @@ export function NavRail({ adminArea = false }: { adminArea?: boolean }) {
           className={clsx(
             "relative flex h-[2.375rem] w-11 items-center justify-center rounded-ctl transition-colors [&>svg]:size-[1.375rem]",
             adminArea ? "[--ring:var(--color-adm-900)]" : "[--ring:var(--color-blu-800)]",
-            on ? "bg-arancio text-white" : adminArea ? "group-hover:bg-white/10" : "group-hover:bg-blu-700"
+            on ? "bg-arancio-pieno text-white" : adminArea ? "group-hover:bg-white/10" : "group-hover:bg-blu-700"
           )}
         >
           <Icon />

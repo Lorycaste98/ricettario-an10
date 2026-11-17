@@ -37,7 +37,7 @@ function Item({ code, label, children, wide }: { code: string; label: string; ch
   return (
     <div className={wide ? "flex w-full min-w-0 flex-col gap-2" : "flex max-w-full min-w-0 flex-col items-start gap-2"}>
       <div className="flex items-center gap-1.5">
-        <span className="rounded-md bg-arancio px-1.5 py-1 font-mono text-[11px] leading-none font-bold text-white">{code}</span>
+        <span className="rounded-md bg-arancio-pieno px-1.5 py-1 font-mono text-[11px] leading-none font-bold text-white">{code}</span>
         <span className="text-xs text-grigio">{label}</span>
       </div>
       {children}

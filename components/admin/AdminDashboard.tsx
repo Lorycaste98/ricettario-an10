@@ -97,7 +97,7 @@ export function AdminDashboard({
               </span>
               <span
                 aria-hidden
-                className="flex size-11 shrink-0 items-center justify-center rounded-full bg-arancio text-white transition-colors group-hover:bg-arancio-scuro"
+                className="flex size-11 shrink-0 items-center justify-center rounded-full bg-arancio-pieno text-white transition-colors group-hover:bg-arancio-scuro"
               >
                 <Plus className="size-6" strokeWidth={2.5} />
               </span>

@@ -76,7 +76,7 @@ export function IconButton({
         size === "md" ? "size-(--h-icon) [&_svg]:size-5" : "size-[1.875rem] rounded-[0.5625rem] [&_svg]:size-4",
         size === "md" && (shape === "round" ? "rounded-full" : "rounded-ctl"),
         active
-          ? "border-arancio bg-arancio text-white"
+          ? "border-arancio-pieno bg-arancio-pieno text-white"
           : clsx("border-blu-200 bg-white hover:bg-blu-100", tone === "danger" ? "text-rosa" : "text-blu-800"),
         className
       )}

@@ -124,7 +124,7 @@ export default async function MenuDetailPage({ params }: Params) {
         <div className="flex flex-wrap gap-2">
           <Link
             href={`/menu/${menu.id}/cucina`}
-            className="inline-flex h-(--h-btn) items-center gap-[0.45em] rounded-ctl bg-arancio px-[1.05em] font-semibold text-white hover:bg-arancio-scuro [&_svg]:size-[1.15em]"
+            className="inline-flex h-(--h-btn) items-center gap-[0.45em] rounded-ctl bg-arancio-pieno px-[1.05em] font-semibold text-white hover:bg-arancio-scuro [&_svg]:size-[1.15em]"
           >
             <PotIcon aria-hidden /> Modalità cucina
           </Link>

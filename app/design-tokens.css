@@ -28,7 +28,8 @@
 
   /* Colori con un solo significato */
   --color-arancio: oklch(64.4% 0.192 41.7);       /* azione principale, quantità */
-  --color-arancio-scuro: oklch(57.8% 0.172 41.6);
+  --color-arancio-pieno: oklch(59% 0.19 41.7);    /* fondo dei bottoni e dei pieni arancio: testo bianco ≥ 4.45:1 */
+  --color-arancio-scuro: oklch(54% 0.172 41.6);   /* hover del pieno */
   --color-arancio-50: oklch(96.7% 0.019 55);
   --color-arancio-200: oklch(87% 0.08 50);
   --color-giallo-100: oklch(96.1% 0.068 96.6);    /* tempo, attese */

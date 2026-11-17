@@ -30,7 +30,7 @@ export function FavoriteButton({ recipeId, variant = "card" }: Props) {
         title={active ? "Nei preferiti: tocca per toglierla" : "Salva tra i preferiti"}
         className={clsx(
           "inline-flex size-(--h-icon) shrink-0 items-center justify-center rounded-full border transition-colors",
-          active ? "border-arancio bg-arancio text-white" : "border-blu-200 bg-white text-blu-800 hover:bg-blu-100"
+          active ? "border-arancio-pieno bg-arancio-pieno text-white" : "border-blu-200 bg-white text-blu-800 hover:bg-blu-100"
         )}
       >
         <Heart size={20} className={clsx(active && "fill-current")} />
@@ -47,7 +47,7 @@ export function FavoriteButton({ recipeId, variant = "card" }: Props) {
       className={clsx(
         // 3.10 / 3.11 · gemello del bottone pentola sulla card
         "flex size-8 items-center justify-center rounded-full shadow-sm transition-colors",
-        active ? "bg-arancio text-white hover:bg-arancio-scuro" : "bg-white/95 text-blu-800 hover:bg-white"
+        active ? "bg-arancio-pieno text-white hover:bg-arancio-scuro" : "bg-white/95 text-blu-800 hover:bg-white"
       )}
     >
       <Heart size={16} className={clsx(active && "fill-current")} />

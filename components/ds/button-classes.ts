@@ -14,7 +14,7 @@ export type ButtonVariant =
 export type ButtonSize = "sm" | "md" | "lg"; // 3.9 · 3.2 · 3.1
 
 const VARIANT: Record<ButtonVariant, string> = {
-  primary: "border-transparent bg-arancio text-white hover:bg-arancio-scuro active:bg-arancio-scuro",
+  primary: "border-transparent bg-arancio-pieno text-white hover:bg-arancio-scuro active:bg-arancio-scuro",
   secondary: "bg-white border-blu-200 text-blu-950 hover:bg-blu-100",
   tonal: "border-transparent bg-blu-120 text-blu-800 hover:bg-blu-150",
   ghost: "border-transparent text-blu-700 hover:bg-blu-100 px-[0.4em]!", // blu-700: ≥ 4.5:1 anche sul fondo blu-50

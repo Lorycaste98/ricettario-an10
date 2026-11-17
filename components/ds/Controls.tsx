@@ -219,7 +219,7 @@ export function RatingInput({
             onClick={() => onChange(n)}
             className={clsx(
               "tabular h-(--h-btn) rounded-[0.5625rem] border font-bold transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-blu-600/35",
-              on ? "border-arancio bg-arancio text-white" : "border-blu-200 bg-white hover:bg-blu-100"
+              on ? "border-arancio-pieno bg-arancio-pieno text-white" : "border-blu-200 bg-white hover:bg-blu-100"
             )}
           >
             {n}

@@ -495,7 +495,8 @@ export function RecipeProcedure({ recipeId, recipeName, recipePhoto, defaultServ
           </div>
         ) : (
           <div>
-            <Button icon={<PotIcon />} onClick={startCooking}>
+            {/* tonale: l'arancio della zona è del «Fatto» del passo corrente (D2, una sola azione arancio) */}
+            <Button variant="tonal" icon={<PotIcon />} onClick={startCooking}>
               Inizia a cucinare
             </Button>
           </div>

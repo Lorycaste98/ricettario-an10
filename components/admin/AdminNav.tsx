@@ -92,7 +92,7 @@ function AdminSubNav({ overview, isSuperAdmin, pathname }: { overview: AdminOver
           >
             <Icon className={clsx("size-[1.1rem] shrink-0", AREA_CLS[area].text)} />
             <span className="min-w-0 flex-1 truncate">{label}</span>
-            <span aria-hidden className="flex size-5 items-center justify-center rounded-full bg-arancio text-white">
+            <span aria-hidden className="flex size-5 items-center justify-center rounded-full bg-arancio-pieno text-white">
               <Plus className="size-3.5" strokeWidth={3} />
             </span>
           </Link>

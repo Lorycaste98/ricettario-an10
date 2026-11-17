@@ -20,7 +20,7 @@ export function StepProgress({ total, done, current, className }: { total: numbe
           key={i}
           className={clsx(
             "h-[0.4375rem] flex-1 rounded-full",
-            i < done ? "bg-verde" : i === (current ?? done) ? "bg-arancio" : "bg-blu-150"
+            i < done ? "bg-verde" : i === (current ?? done) ? "bg-arancio-pieno" : "bg-blu-150"
           )}
         />
       ))}
@@ -35,7 +35,7 @@ export function StepNumber({ n, state }: { n: number; state: "done" | "current" 
       className={clsx(
         "tabular inline-flex size-7 shrink-0 items-center justify-center rounded-full border-2 text-[0.8125rem] font-bold",
         state === "done" && "border-verde bg-verde text-white",
-        state === "current" && "border-arancio bg-arancio text-white",
+        state === "current" && "border-arancio-pieno bg-arancio-pieno text-white",
         state === "todo" && "border-blu-250 text-grigio"
       )}
     >

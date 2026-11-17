@@ -48,7 +48,7 @@ export function CookingButton({ recipeId }: { recipeId: number }) {
         // 3.10 / 3.11 · bottone tondo su foto: bianco, attivo = arancio
         "flex size-8 items-center justify-center rounded-full shadow-sm transition-colors",
         active
-          ? "bg-arancio text-white hover:bg-arancio-scuro"
+          ? "bg-arancio-pieno text-white hover:bg-arancio-scuro"
           : failed
             ? "bg-rosa text-white"
             : "bg-white/95 text-blu-800 hover:bg-white"

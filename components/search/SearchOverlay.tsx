@@ -535,7 +535,7 @@ function OpenLink({ href, children, onNavigate }: { href: string; children: Reac
       id="search-open-link"
       href={href}
       onClick={onNavigate}
-      className="inline-flex h-(--h-btn) items-center justify-center gap-[0.45em] rounded-ctl bg-arancio px-[1.05em] font-semibold text-white hover:bg-arancio-scuro [&_svg]:size-[1.15em]"
+      className="inline-flex h-(--h-btn) items-center justify-center gap-[0.45em] rounded-ctl bg-arancio-pieno px-[1.05em] font-semibold text-white hover:bg-arancio-scuro [&_svg]:size-[1.15em]"
     >
       {children} <ArrowRight aria-hidden />
     </Link>
