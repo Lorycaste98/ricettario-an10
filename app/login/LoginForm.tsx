@@ -1,11 +1,13 @@
 "use client";
 import { Suspense, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Input } from "@/components/ui/Input";
-import { Button } from "@/components/ui/Button";
-import { ChefHat } from "lucide-react";
+import { Field, TextInput } from "@/components/ds/Field";
+import { Button } from "@/components/ds/Button";
+import { FormError } from "@/components/admin/FormParts";
+import { An10Logo } from "@/components/brand/An10Logo";
 import { useAuth } from "@/components/AuthProvider";
 
+/** 13.8 · accesso: logo, Utente, Password, «Entra» (unica azione arancio). Logica invariata. */
 function LoginFormInner() {
   const router = useRouter();
   const { refresh } = useAuth();
@@ -34,23 +36,48 @@ function LoginFormInner() {
   };
 
   return (
-    <>
-      <div className="mb-8 text-center">
-        <ChefHat size={48} className="mx-auto text-orange-500" />
-        <h1 className="mt-3 text-2xl font-bold text-sky-950">Accesso Admin</h1>
-        <p className="mt-1 text-sm text-sky-700">Inserisci le tue credenziali</p>
+    <form
+      onSubmit={submit}
+      className="flex w-full max-w-[21rem] flex-col gap-3 rounded-dlg border border-blu-150 bg-white p-5 @min-[480px]:p-6"
+    >
+      <div className="mb-1 flex flex-col items-center gap-2.5 text-center">
+        <span className="flex size-14 items-center justify-center rounded-[1rem] bg-blu-800 text-white">
+          <An10Logo variant="simbolo" title="" className="size-9" />
+        </span>
+        <h1 className="text-[1.25rem] font-bold text-blu-950">Accesso al ricettario</h1>
       </div>
-      <form onSubmit={submit} className="space-y-4">
-        <Input label="Username" value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" autoFocus />
-        <Input label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
-        {error && (
-          <p className="rounded-lg bg-red-50/70 border border-red-200 px-3 py-2 text-sm text-red-700">{error}</p>
+      <Field label="Utente">
+        {(p) => (
+          <TextInput
+            {...p}
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            autoComplete="username"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            autoFocus
+            required
+          />
         )}
-        <Button type="submit" loading={loading} size="lg" className="w-full mt-2">
-          Accedi
-        </Button>
-      </form>
-    </>
+      </Field>
+      <Field label="Password">
+        {(p) => (
+          <TextInput
+            {...p}
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
+            required
+          />
+        )}
+      </Field>
+      {error && <FormError>{error}</FormError>}
+      <Button type="submit" loading={loading} size="lg" className="mt-1 w-full">
+        Entra
+      </Button>
+    </form>
   );
 }
 

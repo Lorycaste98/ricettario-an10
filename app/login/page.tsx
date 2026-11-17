@@ -1,6 +1,9 @@
 import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 import { getSession } from "@/lib/session";
 import { LoginForm } from "./LoginForm";
+
+export const metadata: Metadata = { title: "Accedi — Ricettario" };
 
 export default async function LoginPage() {
   // Se già loggato, niente pagina di login: dritto in dashboard
@@ -8,10 +11,8 @@ export default async function LoginPage() {
   if (session) redirect("/admin");
 
   return (
-    <div className="flex min-h-[60vh] items-center justify-center">
-      <div className="w-full max-w-sm rounded-2xl border border-white/30 bg-white/75 backdrop-blur-md p-8 shadow-xl">
-        <LoginForm />
-      </div>
+    <div className="flex min-h-[70dvh] items-center justify-center">
+      <LoginForm />
     </div>
   );
 }
