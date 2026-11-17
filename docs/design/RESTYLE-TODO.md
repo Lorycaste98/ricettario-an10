@@ -1,6 +1,6 @@
 # Restyle · piano d'azione e TODO
 
-> Branch: `feat/restyle-frontend` · aggiornato al 16/11/2026
+> Branch: `feat/restyle-frontend` · aggiornato al 17/11/2026
 > Riferimenti: `DESIGN.md` (decisioni D1–D8), `PRODUCT.md`, tavola `docs/design/elementi-*.png` (codici elemento), prototipi `docs/design/ricetta.html` e `docs/design/schermate/`, token `docs/design/tokens.css`, logo `docs/design/loghi/kit/GUIDA.md`.
 > Prima di toccare l'interfaccia: skill `ricettario-design`.
 
@@ -8,7 +8,7 @@
 - **Un componente nuovo per ogni elemento della tavola**, creato una volta sola e citato con il suo codice in un commento (`// Elemento 8.7`). Le pagine si rifanno **solo con quei componenti**.
 - **Una fase alla volta, un commit per blocco.** Alla fine di ogni fase: anteprima Vercel del branch e prova su **iPhone e iPad veri** (verticale e orizzontale), poi giro di correzioni.
 - **Funzioni invariate:** cambiano aspetto e disposizione, non il comportamento. Niente modifiche a API, schema Prisma o logica (`lib/`), salvo dove indicato.
-- Durante il lavoro alcune pagine avranno lo stile vecchio e altre il nuovo: è normale, siamo su un branch. Si unisce in `main` solo a fine fase 8.
+- Durante il lavoro alcune pagine avranno lo stile vecchio e altre il nuovo: è normale, siamo su un branch. Si unisce in `main` solo nella fase 10, dopo l'approvazione del proprietario (fase 9).
 - A ogni fase si aggiornano `CLAUDE.md` (in particolare la sezione «Classi base ricorrenti», che descrive lo stile vecchio) e `DESIGN.md`.
 
 ## Prima di iniziare (fase 0)
@@ -161,28 +161,56 @@
 ---
 
 ## Fase 7 · App installabile (PWA)
-- [ ] Manifest completo (`public/brand/web/site.webmanifest` o `app/manifest.ts`): nome, colori, icone, `display: standalone`.
-- [ ] Verificare «Aggiungi alla schermata Home» su iPhone e iPad: icona, schermo intero, barra di stato.
+- [x] Manifest completo (`app/manifest.ts`): nome, nome breve «AN10», `id`/`scope`, colori della cornice (barra `blu-800`, avvio `blu-50`), icone `any` e `maskable`, `display: standalone`, scorciatoie Ricette/Menù/Preferiti (pressione lunga sull'icona, Android e PC).
+- [x] iPhone e iPad (`appleWebApp` in `app/layout.tsx`): schermo intero, titolo «AN10», barra di stato **trasparente** sopra la fascia blu di `AppShell` (ora presente a tutte le larghezze, alta 0 nel browser), icona `app/apple-icon.png`; niente numeri trasformati in link telefonici.
+- [x] Notch con il telefono in orizzontale: la barra laterale si allarga di `safe-area-inset-left`, `main` tiene a destra almeno `safe-area-inset-right` (variabile `--main-px`, annullata con la stessa espressione da `FormBar` e `FormSkeleton`).
+- [ ] **Da provare sui dispositivi veri (proprietario):** «Aggiungi alla schermata Home» su iPhone e iPad: icona e nome, apertura a schermo intero, barra di stato (ora e batteria bianche sulla fascia blu, anche in Gestione), iPhone in orizzontale (niente sotto il notch), Android/PC se capita (installazione, scorciatoie).
 - [ ] *(Facoltativo, da valutare a parte)* notifiche push per i timer a telefono bloccato: service worker, chiavi VAPID e invio programmato lato server (vedi la nota in `CLAUDE.md` su `cooking-session`).
+
+> **Stato 17/11/2026:** fatta la parte di codice; manca la prova da schermata Home su iPhone e iPad veri (nel browser e in Playwright le aree del notch valgono 0, quindi non si possono vedere qui). Niente service worker: per installare l'app non serve più, e senza le notifiche push non avrebbe un compito. Niente schermate di avvio per iOS (`apple-touch-startup-image`, una per ogni misura di schermo): all'apertura iOS mostra un attimo il fondo bianco.
 
 ---
 
-## Fase 8 · Rifinitura e rilascio
+## Fase 8 · Rifinitura
+**Obiettivo:** chiudere i punti rimasti aperti nelle fasi precedenti, prima delle prove complete della fase 9.
 - [ ] Animazione del logo (`docs/design/loghi/kit/logo-animato.html`) solo nei momenti speciali: avvio o pagina di accesso, mai in loop.
 - [ ] Stati vuoti (10.3) e messaggi di errore in tutte le liste.
+- [ ] Interno delle recensioni (`ReviewBubble`, `ReviewCarousel`, `Collapsible`) e voto 4.12 in `PersonalRatingCard` (vedi fase 3); poi eliminare i vecchi `components/ui/Input`, `Button`, `Rating` se restano senza uso.
 - [ ] PDF: il piè di pagina (`PdfFooter`, «Ricettario AN10 · data · pagina») non viene disegnato da react-pdf (difetto preesistente).
+- [ ] Togliere i resti dello stile vecchio: ora tutte le pagine sono rifatte, quindi `RESTYLED` in `AppShell`, il gradiente `.page-bg` e lo stile «vetro» in `globals.css` non servono più.
 - [ ] Accessibilità: contrasto, bersagli toccabili da almeno 44px su telefono, navigazione da tastiera su PC, `aria` di interruttori e segmenti.
-- [ ] Prova completa su iPhone e iPad veri, in verticale e in orizzontale, e su PC con la finestra a varie larghezze.
-- [ ] Revisione finale con la skill `impeccable` (polish e audit) e confronto con le foto in `.playwright-mcp/before/`.
-- [ ] Rigenerare `DESIGN.md` dal codice rilasciato (impeccable `document`), tenendo le decisioni D1–D8.
+- [ ] Revisione con la skill `impeccable` (polish e audit) e confronto con le foto in `.playwright-mcp/before/`.
+- [ ] Rigenerare `DESIGN.md` dal codice (impeccable `document`), tenendo le decisioni D1–D8.
 - [ ] Aggiornare `CLAUDE.md`: classi base, componenti nuovi, regole su icone e logo; eliminare le note sullo stile vetro e sul gradiente.
 - [ ] **Ricerca globale (fase 3B), da riprendere a fine restyle:** rivedere insieme la prima versione e decidere le estensioni:
   - [ ] cercare anche nel testo dei passi e nelle note (oggi solo nomi, categorie, tag, ingredienti);
   - [ ] ricerche recenti nello stato iniziale;
   - [ ] quantità tipiche e cotture nelle statistiche degli ingredienti;
   - [ ] eliminare il vecchio `/api/search` se resta inutilizzato.
-- [ ] Anteprima al proprietario, raccolta del feedback, ultime correzioni.
-- [ ] Unione in `main` e rilascio.
+
+---
+
+## Fase 9 · Prove e sistemazioni
+**Obiettivo:** che il nuovo stile piaccia al proprietario in ogni sua parte, provato sui dispositivi veri e sui dati veri, prima di pensare al rilascio. Si gira finché non ci sono più punti aperti.
+- [ ] **Giro di prove di Claude** sull'anteprima e in locale: ogni pagina a misura di iPhone, iPad (verticale e orizzontale) e PC, da visitatore e da admin; percorsi completi (cercare e cucinare una ricetta con timer e «Sto cucinando», preparare un menù con spesa, costi e modalità cucina, creare e modificare ricetta e menù, recensione da ospite). Elenco dei difetti trovati, con le foto.
+  - ⚠️ L'anteprima usa il **database di produzione**: niente salvataggi né eliminazioni sui dati veri; le prove che scrivono si fanno con dati di prova creati apposta e poi tolti, o in locale.
+- [ ] **Prove del proprietario** su iPhone e iPad veri (verticale e orizzontale), sul PC e da app installata: cosa piace, cosa no, cosa manca.
+- [ ] Raccolta dei punti da sistemare in una lista qui sotto (chi l'ha trovato, pagina, cosa cambiare), decisi insieme.
+- [ ] Sistemazioni, un commit per punto o per gruppo di punti, con anteprima aggiornata.
+- [ ] Nuovo giro di prove sui punti sistemati, finché il proprietario non approva il nuovo stile.
+
+### Punti da sistemare
+*(vuoto: si riempie durante le prove)*
+
+---
+
+## Fase 10 · Rilascio
+**Si fa solo dopo l'approvazione della fase 9.**
+- [ ] Ultimo controllo: `npm run build`, `tsc` e lint puliti; nessuna pagina di prova temporanea rimasta.
+- [ ] Eliminare `app/prova-elementi/` (pagina di prova dei componenti).
+- [ ] Unione di `feat/restyle-frontend` in `main` e pubblicazione in produzione.
+- [ ] Prova veloce in produzione (vetrina, accesso, una ricetta, un menù, Gestione).
+- [ ] Eliminare il branch e i deployment di anteprima; aggiornare `CLAUDE.md` (togliere i rimandi al restyle «in corso»).
 
 ---
 
@@ -197,6 +225,8 @@
 | 5 | gestione e form | **grande**: i form sono i file più lunghi |
 | 6 | ospiti, PDF, condivisione | piccolo-medio |
 | 7 | PWA | piccolo |
-| 8 | rifinitura e rilascio | medio |
+| 8 | rifinitura | medio |
+| 9 | prove del proprietario e di Claude, sistemazioni | medio, dipende da quanti punti escono |
+| 10 | rilascio | piccolo |
 
 Le fasi 3, 4 e 5 si possono fare in qualunque ordine dopo la 2. Consiglio 3 → 4 → 5, perché la ricetta è quello che il cuoco usa di più ed è la prova migliore del nuovo stile.
