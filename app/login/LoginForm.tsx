@@ -4,10 +4,10 @@ import { useRouter } from "next/navigation";
 import { Field, TextInput } from "@/components/ds/Field";
 import { Button } from "@/components/ds/Button";
 import { FormError } from "@/components/admin/FormParts";
-import { An10Logo } from "@/components/brand/An10Logo";
+import { An10LogoAnimated } from "@/components/brand/An10LogoAnimated";
 import { useAuth } from "@/components/AuthProvider";
 
-/** 13.8 · accesso: logo, Utente, Password, «Entra» (unica azione arancio). Logica invariata. */
+/** 13.8 · accesso: logo animato, Utente, Password, «Entra» (unica azione arancio). Logica invariata. */
 function LoginFormInner() {
   const router = useRouter();
   const { refresh } = useAuth();
@@ -41,9 +41,8 @@ function LoginFormInner() {
       className="flex w-full max-w-[21rem] flex-col gap-3 rounded-dlg border border-blu-150 bg-white p-5 @min-[480px]:p-6"
     >
       <div className="mb-1 flex flex-col items-center gap-2.5 text-center">
-        <span className="flex size-14 items-center justify-center rounded-[1rem] bg-blu-800 text-white">
-          <An10Logo variant="simbolo" title="" className="size-9" />
-        </span>
+        {/* 13.8 + logo animato: si disegna una volta all'apertura (DESIGN: mai in loop) */}
+        <An10LogoAnimated className="my-1 h-14 w-auto text-blu-600" />
         <h1 className="text-[1.25rem] font-bold text-blu-950">Accesso al ricettario</h1>
       </div>
       <Field label="Utente">
