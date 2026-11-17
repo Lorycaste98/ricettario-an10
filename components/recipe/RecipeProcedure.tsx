@@ -144,7 +144,7 @@ function IngredientList({
                   onClick={() => onEdit(ing.id)}
                   title="Tocca per scrivere la quantità che hai: il resto si ricalcola"
                   className={clsx(
-                    "tabular rounded px-0.5 text-left font-bold whitespace-nowrap text-arancio underline decoration-arancio-200 decoration-dotted underline-offset-4 hover:text-arancio-scuro",
+                    "tabular -my-0.5 min-h-6 rounded px-0.5 py-0.5 text-left font-bold whitespace-nowrap text-arancio underline decoration-arancio-200 decoration-dotted underline-offset-4 hover:text-arancio-scuro",
                     anchorId === ing.id && "bg-arancio-50"
                   )}
                 >

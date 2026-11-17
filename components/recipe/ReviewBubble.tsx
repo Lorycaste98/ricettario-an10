@@ -82,7 +82,7 @@ export function ReviewBubble({
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="mt-auto inline-flex w-fit items-center gap-1 text-[0.8125rem] font-semibold text-blu-600 hover:underline"
+            className="hit-44 mt-auto inline-flex min-h-6 w-fit items-center gap-1 text-[0.8125rem] font-semibold text-blu-700 hover:underline"
           >
             <MessageSquareText className="size-4" aria-hidden /> Leggi il commento
           </button>
