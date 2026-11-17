@@ -3,8 +3,9 @@ import { getSession } from "@/lib/session";
 import { db } from "@/lib/db";
 import VocabolarioClient from "./VocabolarioClient";
 import type { Metadata } from "next";
+import { PageHeader } from "@/components/ds/PageHeader";
 
-export const metadata: Metadata = { title: "Categorie & Tag — Ricettario" };
+export const metadata: Metadata = { title: "Categorie e tag — Ricettario" };
 
 export default async function VocabolarioPage() {
   const session = await getSession();
@@ -22,15 +23,9 @@ export default async function VocabolarioPage() {
   ]);
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Categorie & Tag</h1>
-        <p className="mt-1 text-sm text-gray-400">
-          Gestisci le categorie (con colore) e i tag ingredienti usati nelle ricette.
-        </p>
-      </div>
+    <div className="flex flex-col gap-4">
+      <PageHeader title="Categorie e tag" meta={`${categories.length} categorie · ${tags.length} tag`} />
       <VocabolarioClient initialCategories={categories} initialTags={tags} />
     </div>
   );
 }
-

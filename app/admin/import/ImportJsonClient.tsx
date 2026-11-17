@@ -1,7 +1,10 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { FolderOpen, ClipboardList, TriangleAlert, CircleCheck } from "lucide-react";
+import { clsx } from "clsx";
+import { CircleCheck, ClipboardList, LoaderCircle, TriangleAlert, Upload } from "lucide-react";
+import { Button } from "@/components/ds/Button";
+import { Panel } from "@/components/ds/Panel";
 
 interface ImportStats {
   categories: number;
@@ -27,10 +30,14 @@ export default function ImportJsonClient() {
   const [stats, setStats] = useState<ImportStats | null>(null);
   const [errorMsg, setErrorMsg] = useState<string>("");
 
+  const [dragging, setDragging] = useState(false);
+
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (file) readFile(file);
+  }
 
+  function readFile(file: File) {
     const reader = new FileReader();
     reader.onload = (ev) => {
       try {
@@ -93,113 +100,101 @@ export default function ImportJsonClient() {
   }
 
   return (
-    <div className="mx-auto max-w-xl space-y-6">
-      {/* File picker — sempre visibile finché non si importa */}
+    <div className="flex max-w-2xl flex-col gap-3">
+      {/* 12.9 · importa file: si trascina il file o lo si sceglie */}
       {(status === "idle" || status === "error") && (
-        <div className="rounded-xl border-2 border-dashed border-gray-200 bg-white p-8 text-center">
-          <FolderOpen size={28} className="mx-auto mb-1 text-gray-400" />
-          <p className="mb-4 text-sm text-gray-500">
-            Seleziona il file <code className="font-mono text-orange-600">ricettario.json</code> da
-            importare
-          </p>
-          <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-orange-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-orange-600 transition-colors">
-            <span>Scegli file</span>
-            <input
-              ref={inputRef}
-              type="file"
-              accept=".json,application/json"
-              className="sr-only"
-              onChange={handleFileChange}
-            />
+        <>
+          <label
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragging(true);
+            }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragging(false);
+              const file = e.dataTransfer.files?.[0];
+              if (file) readFile(file);
+            }}
+            className={clsx(
+              "flex cursor-pointer flex-col items-center gap-1.5 rounded-card border-2 border-dashed px-4 py-10 text-center transition-colors",
+              dragging ? "border-blu-600 bg-blu-100" : "border-blu-250 bg-white hover:bg-blu-50"
+            )}
+          >
+            <Upload className="mb-1 size-8 text-blu-600" aria-hidden />
+            <span className="font-bold">Trascina qui il file JSON</span>
+            <span className="text-grigio">
+              oppure <span className="font-bold text-blu-600">scegli file</span>
+            </span>
+            <input ref={inputRef} type="file" accept=".json,application/json" className="sr-only" onChange={handleFileChange} />
           </label>
           {status === "error" && (
-            <p className="mt-4 rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">{errorMsg}</p>
+            <p role="alert" className="rounded-[0.625rem] border border-rosa-200 bg-rosa-50 px-3 py-2 text-rosa">
+              {errorMsg}
+            </p>
           )}
-        </div>
+        </>
       )}
 
-      {/* Preview + conferma */}
       {(status === "preview" || status === "confirm") && preview && (
-        <div className="space-y-4">
-          <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
-            <h2 className="mb-4 flex items-center gap-1.5 text-sm font-semibold text-gray-700"><ClipboardList size={15} /> Anteprima file</h2>
-            <dl className="grid grid-cols-3 gap-4 text-center">
+        <>
+          <Panel title="Nel file" icon={<ClipboardList />}>
+            <dl className="grid grid-cols-3 gap-3 text-center">
               <PreviewStat label="Categorie" value={preview.categories} />
               <PreviewStat label="Tag" value={preview.tags} />
               <PreviewStat label="Ricette" value={preview.recipes} />
             </dl>
-          </div>
-
-          <div className="rounded-xl border border-red-200 bg-red-50 p-4">
-            <p className="flex items-center gap-1.5 text-sm font-semibold text-red-700"><TriangleAlert size={15} /> Attenzione — operazione irreversibile</p>
-            <p className="mt-1 text-xs text-red-600">
-              Tutti i dati esistenti (ricette, categorie, tag e menù) verranno{" "}
-              <strong>eliminati definitivamente</strong> e sostituiti con quelli del file
-              selezionato. Gli account admin non vengono modificati.
+          </Panel>
+          <div className="rounded-card border border-rosa-200 bg-rosa-50 p-3.5 text-rosa">
+            <p className="flex items-center gap-1.5 font-bold">
+              <TriangleAlert className="size-4" aria-hidden /> Non si può annullare
+            </p>
+            <p className="mt-1 text-[0.875rem]">
+              Ricette, categorie, tag e menù di adesso vengono <strong>eliminati</strong> e sostituiti con quelli del file. Gli account restano.
             </p>
           </div>
-
-          <div className="flex gap-3">
-            <button
-              onClick={handleReset}
-              className="flex-1 rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
-            >
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" onClick={handleReset}>
               Annulla
-            </button>
-            <button
-              onClick={handleImport}
-              className="flex-1 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-red-700 transition-colors"
-            >
+            </Button>
+            <Button variant="dangerSolid" onClick={handleImport}>
               Sì, sostituisci tutto
-            </button>
+            </Button>
           </div>
-        </div>
+        </>
       )}
 
-      {/* Loading */}
       {status === "loading" && (
-        <div className="rounded-xl border border-gray-100 bg-white p-10 text-center shadow-sm">
-          <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-orange-200 border-t-orange-500" />
-          <p className="text-sm text-gray-500">Importazione in corso… potrebbe richiedere qualche secondo.</p>
+        <div className="flex flex-col items-center gap-3 rounded-card border border-blu-150 bg-white p-10 text-center text-grigio">
+          <LoaderCircle className="size-8 animate-spin text-blu-600 motion-reduce:animate-none" aria-hidden />
+          Importazione in corso… può richiedere qualche secondo.
         </div>
       )}
 
-      {/* Success */}
       {status === "success" && stats && (
-        <div className="rounded-xl border border-green-200 bg-green-50 p-6 shadow-sm">
-          <p className="mb-4 flex items-center gap-1.5 text-sm font-semibold text-green-700"><CircleCheck size={15} /> Importazione completata!</p>
-          <dl className="grid grid-cols-3 gap-4 text-center">
-            <PreviewStat label="Categorie" value={stats.categories} color="green" />
-            <PreviewStat label="Tag" value={stats.tags} color="green" />
-            <PreviewStat label="Ricette" value={stats.recipes} color="green" />
+        <div className="flex flex-col gap-3 rounded-card border border-verde-200 bg-verde-50 p-4">
+          <p className="flex items-center gap-1.5 font-bold text-verde">
+            <CircleCheck className="size-4" aria-hidden /> Importazione completata
+          </p>
+          <dl className="grid grid-cols-3 gap-3 text-center">
+            <PreviewStat label="Categorie" value={stats.categories} />
+            <PreviewStat label="Tag" value={stats.tags} />
+            <PreviewStat label="Ricette" value={stats.recipes} />
           </dl>
-          <button
-            onClick={handleReset}
-            className="mt-6 w-full rounded-lg border border-green-300 bg-white px-4 py-2 text-sm text-green-700 hover:bg-green-50 transition-colors"
-          >
+          <Button variant="secondary" onClick={handleReset} className="self-end">
             Carica un altro file
-          </button>
+          </Button>
         </div>
       )}
     </div>
   );
 }
 
-function PreviewStat({
-  label,
-  value,
-  color = "orange",
-}: {
-  label: string;
-  value: number;
-  color?: "orange" | "green";
-}) {
-  const numClass = color === "green" ? "text-green-600" : "text-orange-600";
+function PreviewStat({ label, value }: { label: string; value: number }) {
   return (
-    <div>
-      <p className={`text-2xl font-bold ${numClass}`}>{value}</p>
-      <p className="text-xs text-gray-400">{label}</p>
+    <div className="flex flex-col-reverse">
+      <dt className="text-(length:--fs-meta) text-grigio">{label}</dt>
+      <dd className="tabular text-[1.625rem] leading-tight font-bold">{value}</dd>
     </div>
   );
 }
-

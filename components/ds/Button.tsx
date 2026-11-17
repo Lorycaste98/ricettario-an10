@@ -2,36 +2,15 @@
 
 import { clsx } from "clsx";
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
+import { buttonClasses, type ButtonSize, type ButtonVariant } from "@/components/ds/button-classes";
+
+export { buttonClasses, rowIconCls, type ButtonSize, type ButtonVariant } from "@/components/ds/button-classes";
 
 /**
  * Bottoni del restyle (tavola sezione 3). Misure fluide: --h-btn (38→44px), --h-btn-lg (44→54px),
  * --h-sm (30→34px). Padding e icone in em, così seguono il testo del bottone.
  * Regola (DESIGN.md D2): **una sola azione arancio per zona**.
  */
-export type ButtonVariant =
-  | "primary" //   3.2 · azione principale (arancio)
-  | "secondary" // 3.4 · bianco con bordo
-  | "tonal" //     3.5 · azzurro
-  | "ghost" //     3.6 · solo testo
-  | "danger" //    3.7 · elimina, contorno rosa
-  | "dangerSolid"; // conferma di eliminazione (10.1)
-export type ButtonSize = "sm" | "md" | "lg"; // 3.9 · 3.2 · 3.1
-
-const VARIANT: Record<ButtonVariant, string> = {
-  primary: "bg-arancio text-white hover:bg-arancio-scuro active:bg-arancio-scuro",
-  secondary: "bg-white border-blu-200 text-blu-950 hover:bg-blu-100",
-  tonal: "bg-blu-120 text-blu-800 hover:bg-blu-150",
-  ghost: "text-blu-600 hover:bg-blu-100 px-[0.4em]!",
-  danger: "bg-white border-rosa-200 text-rosa hover:bg-rosa-50",
-  dangerSolid: "bg-rosa text-white hover:brightness-95",
-};
-
-const SIZE: Record<ButtonSize, string> = {
-  sm: "h-(--h-sm) px-[0.8em] text-[0.875rem] rounded-[0.625rem]",
-  md: "h-(--h-btn) px-[1.05em] text-(length:--fs-body) rounded-ctl",
-  lg: "h-(--h-btn-lg) px-[1.3em] text-[calc(var(--fs-body)+1px)] font-bold rounded-ctl",
-};
-
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   size?: ButtonSize;
@@ -48,15 +27,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       ref={ref}
       type={type}
       disabled={disabled || loading}
-      className={clsx(
-        "inline-flex shrink-0 items-center justify-center gap-[0.45em] border border-transparent font-semibold whitespace-nowrap",
-        "transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-blu-600/35",
-        "disabled:cursor-not-allowed disabled:border-transparent disabled:bg-neutro-50 disabled:text-grigio-chiaro",
-        "[&_svg]:size-[1.15em] [&_svg]:shrink-0",
-        VARIANT[variant],
-        SIZE[size],
-        className
-      )}
+      className={buttonClasses(variant, size, className)}
       {...props}
     >
       {loading ? <Spinner /> : icon}

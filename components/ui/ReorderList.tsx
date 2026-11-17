@@ -64,12 +64,10 @@ export function ReorderRow<T>({
         e.preventDefault();
         controls.start(e);
       }}
-      // Contrasto: lo sfondo dell'app è un gradiente, quindi le icone "tenui"
-      // (sky-300, gray-300) sparivano su alcune porzioni. Pastiglia chiara fissa
-      // + icona sky-600, come i bottoni riga del form menù.
-      className={`flex ${handleSize} shrink-0 cursor-grab items-center justify-center rounded-lg border border-white/60 bg-white/70 text-sky-600 shadow-sm transition-colors hover:bg-white hover:text-sky-900 active:cursor-grabbing touch-none`}
+      // Restyle (11.3, 12.4): maniglia senza pastiglia, grigia, sul fondo bianco delle schede
+      className={`flex ${handleSize} shrink-0 cursor-grab items-center justify-center rounded-[0.5rem] text-grigio transition-colors hover:bg-blu-100 hover:text-blu-800 active:cursor-grabbing touch-none`}
     >
-      <GripVertical size={14} />
+      <GripVertical size={16} />
     </button>
   );
 

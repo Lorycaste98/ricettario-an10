@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import type { Metadata } from "next";
 import IngredientiClient from "./IngredientiClient";
+import { PageHeader } from "@/components/ds/PageHeader";
 
 export const metadata: Metadata = { title: "Ingredienti — Ricettario Admin" };
 
@@ -34,14 +35,11 @@ export default async function IngredientiPage() {
     return { ...m, usageCount: recipes.length, recipes };
   });
 
+  const excluded = ingredients.filter((i) => i.excludedFromStats).length;
+
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Ingredienti</h1>
-        <p className="mt-1 text-sm text-gray-400">
-          {ingredients.length} ingredienti nel catalogo · Unifica i duplicati, rinomina o escludi dalle statistiche
-        </p>
-      </div>
+    <div className="flex flex-col gap-4">
+      <PageHeader title="Ingredienti" meta={`${ingredients.length} a catalogo · ${excluded} fuori dalle statistiche`} />
       <IngredientiClient initialIngredients={ingredients} />
     </div>
   );

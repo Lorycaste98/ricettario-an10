@@ -1,7 +1,11 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
+import type { Metadata } from "next";
+import { Plus } from "lucide-react";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
-import type { Metadata } from "next";
+import { PageHeader } from "@/components/ds/PageHeader";
+import { buttonClasses } from "@/components/ds/button-classes";
 import RicetteGestioneClient from "./RicetteGestioneClient";
 
 export const metadata: Metadata = { title: "Gestione ricette — Ricettario Admin" };
@@ -19,6 +23,7 @@ export default async function RicetteGestionePage() {
       name: true,
       photo: true,
       published: true,
+      cookCount: true,
       categories: { select: { category: { select: { name: true, color: true } } } },
     },
   });
@@ -28,17 +33,22 @@ export default async function RicetteGestionePage() {
     name: r.name,
     photo: r.photo,
     published: r.published,
+    cookCount: r.cookCount,
     categories: r.categories.map((rc) => rc.category),
   }));
+  const hidden = items.filter((r) => !r.published).length;
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Gestione ricette</h1>
-        <p className="mt-1 text-sm text-gray-400">
-          {items.length} ricette · Scegli quali mostrare ai visitatori. Le ricette non pronte restano visibili solo a te.
-        </p>
-      </div>
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        title="Ricette"
+        meta={`${items.length} ricette${hidden ? ` · ${hidden} non pronte` : ""}`}
+        actions={
+          <Link href="/admin/ricette/nuova" className={buttonClasses("primary")}>
+            <Plus aria-hidden /> Nuova
+          </Link>
+        }
+      />
       <RicetteGestioneClient initialRecipes={items} />
     </div>
   );

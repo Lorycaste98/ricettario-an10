@@ -2,8 +2,12 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Search, Star, BookOpen, UtensilsCrossed, CalendarDays, ChevronRight, NotebookPen } from "lucide-react";
+import { BookOpen, CalendarDays, ChevronRight, NotebookPen } from "lucide-react";
 import { SearchableSelect, type SelectOption } from "@/components/ui/SearchableSelect";
+import { SearchField } from "@/components/ds/Field";
+import { Segmented } from "@/components/ds/Controls";
+import { GuestRatingTag } from "@/components/ds/Tag";
+import { ClocheIcon } from "@/components/icons";
 import { ConfirmModal } from "@/components/ui/Modal";
 import { ReviewMiniCard, type AdminReview } from "@/components/admin/ReviewMiniCard";
 
@@ -156,133 +160,81 @@ export function ReviewsBrowser({ reviews: allReviews }: { reviews: AdminReview[]
   };
 
   return (
-    <div className="space-y-5">
-      {/* Toolbar filtri */}
-      <div className="space-y-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
-        <div className="relative">
-          <Search size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Cerca per autore o testo del commento…"
-            className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-10 pr-3 text-sm text-gray-800 shadow-sm placeholder:text-gray-400 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-300/30"
-          />
-        </div>
-
-        <div className="grid gap-2 sm:grid-cols-3">
-          <SearchableSelect
-            options={recipeOptions}
-            value={recipeId}
-            onChange={setRecipeId}
-            placeholder="Tutte le ricette"
-            searchPlaceholder="Cerca ricetta…"
-            icon={<BookOpen size={15} />}
-          />
-          <SearchableSelect
-            options={menuOptions}
-            value={menuId}
-            onChange={setMenuId}
-            placeholder="Tutti i menù"
-            searchPlaceholder="Cerca menù…"
-            icon={<UtensilsCrossed size={15} />}
-          />
-          <SearchableSelect
-            options={dateOptions}
-            value={dateFilter}
-            onChange={setDateFilter}
-            placeholder="Tutte le date"
-            searchPlaceholder="Cerca data…"
-            icon={<CalendarDays size={15} />}
-          />
-        </div>
-
-        {/* Raggruppa per */}
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-medium text-gray-500">Raggruppa per:</span>
-          <div className="flex gap-1 rounded-lg border border-gray-100 bg-gray-50 p-1">
-            {GROUP_LABELS.map((g) => (
-              <button
-                key={g.key}
-                type="button"
-                onClick={() => setGroupBy(g.key)}
-                className={`rounded-md px-2.5 py-1 text-xs font-semibold transition-colors ${
-                  groupBy === g.key ? "bg-white text-orange-600 shadow-sm" : "text-gray-500 hover:text-gray-800"
-                }`}
-              >
-                {g.label}
-              </button>
-            ))}
-          </div>
-          {hasFilters && (
-            <button
-              type="button"
-              onClick={resetFilters}
-              className="ml-auto text-xs font-semibold text-gray-400 transition-colors hover:text-orange-600"
-            >
-              Azzera filtri
-            </button>
-          )}
-        </div>
+    <div className="flex flex-col gap-3">
+      {/* 12.7 · filtri */}
+      <SearchField value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cerca testo o autore" aria-label="Cerca nelle recensioni" />
+      <div className="flex flex-wrap items-center gap-1.5">
+        <SearchableSelect label="Ricetta" options={recipeOptions} value={recipeId} onChange={setRecipeId} placeholder="Tutte le ricette" searchPlaceholder="Cerca ricetta…" />
+        <SearchableSelect label="Menù" options={menuOptions} value={menuId} onChange={setMenuId} placeholder="Tutti i menù" searchPlaceholder="Cerca menù…" />
+        <SearchableSelect label="Data" options={dateOptions} value={dateFilter} onChange={setDateFilter} placeholder="Tutte le date" searchPlaceholder="Cerca data…" />
+        {hasFilters && (
+          <button type="button" onClick={resetFilters} className="ml-auto rounded-[0.5rem] px-2 py-1 text-[0.875rem] font-semibold text-blu-600 hover:bg-blu-100">
+            Azzera filtri
+          </button>
+        )}
+      </div>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+        <span className="text-[0.8125rem] font-semibold text-grigio">Raggruppa per</span>
+        <Segmented<GroupBy>
+          label="Raggruppa per"
+          value={groupBy}
+          onChange={setGroupBy}
+          options={GROUP_LABELS.map((g) => ({ value: g.key, label: g.label }))}
+          className="min-w-0 flex-1 @min-[620px]:max-w-md"
+        />
       </div>
 
-      {/* Risultati */}
-      <p className="text-xs text-gray-400">
+      <p className="text-(length:--fs-meta) text-grigio">
         {filtered.length} recension{filtered.length === 1 ? "e" : "i"}
-        {hasFilters ? " (filtrate)" : ""}
+        {hasFilters ? " con questi filtri" : ""}
       </p>
 
       {groups.length === 0 ? (
-        <p className="text-sm text-gray-400">Nessuna recensione corrisponde ai filtri.</p>
+        <p className="rounded-card border border-blu-150 bg-white py-10 text-center text-grigio">Nessuna recensione corrisponde ai filtri.</p>
       ) : (
-        <div className="space-y-4">
+        <div className="flex flex-col gap-2.5">
           {groups.map((g) => {
             const isCollapsed = collapsed.has(g.key);
-            const avg = avgOf(g.reviews);
+            const grid = (
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,15rem),1fr))] gap-2.5">
+                {g.reviews.map((r) => (
+                  <ReviewMiniCard
+                    key={r.id}
+                    review={r}
+                    showRecipe={groupBy !== "recipe"}
+                    showMenu={groupBy !== "menu"}
+                    onDelete={() => setConfirmId(r.id)}
+                  />
+                ))}
+              </div>
+            );
+            if (groupBy === "none") return <div key={g.key}>{grid}</div>;
             return (
-              <section key={g.key} className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-5">
-                {groupBy !== "none" && (
+              // 12.8 · gruppo apribile
+              <section key={g.key} className="overflow-hidden rounded-card border border-blu-150 bg-white">
+                <div className="flex min-h-12 items-center gap-2 pr-3">
                   <button
                     type="button"
                     onClick={() => toggle(g.key)}
-                    className="mb-3 flex w-full items-center gap-2 text-left"
+                    aria-expanded={!isCollapsed}
+                    aria-label={`${isCollapsed ? "Apri" : "Chiudi"} ${g.title}`}
+                    className="flex h-12 shrink-0 items-center gap-2 pl-3 text-grigio"
                   >
-                    <ChevronRight
-                      size={16}
-                      className={`shrink-0 text-gray-400 transition-transform ${isCollapsed ? "" : "rotate-90"}`}
-                    />
+                    <ChevronRight className={`size-4 transition-transform ${isCollapsed ? "" : "rotate-90"}`} aria-hidden />
                     <GroupIcon kind={g.kind} hasMenu={g.key !== NO_MENU} />
-                    {g.href ? (
-                      <Link
-                        href={g.href}
-                        onClick={(e) => e.stopPropagation()}
-                        className="min-w-0 truncate text-base font-bold text-gray-800 transition-colors hover:text-orange-500"
-                      >
-                        {g.title}
-                      </Link>
-                    ) : (
-                      <span className="min-w-0 truncate text-base font-bold text-gray-800">{g.title}</span>
-                    )}
-                    <span className="ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
-                      <Star size={12} fill="currentColor" className="text-amber-400" />
-                      {avg.toFixed(1)}/10
-                      <span className="text-gray-400">· {g.reviews.length}</span>
-                    </span>
                   </button>
-                )}
-                {!isCollapsed && (
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {g.reviews.map((r) => (
-                      <ReviewMiniCard
-                        key={r.id}
-                        review={r}
-                        showRecipe={groupBy !== "recipe"}
-                        showMenu={groupBy !== "menu"}
-                        onDelete={() => setConfirmId(r.id)}
-                      />
-                    ))}
-                  </div>
-                )}
+                  {g.href ? (
+                    <Link href={g.href} className="min-w-0 flex-1 truncate font-bold hover:underline">
+                      {g.title}
+                    </Link>
+                  ) : (
+                    <button type="button" onClick={() => toggle(g.key)} className="min-w-0 flex-1 truncate text-left font-bold">
+                      {g.title}
+                    </button>
+                  )}
+                  <GuestRatingTag value={avgOf(g.reviews)} count={g.reviews.length} />
+                </div>
+                {!isCollapsed && <div className="border-t border-blu-150 bg-adm-50 p-2.5">{grid}</div>}
               </section>
             );
           })}
@@ -293,8 +245,8 @@ export function ReviewsBrowser({ reviews: allReviews }: { reviews: AdminReview[]
         open={confirmId !== null}
         onClose={() => setConfirmId(null)}
         onConfirm={() => confirmId !== null && deleteReview(confirmId)}
-        title="Elimina recensione"
-        message="Sei sicuro di voler eliminare questa recensione?"
+        title="Eliminare la recensione?"
+        message="Sparisce anche dalla media della ricetta e del menù. L'azione è irreversibile."
         loading={deleting}
       />
     </div>
@@ -302,9 +254,9 @@ export function ReviewsBrowser({ reviews: allReviews }: { reviews: AdminReview[]
 }
 
 function GroupIcon({ kind, hasMenu }: { kind: GroupBy; hasMenu: boolean }) {
-  const cls = "shrink-0 text-gray-400";
-  if (kind === "recipe") return <BookOpen size={15} className={cls} />;
-  if (kind === "date") return <CalendarDays size={15} className={cls} />;
-  if (kind === "menu") return hasMenu ? <UtensilsCrossed size={15} className={cls} /> : <NotebookPen size={15} className={cls} />;
+  if (kind === "recipe") return <BookOpen className="size-4 shrink-0 text-area-ricette" aria-hidden />;
+  if (kind === "date") return <CalendarDays className="size-4 shrink-0" aria-hidden />;
+  if (kind === "menu")
+    return hasMenu ? <ClocheIcon className="size-4 shrink-0 text-area-menu" aria-hidden /> : <NotebookPen className="size-4 shrink-0" aria-hidden />;
   return null;
 }

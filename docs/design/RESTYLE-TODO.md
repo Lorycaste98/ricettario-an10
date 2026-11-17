@@ -129,10 +129,10 @@
 - [x] Cornice admin: barra laterale inchiostro-indaco, fondi freddi, etichetta «admin» (D7).
 - [x] **Sotto-navigazione** di Gestione: gruppo «Crea» in cima (Nuova ricetta, Nuovo menù, Importa) e gruppo «Consulta e gestisci»; a colonna dai 900px, lista con «torna a Gestione» su iPhone.
 - [x] **Dashboard** (`/admin`): schede «Crea» con il + arancio; tessere «Consulta e gestisci» con numero e freccia (Ricette, Menù, Ingredienti, Categorie e tag, Recensioni, Utenti); grafici (`ChartsSection`, 13.3) e ultime recensioni.
-- [ ] **Gestione ricette** e **menù** (tabelle 12.1 con l'occhio).
-- [ ] **Ingredienti** (12.2): selezione, interruttore statistiche, barra «Unifica» (12.3), finestra di unione.
-- [ ] **Categorie e tag** (12.4, 12.5): riordino con `ReorderList`, scelta del colore.
-- [ ] **Recensioni** (`ReviewsBrowser`, 12.7, 12.8), **Utenti** (12.6), **Profilo**, **Importa** (12.9).
+- [x] **Gestione ricette** e **menù** (tabelle 12.1 con l'occhio).
+- [x] **Ingredienti** (12.2): selezione, interruttore statistiche, barra «Unifica» (12.3), finestra di unione.
+- [x] **Categorie e tag** (12.4, 12.5): riordino con `ReorderList`, scelta del colore.
+- [x] **Recensioni** (`ReviewsBrowser`, 12.7, 12.8), **Utenti** (12.6), **Profilo**, **Importa** (12.9).
 - [ ] **Form ricetta** (`RecipeForm`) e **form menù** (`MenuForm`), sezione 11:
   - [ ] barra in alto con l'occhio, Annulla e Salva (11.1);
   - [ ] due colonne dagli 860px;

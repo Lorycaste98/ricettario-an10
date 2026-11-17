@@ -20,7 +20,9 @@ import { CookingMiniBar, CookingRow, useHasCooking } from "@/components/shell/Co
  * La home pubblica `/` resta fuori dalla cornice (ha la sua vetrina).
  */
 // Voce esatta ("/ricette") o con tutte le sotto-pagine ("/ricette/*")
-const RESTYLED: string[] = ["/prova-elementi", "/ricette/*", "/preferiti", "/menu/*", "/admin"];
+const RESTYLED: string[] = ["/prova-elementi", "/ricette/*", "/preferiti", "/menu/*", "/admin",
+  // Gestione: tutte le pagine tranne i form (nuova/modifica), che passano nella parte 5C
+  "/admin/ricette", "/admin/menu", "/admin/ingredienti", "/admin/vocabolario", "/admin/recensioni", "/admin/utenti", "/admin/profilo", "/admin/import"];
 
 function isRestyled(pathname: string) {
   return RESTYLED.some((p) =>

@@ -2,24 +2,18 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import ImportJsonClient from "./ImportJsonClient";
 import type { Metadata } from "next";
+import { PageHeader } from "@/components/ds/PageHeader";
 
-export const metadata: Metadata = { title: "Importa JSON — Ricettario" };
+export const metadata: Metadata = { title: "Importa ricette — Ricettario" };
 
 export default async function ImportPage() {
   const session = await getSession();
   if (!session) redirect("/login");
 
   return (
-    <div className="mx-auto max-w-xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Importa ricettario da JSON</h1>
-        <p className="mt-1 text-sm text-gray-400">
-          Carica un file <code className="font-mono text-orange-600">ricettario.json</code> per
-          sostituire tutti i dati del ricettario.
-        </p>
-      </div>
+    <div className="flex flex-col gap-4">
+      <PageHeader title="Importa ricette" meta="Da un file ricettario.json: sostituisce tutto il ricettario" />
       <ImportJsonClient />
     </div>
   );
 }
-

@@ -1,9 +1,18 @@
 "use client";
 import { useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Heart, KeyRound, ChefHat, UserRound } from "lucide-react";
+import { Heart, KeyRound, UserRound } from "lucide-react";
+import { Button } from "@/components/ds/Button";
+import { Field, TextInput } from "@/components/ds/Field";
+import { PageHeader } from "@/components/ds/PageHeader";
+import { Panel } from "@/components/ds/Panel";
+
+/** Esito di un modulo: errore rosa o conferma verde (colori con un solo significato) */
+function Outcome({ error, success }: { error: string; success: string | false }) {
+  if (error) return <p role="alert" className="rounded-[0.625rem] border border-rosa-200 bg-rosa-50 px-3 py-2 text-rosa">{error}</p>;
+  if (success) return <p role="status" className="rounded-[0.625rem] border border-verde-200 bg-verde-50 px-3 py-2 text-verde">{success}</p>;
+  return null;
+}
 
 export default function ProfiloPage() {
   const { username, dedication, refresh } = useAuth();
@@ -29,11 +38,11 @@ export default function ProfiloPage() {
 
     const trimmed = newUsername.trim();
     if (trimmed.length < 3) {
-      setUnError("Lo username deve avere almeno 3 caratteri.");
+      setUnError("Il nome utente deve avere almeno 3 caratteri.");
       return;
     }
     if (trimmed === username) {
-      setUnError("Il nuovo username coincide con quello attuale.");
+      setUnError("È già il tuo nome utente.");
       return;
     }
 
@@ -94,112 +103,48 @@ export default function ProfiloPage() {
   };
 
   return (
-    <div className="mx-auto max-w-xl space-y-6 px-4 py-8">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-100 text-sky-600">
-          <ChefHat size={20} />
-        </span>
-        <div>
-          <h1 className="text-xl font-bold text-sky-950">Il tuo profilo</h1>
-          <p className="text-sm text-sky-600">{username}</p>
-        </div>
-      </div>
+    <div className="flex flex-col gap-4">
+      <PageHeader title="Profilo" meta={username ? `Connesso come ${username}` : undefined} />
 
-      {/* Dedica */}
       {dedication && (
-        <div className="rounded-2xl border border-orange-100 bg-gradient-to-br from-orange-50 to-amber-50 p-6">
-          <div className="flex items-center gap-2 mb-3">
-            <Heart size={16} className="text-orange-400" fill="currentColor" />
-            <span className="text-xs font-semibold uppercase tracking-widest text-orange-400">
-              La tua dedica
-            </span>
-          </div>
-          <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
-            {dedication}
-          </p>
-        </div>
+        <Panel title="La tua dedica" icon={<Heart />} tone="note">
+          <p className="leading-relaxed whitespace-pre-wrap">{dedication}</p>
+        </Panel>
       )}
 
-      {/* Cambio username */}
-      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-        <div className="flex items-center gap-2 mb-5">
-          <UserRound size={16} className="text-sky-500" />
-          <h2 className="text-sm font-semibold text-sky-950">Cambia username</h2>
-        </div>
-        <form onSubmit={changeUsername} className="space-y-4">
-          <Input
-            label="Nuovo username"
-            value={newUsername}
-            onChange={(e) => setNewUsername(e.target.value)}
-            placeholder={username ?? ""}
-            autoComplete="username"
-          />
-          <Input
-            label="Password attuale"
-            type="password"
-            value={unPassword}
-            onChange={(e) => setUnPassword(e.target.value)}
-            autoComplete="current-password"
-          />
-          {unError && (
-            <p className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
-              {unError}
-            </p>
-          )}
-          {unSuccess && (
-            <p className="rounded-lg bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-700">
-              Username aggiornato con successo.
-            </p>
-          )}
-          <Button type="submit" loading={unLoading} className="w-full">
-            Aggiorna username
-          </Button>
-        </form>
-      </div>
+      <div className="grid items-start gap-(--gap) @min-[760px]:grid-cols-2">
+        <Panel title="Nome utente" icon={<UserRound />}>
+          <form onSubmit={changeUsername} className="flex flex-col gap-3">
+            <Field label="Nuovo nome utente">
+              {(p) => <TextInput {...p} value={newUsername} onChange={(e) => setNewUsername(e.target.value)} placeholder={username ?? ""} autoComplete="username" />}
+            </Field>
+            <Field label="Password attuale" hint="Serve a confermare che sei tu.">
+              {(p) => <TextInput {...p} type="password" value={unPassword} onChange={(e) => setUnPassword(e.target.value)} autoComplete="current-password" />}
+            </Field>
+            <Outcome error={unError} success={unSuccess && "Nome utente aggiornato."} />
+            <Button type="submit" loading={unLoading} className="self-end">
+              Aggiorna nome
+            </Button>
+          </form>
+        </Panel>
 
-      {/* Cambio password */}
-      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-        <div className="flex items-center gap-2 mb-5">
-          <KeyRound size={16} className="text-sky-500" />
-          <h2 className="text-sm font-semibold text-sky-950">Cambia password</h2>
-        </div>
-        <form onSubmit={changePassword} className="space-y-4">
-          <Input
-            label="Password attuale"
-            type="password"
-            value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
-            autoComplete="current-password"
-          />
-          <Input
-            label="Nuova password"
-            type="password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            autoComplete="new-password"
-          />
-          <Input
-            label="Conferma nuova password"
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            autoComplete="new-password"
-          />
-          {pwError && (
-            <p className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
-              {pwError}
-            </p>
-          )}
-          {pwSuccess && (
-            <p className="rounded-lg bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-700">
-              Password aggiornata con successo.
-            </p>
-          )}
-          <Button type="submit" loading={pwLoading} className="w-full">
-            Aggiorna password
-          </Button>
-        </form>
+        <Panel title="Password" icon={<KeyRound />}>
+          <form onSubmit={changePassword} className="flex flex-col gap-3">
+            <Field label="Password attuale">
+              {(p) => <TextInput {...p} type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} autoComplete="current-password" />}
+            </Field>
+            <Field label="Nuova password" hint="Almeno 8 caratteri.">
+              {(p) => <TextInput {...p} type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} autoComplete="new-password" />}
+            </Field>
+            <Field label="Ripeti la nuova password">
+              {(p) => <TextInput {...p} type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} autoComplete="new-password" />}
+            </Field>
+            <Outcome error={pwError} success={pwSuccess && "Password aggiornata."} />
+            <Button type="submit" loading={pwLoading} className="self-end">
+              Aggiorna password
+            </Button>
+          </form>
+        </Panel>
       </div>
     </div>
   );

@@ -21,8 +21,42 @@ export function nextPaletteColor(usedColors: string[]): string {
 }
 
 // ---------------------------------------------------------------------------
-// Color Picker
+// 12.5 · scelta colore
 // ---------------------------------------------------------------------------
+/** Pallini della palette + colore libero, in linea (finestra di modifica categoria) */
+export function ColorSwatches({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const custom = !PALETTE.some((c) => c.toLowerCase() === value.toLowerCase());
+  return (
+    <div role="radiogroup" aria-label="Colore" className="flex flex-wrap gap-2">
+      {PALETTE.map((c) => {
+        const on = c.toLowerCase() === value.toLowerCase();
+        return (
+          <button
+            key={c}
+            type="button"
+            role="radio"
+            aria-checked={on}
+            aria-label={c}
+            onClick={() => onChange(c)}
+            className={`size-8 rounded-full transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-blu-600/35 ${on ? "ring-2 ring-blu-950 ring-offset-2" : ""}`}
+            style={{ backgroundColor: c }}
+          />
+        );
+      })}
+      {/* colore libero: il selettore di sistema */}
+      <label
+        title="Colore personalizzato"
+        className={`relative flex size-8 cursor-pointer items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-blu-250 text-[0.75rem] font-bold text-grigio ${custom ? "ring-2 ring-blu-950 ring-offset-2" : ""}`}
+        style={custom ? { backgroundColor: value, borderStyle: "solid", borderColor: "white" } : undefined}
+      >
+        {!custom && "+"}
+        <input type="color" value={value} onChange={(e) => onChange(e.target.value)} className="absolute inset-0 cursor-pointer opacity-0" aria-label="Colore personalizzato" />
+      </label>
+    </div>
+  );
+}
+
+/** Bottone col pallino del colore che apre i pallini in un riquadro (combobox categoria del form) */
 export function ColorPicker({
   value,
   onChange,
@@ -48,31 +82,20 @@ export function ColorPicker({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className={`rounded-lg border border-gray-200 ${compact ? "h-8 w-8" : "h-9 w-9"} flex items-center justify-center`}
+        className={`flex items-center justify-center rounded-[0.625rem] border border-blu-200 bg-white hover:bg-blu-100 ${compact ? "size-8" : "size-(--h-field)"}`}
         title="Scegli colore"
+        aria-label="Scegli colore"
       >
-        <span className="h-4 w-4 rounded-full" style={{ backgroundColor: value }} />
+        <span className="size-4 rounded-full" style={{ backgroundColor: value }} />
       </button>
       {open && (
-        <div className="absolute top-full left-0 z-50 mt-1 rounded-xl border border-gray-100 bg-white p-2 shadow-lg">
-          <div className="grid grid-cols-5 gap-1.5 mb-2">
-            {PALETTE.map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => { onChange(c); setOpen(false); }}
-                className="h-6 w-6 rounded-full border-2 transition-transform hover:scale-110"
-                style={{ backgroundColor: c, borderColor: value === c ? "#000" : "transparent" }}
-              />
-            ))}
-          </div>
-          {/* Input colore libero */}
-          <input
-            type="color"
+        <div className="absolute top-full left-0 z-50 mt-1 w-[15.5rem] rounded-ctl border border-blu-150 bg-white p-3 shadow-[0_10px_30px_oklch(25%_0.038_228/.18)]">
+          <ColorSwatches
             value={value}
-            onChange={(e) => onChange(e.target.value)}
-            className="w-full h-7 rounded cursor-pointer"
-            title="Colore personalizzato"
+            onChange={(c) => {
+              onChange(c);
+              if (PALETTE.includes(c)) setOpen(false);
+            }}
           />
         </div>
       )}

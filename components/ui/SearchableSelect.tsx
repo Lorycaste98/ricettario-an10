@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { clsx } from "clsx";
 import { ChevronDown, Check, X, Search } from "lucide-react";
+import { normalizeSearchText } from "@/lib/search";
 
 export interface SelectOption {
   value: string;
@@ -11,14 +13,15 @@ export interface SelectOption {
 }
 
 /**
- * Select a singola scelta con ricerca interna (combobox). Valore controllato:
- * `null` = nessuna selezione. Chiusura al click fuori. Riusa il pattern di
- * TagCombobox ma per una scelta sola con opzione "azzera".
+ * Filtro a scelta singola con ricerca interna (12.7, filtri recensioni). Aspetto di chip 4.11:
+ * vuoto = «Ricetta ▾», scelto = chip scuro «Ricetta: Focaccia ×». Valore controllato
+ * (`null` = nessuna scelta), chiusura al tocco fuori.
  */
 export function SearchableSelect({
   options,
   value,
   onChange,
+  label,
   placeholder,
   searchPlaceholder = "Filtra…",
   icon,
@@ -27,6 +30,9 @@ export function SearchableSelect({
   options: SelectOption[];
   value: string | null;
   onChange: (value: string | null) => void;
+  /** Nome del filtro (es. «Ricetta») */
+  label: string;
+  /** Testo dell'opzione «tutti» nella tendina (es. «Tutte le ricette») */
   placeholder: string;
   searchPlaceholder?: string;
   icon?: ReactNode;
@@ -44,8 +50,8 @@ export function SearchableSelect({
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const q = query.trim().toLowerCase();
-  const filtered = q ? options.filter((o) => o.label.toLowerCase().includes(q)) : options;
+  const q = normalizeSearchText(query);
+  const filtered = q ? options.filter((o) => normalizeSearchText(o.label).includes(q)) : options;
   const selected = options.find((o) => o.value === value) ?? null;
 
   const choose = (v: string | null) => {
@@ -55,63 +61,60 @@ export function SearchableSelect({
   };
 
   return (
-    <div ref={ref} className={`relative ${className}`}>
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className={`flex w-full items-center gap-2 rounded-xl border bg-white px-3 py-2 text-sm shadow-sm transition-colors ${
-          selected ? "border-orange-300 text-gray-800" : "border-gray-200 text-gray-500"
-        } hover:border-orange-300`}
-      >
-        {icon && <span className="shrink-0 text-gray-400">{icon}</span>}
-        <span className="flex-1 truncate text-left">{selected ? selected.label : placeholder}</span>
-        {selected ? (
-          <span
-            role="button"
-            tabIndex={0}
-            aria-label="Azzera filtro"
-            onClick={(e) => { e.stopPropagation(); choose(null); }}
-            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); choose(null); } }}
-            className="shrink-0 rounded p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
-          >
-            <X size={14} />
-          </span>
-        ) : (
-          <ChevronDown size={15} className="shrink-0 text-gray-400" />
+    <div ref={ref} className={clsx("relative min-w-0", className)}>
+      <div
+        className={clsx(
+          "inline-flex h-(--h-sm) max-w-full items-center rounded-full border text-[0.875rem] font-semibold transition-colors [&_svg]:size-[1.05em] [&_svg]:shrink-0",
+          selected ? "border-blu-800 bg-blu-800 text-white" : "border-blu-200 bg-white text-blu-950 hover:bg-blu-100"
         )}
-      </button>
+      >
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          className="flex h-full min-w-0 items-center gap-[0.4em] pl-[0.85em] pr-[0.6em]"
+        >
+          {icon}
+          <span className="truncate">{selected ? `${label}: ${selected.label}` : label}</span>
+          {!selected && <ChevronDown aria-hidden />}
+        </button>
+        {selected && (
+          <button type="button" onClick={() => choose(null)} aria-label={`Togli il filtro ${label}`} className="mr-[0.35em] rounded-full p-[0.2em] hover:bg-white/15">
+            <X />
+          </button>
+        )}
+      </div>
 
       {open && (
-        <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
-          <div className="flex items-center gap-2 border-b border-gray-100 px-3 py-2">
-            <Search size={14} className="shrink-0 text-gray-400" />
+        <div className="absolute top-full left-0 z-50 mt-1 w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-ctl border border-blu-150 bg-white shadow-[0_10px_30px_oklch(25%_0.038_228/.18)]">
+          <div className="flex items-center gap-2 border-b border-blu-150 px-3">
+            <Search className="size-4 shrink-0 text-grigio" aria-hidden />
             <input
-              type="text"
+              autoFocus
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={searchPlaceholder}
-              autoFocus
-              className="w-full bg-transparent text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none"
+              className="h-(--h-field) w-full bg-transparent text-blu-950 placeholder:text-grigio-chiaro focus:outline-none"
             />
           </div>
-          <div className="max-h-60 overflow-y-auto py-1">
+          <div className="max-h-64 overflow-y-auto py-1">
+            <button type="button" onClick={() => choose(null)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-grigio hover:bg-blu-50">
+              <span className="flex-1">{placeholder}</span>
+              {value === null && <Check className="size-4 shrink-0 text-verde" />}
+            </button>
             {filtered.length === 0 ? (
-              <p className="px-3 py-2 text-sm text-gray-400">Nessun risultato</p>
+              <p className="px-3 py-2 text-grigio">Nessun risultato</p>
             ) : (
               filtered.map((o) => (
                 <button
                   key={o.value}
                   type="button"
                   onClick={() => choose(o.value)}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-orange-50"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-blu-50"
                 >
                   <span className="min-w-0 flex-1 truncate">{o.label}</span>
-                  {o.count != null && (
-                    <span className="shrink-0 rounded-full bg-gray-100 px-1.5 py-0.5 text-[11px] font-semibold text-gray-500">
-                      {o.count}
-                    </span>
-                  )}
-                  {o.value === value && <Check size={14} className="shrink-0 text-emerald-500" />}
+                  {o.count !== undefined && <span className="tabular shrink-0 text-(length:--fs-meta) text-grigio">{o.count}</span>}
+                  {o.value === value && <Check className="size-4 shrink-0 text-verde" />}
                 </button>
               ))
             )}

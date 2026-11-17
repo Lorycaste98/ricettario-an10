@@ -1,11 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Search, Merge, Pencil, Check, X, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/Button";
-import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { ArrowDownAZ, ArrowDownWideNarrow, Merge, Pencil } from "lucide-react";
+import { Button, IconButton } from "@/components/ds/Button";
+import { Checkbox, Segmented, Switch } from "@/components/ds/Controls";
+import { Field, SearchField, Select, TextInput } from "@/components/ds/Field";
+import { Modal } from "@/components/ui/Modal";
+import { AdminEmptyRow, AdminRow, AdminTable, DeleteRowButton } from "@/components/admin/AdminTable";
+import { normalizeSearchText } from "@/lib/search";
 
+/**
+ * Catalogo ingredienti (12.2, schermata `docs/design/schermate/5-ingredienti`): selezione con le
+ * spunte, interruttore «nelle statistiche» (4.13: è un'impostazione), rinomina in una finestra,
+ * barra scura «Unifica» sulla selezione (12.3) e finestra di unione. Righe mostrate a pagine di 100.
+ */
 interface IngredientItem {
   id: number;
   name: string;
@@ -14,368 +24,306 @@ interface IngredientItem {
   recipes: { id: number; name: string }[];
 }
 
-interface Props {
-  initialIngredients: IngredientItem[];
-}
+type Sort = "az" | "used";
+const PAGE = 100;
 
-export default function IngredientiClient({ initialIngredients }: Props) {
+export default function IngredientiClient({ initialIngredients }: { initialIngredients: IngredientItem[] }) {
   const router = useRouter();
-  const confirm = useConfirm();
   const [ingredients, setIngredients] = useState<IngredientItem[]>(initialIngredients);
-
-  useEffect(() => {
-    setIngredients(initialIngredients);
-  }, [initialIngredients]);
   const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<Sort>("az");
+  const [limit, setLimit] = useState(PAGE);
   const [selected, setSelected] = useState<Set<number>>(new Set());
-  const [editId, setEditId] = useState<number | null>(null);
-  const [editName, setEditName] = useState("");
+  const [rename, setRename] = useState<{ id: number; name: string } | null>(null);
+  const [usesOf, setUsesOf] = useState<IngredientItem | null>(null);
   const [mergeOpen, setMergeOpen] = useState(false);
   const [canonical, setCanonical] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  const filtered = query.trim()
-    ? ingredients.filter((i) => i.name.toLowerCase().includes(query.toLowerCase()))
-    : ingredients;
+  const filtered = useMemo(() => {
+    const q = normalizeSearchText(query);
+    const list = q ? ingredients.filter((i) => normalizeSearchText(i.name).includes(q)) : ingredients;
+    return sort === "used" ? [...list].sort((a, b) => b.usageCount - a.usageCount || a.name.localeCompare(b.name, "it")) : list;
+  }, [ingredients, query, sort]);
+  const shown = filtered.slice(0, limit);
 
-  const toggleSelect = (id: number) => {
+  const toggleSelect = (id: number) =>
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
-  };
 
-  const toggleAll = () => {
-    if (selected.size === filtered.length) {
-      setSelected(new Set());
-    } else {
-      setSelected(new Set(filtered.map((i) => i.id)));
-    }
-  };
+  const byName = (a: IngredientItem, b: IngredientItem) => a.name.localeCompare(b.name, "it");
 
   // ── Rinomina ────────────────────────────────────────────────────────────────
-  const startEdit = (item: IngredientItem) => {
-    setEditId(item.id);
-    setEditName(item.name);
-    setError("");
-  };
-
-  const saveEdit = async (id: number) => {
-    if (!editName.trim()) { setError("Il nome non può essere vuoto."); return; }
+  const saveRename = async () => {
+    if (!rename) return;
+    const name = rename.name.trim();
+    if (!name) return setError("Il nome non può essere vuoto.");
     setBusy(true);
     setError("");
-    const res = await fetch(`/api/admin/ingredients/${id}`, {
+    const res = await fetch(`/api/admin/ingredients/${rename.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: editName.trim() }),
-    });
+      body: JSON.stringify({ name }),
+    }).catch(() => null);
     setBusy(false);
-    if (!res.ok) { const d = await res.json(); setError(d.error ?? "Errore"); return; }
-    const updated = await res.json() as IngredientItem;
-    setIngredients((prev) =>
-      prev.map((i) => (i.id === id ? { ...i, name: updated.name } : i))
-        .sort((a, b) => a.name.localeCompare(b.name, "it"))
-    );
-    setEditId(null);
+    if (!res?.ok) {
+      const d = (await res?.json().catch(() => null)) as { error?: string } | null;
+      return setError(d?.error ?? "Non è stato possibile rinominare.");
+    }
+    const updated = (await res.json()) as IngredientItem;
+    setIngredients((prev) => prev.map((i) => (i.id === rename.id ? { ...i, name: updated.name } : i)).sort(byName));
+    setRename(null);
     router.refresh();
   };
 
-  // ── Toggle escluso ─────────────────────────────────────────────────────────
+  // ── Nelle statistiche ──────────────────────────────────────────────────────
   const toggleExclude = async (item: IngredientItem) => {
     const res = await fetch(`/api/admin/ingredients/${item.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ excludedFromStats: !item.excludedFromStats }),
-    });
-    if (!res.ok) return;
-    const updated = await res.json() as IngredientItem;
-    setIngredients((prev) =>
-      prev.map((i) => (i.id === item.id ? { ...i, excludedFromStats: updated.excludedFromStats } : i))
-    );
+    }).catch(() => null);
+    if (!res?.ok) return;
+    const updated = (await res.json()) as IngredientItem;
+    setIngredients((prev) => prev.map((i) => (i.id === item.id ? { ...i, excludedFromStats: updated.excludedFromStats } : i)));
     router.refresh();
   };
 
-  // ── Elimina dal catalogo ───────────────────────────────────────────────────
-  const handleDelete = async (item: IngredientItem) => {
-    const ok = await confirm({
-      title: `Rimuovere "${item.name}" dal catalogo?`,
-      message: "L'ingrediente resterà nelle ricette esistenti.",
-      confirmLabel: "Rimuovi",
-      variant: "danger",
-    });
-    if (!ok) return;
-    const res = await fetch(`/api/admin/ingredients/${item.id}`, { method: "DELETE" });
-    if (!res.ok) return;
-    setIngredients((prev) => prev.filter((i) => i.id !== item.id));
-    setSelected((prev) => { const n = new Set(prev); n.delete(item.id); return n; });
-  };
-
   // ── Unifica ────────────────────────────────────────────────────────────────
+  const selectedItems = ingredients.filter((i) => selected.has(i.id));
+
   const openMerge = () => {
-    const first = ingredients.find((i) => selected.has(i.id));
-    setCanonical(first?.name ?? "");
+    // Proposta: il nome più usato fra quelli scelti
+    const best = [...selectedItems].sort((a, b) => b.usageCount - a.usageCount)[0];
+    setCanonical(best?.name ?? "");
     setError("");
     setMergeOpen(true);
   };
 
   const handleMerge = async () => {
-    if (!canonical.trim()) { setError("Scegli il nome canonico."); return; }
+    const name = canonical.trim();
+    if (!name) return setError("Scegli il nome da tenere.");
     setBusy(true);
     setError("");
     const res = await fetch("/api/admin/ingredients/merge", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ canonical: canonical.trim(), toMerge: [...selected] }),
-    });
+      body: JSON.stringify({ canonical: name, toMerge: [...selected] }),
+    }).catch(() => null);
     setBusy(false);
-    if (!res.ok) { const d = await res.json(); setError(d.error ?? "Errore"); return; }
-    // Rimuove le voci unificate, aggiorna/aggiunge il canonico
+    if (!res?.ok) {
+      const d = (await res?.json().catch(() => null)) as { error?: string } | null;
+      return setError(d?.error ?? "Non è stato possibile unificare.");
+    }
     const mergedIds = new Set(selected);
     setIngredients((prev) => {
-      const existing = prev.find((i) => i.name === canonical.trim() && !mergedIds.has(i.id));
-      const mergedCount = prev
-        .filter((i) => mergedIds.has(i.id))
-        .reduce((sum, i) => sum + i.usageCount, 0);
-      const filtered2 = prev.filter((i) => !mergedIds.has(i.id));
-      if (existing) {
-        return filtered2
-          .map((i) => i.id === existing.id ? { ...i, usageCount: mergedCount } : i)
-          .sort((a, b) => a.name.localeCompare(b.name, "it"));
-      }
-      return filtered2.sort((a, b) => a.name.localeCompare(b.name, "it"));
+      const merged = prev.filter((i) => mergedIds.has(i.id));
+      const keep = merged.find((i) => i.name === name);
+      const rest = prev.filter((i) => !mergedIds.has(i.id));
+      if (!keep) return rest;
+      const recipes = merged.flatMap((i) => i.recipes);
+      return [...rest, { ...keep, usageCount: recipes.length, recipes }].sort(byName);
     });
     setSelected(new Set());
     setMergeOpen(false);
     router.refresh();
   };
 
-  const selectedItems = ingredients.filter((i) => selected.has(i.id));
+  const allShownPicked = shown.length > 0 && shown.every((i) => selected.has(i.id));
 
   return (
-    <div className={`space-y-4 ${selected.size > 0 ? "pb-20" : ""}`}>
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-48">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Cerca ingrediente…"
-            className="w-full rounded-lg border border-gray-200 bg-white pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-200"
-          />
-        </div>
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap gap-2">
+        <SearchField
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setLimit(PAGE);
+          }}
+          placeholder="Cerca ingrediente"
+          aria-label="Cerca ingrediente"
+          className="min-w-[12rem] flex-[2]"
+        />
+        <Segmented<Sort>
+          label="Ordina"
+          value={sort}
+          onChange={setSort}
+          className="flex-1"
+          options={[
+            { value: "az", label: "A-Z", icon: <ArrowDownAZ aria-hidden /> },
+            { value: "used", label: "Più usati", icon: <ArrowDownWideNarrow aria-hidden /> },
+          ]}
+        />
       </div>
 
-      {/* Tabella */}
-      <div className="rounded-xl border border-gray-100 bg-white shadow-sm overflow-x-auto">
-        <table className="min-w-[600px] w-full text-sm">
-          <thead>
-            <tr className="border-b border-gray-100 bg-gray-50">
-              <th className="w-10 px-3 py-3">
-                <input
-                  type="checkbox"
-                  checked={selected.size === filtered.length && filtered.length > 0}
-                  onChange={toggleAll}
-                  className="rounded"
+      <AdminTable
+        head={
+          <>
+            <Checkbox
+              checked={allShownPicked}
+              onChange={(on) => setSelected(on ? new Set([...selected, ...shown.map((i) => i.id)]) : new Set())}
+              label="Seleziona tutti quelli mostrati"
+              hideLabel
+            />
+            <span className="flex-1">Nome</span>
+            <span className="w-20 text-right">Utilizzi</span>
+            <span className="w-[3.25rem]">Stats</span>
+            <span className="w-[4.25rem]" />
+          </>
+        }
+      >
+        {shown.map((item) => {
+          const picked = selected.has(item.id);
+          return (
+            <AdminRow key={item.id} picked={picked}>
+              <Checkbox checked={picked} onChange={() => toggleSelect(item.id)} label={`Seleziona ${item.name}`} hideLabel />
+              <span className={`min-w-0 flex-1 font-semibold break-words ${item.excludedFromStats ? "text-grigio" : ""}`}>{item.name}</span>
+              <button
+                type="button"
+                disabled={item.usageCount === 0}
+                onClick={() => setUsesOf(item)}
+                title={item.usageCount ? "Vedi le ricette" : undefined}
+                className="tabular w-8 shrink-0 rounded-[0.5rem] py-1 text-right @min-[600px]/t:w-20 font-semibold enabled:text-blu-600 enabled:hover:underline disabled:text-grigio"
+              >
+                {item.usageCount}
+              </button>
+              <span className="shrink-0 @min-[600px]/t:w-[3.25rem]">
+                <Switch
+                  checked={!item.excludedFromStats}
+                  onChange={() => void toggleExclude(item)}
+                  label={item.excludedFromStats ? `${item.name}: fuori dalle statistiche` : `${item.name}: nelle statistiche`}
+                  hideLabel
                 />
-              </th>
-              <th className="px-3 py-3 text-left font-medium text-gray-600">Nome</th>
-              <th className="px-3 py-3 text-center font-medium text-gray-600 w-36">Utilizzi</th>
-              <th className="px-3 py-3 text-center font-medium text-gray-600 w-28">Nelle stats</th>
-              <th className="px-3 py-3 w-24" />
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {filtered.map((item) =>
-              editId === item.id ? (
-                <tr key={item.id} className="bg-orange-50/30">
-                  <td className="px-3 py-2" />
-                  <td className="px-3 py-2" colSpan={2}>
-                    <input
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") void saveEdit(item.id);
-                        if (e.key === "Escape") setEditId(null);
-                      }}
-                      autoFocus
-                      className="w-full rounded-lg border border-orange-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
-                    />
-                    {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
-                  </td>
-                  <td className="px-3 py-2 text-center" colSpan={2}>
-                    <div className="flex items-center justify-center gap-1">
-                      <button
-                        onClick={() => void saveEdit(item.id)}
-                        disabled={busy}
-                        className="rounded-lg bg-green-500 px-2.5 py-1.5 text-xs text-white hover:bg-green-600 disabled:opacity-50 transition-colors"
-                      >
-                        <Check size={12} />
-                      </button>
-                      <button
-                        onClick={() => setEditId(null)}
-                        className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs text-gray-500 hover:bg-gray-50 transition-colors"
-                      >
-                        <X size={12} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                <tr key={item.id} className="hover:bg-gray-50 group">
-                  <td className="px-3 py-2.5">
-                    <input
-                      type="checkbox"
-                      checked={selected.has(item.id)}
-                      onChange={() => toggleSelect(item.id)}
-                      className="rounded"
-                    />
-                  </td>
-                  <td className="px-3 py-2.5">
-                    <span className={item.excludedFromStats ? "text-gray-400 line-through" : "text-gray-800"}>
-                      {item.name}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2.5 text-center">
-                    {item.usageCount === 0 ? (
-                      <span className="text-gray-400">0</span>
-                    ) : (
-                      <select
-                        value=""
-                        onChange={(e) => router.push(`/ricette/${e.target.value}`)}
-                        className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs text-sky-700 cursor-pointer focus:outline-none focus:ring-1 focus:ring-sky-300 w-full max-w-[120px]"
-                      >
-                        <option value="" disabled>
-                          {item.usageCount} ricett{item.usageCount === 1 ? "a" : "e"}
-                        </option>
-                        {item.recipes.map((r) => (
-                          <option key={r.id} value={r.id}>{r.name}</option>
-                        ))}
-                      </select>
-                    )}
-                  </td>
-                  <td className="px-3 py-2.5 text-center">
-                    <button
-                      role="switch"
-                      aria-checked={!item.excludedFromStats}
-                      onClick={() => void toggleExclude(item)}
-                      title={item.excludedFromStats ? "Includi nelle statistiche" : "Escludi dalle statistiche"}
-                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-1 ${
-                        item.excludedFromStats ? "bg-gray-200" : "bg-green-500"
-                      }`}
-                    >
-                      <span className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-md transition-transform duration-200 ${
-                        item.excludedFromStats ? "translate-x-0" : "translate-x-4"
-                      }`} />
-                    </button>
-                  </td>
-                  <td className="px-3 py-2.5">
-                    <div className="flex items-center justify-end gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
-                      <button
-                        onClick={() => startEdit(item)}
-                        className="rounded p-1 text-gray-400 hover:text-sky-600 hover:bg-sky-50 transition-colors"
-                        title="Rinomina"
-                      >
-                        <Pencil size={13} />
-                      </button>
-                      <button
-                        onClick={() => void handleDelete(item)}
-                        className="rounded p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                        title="Rimuovi dal catalogo"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              )
-            )}
-            {filtered.length === 0 && (
-              <tr>
-                <td colSpan={5} className="py-10 text-center text-sm text-gray-400">
-                  Nessun ingrediente trovato.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+              </span>
+              <div className="flex shrink-0 items-center gap-1 @min-[600px]/t:gap-1.5">
+                <IconButton
+                  label={`Rinomina ${item.name}`}
+                  size="row"
+                  onClick={() => {
+                    setError("");
+                    setRename({ id: item.id, name: item.name });
+                  }}
+                >
+                  <Pencil />
+                </IconButton>
+                <DeleteRowButton
+                  url={`/api/admin/ingredients/${item.id}`}
+                  label={`Togli ${item.name} dal catalogo`}
+                  title={`Togliere «${item.name}» dal catalogo?`}
+                  message="Resta nelle ricette che lo usano: sparisce solo dai suggerimenti e da questa lista."
+                  onDeleted={() => {
+                    setIngredients((prev) => prev.filter((i) => i.id !== item.id));
+                    setSelected((prev) => {
+                      const n = new Set(prev);
+                      n.delete(item.id);
+                      return n;
+                    });
+                  }}
+                />
+              </div>
+            </AdminRow>
+          );
+        })}
+        {filtered.length === 0 && <AdminEmptyRow>Nessun ingrediente trovato.</AdminEmptyRow>}
+      </AdminTable>
 
-      {/* Sticky bottom bar — selezione attiva */}
+      {filtered.length > limit && (
+        <Button variant="secondary" className="self-center" onClick={() => setLimit((n) => n + PAGE)}>
+          Mostra altri ({filtered.length - limit})
+        </Button>
+      )}
+
+      {/* 12.3 · barra azioni sulla selezione: resta in fondo allo schermo, sopra la barra in basso */}
       {selected.size > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 z-30 flex items-center justify-between gap-3 border-t border-gray-200 bg-white/95 backdrop-blur-sm px-4 py-3 shadow-lg sm:px-6">
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-semibold text-gray-700">
-              {selected.size} selezionat{selected.size === 1 ? "o" : "i"}
-            </span>
-            <button
-              onClick={() => setSelected(new Set())}
-              className="text-xs text-gray-400 hover:text-gray-700 underline underline-offset-2 transition-colors"
-            >
-              Deseleziona tutti
-            </button>
-          </div>
-          {selected.size >= 2 ? (
-            <Button size="sm" onClick={openMerge} className="flex items-center gap-1.5">
-              <Merge size={14} />
-              Unifica ({selected.size})
-            </Button>
-          ) : (
-            <span className="text-xs text-gray-400">Seleziona almeno 2 per unificare</span>
-          )}
+        <div className="sticky bottom-[calc(var(--bottom-space)-0.25rem)] z-30 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-card bg-blu-950 py-2 pr-2 pl-4 text-white shadow-[0_8px_24px_oklch(25%_0.038_228/.3)] min-[700px]:bottom-4">
+          <span className="min-w-0 flex-1 truncate font-semibold">
+            {selected.size} selezionat{selected.size === 1 ? "o" : "i"}
+            {selected.size === 1 && ` · «${selectedItems[0]?.name}»`}
+          </span>
+          <button type="button" onClick={() => setSelected(new Set())} className="rounded-[0.5rem] px-2 py-1 text-[0.875rem] text-nav-ink hover:text-white">
+            Annulla
+          </button>
+          <Button size="sm" icon={<Merge />} disabled={selected.size < 2} onClick={openMerge} title={selected.size < 2 ? "Seleziona almeno 2 ingredienti" : undefined}>
+            Unifica
+          </Button>
         </div>
       )}
 
-      {/* Modal unifica */}
-      {mergeOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl space-y-4">
-            <h2 className="text-base font-semibold text-gray-900">
-              Unifica {selected.size} ingredienti
-            </h2>
-
-            <div className="rounded-lg bg-gray-50 p-3 space-y-1">
-              <p className="text-xs font-medium text-gray-500 mb-2">Ingredienti da unificare:</p>
-              {selectedItems.map((i) => (
-                <div key={i.id} className="flex items-center justify-between text-sm text-gray-700">
-                  <span>{i.name}</span>
-                  <span className="text-xs text-gray-400">{i.usageCount} utilizzi</span>
-                </div>
-              ))}
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-gray-600">Nome canonico (risultato finale)</label>
-              <select
-                value={canonical}
-                onChange={(e) => setCanonical(e.target.value)}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
-              >
-                {selectedItems.map((i) => (
-                  <option key={i.id} value={i.name}>{i.name}</option>
-                ))}
-              </select>
-              <p className="text-xs text-gray-400">
-                Tutti gli ingredienti selezionati verranno rinominati in "{canonical}" in tutte le ricette.
-              </p>
-            </div>
-
-            {error && <p className="text-sm text-red-500">{error}</p>}
-
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="ghost" size="sm" onClick={() => setMergeOpen(false)}>
+      {/* Rinomina */}
+      <Modal open={!!rename} onClose={() => setRename(null)} title="Rinomina ingrediente" size="sm">
+        {rename && (
+          <form
+            className="flex flex-col gap-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void saveRename();
+            }}
+          >
+            <Field label="Nome" error={error || undefined}>
+              {(p) => <TextInput {...p} autoFocus value={rename.name} onChange={(e) => setRename({ ...rename, name: e.target.value })} />}
+            </Field>
+            <div className="flex justify-end gap-2">
+              <Button variant="secondary" onClick={() => setRename(null)}>
                 Annulla
               </Button>
-              <Button size="sm" loading={busy} onClick={() => void handleMerge()}>
-                Conferma unificazione
+              <Button type="submit" loading={busy}>
+                Salva
               </Button>
             </div>
+          </form>
+        )}
+      </Modal>
+
+      {/* Ricette che usano l'ingrediente */}
+      <Modal open={!!usesOf} onClose={() => setUsesOf(null)} title={usesOf ? `«${usesOf.name}» in ${usesOf.usageCount} ricette` : ""} size="sm">
+        <ul className="-my-1 divide-y divide-blu-150">
+          {usesOf?.recipes.map((r, i) => (
+            <li key={`${r.id}-${i}`}>
+              <Link href={`/ricette/${r.id}`} className="block py-2.5 font-semibold hover:underline">
+                {r.name}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </Modal>
+
+      {/* Unifica */}
+      <Modal open={mergeOpen} onClose={() => setMergeOpen(false)} title={`Unifica ${selected.size} ingredienti`}>
+        <div className="flex flex-col gap-4">
+          <ul className="divide-y divide-blu-150 rounded-ctl border border-blu-150 bg-blu-50 px-3">
+            {selectedItems.map((i) => (
+              <li key={i.id} className="flex items-center justify-between gap-3 py-2">
+                <span className="font-semibold">{i.name}</span>
+                <span className="tabular shrink-0 text-(length:--fs-meta) text-grigio">{i.usageCount} utilizzi</span>
+              </li>
+            ))}
+          </ul>
+          <Field label="Nome da tenere" hint={`Tutte le ricette useranno «${canonical}».`} error={error || undefined}>
+            {(p) => (
+              <Select {...p} value={canonical} onChange={(e) => setCanonical(e.target.value)}>
+                {selectedItems.map((i) => (
+                  <option key={i.id} value={i.name}>
+                    {i.name}
+                  </option>
+                ))}
+              </Select>
+            )}
+          </Field>
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" onClick={() => setMergeOpen(false)}>
+              Annulla
+            </Button>
+            <Button icon={<Merge />} loading={busy} onClick={() => void handleMerge()}>
+              Unifica
+            </Button>
           </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }
