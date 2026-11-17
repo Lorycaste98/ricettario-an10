@@ -10,9 +10,7 @@ export default async function NuovoMenuPage() {
   if (!session) redirect("/login");
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <MenuForm />
-    </div>
+    <MenuForm />
   );
 }
 

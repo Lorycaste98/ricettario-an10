@@ -65,3 +65,6 @@ export function sectionCount(key: AdminSectionKey, o: AdminOverview) {
   }
 }
 
+
+/** Form di Gestione (nuova/modifica ricetta e menù): hanno la propria barra in alto (11.1) e usano tutta la larghezza */
+export const ADMIN_FORM_ROUTE = /^\/admin\/(ricette\/(nuova|\d+)|menu\/(nuovo|\d+\/modifica))\/?$/;

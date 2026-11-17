@@ -4,6 +4,7 @@ import { clsx } from "clsx";
 import type { CSSProperties, ReactNode } from "react";
 import { useNavHistoryTracker } from "@/lib/nav-history";
 import { NavRail, TabBar } from "@/components/shell/AppNav";
+import { ADMIN_FORM_ROUTE } from "@/components/admin/admin-sections";
 import { CookingMiniBar, CookingRow, useHasCooking } from "@/components/shell/CookingBar";
 
 /**
@@ -20,9 +21,7 @@ import { CookingMiniBar, CookingRow, useHasCooking } from "@/components/shell/Co
  * La home pubblica `/` resta fuori dalla cornice (ha la sua vetrina).
  */
 // Voce esatta ("/ricette") o con tutte le sotto-pagine ("/ricette/*")
-const RESTYLED: string[] = ["/prova-elementi", "/ricette/*", "/preferiti", "/menu/*", "/admin",
-  // Gestione: tutte le pagine tranne i form (nuova/modifica), che passano nella parte 5C
-  "/admin/ricette", "/admin/menu", "/admin/ingredienti", "/admin/vocabolario", "/admin/recensioni", "/admin/utenti", "/admin/profilo", "/admin/import"];
+const RESTYLED: string[] = ["/prova-elementi", "/ricette/*", "/preferiti", "/menu/*", "/admin/*"];
 
 function isRestyled(pathname: string) {
   return RESTYLED.some((p) =>
@@ -64,7 +63,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       />
       <NavRail adminArea={admin} />
       <div className="@container flex min-w-0 flex-1 flex-col">
-        <CookingRow />
+        {/* nei form la barra 11.1 resta in alto: la fila «Sto cucinando» lì scorre via con la pagina */}
+        <CookingRow sticky={!ADMIN_FORM_ROUTE.test(pathname)} />
         <main
           className={clsx(
             "mx-auto w-full max-w-7xl flex-1 px-4 pt-8 sm:px-6",

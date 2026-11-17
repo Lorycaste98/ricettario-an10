@@ -133,17 +133,19 @@
 - [x] **Ingredienti** (12.2): selezione, interruttore statistiche, barra «Unifica» (12.3), finestra di unione.
 - [x] **Categorie e tag** (12.4, 12.5): riordino con `ReorderList`, scelta del colore.
 - [x] **Recensioni** (`ReviewsBrowser`, 12.7, 12.8), **Utenti** (12.6), **Profilo**, **Importa** (12.9).
-- [ ] **Form ricetta** (`RecipeForm`) e **form menù** (`MenuForm`), sezione 11:
-  - [ ] barra in alto con l'occhio, Annulla e Salva (11.1);
-  - [ ] due colonne dagli 860px;
-  - [ ] righe ingrediente e passo (11.3, 11.4) a misura compatta; tipo di passo con le icone del progetto;
-  - [ ] ingredienti per passo, avviso di sforamento (6.10) e finestra «Salva comunque»;
-  - [ ] foto (11.5), ricerca con creazione (11.6), categorie e tag (11.7), ricetta nel menù con porzioni (11.8), tempi automatici o a mano (11.9).
-  - [ ] **Non toccare** la logica dei legami passo-ingrediente né `createRecipeContent`.
-- [ ] `FormSkeleton` e `loading.tsx` admin allineati.
-- [ ] A form rifatti: in `components/AppShell.tsx` sostituire l'elenco delle pagine `/admin/...` in `RESTYLED` con `"/admin/*"`.
+- [x] **Form ricetta** (`RecipeForm`) e **form menù** (`MenuForm`), sezione 11:
+  - [x] barra in alto con l'occhio, Annulla e Salva (11.1);
+  - [x] due colonne dagli 860px;
+  - [x] righe ingrediente e passo (11.3, 11.4) a misura compatta; tipo di passo con le icone del progetto;
+  - [x] ingredienti per passo, avviso di sforamento (6.10) e finestra «Salva comunque»;
+  - [x] foto (11.5), ricerca con creazione (11.6), categorie e tag (11.7), ricetta nel menù con porzioni (11.8), tempi automatici o a mano (11.9).
+  - [x] **Non toccare** la logica dei legami passo-ingrediente né `createRecipeContent`.
+- [x] `FormSkeleton` e `loading.tsx` admin allineati.
+- [x] A form rifatti: in `components/AppShell.tsx` sostituire l'elenco delle pagine `/admin/...` in `RESTYLED` con `"/admin/*"`.
 
 > **Stato 17/11/2026:** fatte le parti **5A** (cornice, sotto-navigazione, dashboard; commit a1ca5a0) e **5B** (tutte le liste di Gestione; commit e9ce2b1), pubblicate sull'anteprima. Verificate con dati finti su iPad e iPhone; il proprietario le controlla da admin sui dati veri prima della **5C** (form ricetta e menù, i file più lunghi: `components/recipe/RecipeForm.tsx` ~1500 righe, `components/menu/MenuForm.tsx`). Prototipo del form: `docs/design/schermate/6-form-ricetta*`. Pezzi già pronti da riusare: `AdminTable`, `buttonClasses`/`rowIconCls` (`components/ds/button-classes.ts`), `ColorSwatches`, maniglia di `ReorderList` già nel nuovo stile. Per vedere le pagine admin senza login si sono usate pagine temporanee sotto `app/prova-elementi/admin/` con dati finti (poi cancellate).
+
+> **Stato 17/11/2026 (5C):** form ricetta e menù rifatti con i pezzi di `components/admin/FormParts.tsx` (barra 11.1, blocco 11.2, chip piccoli, tipo di passo) e `ChipSearch` (11.6/11.7, categorie e tag nella stessa fila). Logica invariata (stato, ripartizione per passo, payload, «Salva comunque»). Differenze dal prototipo: un blocco in più «Note e fonte» (note, link, data della ricetta, che il prototipo non mostra); la seconda fila della riga ingrediente (opz., descrizione, sezione) compare sulla riga che si sta modificando o se c'è qualcosa da mostrare; i campi restano a 16px su touch (prima il form ricetta li rimpiccioliva e su iOS zoomava). Eliminati `PublishSwitch`, `SectionHeader`, `QuickTag` e il vecchio `ColorPicker` a tendina. Verificato con dati finti su iPad e iPhone; da provare da admin sui dati veri (salvataggio compreso).
 
 ---
 

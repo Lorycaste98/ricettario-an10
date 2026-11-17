@@ -16,9 +16,7 @@ export default async function NuovaRicettaPage() {
   ]);
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <RecipeForm categories={categories} tags={tags} />
-    </div>
+    <RecipeForm categories={categories} tags={tags} />
   );
 }
 

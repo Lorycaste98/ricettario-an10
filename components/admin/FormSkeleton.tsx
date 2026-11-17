@@ -1,126 +1,98 @@
-// Skeleton condiviso delle pagine form admin (nuova/modifica ricetta e menù).
-// Rispecchia il layout compatto del form: top bar sticky + card sezione
-// (`p-4 sm:p-6`, `space-y-3 sm:space-y-4`) e campi con etichetta piccola su mobile.
+import type { ReactNode } from "react";
+import { Skeleton } from "@/components/ds/Progress";
 
-function Field({ className = "" }: { className?: string }) {
-  return (
-    <div className={`space-y-0.5 sm:space-y-1 ${className}`}>
-      <div className="h-3 w-20 rounded bg-white/40" />
-      <div className="h-[34px] rounded-lg bg-white/40 sm:h-10" />
-    </div>
-  );
-}
+/**
+ * Caricamento dei form di Gestione (nuova/modifica ricetta e menù), stessa forma del form vero
+ * (`components/admin/FormParts.tsx`): barra 11.1 attaccata in alto a tutta larghezza e blocchi
+ * 11.2 su due colonne dagli 860px di contenitore. Se cambi la disposizione dei form, cambia anche qui.
+ */
 
-function Card({ children }: { children: React.ReactNode }) {
+function Card({ rows, children }: { rows?: number; children?: ReactNode }) {
   return (
-    <div className="space-y-2.5 rounded-2xl border border-white/50 bg-white/60 p-3 shadow-sm backdrop-blur-sm sm:space-y-4 sm:p-6">
+    <div className="flex flex-col gap-2.5 rounded-card border border-blu-150 bg-white px-4 py-3.5">
+      <div className="flex items-center gap-2">
+        <Skeleton className="size-[1.875rem]" />
+        <Skeleton className="h-5 w-32" />
+      </div>
       {children}
+      {rows !== undefined &&
+        Array.from({ length: rows }).map((_, i) => (
+          <div key={i} className="flex items-center gap-1.5">
+            <Skeleton className="h-[1.875rem] w-[3.75rem]" />
+            <Skeleton className="h-[1.875rem] w-[3.25rem]" />
+            <Skeleton className="h-[1.875rem] flex-1" />
+          </div>
+        ))}
     </div>
   );
 }
 
-function CardTitle() {
+function Fields({ n }: { n: number }) {
   return (
-    <div className="flex items-center gap-2.5 sm:gap-3">
-      <div className="h-8 w-8 rounded-xl bg-white/50 sm:h-9 sm:w-9" />
-      <div className="h-4 w-32 rounded bg-white/50" />
+    <div className="grid grid-cols-2 gap-2.5">
+      <Skeleton className="col-span-2 h-(--h-field)" />
+      {Array.from({ length: n }).map((_, i) => (
+        <Skeleton key={i} className="h-(--h-field)" />
+      ))}
     </div>
   );
 }
 
 export function FormSkeleton({ variant }: { variant: "recipe" | "menu" }) {
   return (
-    <div className="mx-auto max-w-3xl animate-pulse space-y-4 sm:space-y-6">
-      {/* Top bar sticky (titolo + pubblica + annulla + salva) */}
-      <div className="flex items-center justify-between gap-2 rounded-b-2xl border border-white/50 bg-white/70 px-3 py-2 shadow-lg backdrop-blur-xl sm:gap-3 sm:px-5 sm:py-3">
-        <div className="h-5 w-32 rounded bg-white/60" />
-        <div className="flex shrink-0 items-center gap-2">
-          <div className="h-7 w-16 rounded-full bg-white/60" />
-          <div className="h-8 w-16 rounded-lg bg-white/50" />
-          <div className="h-8 w-28 rounded-lg bg-orange-400/40" />
-        </div>
+    <div aria-busy>
+      <div
+        className="-mx-4 mb-(--gap) flex items-center gap-2 border-b border-blu-150 bg-white px-(--pad) pb-2 sm:-mx-6"
+        style={{
+          marginTop: "calc(-1 * max(2rem, calc(env(safe-area-inset-top, 0px) + 1rem)))",
+          paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.5rem)",
+        }}
+      >
+        <Skeleton className="h-6 w-40" />
+        <span className="flex-1" />
+        <Skeleton className="h-(--h-sm) w-24 rounded-full" />
+        <Skeleton className="h-(--h-btn) w-20 bg-arancio-50" />
       </div>
-
-      {/* Informazioni */}
-      <Card>
-        <CardTitle />
-        <Field />
+      <div className="mx-auto grid max-w-6xl gap-(--gap) @min-[860px]:grid-cols-[minmax(17rem,0.85fr)_minmax(0,1.4fr)] @min-[860px]:items-start">
         {variant === "recipe" ? (
           <>
-            <Field />
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <Field key={i} />
-              ))}
+            <div className="flex flex-col gap-(--gap)">
+              <Card>
+                <Fields n={4} />
+              </Card>
+              <Card>
+                <div className="flex gap-2">
+                  <Skeleton className="size-[4.75rem]" />
+                  <Skeleton className="size-[4.75rem]" />
+                </div>
+              </Card>
             </div>
-            <div className="h-16 rounded-lg bg-white/40" />
-            <Field />
+            <div className="flex flex-col gap-(--gap)">
+              <Card rows={5} />
+              <Card>
+                <Skeleton className="h-20" />
+                <Skeleton className="h-20" />
+              </Card>
+            </div>
           </>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
-            <div className="sm:col-span-2 h-14 rounded-lg bg-white/40" />
-            <Field />
-            <Field />
-            <Field className="sm:col-span-2" />
-          </div>
-        )}
-      </Card>
-
-      {variant === "recipe" ? (
-        <>
-          {/* Foto */}
-          <Card>
-            <CardTitle />
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {Array.from({ length: 2 }).map((_, i) => (
-                <div key={i} className="aspect-square rounded-xl bg-white/40" />
-              ))}
-            </div>
-          </Card>
-
-          {/* Categorie + Tag (affiancate da sm) */}
-          <div className="grid gap-4 sm:grid-cols-2 sm:gap-6">
-            {Array.from({ length: 2 }).map((_, i) => (
-              <Card key={i}>
-                <CardTitle />
-                <div className="h-9 rounded-lg bg-white/40 sm:h-10" />
-              </Card>
-            ))}
-          </div>
-
-          {/* Ingredienti — righe compatte */}
-          <Card>
-            <CardTitle />
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-[86px] rounded-xl bg-white/30 sm:h-[104px]" />
-            ))}
-          </Card>
-
-          {/* Procedura */}
-          <Card>
-            <CardTitle />
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="flex gap-2 sm:gap-3">
-                <div className="h-6 w-6 shrink-0 rounded-full bg-orange-400/40 sm:h-7 sm:w-7" />
-                <div className="flex-1 space-y-1.5">
-                  <div className="h-14 rounded-lg bg-white/40" />
-                  <div className="h-7 w-40 rounded-lg bg-white/30" />
+          <>
+            <Card>
+              <Fields n={4} />
+            </Card>
+            <Card>
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <Skeleton className="size-10" />
+                  <Skeleton className="h-4 flex-1" />
                 </div>
-              </div>
-            ))}
-          </Card>
-        </>
-      ) : (
-        /* Ricette nel menù */
-        <Card>
-          <CardTitle />
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-12 rounded-xl bg-white/40" />
-          ))}
-          <div className="h-9 rounded-xl bg-white/30 sm:h-10" />
-          <div className="h-40 rounded-xl bg-white/25" />
-        </Card>
-      )}
+              ))}
+              <Skeleton className="h-(--h-field)" />
+              <Skeleton className="h-40" />
+            </Card>
+          </>
+        )}
+      </div>
     </div>
   );
 }

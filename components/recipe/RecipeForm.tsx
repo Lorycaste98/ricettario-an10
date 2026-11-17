@@ -3,17 +3,19 @@ import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { clsx } from "clsx";
-import { Info, ImageIcon, Tag as TagIcon, Hash, Carrot, ListOrdered, Camera, Star, X, Check, TriangleAlert, Save, CircleCheck, Layers, StickyNote, Lock, Pencil, RotateCcw } from "lucide-react";
-import { Button } from "@/components/ui/Button";
-import { Input, Textarea } from "@/components/ui/Input";
+import { Info, ImageIcon, ImagePlus, ListOrdered, Star, X, Check, StickyNote, LockOpen, RotateCcw, Plus, Link2 } from "lucide-react";
+import { Button, IconButton } from "@/components/ds/Button";
+import { Field, TextInput, TextArea, ReadonlyValue } from "@/components/ds/Field";
+import { Switch } from "@/components/ds/Controls";
+import { StepNumber } from "@/components/ds/Progress";
+import { GroceryBagIcon } from "@/components/icons";
+import { FormBar, FormCard, FormError, MiniChip, StepKindPicker, rowFieldCls } from "@/components/admin/FormParts";
 import { IngredientCombobox } from "@/components/ui/IngredientCombobox";
 import { CategoryCombobox } from "@/components/ui/CategoryCombobox";
 import { TagCombobox } from "@/components/ui/TagCombobox";
-import { SectionHeader, type SectionTone } from "@/components/ui/SectionHeader";
-import { PublishSwitch } from "@/components/ui/PublishSwitch";
 import { ReorderList, ReorderRow } from "@/components/ui/ReorderList";
 import { Modal } from "@/components/ui/Modal";
-import { type Category, type Tag, type StepKind, STEP_KINDS, STEP_KIND_LABEL } from "@/lib/types";
+import { type Category, type Tag, type StepKind, formatMinutes } from "@/lib/types";
 import {
   allocationOf,
   formatQty,
@@ -21,6 +23,13 @@ import {
   QTY_EPSILON,
   type Allocation,
 } from "@/lib/step-ingredients";
+
+/*
+ * Form ricetta (restyle fase 5C, tavola sezione 11, prototipo docs/design/schermate/6-form-ricetta).
+ * Cambia solo l'aspetto: stato, ripartizione delle quantità per passo, payload e conferma
+ * «Salva comunque» sono quelli di sempre. Due colonne dagli 860px di contenitore
+ * (Informazioni · Foto · Note | Ingredienti · Procedura), una sotto.
+ */
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -99,11 +108,12 @@ async function uploadToCloudinary(file: File): Promise<string> {
   return data.secure_url;
 }
 
-// ─── ImageUploadButton ────────────────────────────────────────────────────────
+// ─── Foto (11.5) ──────────────────────────────────────────────────────────────
 
-function ImageUploadButton({ onUrl, label = "Carica foto" }: {
-  onUrl: (url: string) => void; label?: string;
-}) {
+const photoTileCls = "relative size-[4.75rem] shrink-0 overflow-hidden rounded-[0.75rem]";
+
+/** Tessera tratteggiata «Aggiungi»: sceglie un file e lo carica su Cloudinary */
+function PhotoAddTile({ onUrl }: { onUrl: (url: string) => void }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -114,8 +124,7 @@ function ImageUploadButton({ onUrl, label = "Carica foto" }: {
     setUploading(true);
     setUploadError(null);
     try {
-      const url = await uploadToCloudinary(file);
-      onUrl(url);
+      onUrl(await uploadToCloudinary(file));
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : "Errore upload");
     } finally {
@@ -125,177 +134,32 @@ function ImageUploadButton({ onUrl, label = "Carica foto" }: {
   };
 
   return (
-    <div className="flex flex-col gap-1">
+    <>
       <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleChange} />
-      {/* Sempre "sm": nel form compatto un bottone md sovrasta i campi da 28px */}
-      <Button type="button" variant="secondary" size="sm" loading={uploading}
-        onClick={() => inputRef.current?.click()}>
-        <Camera size={15} /> {label}
-      </Button>
-      {uploadError && <p className="text-[0.75em] text-red-500">{uploadError}</p>}
-    </div>
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        disabled={uploading}
+        className={clsx(
+          photoTileCls,
+          "flex flex-col items-center justify-center gap-1 border-2 border-dashed border-blu-250 bg-blu-100 text-[0.6875rem] font-semibold text-blu-800 transition-colors hover:bg-blu-120 disabled:cursor-wait"
+        )}
+      >
+        <ImagePlus className={clsx("size-5", uploading && "animate-pulse motion-reduce:animate-none")} aria-hidden />
+        {uploading ? "Carico…" : "Aggiungi"}
+      </button>
+      {uploadError && <p className="basis-full text-[0.8125rem] text-rosa">{uploadError}</p>}
+    </>
   );
 }
 
-// ─── Section ──────────────────────────────────────────────────────────────────
-
-function Section({
-  title,
-  icon,
-  tone = "sky",
-  hint,
-  delay = 0,
-  className,
-  children,
-}: {
-  title: string;
-  icon: React.ReactNode;
-  tone?: SectionTone;
-  hint?: string;
-  delay?: number;
-  className?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section
-      className={clsx(
-        "fade-up rounded-2xl border border-white/50 bg-white/60 backdrop-blur-sm p-3 sm:p-6 shadow-sm space-y-2.5 sm:space-y-4",
-        className
-      )}
-      style={{ animationDelay: `${delay}ms` }}
-    >
-      <SectionHeader title={title} icon={icon} tone={tone} hint={hint} />
-      {children}
-    </section>
-  );
-}
-
-// ─── shared inline input / icon-button classes ────────────────────────────────
-
-/**
- * Altezza unica di TUTTI i controlli del form in versione compatta: campi (anche
- * quelli di `Input`, via `--field-h` sul `<form>`), maniglia di drag, bottoni
- * icona, chip e numero del passo. Prima ognuno andava per conto suo (24 / 32 /
- * ~20px) e la riga sembrava montata a pezzi. Se la cambi, cambia **anche**
- * `--field-h` sul `<form>`: sono lo stesso valore in due sintassi (28px = 1.75rem).
- */
-const ROW_H = "h-7";
-
-/**
- * Bottone icona delle righe (rimuovi, aggiungi descrizione): pastiglia chiara
- * fissa invece di una semplice icona tenue. Sullo sfondo a gradiente dell'app le
- * icone `sky-300`/`gray-300` diventavano invisibili in alcune zone. Stessa
- * impostazione dei bottoni riga del form menù e della maniglia di `ReorderList`.
- */
-const rowIconBtn =
-  `flex ${ROW_H} w-7 shrink-0 items-center justify-center rounded-lg border border-white/60 bg-white/70 shadow-sm transition-colors`;
-const rowIconBtnNeutral = `${rowIconBtn} text-sky-600 hover:bg-white hover:text-sky-900`;
-const rowIconBtnDanger = `${rowIconBtn} text-rose-500 hover:bg-rose-50 hover:text-rose-600`;
-
-
-// py-1.5 su mobile (~34px), py-2 da sm in su — vedi anche `Input` in components/ui/Input.tsx
-// Il testo dentro ai campi usa lo stesso knob di `Input` (--field-font-size):
-// nelle righe fitte di ingredienti/step un campo alla dimensione piena stona
-// contro i chip e le etichette accanto.
-const inlineInput =
-  "rounded-lg border border-white/40 bg-white/60 backdrop-blur-sm px-2 py-1.5 sm:py-2 text-[length:var(--field-font-size,0.875em)] text-sky-950 placeholder:text-[1em] placeholder:text-sky-600/50 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-300/30";
-
-// ─── OptionalChip ─────────────────────────────────────────────────────────────
-
-// ─── SectionField ─────────────────────────────────────────────────────────────
+// ─── Righe ingrediente (11.3) ─────────────────────────────────────────────────
 
 /** id del <datalist> con le sezioni già usate (uno solo per form). */
 const SECTIONS_LIST_ID = "ingredient-sections";
 
-/**
- * Campo "sezione" della riga ingrediente (visibile solo con le sezioni attive):
- * input libero con `datalist` delle sezioni già usate nella ricetta, così la
- * seconda riga in poi si sceglie dalla tendina invece di riscriverla.
- */
-function SectionField({
-  value,
-  onChange,
-  listId,
-  compact = false,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  /** id del <datalist> condiviso (uno solo per form: le righe sono duplicate mobile/desktop) */
-  listId: string;
-  /** Riga mobile: campo più stretto per stare sulla stessa riga di qtà/unità */
-  compact?: boolean;
-}) {
-  return (
-    <span
-      className={clsx(
-        // Stessa altezza dei campi e dei bottoni della riga (vedi ROW_H)
-        ROW_H,
-        "inline-flex min-w-0 items-center gap-1 rounded-full border pl-2 pr-2 transition-colors focus-within:border-sky-400 focus-within:ring-2 focus-within:ring-sky-300/30",
-        value.trim() ? "border-emerald-300 bg-emerald-100/70" : "border-white/60 bg-white/70"
-      )}
-    >
-      <Layers size={11} className={clsx("shrink-0", value.trim() ? "text-emerald-700" : "text-sky-600")} />
-      <input
-        type="text"
-        list={listId}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="sezione"
-        title="Sezione/preparazione di questo ingrediente (es. Per l'impasto)"
-        className={clsx(
-          "min-w-0 bg-transparent text-[0.6875em] font-medium placeholder:font-normal focus:outline-none",
-          compact ? "w-20" : "w-24 sm:w-28",
-          value.trim() ? "text-emerald-900 placeholder:text-emerald-700/50" : "text-sky-900 placeholder:text-sky-600/70"
-        )}
-      />
-    </span>
-  );
-}
-
-/**
- * Avviso sulla riga ingrediente: i passi ne hanno assegnato più del totale.
- * Sta qui e non solo nel pannello del passo perché il numero sbagliato appartiene
- * all'ingrediente — chi apre il form deve vederlo senza aprire i passi. Compare
- * **solo** in caso di sforamento: la riga mobile è già al limite delle due righe.
- */
-function OverAllocationChip({ assigned, total, unit }: { assigned: number; total: string; unit: string }) {
-  const u = unit.trim();
-  return (
-    <span
-      title={`I passi usano ${formatQty(assigned)}${u ? ` ${u}` : ""} di questo ingrediente, più del totale indicato`}
-      className={clsx(
-        ROW_H,
-        "inline-flex shrink-0 items-center gap-1 rounded-full border border-rose-300 bg-rose-100 px-2 text-[0.6875em] font-medium text-rose-800"
-      )}
-    >
-      <TriangleAlert size={11} className="shrink-0" />
-      <span className="tabular-nums">
-        {formatQty(assigned)}/{total}
-        {u && ` ${u}`}
-      </span>
-    </span>
-  );
-}
-
-/** Chip-toggle "opzionale" per la riga ingrediente (`compact` = etichetta corta, riga mobile). */
-function OptionalChip({ active, onToggle, compact = false }: { active: boolean; onToggle: () => void; compact?: boolean }) {
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      title="Segna come ingrediente opzionale"
-      className={clsx(
-        ROW_H,
-        "inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 text-[0.6875em] font-medium transition-colors",
-        active
-          ? "border-amber-300 bg-amber-100 text-amber-800"
-          : "border-white/60 bg-white/70 text-sky-600 hover:border-amber-200 hover:text-amber-700"
-      )}
-    >
-      <TagIcon size={11} /> {compact ? "opz." : "opzionale"}
-    </button>
-  );
-}
+/** Campo numerico/unità di riga: testo un po' più piccolo su PC (su touch resta 16px, guardia iOS) */
+const rowInputCls = clsx(rowFieldCls, "text-[0.9375rem]");
 
 // ─── StepIngredients ──────────────────────────────────────────────────────────
 
@@ -332,14 +196,13 @@ function chipLabel(ing: IngredientRow, link: StepIngredientRow, split: boolean):
 }
 
 /**
- * Ingredienti necessari a un passo: chip dei legami + pannello di selezione con la
+ * Ingredienti necessari a un passo (11.4): chip dei legami + pannello di selezione con la
  * quantità usata in questo passo.
  *
- * Opzionale per definizione (le ricette esistenti non hanno legami), quindi da
- * chiuso occupa una riga sola e non mostra nulla se non c'è niente di legato. Le
- * quantità sono una ripartizione del totale della riga ingrediente: il pannello
- * mostra sempre «di X» e il residuo, e segnala in rosa se la somma dei passi
- * supera il totale (avviso, non blocco — vedi `handleSubmit`).
+ * Opzionale per definizione (le ricette esistenti non hanno legami), quindi da chiuso è
+ * una fila di chip con «+ ingrediente». Le quantità sono una ripartizione del totale della
+ * riga ingrediente: il pannello mostra sempre «di X» e il residuo, e segnala in rosa se la
+ * somma dei passi supera il totale (avviso, non blocco — vedi `handleSubmit`).
  */
 function StepIngredients({
   all,
@@ -358,69 +221,42 @@ function StepIngredients({
 }) {
   const [open, setOpen] = useState(false);
   const selectedByUid = new Map(selected.map((s) => [s.uid, s]));
-  // Nell'ordine della lista ingredienti, non in quello di selezione: si rilegge
-  // come la lista sopra
+  // Nell'ordine della lista ingredienti, non in quello di selezione: si rilegge come la lista
   const chips = all.filter((i) => selectedByUid.has(i.uid));
 
   return (
-    <div className="space-y-1.5">
+    <div className="flex flex-col gap-1.5">
       <div className="flex flex-wrap items-center gap-1.5">
-        {chips.map((ing) => {
-          const alloc = allocations.get(ing.uid);
-          return (
-            <span
-              key={ing.uid}
-              className={clsx(
-                "inline-flex max-w-full items-center gap-1 rounded-full border py-0.5 pl-2 pr-1 text-[0.6875em] font-medium",
-                alloc?.over
-                  ? "border-rose-300 bg-rose-100/80 text-rose-900"
-                  : "border-emerald-300 bg-emerald-100/70 text-emerald-900"
-              )}
-            >
-              <span className="truncate">
-                {chipLabel(ing, selectedByUid.get(ing.uid)!, !!alloc?.split)}
-              </span>
-              <button
-                type="button"
-                onClick={() => onToggle(ing.uid)}
-                title="Togli l'ingrediente dal passo"
-                className={clsx(
-                  "shrink-0 rounded-full p-0.5 transition-colors",
-                  alloc?.over
-                    ? "text-rose-700 hover:bg-rose-200 hover:text-rose-900"
-                    : "text-emerald-700 hover:bg-emerald-200 hover:text-emerald-900"
-                )}
-              >
-                <X size={11} />
-              </button>
-            </span>
-          );
-        })}
-        <button
-          type="button"
+        {chips.map((ing) => (
+          <MiniChip
+            key={ing.uid}
+            active
+            tone={allocations.get(ing.uid)?.over ? "over" : "default"}
+            onRemove={() => onToggle(ing.uid)}
+            removeLabel={`Togli ${ing.name.trim()} dal passo`}
+          >
+            {chipLabel(ing, selectedByUid.get(ing.uid)!, !!allocations.get(ing.uid)?.split)}
+          </MiniChip>
+        ))}
+        <MiniChip
+          active={open}
           onClick={() => setOpen((v) => !v)}
+          icon={open ? <Check /> : <Plus />}
           title="Scegli gli ingredienti che servono in questo passo e quanto ne serve"
-          className={clsx(
-            "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[0.6875em] font-medium transition-colors",
-            open
-              ? "border-emerald-300 bg-emerald-100/70 text-emerald-800"
-              : "border-white/60 bg-white/70 text-sky-600 hover:border-emerald-200 hover:text-emerald-700"
-          )}
         >
-          <Carrot size={11} />
-          {chips.length > 0 ? "Modifica" : "Ingredienti"}
-        </button>
+          {open ? "Fatto" : chips.length > 0 ? "Modifica" : "ingrediente"}
+        </MiniChip>
       </div>
 
       {open && (
-        <div className="rounded-xl border border-emerald-200/70 bg-emerald-50/60 p-1.5 sm:p-2">
+        <div className="rounded-[0.75rem] border border-blu-150 bg-blu-50 p-1.5">
           {all.length === 0 ? (
-            <p className="text-[0.6875em] text-sky-700">
+            <p className="px-1 py-0.5 text-[0.8125rem] text-grigio">
               Aggiungi prima gli ingredienti della ricetta: qui potrai spuntare quelli che servono in questo passo.
             </p>
           ) : (
-            // Liste lunghe: il pannello scrolla invece di allungare il passo
-            <ul className="max-h-64 space-y-1 overflow-y-auto pr-0.5">
+            // Liste lunghe: il pannello scorre invece di allungare il passo
+            <ul className="flex max-h-72 flex-col gap-1 overflow-y-auto">
               {all.map((ing) => {
                 const link = selectedByUid.get(ing.uid);
                 const active = !!link;
@@ -430,45 +266,34 @@ function StepIngredients({
                 // Quanto ne resta per QUESTO passo: totale meno quello che si sono
                 // già preso gli altri passi (la quota di questo non conta)
                 const takenElsewhere = Math.round(((alloc?.assigned ?? 0) - (own ?? 0)) * 100) / 100;
-                const availableHere =
-                  total != null ? Math.round((total - takenElsewhere) * 100) / 100 : null;
-                const over = active && own != null && availableHere != null
-                  && own - availableHere > QTY_EPSILON;
+                const availableHere = total != null ? Math.round((total - takenElsewhere) * 100) / 100 : null;
+                const over = active && own != null && availableHere != null && own - availableHere > QTY_EPSILON;
                 const unit = ing.unit.trim();
 
                 return (
                   <li
                     key={ing.uid}
                     className={clsx(
-                      "flex flex-wrap items-center gap-1 rounded-lg border px-1 py-1 transition-colors",
-                      over
-                        ? "border-rose-300 bg-rose-50/80"
-                        : active
-                        ? "border-emerald-300 bg-emerald-100/60"
-                        : "border-white/70 bg-white/70"
+                      "flex flex-wrap items-center gap-x-1.5 gap-y-1 rounded-[0.5rem] border bg-white px-1.5 py-1",
+                      over ? "border-rosa-200 bg-rosa-50" : active ? "border-blu-200" : "border-blu-150"
                     )}
                   >
-                    {/* Nome = toggle del legame. `basis-full` su mobile (riga sua,
-                        i controlli quantità vanno sotto), in linea da sm in su */}
+                    {/* Nome = interruttore del legame. Riga sua sul telefono, in linea quando c'è spazio */}
                     <button
                       type="button"
                       onClick={() => onToggle(ing.uid)}
+                      aria-pressed={active}
                       title={active ? "Togli l'ingrediente dal passo" : "Aggiungi l'ingrediente al passo"}
-                      className={clsx(
-                        ROW_H,
-                        "flex min-w-0 flex-1 basis-full items-center gap-1.5 rounded-md px-1 text-left text-[0.75em] font-medium transition-colors sm:basis-40",
-                        active ? "text-emerald-900" : "text-sky-800 hover:text-emerald-700"
-                      )}
+                      className="flex min-h-[1.875rem] min-w-0 flex-1 basis-full items-center gap-2 rounded-[0.375rem] px-0.5 text-left text-[0.875rem] font-semibold @min-[480px]:basis-40"
                     >
                       <span
+                        aria-hidden
                         className={clsx(
-                          "flex size-4 shrink-0 items-center justify-center rounded border",
-                          active
-                            ? "border-emerald-500 bg-emerald-500 text-white"
-                            : "border-sky-300 bg-white/80"
+                          "inline-flex size-5 shrink-0 items-center justify-center rounded-[0.375rem] border-2",
+                          active ? "border-verde bg-verde text-white" : "border-blu-250 bg-white"
                         )}
                       >
-                        {active && <Check size={11} />}
+                        {active && <Check className="size-3.5" strokeWidth={3} />}
                       </span>
                       <span className="truncate">{ing.name.trim()}</span>
                     </button>
@@ -480,59 +305,42 @@ function StepIngredients({
                             type="number"
                             min={0}
                             step="any"
+                            inputMode="decimal"
                             value={link.qty}
                             onChange={(e) => onQtyChange(ing.uid, e.target.value)}
                             placeholder="q.b."
+                            aria-label={`Quantità di ${ing.name.trim()} in questo passo`}
                             title="Quantità usata in questo passo (vuoto = quanto serve)"
-                            className={clsx(
-                              inlineInput,
-                              ROW_H,
-                              "w-16 px-1.5 py-0 text-center",
-                              over && "border-rose-300 bg-rose-50/80"
-                            )}
+                            className={clsx(rowInputCls, "w-[4.25rem] text-center", over && "border-rosa")}
                           />
-                          {unit && (
-                            <span className="text-[0.6875em] font-medium text-sky-700">{unit}</span>
-                          )}
-                          {/* "resto"/"tutto": la quantità che ancora non è assegnata */}
+                          {unit && <span className="text-[0.8125rem] text-grigio">{unit}</span>}
+                          {/* «resto»/«tutto»: la quantità che ancora non è assegnata */}
                           {availableHere != null && availableHere > 0 && own !== availableHere && (
-                            <button
-                              type="button"
+                            <MiniChip
                               onClick={() => onQtyChange(ing.uid, String(availableHere))}
                               title="Assegna a questo passo la quantità non ancora assegnata"
-                              className={clsx(
-                                ROW_H,
-                                "shrink-0 rounded-full border border-white/70 bg-white/80 px-2 text-[0.6875em] font-medium text-sky-700 transition-colors hover:border-emerald-300 hover:text-emerald-700"
-                              )}
                             >
                               {takenElsewhere > 0 ? "resto" : "tutto"}
-                            </button>
+                            </MiniChip>
                           )}
                           {own != null && (
-                            <button
-                              type="button"
-                              onClick={() => onQtyChange(ing.uid, "")}
-                              title="Non specificare la quantità (quanto serve)"
-                              className={rowIconBtnNeutral}
-                            >
-                              <RotateCcw size={12} />
-                            </button>
+                            <IconButton size="row" label="Non specificare la quantità (quanto serve)" onClick={() => onQtyChange(ing.uid, "")}>
+                              <RotateCcw />
+                            </IconButton>
                           )}
                         </span>
 
-                        {/* Riepilogo: su mobile va a capo da solo, su desktop si
-                            allinea a destra */}
                         <span
                           className={clsx(
-                            "basis-full text-[0.6875em] sm:ml-auto sm:basis-auto sm:text-right",
-                            over ? "font-medium text-rose-700" : "text-sky-600"
+                            "basis-full text-[0.75rem] @min-[480px]:ml-auto @min-[480px]:basis-auto @min-[480px]:text-right",
+                            over ? "font-semibold text-rosa" : "text-grigio"
                           )}
                         >
                           {total == null ? (
                             "totale non indicato"
                           ) : over ? (
-                            // clamp: se altri passi hanno già sforato, il disponibile
-                            // qui è negativo e "disponibili -50 g" non si legge
+                            // clamp: se altri passi hanno già sforato, il disponibile qui è
+                            // negativo e «disponibili -50 g» non si legge
                             `oltre il totale: disponibili ${amountLabel(Math.max(0, availableHere), unit)}`
                           ) : (
                             <>
@@ -915,557 +723,414 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
     void submitRecipe();
   };
 
+  // Riga ingrediente su cui si sta lavorando: mostra la seconda fila (opzionale,
+  // descrizione) anche se è vuota. Le altre la mostrano solo se c'è qualcosa da vedere.
+  // Stato e non `:focus-within`: Safari non mette a fuoco i bottoni al tocco e la fila
+  // sparirebbe prima che il tocco arrivi.
+  const [activeRow, setActiveRow] = useState<string | null>(null);
+
+  const stepsMinutes = derived.prep + derived.cook + derived.wait;
+  const stepsCount = steps.filter((s) => s.text.trim()).length;
+  const tagFieldId = "recipe-category-tags";
+
   return (
-    // Due knob per la tipografia del form, non serve toccare altro:
-    //  · `text-[…rem]`      → scala di TUTTI i testi (Input/Button/SectionHeader/
-    //                         combobox e chip sono in `em`, seguono da soli)
-    //  · `--field-font-size` → solo il testo digitato dentro ai campi, tenuto più
-    //                         basso della scala generale perché nelle righe fitte
-    //                         un campo a dimensione piena sovrasta chip ed etichette
-    //  · `--field-h`         → altezza dei campi in versione compatta; stesso valore
-    //                         di `ROW_H` (28px), così campi, maniglie, bottoni icona
-    //                         e chip sono allineati sulla stessa banda
-    // `data-compact-fields` disattiva su questo form la guardia anti-zoom iOS di
-    // globals.css (`input { font-size: 16px }` su touch), che essendo non-layered
-    // batteva ogni classe: senza, su mobile i campi restavano a 16px.
-    <form
-      onSubmit={handleSubmit}
-      data-compact-fields
-      className="space-y-4 sm:space-y-6 text-[0.9rem] sm:text-[0.95rem] [--field-font-size:0.75em] [--field-h:1.75rem]"
-    >
+    <form onSubmit={handleSubmit} noValidate>
+      <FormBar
+        title={name.trim() || (isEdit ? "Modifica ricetta" : "Nuova ricetta")}
+        published={published}
+        onTogglePublished={() => setPublished((p) => !p)}
+        onCancel={() => router.back()}
+        saving={saving}
+        saveLabel={isEdit ? "Salva" : "Crea"}
+      />
 
-      {/* Sticky top bar */}
-      <div className="sticky z-30 flex items-center justify-between gap-2 rounded-b-2xl border border-white/50 bg-white/70 backdrop-blur-xl px-3 py-2 sm:gap-3 sm:px-5 sm:py-3 shadow-lg shadow-black/[0.07] ring-1 ring-black/[0.04]" style={{ top: "calc(env(safe-area-inset-top, 0px) + 56px)" }}>
-        <h1 className="text-[0.875em] font-semibold text-gray-800 truncate">
-          {isEdit ? "Modifica ricetta" : "Nuova ricetta"}
-        </h1>
-        <div className="flex items-center gap-2 shrink-0">
-          <PublishSwitch published={published} onToggle={() => setPublished((p) => !p)} />
-          <Button type="button" variant="ghost" size="sm" onClick={() => router.back()}>
-            Annulla
-          </Button>
-          <Button type="submit" size="sm" loading={saving}>
-            {/* Etichetta corta su mobile: lascia respiro al titolo nella barra sticky */}
-            <span className="sm:hidden">{isEdit ? "Salva" : "Crea"}</span>
-            <span className="hidden sm:inline">{isEdit ? "Salva modifiche" : "Crea ricetta"}</span>
-          </Button>
-        </div>
-      </div>
-
-      {error && (
-        <div className="flex items-center gap-2 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-[0.875em] text-red-700">
-          <TriangleAlert size={16} className="shrink-0" /> <span>{error}</span>
-        </div>
-      )}
-
-      {/* 1. Info base */}
-      <Section title="Informazioni base" icon={<Info size={18} />} tone="sky" delay={0}>
-        <Input label="Nome ricetta *" value={name} onChange={(e) => setName(e.target.value)}
-          placeholder="Es. Risotto allo zafferano" />
-        <Input label="Data" type="date" value={createdAt}
-          onChange={(e) => setCreatedAt(e.target.value)} />
-        <div className="grid grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-4">
-          <Input label="Porzioni" type="number" min={1} value={servings}
-            onChange={(e) => setServings(e.target.value)} placeholder="4" />
-          <Input label="Unità" type="text" value={servingsUnit}
-            onChange={(e) => setServingsUnit(e.target.value)}
-            placeholder="porzioni" title="Es. teglie da 28cm, pirofile… Vuoto = persone" />
-          <Input
-            label={<span className="inline-flex items-center gap-1">Prep. (min) {timesManual ? <Pencil size={11} className="text-amber-600" /> : <Lock size={11} className="text-sky-600" />}</span>}
-            id="prep-min" type="number" min={0} value={prepValue} readOnly={!timesManual}
-            onChange={(e) => setPrep(e.target.value)} placeholder={timesManual ? "20" : "—"}
-            className={clsx(!timesManual && "cursor-default bg-sky-50/70 text-sky-800")}
-            title={timesManual ? undefined : "Calcolato dai passi: sbloccalo per modificarlo a mano"} />
-          <Input
-            label={<span className="inline-flex items-center gap-1">Cottura (min) {timesManual ? <Pencil size={11} className="text-amber-600" /> : <Lock size={11} className="text-sky-600" />}</span>}
-            id="cook-min" type="number" min={0} value={cookValue} readOnly={!timesManual}
-            onChange={(e) => setCook(e.target.value)} placeholder={timesManual ? "30" : "—"}
-            className={clsx(!timesManual && "cursor-default bg-sky-50/70 text-sky-800")}
-            title={timesManual ? undefined : "Calcolato dai passi: sbloccalo per modificarlo a mano"} />
-        </div>
-        {/* Barra di stato dei tempi: sempre visibile, così si può passare a mano
-            anche quando nessuno step ha minuti (altrimenti i campi resterebbero
-            bloccati e vuoti senza via d'uscita). */}
-        <div className={clsx(
-          "flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border px-2.5 py-1.5 text-[0.75em]",
-          timesManual
-            ? "border-amber-100 bg-amber-50/60 text-amber-800"
-            : "border-sky-100 bg-sky-50/60 text-sky-700"
-        )}>
-          {derived.hasAny ? (
-            <>
-              <span className="font-medium">Dai passi:</span>
-              <span>Prep <strong>{derived.prep}m</strong></span>
-              <span>Cottura <strong>{derived.cook}m</strong></span>
-              {derived.wait > 0 && <span>Attesa <strong>{derived.wait}m</strong></span>}
-            </>
-          ) : (
-            <span className="font-medium">
-              {timesManual ? "Valori inseriti a mano" : "I tempi si calcolano dai minuti dei passi"}
-            </span>
-          )}
-          <button
-            type="button"
-            onClick={toggleTimesManual}
-            className={clsx(
-              "ml-auto inline-flex shrink-0 items-center gap-1 rounded-md px-2.5 py-1 text-[0.6875em] font-semibold text-white transition-colors",
-              timesManual ? "bg-amber-500 hover:bg-amber-600" : "bg-sky-500 hover:bg-sky-600"
-            )}
-            title={timesManual
-              ? "Torna a calcolare Prep. e Cottura dalla somma dei passi"
-              : "Sblocca i campi per inserire Prep. e Cottura a mano"}
-          >
-            {timesManual ? <RotateCcw size={12} /> : <Pencil size={12} />}
-            {timesManual ? "Torna automatico" : <>Modifica<span className="hidden sm:inline"> a mano</span></>}
-          </button>
-        </div>
-        <Textarea label="Note" value={notes} onChange={(e) => setNotes(e.target.value)}
-          rows={2} placeholder="Consigli, varianti, sostituzioni..." />
-        <Input label="Link fonte" type="url" value={links}
-          onChange={(e) => setLinks(e.target.value)} placeholder="https://..." />
-      </Section>
-
-      {/* 2. Foto */}
-      <Section
-        title="Foto"
-        icon={<ImageIcon size={18} />}
-        tone="violet"
-        delay={60}
-        hint="La foto contrassegnata come Principale è mostrata nei card e nella lista."
-      >
-
-        {photos.length > 0 && (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {photos.map((p, i) => (
-              <div
-                key={i}
-                className={clsx(
-                  "relative overflow-hidden rounded-xl bg-gray-100 aspect-square",
-                  p.isMain && "ring-2 ring-orange-400"
-                )}
-              >
-                {/* Anteprima immagine */}
-                {p.url ? (
-                  <Image
-                    src={p.url}
-                    alt={`Foto ${i + 1}`}
-                    fill
-                    className="object-cover"
-                    sizes="200px"
-                  />
-                ) : (
-                  <div className="flex h-full items-center justify-center text-gray-300">
-                    <ImageIcon size={30} />
-                  </div>
-                )}
-
-                {/* Badge principale */}
-                <button
-                  type="button"
-                  onClick={() => setPhotoAsMain(i)}
-                  title={p.isMain ? "Foto principale" : "Imposta come principale"}
-                  className={clsx(
-                    "absolute bottom-0 left-0 right-0 py-1 text-center text-[0.6875em] font-semibold transition-colors",
-                    p.isMain
-                      ? "bg-orange-500/90 text-white"
-                      : "bg-black/40 text-white/80 hover:bg-orange-500/80"
-                  )}
-                >
-                  {p.isMain ? <span className="inline-flex items-center gap-1"><Star size={11} className="fill-current" /> Principale</span> : "Imposta principale"}
-                </button>
-
-                {/* Pulsante elimina */}
-                <button
-                  type="button"
-                  onClick={() => removePhoto(i)}
-                  title="Elimina foto"
-                  className="absolute top-1.5 right-1.5 flex items-center justify-center rounded-full bg-black/40 w-6 h-6 text-white hover:bg-red-500 transition-colors"
-                >
-                  <X size={14} />
-                </button>
-
-                {/* Sostituisci (se vuota o per aggiornare) */}
-                {!p.url && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <ImageUploadButton
-                      label="Carica"
-                      onUrl={(url) => updatePhoto(i, url)}
-                    />
-                  </div>
-                )}
-              </div>
-            ))}
+      <div className="mx-auto grid max-w-6xl gap-(--gap) @min-[860px]:grid-cols-[minmax(17rem,0.85fr)_minmax(0,1.4fr)] @min-[860px]:items-start">
+        {error && (
+          <div className="@min-[860px]:col-span-2">
+            <FormError>{error}</FormError>
           </div>
         )}
 
-        <div className="flex gap-2 flex-wrap items-center">
-          {/* Carica e aggiungi direttamente */}
-          <ImageUploadButton
-            label="Aggiungi foto"
-            onUrl={addPhotoWithUrl}
-          />
-          {/* Aggiungi riga vuota (per incollare URL manualmente) */}
-          <Button type="button" variant="ghost" size="sm" onClick={addPhoto}>
-            + Inserisci URL
-          </Button>
-        </div>
-
-        {/* Righe per URL manuali (foto senza immagine caricata) */}
-        {photos.some((p) => !p.url) && (
-          <div className="space-y-2 mt-1">
-            {photos.map((p, i) =>
-              !p.url ? (
-                <div key={i} className="flex gap-2 items-center">
-                  <span className="text-[0.75em] text-sky-600 w-5 shrink-0">{i + 1}.</span>
-                  <input
-                    type="text"
-                    value={p.url}
-                    onChange={(e) => updatePhoto(i, e.target.value)}
-                    placeholder="https://res.cloudinary.com/..."
-                    className={inlineInput + " flex-1"}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removePhoto(i)}
-                    title="Rimuovi riga foto"
-                    className={rowIconBtnDanger}
-                  >
-                    <X size={13} />
-                  </button>
-                </div>
-              ) : null
-            )}
-          </div>
-        )}
-      </Section>
-
-      {/* 3-4. Categorie + Tag affiancate su desktop (meno spazio verticale).
-          Wrapper z-20/z-[15]: ogni Section ha backdrop-blur (nuovo stacking
-          context), quindi i dropdown vanno sollevati sopra le sezioni successive.
-          Restano sotto la top bar sticky (z-30). */}
-      <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 sm:items-stretch">
-      <div className="relative z-20 h-full">
-      <Section
-        title="Categorie"
-        icon={<TagIcon size={18} />}
-        tone="orange"
-        delay={120}
-        hint="Cerca tra quelle esistenti o creane una nuova al volo."
-        className="h-full"
-      >
-        <CategoryCombobox
-          categories={categoryList}
-          selectedIds={categoryIds}
-          onToggle={toggleCat}
-          onCreated={handleNewCategory}
-          className={inlineInput + " w-full"}
-        />
-      </Section>
-      </div>
-
-      <div className="relative z-[15] h-full">
-      <Section
-        title="Tag"
-        icon={<Hash size={18} />}
-        tone="amber"
-        delay={180}
-        hint="Cerca tra quelli esistenti o creane uno nuovo al volo."
-        className="h-full"
-      >
-        <TagCombobox
-          tags={tagList}
-          selectedIds={tagIds}
-          onToggle={toggleTag}
-          onCreated={handleNewTag}
-          className={inlineInput + " w-full"}
-        />
-      </Section>
-      </div>
-      </div>
-
-      {/* 5. Ingredienti — z-10 wrapper lifts this stacking context above the Procedura section */}
-      <div className="relative z-10">
-      <Section title="Ingredienti" icon={<Carrot size={18} />} tone="emerald" delay={240}>
-        {/* Sezioni/preparazioni: opzionali, da attivare solo quando servono
-            (es. una ricetta con impasto + crema). Da spente non si vede nulla. */}
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-          <button
-            type="button"
-            role="switch"
-            aria-checked={useSections}
-            onClick={() => setUseSections((v) => !v)}
-            className={clsx(
-              ROW_H,
-              "inline-flex items-center gap-2 rounded-full border px-3 text-[0.75em] font-medium transition-colors",
-              useSections
-                ? "border-emerald-300 bg-emerald-100/80 text-emerald-800"
-                : "border-white/40 bg-white/40 text-sky-700 hover:bg-white/60"
-            )}
-          >
-            <Layers size={13} className="shrink-0" />
-            Sezioni
-            <span
-              className={clsx(
-                "relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition-colors",
-                useSections ? "bg-emerald-500" : "bg-sky-900/20"
-              )}
-            >
-              <span
-                className={clsx(
-                  "inline-block h-3 w-3 rounded-full bg-white shadow transition-transform",
-                  useSections ? "translate-x-3.5" : "translate-x-0.5"
+        {/* ── Colonna A: Informazioni · Foto · Note ── */}
+        <div className="flex min-w-0 flex-col gap-(--gap)">
+          <FormCard title="Informazioni" icon={<Info />}>
+            <div className="grid grid-cols-2 gap-2.5">
+              <Field label="Nome ricetta" className="col-span-2">
+                {(p) => (
+                  <TextInput {...p} value={name} onChange={(e) => setName(e.target.value)} placeholder="Es. Risotto allo zafferano" />
                 )}
-              />
-            </span>
-          </button>
-          <p className="text-[0.75em] text-sky-600">
-            {useSections
-              ? "Assegna a ogni riga la sua preparazione (es. «Per l'impasto»): il dettaglio ricetta le mostra raggruppate."
-              : "Attivale se la ricetta ha più preparazioni (es. impasto e crema)."}
-          </p>
-        </div>
-
-        <div className="space-y-2">
-          {/* Header colonne — solo desktop */}
-          <div
-            className="hidden sm:grid items-center gap-2 px-1 text-[0.75em] font-medium text-sky-600"
-            style={{ gridTemplateColumns: "1.75rem 4rem 5rem 1fr 1.75rem" }}
-          >
-            <span />
-            <span>Qtà</span>
-            <span>Unità</span>
-            <span>Ingrediente / Descrizione</span>
-            <span />
-          </div>
-
-          <ReorderList values={ingredients} onReorder={setIngredients} className="space-y-2">
-          {ingredients.map((ing, i) => (
-            // handleSize: la maniglia deve essere alta quanto i campi della riga (ROW_H)
-            <ReorderRow key={ing.uid} value={ing} handleSize={`${ROW_H} w-7`}>
-            {(handle) => (
-            <div>
-              {/* ── Card mobile (compatta: nome + qtà/unità su due righe;
-                     descrizione, opzionale e sezione solo se servono).
-                     Maniglia, campi, bottoni e chip condividono ROW_H: la riga
-                     deve leggersi come un blocco solo, non come pezzi diversi ── */}
-              <div className="sm:hidden rounded-xl border border-white/50 bg-white/45 p-1.5 space-y-1">
-                <div className="flex items-center gap-1.5">
-                  {handle}
-                  <IngredientCombobox
-                    value={ing.name}
-                    onChange={(v) => updateIngredient(i, "name", v)}
-                    allIngredients={allIngredients}
-                    onNewIngredient={handleNewIngredient}
-                    placeholder="Ingrediente"
-                    className={`${inlineInput} ${ROW_H} min-w-0 flex-1 py-0`}
-                  />
-                  {/* Descrizione: rara, si apre su richiesta (icona qui per non
-                      rubare una riga intera ai chip qtà/unità/sezione sotto) */}
-                  {!showDescription(ing) && (
-                    <button type="button" onClick={() => openDescription(ing.uid)}
-                      title="Aggiungi una descrizione all'ingrediente"
-                      className={rowIconBtnNeutral}><StickyNote size={14} /></button>
-                  )}
-                  <button type="button" onClick={() => removeIngredient(i)}
-                    title="Rimuovi ingrediente"
-                    className={rowIconBtnDanger}><X size={14} /></button>
-                </div>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <input type="number" min={0} step="any" value={ing.qty}
-                    onChange={(e) => updateIngredient(i, "qty", e.target.value)} placeholder="Qtà"
-                    className={`${inlineInput} ${ROW_H} w-14 shrink-0 px-1.5 py-0 text-center`} />
-                  <input type="text" value={ing.unit}
-                    onChange={(e) => updateIngredient(i, "unit", e.target.value)} placeholder="g/ml"
-                    className={`${inlineInput} ${ROW_H} w-16 shrink-0 px-1.5 py-0 text-center`} />
-                  <OptionalChip compact active={ing.optional} onToggle={() => toggleIngredientOptional(i)} />
-                  {allocations.get(ing.uid)?.over && (
-                    <OverAllocationChip
-                      assigned={allocations.get(ing.uid)!.assigned}
-                      total={ing.qty.trim()}
-                      unit={ing.unit}
-                    />
-                  )}
-                  {useSections && (
-                    <SectionField
-                      compact
-                      value={ing.section}
-                      onChange={(v) => updateIngredient(i, "section", v)}
-                      listId={SECTIONS_LIST_ID}
-                    />
-                  )}
-                </div>
-                {showDescription(ing) && (
-                  <input type="text" value={ing.description} autoFocus={descriptionOpen.has(ing.uid) && !ing.description}
-                    onChange={(e) => updateIngredient(i, "description", e.target.value)}
-                    placeholder="Descrizione (es. fredda, bollente…)"
-                    className={`${inlineInput} ${ROW_H} w-full py-0`}
+              </Field>
+              <Field label="Porzioni">
+                {(p) => (
+                  <TextInput {...p} type="number" min={1} inputMode="numeric" value={servings} onChange={(e) => setServings(e.target.value)} placeholder="4" />
+                )}
+              </Field>
+              <Field label="Unità">
+                {(p) => (
+                  <TextInput
+                    {...p}
+                    value={servingsUnit}
+                    onChange={(e) => setServingsUnit(e.target.value)}
+                    placeholder="persone"
+                    title="Es. teglie da 28cm, pirofile… Vuoto = persone"
                   />
                 )}
+              </Field>
+
+              {/* 11.9 · tempi: in automatico seguono i minuti dei passi, a mano si scrivono */}
+              {(["prep", "cook"] as const).map((k) => {
+                const label = k === "prep" ? "Prep." : "Cottura";
+                const value = k === "prep" ? prepValue : cookValue;
+                return (
+                  <Field key={k} label={`${label} · ${timesManual ? "a mano" : "auto"}`}>
+                    {(p) =>
+                      timesManual ? (
+                        <TextInput
+                          {...p}
+                          type="number"
+                          min={0}
+                          inputMode="numeric"
+                          value={value}
+                          onChange={(e) => (k === "prep" ? setPrep(e.target.value) : setCook(e.target.value))}
+                          placeholder="min"
+                        />
+                      ) : (
+                        <ReadonlyValue>{value ? `${value} min` : "—"}</ReadonlyValue>
+                      )
+                    }
+                  </Field>
+                );
+              })}
+              <div className="col-span-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.8125rem] text-grigio">
+                <span className="min-w-0 flex-1">
+                  {derived.hasAny ? (
+                    <>
+                      Dai passi: prep. {derived.prep} · cottura {derived.cook}
+                      {derived.wait > 0 && ` · attesa ${derived.wait}`} min
+                    </>
+                  ) : timesManual ? (
+                    "Tempi scritti a mano"
+                  ) : (
+                    "Si calcolano dai minuti dei passi"
+                  )}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={toggleTimesManual}
+                  icon={timesManual ? <RotateCcw /> : <LockOpen />}
+                  title={timesManual ? "Torna a calcolare Prep. e Cottura dai passi" : "Sblocca i campi per scrivere Prep. e Cottura a mano"}
+                >
+                  {timesManual ? "Torna automatico" : "Scrivi a mano"}
+                </Button>
               </div>
 
-              {/* ── Grid desktop ── */}
-              <div
-                className="hidden sm:grid items-start gap-2"
-                style={{ gridTemplateColumns: "1.75rem 4rem 5rem 1fr 1.75rem" }}
-              >
-                <div className="flex items-start justify-center">{handle}</div>
-                <input type="number" min={0} step="any" value={ing.qty}
-                  onChange={(e) => updateIngredient(i, "qty", e.target.value)} placeholder="Qtà"
-                  className={`${inlineInput} ${ROW_H} w-full py-0`} />
-                <input type="text" value={ing.unit}
-                  onChange={(e) => updateIngredient(i, "unit", e.target.value)} placeholder="g/ml…"
-                  className={`${inlineInput} ${ROW_H} w-full py-0`} />
-                <div className="flex flex-col gap-1">
-                  <IngredientCombobox
-                    value={ing.name}
-                    onChange={(v) => updateIngredient(i, "name", v)}
-                    allIngredients={allIngredients}
-                    onNewIngredient={handleNewIngredient}
-                    placeholder="Ingrediente"
-                    className={`${inlineInput} ${ROW_H} w-full py-0`}
-                  />
-                  <input type="text" value={ing.description}
-                    onChange={(e) => updateIngredient(i, "description", e.target.value)}
-                    placeholder="descrizione (es. fredda, bollente…)"
-                    className={`${inlineInput} ${ROW_H} w-full py-0 opacity-80`}
-                  />
-                  <div className="flex flex-wrap items-center gap-2">
-                  <OptionalChip active={ing.optional} onToggle={() => toggleIngredientOptional(i)} />
-                  {allocations.get(ing.uid)?.over && (
-                    <OverAllocationChip
-                      assigned={allocations.get(ing.uid)!.assigned}
-                      total={ing.qty.trim()}
-                      unit={ing.unit}
-                    />
-                  )}
-                  {useSections && (
-                    <SectionField
-                      value={ing.section}
-                      onChange={(v) => updateIngredient(i, "section", v)}
-                      listId={SECTIONS_LIST_ID}
-                    />
-                  )}
+              {/* 11.7 · categorie e tag nella stessa fila */}
+              <div className="col-span-2 flex flex-col gap-1.5">
+                <p id={tagFieldId} className="text-[0.8125rem] font-semibold text-grigio">
+                  Categoria e tag
+                </p>
+                <div role="group" aria-labelledby={tagFieldId} className="flex flex-wrap items-center gap-1.5">
+                  <CategoryCombobox categories={categoryList} selectedIds={categoryIds} onToggle={toggleCat} onCreated={handleNewCategory} />
+                  <TagCombobox tags={tagList} selectedIds={tagIds} onToggle={toggleTag} onCreated={handleNewTag} />
                 </div>
-                </div>
-                <button type="button" onClick={() => removeIngredient(i)}
-                  title="Rimuovi ingrediente"
-                  className={rowIconBtnDanger}><X size={14} /></button>
               </div>
             </div>
+          </FormCard>
+
+          <FormCard title="Foto" icon={<ImageIcon />}>
+            <div className="flex flex-wrap gap-2">
+              {photos.map((p, i) =>
+                p.url ? (
+                  <div key={i} className={clsx(photoTileCls, "bg-blu-100", p.isMain && "ring-[3px] ring-blu-800 ring-offset-2")}>
+                    {/* tocco sulla foto = diventa la principale (quella delle card e della lista) */}
+                    <button
+                      type="button"
+                      onClick={() => setPhotoAsMain(i)}
+                      aria-label={p.isMain ? "Foto principale" : `Usa la foto ${i + 1} come principale`}
+                      title={p.isMain ? "Foto principale" : "Usa come principale"}
+                      className="absolute inset-0"
+                    >
+                      <Image src={p.url} alt="" fill className="object-cover" sizes="80px" />
+                    </button>
+                    {p.isMain && (
+                      <span className="pointer-events-none absolute bottom-1 left-1 inline-flex size-5 items-center justify-center rounded-full bg-blu-800 text-white">
+                        <Star className="size-3 fill-current" aria-hidden />
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => removePhoto(i)}
+                      aria-label={`Elimina la foto ${i + 1}`}
+                      title="Elimina foto"
+                      className="absolute top-1 right-1 inline-flex size-6 items-center justify-center rounded-full bg-white text-rosa shadow-[0_1px_3px_oklch(25%_0.038_228/.25)] hover:bg-rosa-50"
+                    >
+                      <X className="size-3.5" aria-hidden />
+                    </button>
+                  </div>
+                ) : null
+              )}
+              <PhotoAddTile onUrl={addPhotoWithUrl} />
+            </div>
+            {photos.some((p) => p.url) && (
+              <p className="mt-2 text-[0.8125rem] text-grigio">Tocca una foto per farla diventare la principale (quella delle card).</p>
             )}
-            </ReorderRow>
-          ))}
-          </ReorderList>
+
+            {/* Foto da indirizzo, per chi la incolla a mano */}
+            {photos.some((p) => !p.url) && (
+              <div className="mt-2 flex flex-col gap-1.5">
+                {photos.map((p, i) =>
+                  !p.url ? (
+                    <div key={i} className="flex items-center gap-1.5">
+                      <input
+                        type="url"
+                        value={p.url}
+                        onChange={(e) => updatePhoto(i, e.target.value)}
+                        placeholder="https://res.cloudinary.com/…"
+                        aria-label="Indirizzo della foto"
+                        className={clsx(rowInputCls, "flex-1")}
+                      />
+                      <IconButton size="row" tone="danger" label="Togli la riga" onClick={() => removePhoto(i)}>
+                        <X />
+                      </IconButton>
+                    </div>
+                  ) : null
+                )}
+              </div>
+            )}
+            <Button variant="ghost" size="sm" onClick={addPhoto} icon={<Link2 />} className="mt-1.5 -ml-1.5">
+              Da indirizzo
+            </Button>
+          </FormCard>
+
+          <FormCard title="Note e fonte" icon={<StickyNote />}>
+            <div className="flex flex-col gap-2.5">
+              <Field label="Note">
+                {(p) => (
+                  <TextArea {...p} value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} placeholder="Consigli, varianti, sostituzioni…" />
+                )}
+              </Field>
+              <div className="grid grid-cols-2 gap-2.5">
+                <Field label="Link fonte" className="col-span-2 @min-[480px]:col-span-1">
+                  {(p) => <TextInput {...p} type="url" value={links} onChange={(e) => setLinks(e.target.value)} placeholder="https://…" />}
+                </Field>
+                <Field label="Data della ricetta" className="col-span-2 @min-[480px]:col-span-1">
+                  {(p) => <TextInput {...p} type="date" value={createdAt} onChange={(e) => setCreatedAt(e.target.value)} />}
+                </Field>
+              </div>
+            </div>
+          </FormCard>
         </div>
-        {/* Tendina condivisa delle sezioni già usate nella ricetta */}
-        {useSections && (
-          <datalist id={SECTIONS_LIST_ID}>
-            {sectionOptions.map((o) => (
-              <option key={o} value={o} />
-            ))}
-          </datalist>
-        )}
-        <Button type="button" variant="ghost" size="sm" onClick={addIngredient}>
-          + Aggiungi ingrediente
-        </Button>
-      </Section>
-      </div>
 
-      {/* 6. Procedura */}
-      <Section title="Procedura" icon={<ListOrdered size={18} />} tone="sky" delay={300}>
-        <ReorderList values={steps} onReorder={setSteps} className="space-y-3 sm:space-y-4">
-          {steps.map((step, i) => (
-            <ReorderRow key={step.uid} value={step} handleSize={`${ROW_H} w-7`} className="flex gap-2 sm:gap-3 items-start">
-            {(handle) => (
-            <>
-              <span className={`flex ${ROW_H} w-7 shrink-0 items-center justify-center rounded-full bg-orange-500 text-[0.75em] font-bold text-white`}>
-                {i + 1}
-              </span>
-              <div className="flex-1 min-w-0 space-y-1.5">
-                <Textarea value={step.text} onChange={(e) => updateStep(i, "text", e.target.value)}
-                  placeholder={`Descrivi il passo ${i + 1}...`} rows={2} />
-                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                  <select
-                    value={step.kind}
-                    onChange={(e) => updateStep(i, "kind", e.target.value as StepKind)}
-                    title="Tipo di tempo di questo passo"
-                    className={`${inlineInput} ${ROW_H} shrink-0 py-0`}
-                  >
-                    {STEP_KINDS.map((k) => (
-                      <option key={k} value={k}>{STEP_KIND_LABEL[k]}</option>
-                    ))}
-                  </select>
-                  <input type="number" min={0} value={step.mins}
-                    onChange={(e) => updateStep(i, "mins", e.target.value)} placeholder="—"
-                    className={`${inlineInput} ${ROW_H} w-16 shrink-0 py-0 sm:w-20`} />
-                  <span className="text-[0.6875em] text-sky-600 sm:text-[0.75em]">min (opz.)</span>
-                </div>
-                {/* Ingredienti che servono in questo passo (con la quantità usata
-                    qui): opzionali, mostrati in modalità cucina e sotto il passo
-                    nel dettaglio ricetta */}
-                <StepIngredients
-                  all={namedIngredients}
-                  selected={step.ingredients}
-                  allocations={allocations}
-                  onToggle={(u) => toggleStepIngredient(i, u)}
-                  onQtyChange={(u, qty) => setStepIngredientQty(i, u, qty)}
-                />
-              </div>
-              <div className="flex flex-col items-center gap-1 shrink-0">
-                {handle}
-                <button type="button" onClick={() => removeStep(i)}
-                  title="Rimuovi passo"
-                  className={rowIconBtnDanger}><X size={14} /></button>
-              </div>
-            </>
+        {/* ── Colonna B: Ingredienti · Procedura ── */}
+        <div className="flex min-w-0 flex-col gap-(--gap)">
+          <FormCard
+            title="Ingredienti"
+            icon={<GroceryBagIcon />}
+            aside={<Switch checked={useSections} onChange={setUseSections} label="Sezioni" />}
+          >
+            {useSections && (
+              <p className="mb-1 text-[0.8125rem] text-grigio">
+                Scrivi la preparazione di ogni riga (es. «Per l&apos;impasto»): il dettaglio le mostra raggruppate.
+              </p>
             )}
-            </ReorderRow>
-          ))}
-        </ReorderList>
-        <Button type="button" variant="ghost" size="sm" onClick={addStep}>
-          + Aggiungi passo
-        </Button>
-      </Section>
+            <ReorderList values={ingredients} onReorder={setIngredients}>
+              {ingredients.map((ing, i) => {
+                const alloc = allocations.get(ing.uid);
+                const extras =
+                  activeRow === ing.uid || useSections || ing.optional || showDescription(ing) || !!alloc?.over;
+                return (
+                  <ReorderRow key={ing.uid} value={ing} handleSize="h-[1.875rem] w-6" className="border-b border-blu-150 bg-white py-[0.375em] last:border-0">
+                    {(handle) => (
+                      <div onFocusCapture={() => setActiveRow(ing.uid)}>
+                        <div className="flex items-center gap-1.5">
+                          {handle}
+                          <input
+                            type="number"
+                            min={0}
+                            step="any"
+                            inputMode="decimal"
+                            value={ing.qty}
+                            onChange={(e) => updateIngredient(i, "qty", e.target.value)}
+                            placeholder="Qtà"
+                            aria-label="Quantità"
+                            className={clsx(rowInputCls, "w-[3.75rem] shrink-0 text-center")}
+                          />
+                          <input
+                            type="text"
+                            value={ing.unit}
+                            onChange={(e) => updateIngredient(i, "unit", e.target.value)}
+                            placeholder="g"
+                            aria-label="Unità"
+                            className={clsx(rowInputCls, "w-[3.25rem] shrink-0 text-center")}
+                          />
+                          <IngredientCombobox
+                            value={ing.name}
+                            onChange={(v) => updateIngredient(i, "name", v)}
+                            allIngredients={allIngredients}
+                            onNewIngredient={handleNewIngredient}
+                            placeholder="Ingrediente"
+                            className={rowInputCls}
+                          />
+                          <IconButton size="row" tone="danger" label="Rimuovi ingrediente" onClick={() => removeIngredient(i)}>
+                            <X />
+                          </IconButton>
+                        </div>
+                        {extras && (
+                          <div className="mt-1.5 flex flex-wrap items-center gap-1.5 pl-[calc(1.5rem+0.375rem)]">
+                            {alloc?.over && (
+                              <MiniChip tone="over" title="I passi usano più del totale indicato">
+                                {formatQty(alloc.assigned)} / {ing.qty.trim()}
+                                {ing.unit.trim() && ` ${ing.unit.trim()}`}
+                              </MiniChip>
+                            )}
+                            {useSections && (
+                              <input
+                                type="text"
+                                list={SECTIONS_LIST_ID}
+                                value={ing.section}
+                                onChange={(e) => updateIngredient(i, "section", e.target.value)}
+                                placeholder="sezione"
+                                aria-label="Sezione"
+                                title="Preparazione di questo ingrediente (es. Per l'impasto)"
+                                className={clsx(rowInputCls, "h-[1.625rem] w-[9.5rem] rounded-full")}
+                              />
+                            )}
+                            <MiniChip
+                              active={ing.optional}
+                              onClick={() => toggleIngredientOptional(i)}
+                              title="Ingrediente opzionale"
+                            >
+                              opz.
+                            </MiniChip>
+                            {showDescription(ing) ? (
+                              <input
+                                type="text"
+                                value={ing.description}
+                                autoFocus={descriptionOpen.has(ing.uid) && !ing.description}
+                                onChange={(e) => updateIngredient(i, "description", e.target.value)}
+                                placeholder="descrizione (es. fredda, a dadini…)"
+                                aria-label="Descrizione"
+                                className={clsx(rowInputCls, "h-[1.625rem] min-w-[10rem] flex-1")}
+                              />
+                            ) : (
+                              <MiniChip onClick={() => openDescription(ing.uid)} icon={<Plus />}>
+                                descrizione
+                              </MiniChip>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </ReorderRow>
+                );
+              })}
+            </ReorderList>
+            {/* Tendina condivisa delle sezioni già usate nella ricetta */}
+            {useSections && (
+              <datalist id={SECTIONS_LIST_ID}>
+                {sectionOptions.map((o) => (
+                  <option key={o} value={o} />
+                ))}
+              </datalist>
+            )}
+            <Button variant="tonal" size="sm" onClick={addIngredient} icon={<Plus />} className="mt-2">
+              Ingrediente
+            </Button>
+          </FormCard>
 
-      {/* Bottom save — "md" e non più "lg": è il tasto più grande del form, ma
-          accanto a campi da 28px un lg sembrava di un'altra pagina */}
-      <div className="flex justify-end gap-2 pb-10">
-        <Button type="button" variant="secondary" size="md" onClick={() => router.back()}>
-          Annulla
-        </Button>
-        <Button type="submit" size="md" loading={saving}>
-          {isEdit ? <span className="inline-flex items-center gap-1.5"><Save size={14} /> Salva modifiche</span> : <span className="inline-flex items-center gap-1.5"><CircleCheck size={14} /> Crea ricetta</span>}
-        </Button>
+          <FormCard
+            title="Procedura"
+            icon={<ListOrdered />}
+            aside={
+              stepsCount > 0 ? (
+                <span className="tabular">
+                  {stepsCount} {stepsCount === 1 ? "passo" : "passi"}
+                  {stepsMinutes > 0 && ` · ${formatMinutes(stepsMinutes)}`}
+                </span>
+              ) : undefined
+            }
+          >
+            <ReorderList values={steps} onReorder={setSteps}>
+              {steps.map((step, i) => (
+                <ReorderRow
+                  key={step.uid}
+                  value={step}
+                  handleSize="h-[1.875rem] w-6"
+                  className="flex items-start gap-1.5 border-b border-blu-150 bg-white py-[0.5em] last:border-0"
+                >
+                  {(handle) => (
+                    <>
+                      {handle}
+                      <span className="flex h-[1.875rem] items-center">
+                        <StepNumber n={i + 1} state="todo" />
+                      </span>
+                      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <StepKindPicker value={step.kind} onChange={(k) => updateStep(i, "kind", k)} />
+                          <input
+                            type="number"
+                            min={0}
+                            inputMode="numeric"
+                            value={step.mins}
+                            onChange={(e) => updateStep(i, "mins", e.target.value)}
+                            placeholder="—"
+                            aria-label={`Minuti del passo ${i + 1}`}
+                            className={clsx(rowInputCls, "w-[3.75rem] text-center")}
+                          />
+                          <span className="text-[0.8125rem] text-grigio">min</span>
+                          <IconButton size="row" tone="danger" label={`Rimuovi il passo ${i + 1}`} onClick={() => removeStep(i)} className="ml-auto">
+                            <X />
+                          </IconButton>
+                        </div>
+                        <TextArea
+                          value={step.text}
+                          onChange={(e) => updateStep(i, "text", e.target.value)}
+                          placeholder={`Descrivi il passo ${i + 1}…`}
+                          aria-label={`Testo del passo ${i + 1}`}
+                          rows={2}
+                        />
+                        {/* Ingredienti che servono in questo passo (con la quantità usata qui):
+                            opzionali, mostrati in modalità cucina e sotto il passo nel dettaglio */}
+                        <StepIngredients
+                          all={namedIngredients}
+                          selected={step.ingredients}
+                          allocations={allocations}
+                          onToggle={(u) => toggleStepIngredient(i, u)}
+                          onQtyChange={(u, qty) => setStepIngredientQty(i, u, qty)}
+                        />
+                      </div>
+                    </>
+                  )}
+                </ReorderRow>
+              ))}
+            </ReorderList>
+            <Button variant="tonal" size="sm" onClick={addStep} icon={<Plus />} className="mt-2">
+              Passo
+            </Button>
+          </FormCard>
+        </div>
       </div>
 
       {/* Conferma sforamento quantità: avviso, non blocco (vedi handleSubmit) */}
-      <Modal
-        open={confirmOver}
-        onClose={() => setConfirmOver(false)}
-        title="Quantità oltre il totale"
-        size="sm"
-      >
-        <p className="text-sm text-sky-800">
-          {overAllocated.length === 1
-            ? "In un ingrediente la somma"
-            : `In ${overAllocated.length} ingredienti la somma`}{" "}
-          delle quantità assegnate ai passi supera il totale della ricetta:
+      <Modal open={confirmOver} onClose={() => setConfirmOver(false)} title="Quantità oltre il totale" size="sm">
+        <p className="text-[0.9375rem]">
+          {overAllocated.length === 1 ? "In un ingrediente la somma" : `In ${overAllocated.length} ingredienti la somma`} delle
+          quantità assegnate ai passi supera il totale della ricetta:
         </p>
-        {/* La lista scrolla da sé (non tutta la modale): con molti ingredienti
-            sforati i due bottoni qui sotto finivano oltre il bordo dello schermo
-            e bisognava scorrere la modale per trovarli. 35dvh regge anche il
-            telefono in orizzontale, dove l'altezza utile è ~340px */}
-        <ul className="mt-3 max-h-[35dvh] space-y-1.5 overflow-y-auto pr-0.5">
+        {/* La lista scorre da sé (non tutta la finestra): con molti ingredienti i due
+            bottoni finivano oltre il bordo. 35dvh regge anche il telefono in orizzontale */}
+        <ul className="mt-3 flex max-h-[35dvh] flex-col gap-1.5 overflow-y-auto">
           {overAllocated.map((ing) => {
             const a = allocations.get(ing.uid);
             const unit = ing.unit.trim();
             return (
               <li
                 key={ing.uid}
-                className="flex flex-wrap items-baseline gap-x-1.5 rounded-lg border border-rose-200 bg-rose-50/80 px-2.5 py-1.5 text-sm"
+                className="flex flex-wrap items-baseline gap-x-1.5 rounded-[0.625rem] border border-rosa-200 bg-rosa-50 px-2.5 py-1.5 text-[0.875rem]"
               >
-                <span className="min-w-0 break-words font-semibold text-rose-900">{ing.name.trim()}</span>
-                <span className="text-rose-700">
+                <span className="min-w-0 font-bold break-words">{ing.name.trim()}</span>
+                <span className="tabular text-rosa">
                   assegnati {formatQty(a?.assigned ?? 0)}
                   {unit && ` ${unit}`} su {ing.qty.trim()}
                   {unit && ` ${unit}`}
@@ -1474,10 +1139,8 @@ export function RecipeForm({ recipeId, categories, tags, initialData }: Props) {
             );
           })}
         </ul>
-        {/* Su mobile in colonna (le due etichette affiancate non stanno in 288px,
-            la larghezza della modale "sm" su un telefono da 320px): `col-reverse`
-            tiene l'azione principale in alto, come da abitudine su iOS */}
-        <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
+        {/* Su telefono in colonna, con l'azione principale in alto come su iOS */}
+        <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <Button variant="secondary" onClick={() => setConfirmOver(false)} disabled={saving}>
             Torna a correggere
           </Button>

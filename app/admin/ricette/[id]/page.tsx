@@ -84,9 +84,7 @@ export default async function ModificaRicettaPage({ params }: { params: Promise<
   };
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <RecipeForm recipeId={recipeId} categories={categories} tags={tags} initialData={initialData} />
-    </div>
+    <RecipeForm recipeId={recipeId} categories={categories} tags={tags} initialData={initialData} />
   );
 }
 

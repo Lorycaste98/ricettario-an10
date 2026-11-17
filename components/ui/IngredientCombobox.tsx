@@ -1,8 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { clsx } from "clsx";
 import { Plus } from "lucide-react";
+import { dropdownCls, dropdownItemCls, dropdownNewCls } from "@/components/admin/FormParts";
 
+// Elemento 11.6 · cerca e crea (ingrediente): suggerimenti dal catalogo IngredientMaster
 interface Props {
   value: string;
   onChange: (v: string) => void;
@@ -65,7 +68,7 @@ export function IngredientCombobox({
   const hasItems = filtered.length > 0 || !!showAdd;
 
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} className="relative min-w-0 flex-1">
       <input
         type="text"
         value={value}
@@ -74,12 +77,13 @@ export function IngredientCombobox({
           setOpen(true);
         }}
         onFocus={() => setOpen(true)}
+        onKeyDown={(e) => e.key === "Escape" && setOpen(false)}
         placeholder={placeholder}
-        className={className}
+        className={clsx("w-full", className)}
         autoComplete="off"
       />
       {open && hasItems && (
-        <div className="absolute left-0 right-0 top-full z-50 mt-0.5 max-h-48 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg">
+        <div className={dropdownCls}>
           {filtered.slice(0, 25).map((name) => (
             <button
               key={name}
@@ -88,7 +92,7 @@ export function IngredientCombobox({
                 e.preventDefault();
                 selectItem(name);
               }}
-              className="w-full px-3 py-2 text-left text-[0.875em] text-gray-700 hover:bg-sky-50 transition-colors"
+              className={dropdownItemCls}
             >
               {name}
             </button>
@@ -101,10 +105,10 @@ export function IngredientCombobox({
                 void handleAdd();
               }}
               disabled={adding}
-              className="w-full flex items-center gap-2 border-t border-gray-100 px-3 py-2 text-left text-[0.875em] font-medium text-orange-600 hover:bg-orange-50 transition-colors disabled:opacity-50"
+              className={clsx(dropdownItemCls, dropdownNewCls)}
             >
-              <Plus size={13} />
-              {adding ? "Aggiunta…" : `Aggiungi "${value.trim()}"`}
+              <Plus aria-hidden />
+              {adding ? "Aggiunta…" : `Crea «${value.trim()}»`}
             </button>
           )}
         </div>

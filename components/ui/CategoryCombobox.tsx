@@ -1,54 +1,30 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { Plus, Check, X } from "lucide-react";
-import { clsx } from "clsx";
-import { ColorPicker, nextPaletteColor } from "@/components/ui/ColorPicker";
+import { useState } from "react";
+import { ChipSearch } from "@/components/ui/ChipSearch";
+import { ColorSwatches, nextPaletteColor } from "@/components/ui/ColorPicker";
 import type { Category } from "@/lib/types";
 
-interface Props {
-  categories: Category[];
-  selectedIds: number[];
-  onToggle: (id: number) => void;
-  /** Chiamato dopo la creazione: aggiunge la categoria alla lista e la seleziona. */
-  onCreated: (category: Category) => void;
-  className?: string;
-}
-
+/**
+ * Elementi 11.6 + 11.7 · categorie della ricetta: chip scelti col pallino del colore + «+ Categoria»
+ * che cerca o crea al volo (POST /api/categories) con la scelta del colore (12.5).
+ * Rende un frammento: va dentro una fila `flex flex-wrap` (insieme ai tag).
+ */
 export function CategoryCombobox({
   categories,
   selectedIds,
   onToggle,
   onCreated,
-  className = "",
-}: Props) {
-  const [query, setQuery] = useState("");
-  const [open, setOpen] = useState(false);
+}: {
+  categories: Category[];
+  selectedIds: number[];
+  onToggle: (id: number) => void;
+  /** Chiamato dopo la creazione: aggiunge la categoria alla lista e la seleziona. */
+  onCreated: (category: Category) => void;
+}) {
   const [color, setColor] = useState(() => nextPaletteColor(categories.map((c) => c.color)));
-  const [creating, setCreating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
 
-  const q = query.trim().toLowerCase();
-  const filtered = q ? categories.filter((c) => c.name.toLowerCase().includes(q)) : categories;
-  const exactMatch = categories.some((c) => c.name.toLowerCase() === q);
-  const showCreate = !!q && !exactMatch;
-
-  const selected = categories.filter((c) => selectedIds.includes(c.id));
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (!containerRef.current?.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
-  const handleCreate = async () => {
-    const name = query.trim();
-    if (!name || creating) return;
-    setCreating(true);
-    setError(null);
+  const create = async (name: string) => {
     try {
       const res = await fetch("/api/categories", {
         method: "POST",
@@ -56,98 +32,24 @@ export function CategoryCombobox({
         body: JSON.stringify({ name, color }),
       });
       const json = await res.json();
-      if (!res.ok) {
-        setError(json.error ?? "Errore nella creazione");
-        return;
-      }
+      if (!res.ok) return (json.error as string) ?? "Errore nella creazione";
       onCreated({ id: json.id, name: json.name, color: json.color });
-      setQuery("");
       setColor(nextPaletteColor([...categories.map((c) => c.color), json.color]));
-      setOpen(false);
+      return null;
     } catch {
-      setError("Errore di rete");
-    } finally {
-      setCreating(false);
+      return "Errore di rete";
     }
   };
 
   return (
-    <div className="space-y-3">
-      {/* Chip selezionate */}
-      {selected.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {selected.map((c) => (
-            <button
-              key={c.id}
-              type="button"
-              onClick={() => onToggle(c.id)}
-              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[0.75em] font-medium text-white shadow-sm transition-transform hover:scale-105"
-              style={{ backgroundColor: c.color }}
-              title="Rimuovi"
-            >
-              {c.name}
-              <X size={12} className="opacity-80" />
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Ricerca / creazione */}
-      <div ref={containerRef} className="relative">
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => { setQuery(e.target.value); setOpen(true); setError(null); }}
-          onFocus={() => setOpen(true)}
-          placeholder="Cerca o crea una categoria…"
-          className={className}
-          autoComplete="off"
-        />
-
-        {open && (filtered.length > 0 || showCreate) && (
-          <div className="absolute left-0 right-0 top-full z-50 mt-0.5 max-h-56 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg">
-            {filtered.slice(0, 25).map((c) => {
-              const isSel = selectedIds.includes(c.id);
-              return (
-                <button
-                  key={c.id}
-                  type="button"
-                  onMouseDown={(e) => { e.preventDefault(); onToggle(c.id); }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-[0.875em] text-gray-700 hover:bg-sky-50 transition-colors"
-                >
-                  <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: c.color }} />
-                  <span className="flex-1 truncate">{c.name}</span>
-                  {isSel && <Check size={14} className="shrink-0 text-emerald-500" />}
-                </button>
-              );
-            })}
-
-            {showCreate && (
-              <div className="flex items-center gap-2 border-t border-gray-100 px-3 py-2">
-                <ColorPicker value={color} onChange={setColor} compact />
-                <button
-                  type="button"
-                  onMouseDown={(e) => { e.preventDefault(); void handleCreate(); }}
-                  disabled={creating}
-                  className={clsx(
-                    "flex flex-1 items-center gap-2 text-left text-[0.875em] font-medium text-orange-600 hover:text-orange-700 transition-colors disabled:opacity-50"
-                  )}
-                >
-                  <Plus size={14} className="shrink-0" />
-                  {creating ? "Creazione…" : <>Crea <span className="font-semibold">«{query.trim()}»</span></>}
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {error && <p className="text-[0.75em] text-red-500">{error}</p>}
-      {selectedIds.length > 0 && (
-        <p className="text-[0.75em] text-sky-600">
-          {selectedIds.length} categori{selectedIds.length === 1 ? "a" : "e"} selezionat{selectedIds.length === 1 ? "a" : "e"}
-        </p>
-      )}
-    </div>
+    <ChipSearch
+      items={categories.map((c) => ({ id: c.id, name: c.name, dot: c.color }))}
+      selectedIds={selectedIds}
+      onToggle={onToggle}
+      addLabel="Categoria"
+      placeholder="Cerca o crea…"
+      onCreate={create}
+      createExtra={<ColorSwatches value={color} onChange={setColor} />}
+    />
   );
 }

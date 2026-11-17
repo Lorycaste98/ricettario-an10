@@ -1,7 +1,5 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-
 // ---------------------------------------------------------------------------
 // Palette colori predefinita (condivisa: vocabolario + form ricetta)
 // ---------------------------------------------------------------------------
@@ -52,53 +50,6 @@ export function ColorSwatches({ value, onChange }: { value: string; onChange: (v
         {!custom && "+"}
         <input type="color" value={value} onChange={(e) => onChange(e.target.value)} className="absolute inset-0 cursor-pointer opacity-0" aria-label="Colore personalizzato" />
       </label>
-    </div>
-  );
-}
-
-/** Bottone col pallino del colore che apre i pallini in un riquadro (combobox categoria del form) */
-export function ColorPicker({
-  value,
-  onChange,
-  compact = false,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  compact?: boolean;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
-  return (
-    <div className="relative" ref={ref}>
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className={`flex items-center justify-center rounded-[0.625rem] border border-blu-200 bg-white hover:bg-blu-100 ${compact ? "size-8" : "size-(--h-field)"}`}
-        title="Scegli colore"
-        aria-label="Scegli colore"
-      >
-        <span className="size-4 rounded-full" style={{ backgroundColor: value }} />
-      </button>
-      {open && (
-        <div className="absolute top-full left-0 z-50 mt-1 w-[15.5rem] rounded-ctl border border-blu-150 bg-white p-3 shadow-[0_10px_30px_oklch(25%_0.038_228/.18)]">
-          <ColorSwatches
-            value={value}
-            onChange={(c) => {
-              onChange(c);
-              if (PALETTE.includes(c)) setOpen(false);
-            }}
-          />
-        </div>
-      )}
     </div>
   );
 }

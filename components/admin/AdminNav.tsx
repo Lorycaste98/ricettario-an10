@@ -7,7 +7,7 @@ import type { ComponentType, ReactNode } from "react";
 import { ChevronLeft, LayoutDashboard, Plus, User } from "lucide-react";
 import { backLinkCls } from "@/components/ui/BackLink";
 import type { AdminOverview } from "@/lib/admin-overview";
-import { ADMIN_CREATE, ADMIN_SECTIONS, AREA_CLS, sectionCount, type AdminArea } from "@/components/admin/admin-sections";
+import { ADMIN_CREATE, ADMIN_FORM_ROUTE, ADMIN_SECTIONS, AREA_CLS, sectionCount, type AdminArea } from "@/components/admin/admin-sections";
 
 type Icon = ComponentType<{ className?: string }>;
 
@@ -19,8 +19,6 @@ type Icon = ComponentType<{ className?: string }>;
  *   I form (nuova/modifica ricetta e menù) occupano tutta la larghezza: hanno la loro barra.
  */
 
-// I form hanno la propria barra in alto (11.1) e usano tutta la larghezza
-const FORM_ROUTE = /^\/admin\/(ricette\/(nuova|\d+)|menu\/(nuovo|\d+\/modifica))\/?$/;
 
 export function AdminFrame({
   overview,
@@ -32,7 +30,7 @@ export function AdminFrame({
   children: ReactNode;
 }) {
   const pathname = usePathname();
-  if (FORM_ROUTE.test(pathname)) return <>{children}</>;
+  if (ADMIN_FORM_ROUTE.test(pathname)) return <>{children}</>;
   const home = pathname === "/admin";
 
   return (

@@ -62,9 +62,7 @@ export default async function ModificaMenuPage({ params }: Params) {
   };
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <MenuForm initialData={initialData} />
-    </div>
+    <MenuForm initialData={initialData} />
   );
 }
 

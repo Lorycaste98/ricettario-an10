@@ -72,14 +72,14 @@ function Ticket({ recipe, timers, now }: { recipe: CookingRecipe; timers: Cookin
 }
 
 /** Fila in cima alla pagina (contenitori larghi). Resta in vista mentre si scorre. */
-export function CookingRow() {
+export function CookingRow({ sticky = true }: { sticky?: boolean }) {
   const { session, recipes, now } = useCookingData();
   if (!session.hydrated || recipes.length === 0) return null;
   return (
     <div
       role="region"
       aria-label={`Sto cucinando: ${recipes.length} ricette`}
-      className="sticky top-0 z-30 hidden gap-2 overflow-x-auto bg-blu-600 px-(--pad) py-2 [scrollbar-width:none] @min-[620px]:flex"
+      className={clsx(sticky && "sticky top-0 z-30", "hidden gap-2 overflow-x-auto bg-blu-600 px-(--pad) py-2 [scrollbar-width:none] @min-[620px]:flex")}
       style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.5rem)" }}
     >
       <span className="flex shrink-0 items-center text-white" aria-hidden>
