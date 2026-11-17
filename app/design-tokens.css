@@ -35,7 +35,7 @@
   --color-giallo-400: oklch(88.3% 0.165 92);
   --color-giallo-ink: oklch(49% 0.1 85);
   --color-ambra: oklch(53.1% 0.119 65);           /* timer su fondo chiaro */
-  --color-verde: oklch(52.9% 0.106 154);          /* fatto, comprato, pronto */
+  --color-verde: oklch(49% 0.106 154);            /* fatto, comprato, pronto (49%: testo su verde-50 ≥ 4.5:1) */
   --color-verde-50: oklch(94% 0.04 154);
   --color-verde-200: oklch(80% 0.07 154);
   --color-rosa: oklch(53.9% 0.193 6.5);           /* elimina, errori, timer finiti */

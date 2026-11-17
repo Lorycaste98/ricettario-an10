@@ -37,7 +37,7 @@ export function VisibilityToggle({
       disabled={disabled}
       onClick={onToggle}
       className={clsx(
-        "inline-flex h-(--h-sm) shrink-0 items-center justify-center gap-[0.4em] rounded-full border text-[0.875rem] font-bold transition-colors disabled:opacity-50",
+        "hit-44 inline-flex h-(--h-sm) shrink-0 items-center justify-center gap-[0.4em] rounded-full border text-[0.875rem] font-bold transition-colors disabled:opacity-50",
         "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-blu-600/35 [&_svg]:size-[1.1em]",
         compact ? "w-(--h-sm)" : "pr-[0.85em] pl-[0.65em]",
         published
@@ -101,18 +101,36 @@ export function Segmented<T extends string>({
   className?: string;
 }) {
   return (
-    <div role="radiogroup" aria-label={label} className={clsx("flex rounded-[0.6875rem] bg-blu-120 p-[3px]", className)}>
-      {options.map((o) => {
+    <div
+      role="radiogroup"
+      aria-label={label}
+      className={clsx("flex rounded-[0.6875rem] bg-blu-120 p-[3px]", className)}
+      // Tastiera come un gruppo di radio: Tab entra sulla scelta attiva, le frecce cambiano scelta
+      onKeyDown={(e) => {
+        const step = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
+        if (!step) return;
+        e.preventDefault();
+        const i = options.findIndex((o) => o.value === value);
+        const next = options[(i + step + options.length) % options.length];
+        onChange(next.value);
+        const buttons = e.currentTarget.querySelectorAll<HTMLButtonElement>("[role=radio]");
+        buttons[options.indexOf(next)]?.focus();
+      }}
+    >
+      {options.map((o, i) => {
         const on = o.value === value;
+        // nessuna scelta attiva (valore fuori elenco): il primo resta raggiungibile con Tab
+        const tabbable = on || (i === 0 && !options.some((x) => x.value === value));
         return (
           <button
             key={o.value}
             type="button"
             role="radio"
             aria-checked={on}
+            tabIndex={tabbable ? 0 : -1}
             onClick={() => onChange(o.value)}
             className={clsx(
-              "flex h-[calc(var(--h-field)-6px)] flex-1 items-center justify-center gap-[0.3em] rounded-[0.5rem] px-[0.75em] text-[0.875rem] font-semibold whitespace-nowrap transition-colors [&_svg]:size-[1.05em]",
+              "hit-44 flex h-[calc(var(--h-field)-6px)] flex-1 items-center justify-center gap-[0.3em] rounded-[0.5rem] px-[0.75em] text-[0.875rem] font-semibold whitespace-nowrap transition-colors [&_svg]:size-[1.05em]",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blu-600/40",
               on ? "bg-white text-blu-950 shadow-[0_1px_2px_oklch(25%_0.038_228/.12)]" : "text-blu-800 hover:bg-white/50"
             )}
@@ -163,7 +181,7 @@ export function Chip({
     return (
       <span className={base}>
         {inner}
-        <button type="button" onClick={onRemove} aria-label={removeLabel} className="-mr-[0.35em] rounded-full p-[0.2em] hover:bg-blu-150">
+        <button type="button" onClick={onRemove} aria-label={removeLabel} className="hit-44 -mr-[0.35em] rounded-full p-[0.2em] hover:bg-blu-150">
           <svg viewBox="0 0 24 24" className="size-[1em]" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden>
             <path d="M6 6l12 12M18 6 6 18" />
           </svg>
@@ -172,7 +190,7 @@ export function Chip({
     );
   }
   return (
-    <button type="button" aria-pressed={active} onClick={onClick} className={base}>
+    <button type="button" aria-pressed={active} onClick={onClick} className={clsx("hit-44", base)}>
       {inner}
     </button>
   );

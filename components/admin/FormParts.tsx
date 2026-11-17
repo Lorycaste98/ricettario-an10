@@ -159,7 +159,7 @@ export function MiniChip({
           type="button"
           onClick={onRemove}
           aria-label={removeLabel}
-          className="inline-flex size-[1.25rem] shrink-0 items-center justify-center rounded-full hover:bg-white/70"
+          className="hit-44 inline-flex size-[1.25rem] shrink-0 items-center justify-center rounded-full hover:bg-blu-100"
         >
           <X aria-hidden />
         </button>
@@ -175,7 +175,7 @@ export function MiniChip({
     );
   }
   return (
-    <button type="button" onClick={onClick} aria-pressed={active} title={title} className={cls}>
+    <button type="button" onClick={onClick} aria-pressed={active} title={title} className={clsx("hit-44", cls)}>
       {icon}
       <span className="truncate">{children}</span>
     </button>

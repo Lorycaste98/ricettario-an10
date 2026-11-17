@@ -17,13 +17,13 @@ const VARIANT: Record<ButtonVariant, string> = {
   primary: "border-transparent bg-arancio text-white hover:bg-arancio-scuro active:bg-arancio-scuro",
   secondary: "bg-white border-blu-200 text-blu-950 hover:bg-blu-100",
   tonal: "border-transparent bg-blu-120 text-blu-800 hover:bg-blu-150",
-  ghost: "border-transparent text-blu-600 hover:bg-blu-100 px-[0.4em]!",
+  ghost: "border-transparent text-blu-700 hover:bg-blu-100 px-[0.4em]!", // blu-700: ≥ 4.5:1 anche sul fondo blu-50
   danger: "bg-white border-rosa-200 text-rosa hover:bg-rosa-50",
   dangerSolid: "border-transparent bg-rosa text-white hover:brightness-95",
 };
 
 const SIZE: Record<ButtonSize, string> = {
-  sm: "h-(--h-sm) px-[0.8em] text-[0.875rem] rounded-[0.625rem]",
+  sm: "hit-44 h-(--h-sm) px-[0.8em] text-[0.875rem] rounded-[0.625rem]",
   md: "h-(--h-btn) px-[1.05em] text-(length:--fs-body) rounded-ctl",
   lg: "h-(--h-btn-lg) px-[1.3em] text-[calc(var(--fs-body)+1px)] font-bold rounded-ctl",
 };
@@ -44,5 +44,5 @@ export function buttonClasses(variant: ButtonVariant = "primary", size: ButtonSi
 
 /** Classi di un'icona-bottone di riga (3.12, 30px): per i link (Modifica) accanto a `IconButton size="row"`. */
 export const rowIconCls =
-  "inline-flex size-[1.875rem] shrink-0 items-center justify-center rounded-[0.5625rem] border border-blu-200 bg-white text-blu-800 transition-colors hover:bg-blu-100 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-blu-600/35 [&_svg]:size-4";
+  "hit-44 inline-flex size-[1.875rem] shrink-0 items-center justify-center rounded-[0.5625rem] border border-blu-200 bg-white text-blu-800 transition-colors hover:bg-blu-100 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-blu-600/35 [&_svg]:size-4";
 

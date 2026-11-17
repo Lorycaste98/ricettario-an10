@@ -54,9 +54,9 @@ export function StepTimer({
   // Versione piccola (righe dei passi, pannello «Sto cucinando»): stessi colori del timer grande,
   // giallo = tempo (D2), controlli bianchi a 30px come le azioni di riga (3.12)
   const pill =
-    "inline-flex h-[1.875rem] items-center gap-1 rounded-full px-2.5 text-[0.8125rem] font-semibold transition-colors [&_svg]:size-3.5";
+    "hit-44 inline-flex h-[1.875rem] items-center gap-1 rounded-full px-2.5 text-[0.8125rem] font-semibold transition-colors [&_svg]:size-3.5";
   const iconBtn =
-    "flex size-[1.875rem] shrink-0 items-center justify-center rounded-full border border-blu-200 bg-white text-blu-800 hover:bg-blu-100 [&_svg]:size-3.5";
+    "hit-44 flex size-[1.875rem] shrink-0 items-center justify-center rounded-full border border-blu-200 bg-white text-blu-800 hover:bg-blu-100 [&_svg]:size-3.5";
 
   if (!session.hydrated) return null;
 

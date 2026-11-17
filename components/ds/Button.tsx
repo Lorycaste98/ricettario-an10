@@ -71,7 +71,7 @@ export function IconButton({
       title={label}
       aria-pressed={props["aria-pressed"]}
       className={clsx(
-        "inline-flex shrink-0 items-center justify-center border transition-colors",
+        "hit-44 inline-flex shrink-0 items-center justify-center border transition-colors",
         "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-blu-600/35 disabled:opacity-50",
         size === "md" ? "size-(--h-icon) [&_svg]:size-5" : "size-[1.875rem] rounded-[0.5625rem] [&_svg]:size-4",
         size === "md" && (shape === "round" ? "rounded-full" : "rounded-ctl"),

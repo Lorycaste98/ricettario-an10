@@ -32,6 +32,23 @@
   .an10a-draw, .an10a-pin, .an10a-fork, .an10a-blade, .an10a-handle, .an10a-egg, .an10a-yolk { animation: none; stroke-dashoffset: 0; }
 }
 
+/* Bersaglio toccabile ≥ 44px su touch (DESIGN D4) per i controlli che a vista sono più piccoli
+   (azioni di riga 30px, chip, bottoni piccoli): un ::after invisibile allarga l'area senza cambiare
+   l'aspetto. In @layer base così le utility vincono (un `absolute` resta absolute: è già un
+   containing block). Non metterlo su controlli affiancati a meno di 44px: le aree si sovrappongono. */
+@layer base {
+  /* Focus da tastiera visibile ovunque (navigazione, link, card): i componenti con un loro anello
+     (`focus-visible:ring-…` + `outline-none`) lo sostituiscono, perché le utility vincono sul base */
+  :where(a, button, summary, input, select, textarea, [role="button"], [tabindex]):focus-visible {
+    outline: 2px solid var(--color-blu-600);
+    outline-offset: 2px;
+  }
+  @media (pointer: coarse) {
+    .hit-44 { position: relative; }
+    .hit-44::after { content: ""; position: absolute; inset: min(0px, calc((100% - 44px) / 2)); }
+  }
+}
+
 @theme inline {
   --font-sans: var(--font-system);
   --font-mono: ui-monospace, Menlo, monospace;

@@ -23,7 +23,7 @@
   --nav-ink:oklch(92.3% 0.027 221);--nav-muted:oklch(80% 0.05 223);
   --arancio:oklch(64.4% 0.192 41.7);--arancio-h:oklch(57.8% 0.172 41.6);--arancio-50:oklch(96.7% 0.019 55);--arancio-200:oklch(87% 0.08 50);
   --giallo-100:oklch(96.1% 0.068 96.6);--giallo-400:oklch(88.3% 0.165 92);--giallo-ink:oklch(49% 0.1 85);--ambra:oklch(53.1% 0.119 65);
-  --verde:oklch(52.9% 0.106 154);--verde-50:oklch(94% 0.04 154);
+  --verde:oklch(49% 0.106 154);--verde-50:oklch(94% 0.04 154);
   --rosa:oklch(53.9% 0.193 6.5);--rosa-50:oklch(95% 0.03 6);--rosa-200:oklch(85% 0.08 6);
   --bianco:#fff;
   /* colori di AREA (13.2): solo per riconoscere a colpo d'occhio un'area nelle
