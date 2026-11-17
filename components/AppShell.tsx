@@ -51,10 +51,11 @@ export function AppShell({ children }: { children: ReactNode }) {
         } as CSSProperties
       }
     >
-      {/* copre la zona del notch / Dynamic Island su telefono, dove non c'è barra in alto */}
+      {/* Copre la zona del notch / Dynamic Island e, da app installata (barra di stato trasparente,
+          `appleWebApp` in app/layout.tsx), la barra di stato di iPhone e iPad. Nel browser è alta 0. */}
       <div
         aria-hidden
-        className={clsx("pointer-events-none fixed inset-x-0 top-0 z-50 min-[700px]:hidden", admin ? "bg-adm-900" : "bg-blu-800")}
+        className={clsx("pointer-events-none fixed inset-x-0 top-0 z-50", admin ? "bg-adm-900" : "bg-blu-800")}
         style={{ height: "env(safe-area-inset-top, 0px)" }}
       />
       <NavRail adminArea={admin} />
@@ -63,10 +64,16 @@ export function AppShell({ children }: { children: ReactNode }) {
         <CookingRow sticky={!ADMIN_FORM_ROUTE.test(pathname)} />
         <main
           className={clsx(
-            "mx-auto w-full max-w-7xl flex-1 px-4 pt-8 sm:px-6",
+            // --main-px = margine laterale; a destra si allarga sotto il notch (iPhone in orizzontale).
+            // FormBar e FormSkeleton lo annullano con la stessa espressione.
+            "mx-auto w-full max-w-7xl flex-1 pt-8 [--main-px:1rem] sm:[--main-px:1.5rem]",
             "pb-(--bottom-space) min-[700px]:pb-8"
           )}
-          style={{ paddingTop: "max(2rem, calc(env(safe-area-inset-top, 0px) + 1rem))" }}
+          style={{
+            paddingTop: "max(2rem, calc(env(safe-area-inset-top, 0px) + 1rem))",
+            paddingLeft: "var(--main-px)",
+            paddingRight: "max(var(--main-px), env(safe-area-inset-right, 0px))",
+          }}
         >
           {children}
         </main>

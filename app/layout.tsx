@@ -31,12 +31,21 @@ export const metadata: Metadata = {
     title: TITLE,
     description: DESCRIPTION,
   },
+  // App installata su iPhone/iPad (fase 7): schermo intero, barra di stato trasparente sopra la
+  // fascia blu di AppShell (che copre `safe-area-inset-top`), nome breve sotto l'icona.
+  appleWebApp: {
+    capable: true,
+    title: "AN10",
+    statusBarStyle: "black-translucent",
+  },
+  // iOS trasforma in link telefonici i numeri lunghi (quantità, orari): no
+  formatDetection: { telephone: false },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#0B4F68", // blu scuro della cornice (blu-800)
+  themeColor: "#074f67", // blu-800 della cornice, come `theme_color` in app/manifest.ts
   viewportFit: "cover",
 };
 

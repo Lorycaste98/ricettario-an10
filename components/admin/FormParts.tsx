@@ -44,10 +44,12 @@ export function FormBar({
 }) {
   return (
     <div
-      className="sticky top-0 z-30 -mx-4 mb-(--gap) flex items-center gap-2 border-b border-blu-150 bg-white px-(--pad) pb-2 shadow-[0_6px_18px_oklch(25%_0.038_228/.06)] sm:-mx-6"
+      className="sticky top-0 z-30 mb-(--gap) flex items-center gap-2 border-b border-blu-150 bg-white px-(--pad) pb-2 shadow-[0_6px_18px_oklch(25%_0.038_228/.06)]"
       style={{
         // annulla il padding alto di `main` (stessa espressione di AppShell) e scende sotto il notch
         marginTop: "calc(-1 * max(2rem, calc(env(safe-area-inset-top, 0px) + 1rem)))",
+        marginLeft: "calc(-1 * var(--main-px))",
+        marginRight: "calc(-1 * max(var(--main-px), env(safe-area-inset-right, 0px)))",
         paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.5rem)",
       }}
     >

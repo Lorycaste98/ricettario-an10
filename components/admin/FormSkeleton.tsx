@@ -42,9 +42,11 @@ export function FormSkeleton({ variant }: { variant: "recipe" | "menu" }) {
   return (
     <div aria-busy>
       <div
-        className="-mx-4 mb-(--gap) flex items-center gap-2 border-b border-blu-150 bg-white px-(--pad) pb-2 sm:-mx-6"
+        className="mb-(--gap) flex items-center gap-2 border-b border-blu-150 bg-white px-(--pad) pb-2"
         style={{
           marginTop: "calc(-1 * max(2rem, calc(env(safe-area-inset-top, 0px) + 1rem)))",
+          marginLeft: "calc(-1 * var(--main-px))",
+          marginRight: "calc(-1 * max(var(--main-px), env(safe-area-inset-right, 0px)))",
           paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.5rem)",
         }}
       >

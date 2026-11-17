@@ -124,10 +124,15 @@ export function NavRail({ adminArea = false }: { adminArea?: boolean }) {
     <nav
       aria-label="Navigazione principale"
       className={clsx(
-        "sticky top-0 hidden h-dvh w-[clamp(4.5rem,calc(4.5rem+12*var(--f)),5.25rem)] shrink-0 flex-col items-center gap-3.5 pb-4 text-nav-ink transition-colors min-[700px]:flex",
+        "sticky top-0 hidden h-dvh shrink-0 flex-col items-center gap-3.5 pb-4 text-nav-ink transition-colors min-[700px]:flex",
         adminArea ? "bg-adm-900" : "bg-blu-800"
       )}
-      style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1rem)" }}
+      style={{
+        paddingTop: "calc(env(safe-area-inset-top, 0px) + 1rem)",
+        // iPhone in orizzontale: la barra si allarga sotto il notch invece di finirci sotto
+        paddingLeft: "env(safe-area-inset-left, 0px)",
+        width: "calc(clamp(4.5rem, calc(4.5rem + 12 * var(--f)), 5.25rem) + env(safe-area-inset-left, 0px))",
+      }}
     >
       <Link href="/" aria-label="AN10 · home" className="mb-1 text-white">
         <An10Logo variant="simbolo" title="" className="size-10" />
