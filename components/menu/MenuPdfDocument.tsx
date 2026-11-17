@@ -7,15 +7,15 @@ import {
   StyleSheet,
 } from "@react-pdf/renderer";
 import {
+  PDF,
   pdfStyles,
   PdfFooter,
   RecipePdfContent,
 } from "@/components/recipe/RecipePdfDocument";
 import type { RecipePdfData } from "@/components/recipe/RecipePdfButton";
 
-const ORANGE = "#f97316";
-const SKY = "#0c4a6e";
-const GRAY = "#6b7280";
+const SKY = PDF.blu;
+const GRAY = PDF.grigio;
 
 export interface MenuPdfMeta {
   name: string;
@@ -39,18 +39,19 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   coverHeader: { flexDirection: "row", alignItems: "center", gap: 9, marginBottom: 14 },
-  coverLogo: { width: 30, height: 30, borderRadius: 7 },
+  // logo orizzontale (720×236)
+  coverLogo: { width: 92, height: 30 },
   kicker: {
     fontSize: 11,
     letterSpacing: 3,
-    color: ORANGE,
+    color: GRAY,
     fontFamily: "Helvetica-Bold",
     textTransform: "uppercase",
   },
   title: {
     fontSize: 40,
     fontFamily: "Helvetica-Bold",
-    color: SKY,
+    color: PDF.ink,
     lineHeight: 1.1,
     marginBottom: 16,
   },
@@ -63,15 +64,15 @@ const styles = StyleSheet.create({
   },
   metaLine: { flexDirection: "row", gap: 28, marginBottom: 34 },
   metaItem: { flexDirection: "column", gap: 4 },
-  metaItemLabel: { fontSize: 8, color: "#9ca3af", textTransform: "uppercase", letterSpacing: 0.5, lineHeight: 1 },
-  metaItemValue: { fontSize: 13, fontFamily: "Helvetica-Bold", color: SKY, lineHeight: 1 },
+  metaItemLabel: { fontSize: 8, color: PDF.light, textTransform: "uppercase", letterSpacing: 0.5, lineHeight: 1 },
+  metaItemValue: { fontSize: 13, fontFamily: "Helvetica-Bold", color: PDF.ink, lineHeight: 1 },
   tocTitle: {
     fontSize: 12,
     fontFamily: "Helvetica-Bold",
-    color: SKY,
+    color: PDF.ink,
     marginBottom: 14,
     borderTopWidth: 1,
-    borderTopColor: "#e5e7eb",
+    borderTopColor: PDF.line,
     paddingTop: 16,
   },
   tocItem: { flexDirection: "row", alignItems: "center", marginBottom: 6 },
@@ -79,13 +80,13 @@ const styles = StyleSheet.create({
     width: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: ORANGE,
+    backgroundColor: SKY,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 9,
   },
   tocNumText: { color: "#ffffff", fontSize: 9, fontFamily: "Helvetica-Bold", lineHeight: 1 },
-  tocName: { fontSize: 11, color: "#1f2937" },
+  tocName: { fontSize: 11, color: PDF.ink },
 });
 
 function formatServeDate(date: string | null, servingTime: string | null): string | null {
@@ -119,7 +120,7 @@ export function MenuPdfDocument({
           <View style={styles.coverHeader}>
             {/* eslint-disable-next-line jsx-a11y/alt-text -- componente PDF di react-pdf */}
             {logoData && <Image src={logoData} style={styles.coverLogo} />}
-            <Text style={styles.kicker}>Menù · Ricettario AN10</Text>
+            <Text style={styles.kicker}>Menù · Ricettario</Text>
           </View>
           <Text style={styles.title}>{menu.name}</Text>
           {menu.description ? <Text style={styles.description}>{menu.description}</Text> : null}

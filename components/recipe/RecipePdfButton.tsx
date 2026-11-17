@@ -37,6 +37,37 @@ export async function urlToDataUrl(url: string): Promise<string | undefined> {
   }
 }
 
+/**
+ * Logo AN10 orizzontale (blu) per l'intestazione dei PDF, come PNG. Il file SVG ha i ritagli
+ * come maschere, che react-pdf non disegna: lo rasterizza il browser su un canvas (3× la misura
+ * di stampa, per restare nitido). Se qualcosa va storto il PDF esce senza logo.
+ */
+export async function logoPngDataUrl(): Promise<string | undefined> {
+  let objectUrl: string | undefined;
+  try {
+    // Misure esplicite: senza width/height alcuni browser (Firefox) non disegnano l'SVG sul canvas
+    const svg = (await (await fetch("/brand/an10-orizzontale-blu.svg")).text()).replace(
+      "<svg ",
+      '<svg width="720" height="236" '
+    );
+    objectUrl = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+    const img = new window.Image();
+    img.src = objectUrl;
+    await img.decode();
+    const canvas = document.createElement("canvas");
+    canvas.width = 720;
+    canvas.height = 236;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return undefined;
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/png");
+  } catch {
+    return undefined;
+  } finally {
+    if (objectUrl) URL.revokeObjectURL(objectUrl);
+  }
+}
+
 export function safeFileName(name: string, fallback = "ricetta"): string {
   const cleaned = name.replace(/[^\p{L}\p{N} _-]/gu, "").trim();
   return (cleaned || fallback).slice(0, 80);
@@ -65,7 +96,7 @@ export function RecipePdfButton({
       ]);
       const [photoData, logoData] = await Promise.all([
         recipe.photo ? urlToDataUrl(recipe.photo) : Promise.resolve(undefined),
-        urlToDataUrl("/apple-icon.png"),
+        logoPngDataUrl(),
       ]);
       const blob = await pdf(
         <RecipePdfDocument recipe={recipe} photoData={photoData} logoData={logoData} />

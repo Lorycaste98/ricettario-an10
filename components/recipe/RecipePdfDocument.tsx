@@ -11,10 +11,26 @@ import { formatMinutes } from "@/lib/types";
 import { groupIngredientsBySection } from "@/lib/ingredient-sections";
 import { resolveLinkQty, splitIngredientIds } from "@/lib/step-ingredients";
 
-const ORANGE = "#f97316";
-const SKY = "#0c4a6e";
-const GRAY = "#6b7280";
-const LIGHT = "#9ca3af";
+// Colori del restyle (app/design-tokens.css) in esadecimale: react-pdf non legge oklch.
+// Arancio solo per le quantità, ambra per i tempi, blu per titoli e numeri (DESIGN.md D2).
+export const PDF = {
+  ink: "#0a2530", //        blu-950 · testo
+  blu: "#074f67", //        blu-800 · titoli, numeri, totale
+  blu100: "#e3f1f7", //     blu-100 · fondi chiari
+  line: "#d3e5ec", //       blu-150 · bordi e filetti
+  dot: "#9dd3e6", //        blu-300
+  muted: "#9bc5d5", //      nav-muted · testo chiaro su blu-800
+  grigio: "#4f6b77", //     testo secondario
+  light: "#7a949f", //      grigio-chiaro · etichette
+  arancio: "#e8590b", //    quantità
+  ambra: "#9a5b00", //      tempi
+  nota: "#fff3bf", //       giallo-100 · note
+  notaInk: "#7a5b01", //    giallo-ink
+} as const;
+const ORANGE = PDF.arancio;
+const SKY = PDF.blu;
+const GRAY = PDF.grigio;
+const LIGHT = PDF.light;
 
 export const pdfStyles = StyleSheet.create({
   page: {
@@ -23,23 +39,24 @@ export const pdfStyles = StyleSheet.create({
     paddingHorizontal: 44,
     fontFamily: "Helvetica",
     fontSize: 10,
-    color: "#1f2937",
+    color: PDF.ink,
     lineHeight: 1.4,
   },
   headerRow: { flexDirection: "row", gap: 16, marginBottom: 18 },
   headerMain: { flex: 1 },
   photo: { width: 130, height: 100, borderRadius: 8, objectFit: "cover" },
   kickerRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 5 },
-  headerLogo: { width: 16, height: 16, borderRadius: 4 },
+  // logo orizzontale (720×236): altezza 16 → larghezza 49
+  headerLogo: { width: 49, height: 16 },
   kicker: {
     fontSize: 8,
     letterSpacing: 1.5,
-    color: ORANGE,
+    color: GRAY,
     fontFamily: "Helvetica-Bold",
     textTransform: "uppercase",
     lineHeight: 1,
   },
-  title: { fontSize: 22, fontFamily: "Helvetica-Bold", color: SKY, marginBottom: 12 },
+  title: { fontSize: 22, fontFamily: "Helvetica-Bold", color: PDF.ink, marginBottom: 12 },
   badgeRow: { flexDirection: "row", flexWrap: "wrap", gap: 4, marginBottom: 6 },
   // Badge categoria: View contenitore + Text centrato (centratura affidabile in react-pdf)
   badge: {
@@ -60,11 +77,11 @@ export const pdfStyles = StyleSheet.create({
     paddingVertical: 3,
     paddingHorizontal: 7,
     borderRadius: 10,
-    backgroundColor: "#ede9fe",
+    backgroundColor: PDF.blu100,
     justifyContent: "center",
     alignItems: "center",
   },
-  tagText: { fontSize: 7.5, color: "#5b21b6", lineHeight: 1, textAlign: "center" },
+  tagText: { fontSize: 7.5, color: PDF.blu, lineHeight: 1, textAlign: "center" },
   metaRow: {
     flexDirection: "row",
     gap: 8,
@@ -73,7 +90,7 @@ export const pdfStyles = StyleSheet.create({
   metaTile: {
     flex: 1,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: PDF.line,
     borderRadius: 8,
     paddingVertical: 7,
     paddingHorizontal: 8,
@@ -82,42 +99,42 @@ export const pdfStyles = StyleSheet.create({
   metaTileAccent: {
     flex: 1,
     borderWidth: 1,
-    borderColor: ORANGE,
-    backgroundColor: ORANGE,
+    borderColor: SKY,
+    backgroundColor: SKY,
     borderRadius: 8,
     paddingVertical: 7,
     paddingHorizontal: 8,
     alignItems: "center",
   },
   metaLabel: { fontSize: 7, color: LIGHT, textTransform: "uppercase", letterSpacing: 0.5 },
-  metaLabelAccent: { fontSize: 7, color: "#ffedd5", textTransform: "uppercase", letterSpacing: 0.5 },
-  metaValue: { fontSize: 11, fontFamily: "Helvetica-Bold", color: SKY, marginTop: 2 },
+  metaLabelAccent: { fontSize: 7, color: PDF.muted, textTransform: "uppercase", letterSpacing: 0.5 },
+  metaValue: { fontSize: 11, fontFamily: "Helvetica-Bold", color: PDF.ink, marginTop: 2 },
   metaValueAccent: { fontSize: 11, fontFamily: "Helvetica-Bold", color: "#ffffff", marginTop: 2 },
   notes: {
-    backgroundColor: "#fffbeb",
+    backgroundColor: PDF.nota,
     borderWidth: 1,
-    borderColor: "#fde68a",
+    borderColor: PDF.nota,
     borderRadius: 8,
     padding: 9,
     fontSize: 9.5,
-    color: "#92400e",
+    color: PDF.notaInk,
     marginBottom: 18,
   },
   sectionTitle: {
     fontSize: 13,
     fontFamily: "Helvetica-Bold",
-    color: SKY,
+    color: PDF.ink,
     lineHeight: 1,
   },
-  sectionBar: { width: 4, height: 13, backgroundColor: ORANGE, borderRadius: 2, marginRight: 7 },
+  sectionBar: { width: 4, height: 13, backgroundColor: SKY, borderRadius: 2, marginRight: 7 },
   sectionHeader: { flexDirection: "row", alignItems: "center", marginBottom: 9 },
   columns: { flexDirection: "row", gap: 22 },
   ingredientsCol: { width: "38%" },
   stepsCol: { flex: 1 },
   ingredientItem: { flexDirection: "row", marginBottom: 5, alignItems: "flex-start" },
-  dot: { width: 4, height: 4, borderRadius: 2, backgroundColor: ORANGE, marginTop: 4, marginRight: 6 },
+  dot: { width: 4, height: 4, borderRadius: 2, backgroundColor: PDF.dot, marginTop: 4, marginRight: 6 },
   ingredientText: { flex: 1, fontSize: 9.5 },
-  ingredientQty: { fontFamily: "Helvetica-Bold", color: SKY },
+  ingredientQty: { fontFamily: "Helvetica-Bold", color: ORANGE },
   ingredientDesc: { color: GRAY, fontSize: 8.5 },
   // Titolo di una sezione di ingredienti (es. "Per l'impasto")
   ingredientGroup: {
@@ -134,7 +151,7 @@ export const pdfStyles = StyleSheet.create({
     width: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: ORANGE,
+    backgroundColor: SKY,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 8,
@@ -148,7 +165,7 @@ export const pdfStyles = StyleSheet.create({
   },
   stepBody: { flex: 1 },
   stepText: { fontSize: 9.5 },
-  stepMins: { fontSize: 8, color: ORANGE, marginTop: 1, fontFamily: "Helvetica-Bold" },
+  stepMins: { fontSize: 8, color: PDF.ambra, marginTop: 1, fontFamily: "Helvetica-Bold" },
   // Ingredienti necessari al passo (solo se la ricetta li ha legati)
   stepIngredients: { fontSize: 8, color: GRAY, marginTop: 1 },
   footer: {
@@ -160,7 +177,7 @@ export const pdfStyles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     borderTopWidth: 1,
-    borderTopColor: "#e5e7eb",
+    borderTopColor: PDF.line,
     paddingTop: 8,
     fontSize: 7.5,
     color: LIGHT,
@@ -168,7 +185,8 @@ export const pdfStyles = StyleSheet.create({
 });
 
 function fmtQty(qty: number | null, unit: string | null): string {
-  if (qty == null) return unit ?? "";
+  // 0 = vecchie righe «0 q.b.»: come nel dettaglio, solo l'unità
+  if (qty == null || qty === 0) return unit ?? "";
   const num = Number.isInteger(qty) ? String(qty) : String(qty).replace(/\.?0+$/, "");
   return unit ? `${num} ${unit}` : num;
 }
@@ -196,7 +214,7 @@ export function RecipePdfContent({
   recipe,
   photoData,
   logoData,
-  kicker = "Ricettario AN10",
+  kicker = "Ricettario",
 }: {
   recipe: RecipePdfData;
   photoData?: string;
@@ -226,7 +244,7 @@ export function RecipePdfContent({
           {recipe.categories.length > 0 && (
             <View style={pdfStyles.badgeRow}>
               {recipe.categories.map((c, i) => (
-                <View key={i} style={[pdfStyles.badge, { backgroundColor: c.color || ORANGE }]}>
+                <View key={i} style={[pdfStyles.badge, { backgroundColor: c.color || SKY }]}>
                   <Text style={pdfStyles.badgeText}>{c.name}</Text>
                 </View>
               ))}
@@ -351,7 +369,7 @@ export function RecipePdfContent({
                     .filter((label): label is string => !!label)
                 : [];
               return (
-                <View key={i} style={pdfStyles.step}>
+                <View key={i} style={pdfStyles.step} wrap={false}>
                   <View style={pdfStyles.stepNum}>
                     <Text style={pdfStyles.stepNumText}>{i + 1}</Text>
                   </View>

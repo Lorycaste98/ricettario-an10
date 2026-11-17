@@ -4,6 +4,7 @@ import { useState } from "react";
 import { FileDown, Loader2 } from "lucide-react";
 import {
   urlToDataUrl,
+  logoPngDataUrl,
   safeFileName,
   type RecipePdfData,
 } from "@/components/recipe/RecipePdfButton";
@@ -86,7 +87,7 @@ export function MenuPdfButton({ menu }: MenuPdfProps) {
 
       const [coverPhoto, logoData] = await Promise.all([
         menu.photo ? urlToDataUrl(menu.photo) : Promise.resolve(undefined),
-        urlToDataUrl("/apple-icon.png"),
+        logoPngDataUrl(),
       ]);
 
       const blob = await pdf(
