@@ -38,7 +38,7 @@ Ricettario personale del cuoco: archivio delle sue ricette (ingredienti, passi c
 
 ## Brand Commitments
 
-- Nome: «Ricettario AN10», logo `AN10` esistente (`public/an10.svg`): quadrato blu `#0A7EA4` con posate e scritta «AN10» bianche in carattere da macchina da scrivere (Courier).
+- Nome: «Ricettario AN10», logo `AN10` del restyle (`public/brand/`, componente `components/brand/An10Logo.tsx`, guida `docs/design/loghi/kit/GUIDA.md`): ogni lettera nasconde un oggetto di cucina, blu del logo `#0A7EA4`. Il vecchio logo (quadrato con posate e scritta in Courier) è stato tolto nella fase 6.
 - Richiesta esplicita dell'utente (15/11/2026): la palette del redesign deve essere **in linea con il logo**, costruita sul blu `#0A7EA4`.
 - Richiesta esplicita dell'utente per il redesign: **rifare tutto con stile uguale o simile per gli elementi gemelli o fratelli** (stessi componenti per stesse funzioni in ricette, menù e admin), e ripensare la **disposizione** degli elementi, non solo l'aspetto. Le sei direzioni visive di novembre 2026 (comanda, maiolica, editoriale, schedario, lavagna, quaderno, in `.playwright-mcp/mockups2-3`) non hanno convinto.
 

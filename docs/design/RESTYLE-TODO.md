@@ -38,7 +38,7 @@
 - [x] `components/icons/`: le 9 icone del progetto (5.19–5.27: pentola, tagliere, fornello, ciotola, cloche, sacchetto, piatto, posate, mestolo) come componenti con la stessa interfaccia di lucide (`size`, `className`, `strokeWidth`). Sorgente in `docs/design/build-elementi.mjs` (`CUSTOM`).
 - [x] Aggiornare la regola «Icone: solo lucide-react» in `CLAUDE.md`.
 - [x] Favicon, icona dell'app e manifest: usare i file di `public/brand/web/` tramite le convenzioni di Next (`app/icon.svg`, `app/apple-icon.png`, `app/favicon.ico`, manifest), sostituendo quelli attuali; `themeColor` = blu del logo.
-- [ ] → *fasi 2, 3, 6*: sostituire il vecchio logo (`public/an10.webp` in `Navbar`, `RecipeCard`, home, dettaglio menù; `public/an10.svg`; immagine OG) con `<An10Logo>` / `public/brand/`, man mano che si rifanno quelle parti.
+- [x] → *fasi 2, 3, 6*: sostituire il vecchio logo (`public/an10.webp` in `Navbar`, `RecipeCard`, home, dettaglio menù; `public/an10.svg`; immagine OG) con `<An10Logo>` / `public/brand/`, man mano che si rifanno quelle parti.
 
 ### Componenti base (tavola, sezioni 2–7 e 10)
 - [x] `Button` (3.1–3.9) con le varianti primario, secondario, tonale, testo, elimina, disattivo, piccolo e grande da cucina.
@@ -150,11 +150,13 @@
 ---
 
 ## Fase 6 · Pagine per ospiti e uscite
-- [ ] **Accesso** (`/login`, 13.8) con il logo.
-- [ ] **Recensioni degli ospiti** (`/recensisci/[token]`, `MenuReviewForm`): percorso breve da telefono, voto 4.12, campi a 16px.
-- [ ] **Pagina iniziale e vetrina pubblica** secondo la decisione presa in fase 0.
-- [ ] **Immagine di condivisione** (`app/opengraph-image.tsx`) con il nuovo logo e i nuovi colori.
-- [ ] **PDF** ricetta e menù (`RecipePdfDocument`, `MenuPdfDocument`): intestazione con il logo, colori allineati. Va controllata la resa delle maschere SVG in `@react-pdf/renderer`; se non le supporta, usare una versione del logo senza ritagli.
+- [x] **Accesso** (`/login`, 13.8) con il logo.
+- [x] **Recensioni degli ospiti** (`/recensisci/[token]`, `MenuReviewForm`): percorso breve da telefono, voto 4.12, campi a 16px.
+- [x] **Pagina iniziale e vetrina pubblica** secondo la decisione presa in fase 0.
+- [x] **Immagine di condivisione** (`app/opengraph-image.tsx`) con il nuovo logo e i nuovi colori.
+- [x] **PDF** ricetta e menù (`RecipePdfDocument`, `MenuPdfDocument`): intestazione con il logo, colori allineati. Va controllata la resa delle maschere SVG in `@react-pdf/renderer`; se non le supporta, usare una versione del logo senza ritagli.
+
+> **Stato 17/11/2026:** fatta. Accesso 13.8 (logo, Utente, Password, «Entra»); recensioni degli ospiti con schede bianche, voto 4.12 e «Non l'ho provata»; vetrina dentro la cornice (fascia blu con logo e ricerca, ultime ricette, menù); immagine di condivisione blu con il logo orizzontale; PDF con il logo orizzontale (rasterizzato dal browser: react-pdf non disegna le maschere) e i colori del restyle, quantità «0» come solo unità, passi non spezzati fra due pagine. Eliminati il vecchio logo (`public/an10.webp`, `public/an10.svg`, `app/an10.svg`, `public/logo.ico`). Da sistemare in fase 8: il piè di pagina dei PDF (`PdfFooter`) non viene disegnato, ed era così già prima del restyle. Verificato con dati veri da visitatore (vetrina, PDF) e con dati finti per le recensioni (nessun voto inviato).
 
 ---
 
@@ -168,6 +170,7 @@
 ## Fase 8 · Rifinitura e rilascio
 - [ ] Animazione del logo (`docs/design/loghi/kit/logo-animato.html`) solo nei momenti speciali: avvio o pagina di accesso, mai in loop.
 - [ ] Stati vuoti (10.3) e messaggi di errore in tutte le liste.
+- [ ] PDF: il piè di pagina (`PdfFooter`, «Ricettario AN10 · data · pagina») non viene disegnato da react-pdf (difetto preesistente).
 - [ ] Accessibilità: contrasto, bersagli toccabili da almeno 44px su telefono, navigazione da tastiera su PC, `aria` di interruttori e segmenti.
 - [ ] Prova completa su iPhone e iPad veri, in verticale e in orizzontale, e su PC con la finestra a varie larghezze.
 - [ ] Revisione finale con la skill `impeccable` (polish e audit) e confronto con le foto in `.playwright-mcp/before/`.
