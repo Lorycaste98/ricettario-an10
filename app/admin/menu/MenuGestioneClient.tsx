@@ -119,7 +119,9 @@ export default function MenuGestioneClient({ initialMenus }: { initialMenus: Adm
             </AdminRow>
           );
         })}
-        {filtered.length === 0 && <AdminEmptyRow>Nessun menù trovato.</AdminEmptyRow>}
+        {filtered.length === 0 && (
+          <AdminEmptyRow>{menus.length === 0 ? "Ancora nessun menù: creane uno con «Nuovo menù»." : "Nessun menù con questi filtri."}</AdminEmptyRow>
+        )}
       </AdminTable>
     </div>
   );

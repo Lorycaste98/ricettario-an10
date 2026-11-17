@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
+import { MessageSquareHeart } from "lucide-react";
 import { PageHeader } from "@/components/ds/PageHeader";
+import { EmptyState } from "@/components/ds/Feedback";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { ReviewsBrowser } from "@/components/admin/ReviewsBrowser";
@@ -48,9 +50,9 @@ export default async function RecensioniPage() {
         meta={`${totalReviews} recension${totalReviews === 1 ? "e" : "i"} degli ospiti${globalAvg ? ` · media ${globalAvg}` : ""}`}
       />
       {totalReviews === 0 ? (
-        <p className="rounded-card border border-blu-150 bg-white py-10 text-center text-grigio">
-          Nessuna recensione ancora. Gli ospiti votano dal link «Recensioni ospiti» del menù.
-        </p>
+        <EmptyState icon={<MessageSquareHeart />} title="Ancora nessuna recensione">
+          Gli ospiti votano dal link «Recensioni ospiti» nella pagina del menù.
+        </EmptyState>
       ) : (
         <ReviewsBrowser reviews={reviews} />
       )}

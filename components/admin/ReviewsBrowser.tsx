@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { BookOpen, CalendarDays, ChevronRight, NotebookPen } from "lucide-react";
+import { BookOpen, CalendarDays, ChevronRight, NotebookPen, SearchX } from "lucide-react";
+import { EmptyState } from "@/components/ds/Feedback";
 import { SearchableSelect, type SelectOption } from "@/components/ui/SearchableSelect";
 import { SearchField } from "@/components/ds/Field";
 import { Segmented } from "@/components/ds/Controls";
@@ -190,7 +191,9 @@ export function ReviewsBrowser({ reviews: allReviews }: { reviews: AdminReview[]
       </p>
 
       {groups.length === 0 ? (
-        <p className="rounded-card border border-blu-150 bg-white py-10 text-center text-grigio">Nessuna recensione corrisponde ai filtri.</p>
+        <EmptyState icon={<SearchX />} title="Nessuna recensione con questi filtri">
+          Prova a togliere un filtro o a cercare un altro nome.
+        </EmptyState>
       ) : (
         <div className="flex flex-col gap-2.5">
           {groups.map((g) => {

@@ -60,6 +60,7 @@ export function MenuForm({ initialData }: Props) {
   const [allRecipes, setAllRecipes] = useState<RecipeSummary[]>([]);
   const [search, setSearch] = useState("");
   const [loadingRecipes, setLoadingRecipes] = useState(true);
+  const [recipesError, setRecipesError] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -69,12 +70,17 @@ export function MenuForm({ initialData }: Props) {
   const [creatingQuick, setCreatingQuick] = useState(false);
 
   // Carica tutte le ricette (incluse le "veloci", selezionabili solo qui)
-  useEffect(() => {
+  const loadRecipes = useCallback(() => {
+    setLoadingRecipes(true);
+    setRecipesError(false);
     fetch("/api/recipes?limit=1000&includeQuick=1")
-      .then((r) => r.json())
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
       .then((d) => setAllRecipes(d.data ?? []))
+      .catch(() => setRecipesError(true))
       .finally(() => setLoadingRecipes(false));
   }, []);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- caricamento iniziale della lista
+  useEffect(() => loadRecipes(), [loadRecipes]);
 
   const filteredRecipes = allRecipes.filter(
     (r) =>
@@ -352,6 +358,16 @@ export function MenuForm({ initialData }: Props) {
                   <Skeleton key={i} className="h-11" />
                 ))}
               </div>
+            ) : recipesError ? (
+              <FormError
+                action={
+                  <Button size="sm" variant="secondary" onClick={loadRecipes}>
+                    Riprova
+                  </Button>
+                }
+              >
+                Non riesco a caricare le ricette.
+              </FormError>
             ) : filteredRecipes.length === 0 ? (
               <p className="py-3 text-center text-[0.875rem] text-grigio">
                 {search ? "Nessuna ricetta trovata" : "Tutte le ricette sono già nel menù"}

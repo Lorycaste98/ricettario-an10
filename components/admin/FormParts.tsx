@@ -215,10 +215,11 @@ export function StepKindPicker({ value, onChange }: { value: StepKind; onChange:
 }
 
 /** Messaggio d'errore del form (rosa = errore) */
-export function FormError({ children }: { children: ReactNode }) {
+export function FormError({ children, action }: { children: ReactNode; /** es. «Riprova» */ action?: ReactNode }) {
   return (
-    <div role="alert" className="rounded-[0.875rem] border border-rosa-200 bg-rosa-50 px-3 py-2 text-[0.875rem] font-semibold text-rosa">
-      {children}
+    <div role="alert" className="flex flex-wrap items-center gap-2 rounded-[0.875rem] border border-rosa-200 bg-rosa-50 px-3 py-2 text-[0.875rem] font-semibold text-rosa">
+      <span className="min-w-0 flex-1">{children}</span>
+      {action}
     </div>
   );
 }

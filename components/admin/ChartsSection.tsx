@@ -7,6 +7,7 @@ import { Field, Select, TextInput } from "@/components/ds/Field";
 import { Segmented } from "@/components/ds/Controls";
 import { Button, IconButton } from "@/components/ds/Button";
 import { Modal } from "@/components/ui/Modal";
+import { FormError } from "@/components/admin/FormParts";
 import {
   BarChart,
   Bar,
@@ -272,6 +273,7 @@ export default function ChartsSection({
     topIngredients: ChartItem[];
   }>({ topCategories, topTags, topCooked, topIngredients });
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   const [period, setPeriod] = useState<PeriodState>(INITIAL_PERIOD);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -280,12 +282,16 @@ export default function ChartsSection({
 
   const fetchStats = useCallback(async (from: string, to: string) => {
     setLoading(true);
+    setLoadError(false);
     try {
       const params = new URLSearchParams();
       if (from) params.set("from", from);
       if (to) params.set("to", to);
       const res = await fetch(`/api/admin/stats?${params.toString()}`);
       if (res.ok) setData(await res.json());
+      else setLoadError(true);
+    } catch {
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -364,6 +370,18 @@ export default function ChartsSection({
           </IconButton>
         </div>
       </div>
+
+      {loadError && (
+        <FormError
+          action={
+            <Button size="sm" variant="secondary" onClick={() => void fetchStats(period.from, period.to)}>
+              Riprova
+            </Button>
+          }
+        >
+          Non riesco ad aggiornare i grafici: quelli sotto potrebbero non essere del periodo scelto.
+        </FormError>
+      )}
 
       <div className={loading ? "pointer-events-none opacity-50 transition-opacity" : "transition-opacity"}>
         {active === "categories" &&

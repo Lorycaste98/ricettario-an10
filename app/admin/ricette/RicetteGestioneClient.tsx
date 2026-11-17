@@ -115,7 +115,9 @@ export default function RicetteGestioneClient({ initialRecipes }: { initialRecip
             </AdminRow>
           );
         })}
-        {filtered.length === 0 && <AdminEmptyRow>Nessuna ricetta trovata.</AdminEmptyRow>}
+        {filtered.length === 0 && (
+          <AdminEmptyRow>{recipes.length === 0 ? "Ancora nessuna ricetta: creane una con «Nuova ricetta»." : "Nessuna ricetta con questi filtri."}</AdminEmptyRow>
+        )}
       </AdminTable>
     </div>
   );
