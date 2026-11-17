@@ -1,5 +1,5 @@
 import { clsx } from "clsx";
-import { ChefHat, EyeOff, Star } from "lucide-react";
+import { ChefHat, EyeOff, LockKeyhole, Star } from "lucide-react";
 import type { ReactNode } from "react";
 import { CuttingBoardIcon, LadleIcon, RisingDoughIcon, StoveIcon } from "@/components/icons";
 
@@ -19,7 +19,8 @@ export type TagTone =
   | "scale" //   6.8 dosi ricalcolate
   | "role" //    6.9 ruolo (superadmin)
   | "roleLight" // 6.9 ruolo (admin)
-  | "over"; //   6.10 quantità oltre il totale
+  | "over" //   6.10 quantità oltre il totale
+  | "admin"; //  D7 · etichetta «admin» accanto al titolo di Gestione
 
 const TONE: Record<TagTone, string> = {
   prep: "bg-blu-120 text-blu-800",
@@ -34,6 +35,7 @@ const TONE: Record<TagTone, string> = {
   role: "bg-blu-800 text-white",
   roleLight: "bg-blu-120 text-blu-800",
   over: "border border-rosa-200 bg-rosa-50 text-rosa",
+  admin: "bg-adm-900 text-white tracking-[0.06em] uppercase",
 };
 
 export function Tag({
@@ -117,5 +119,14 @@ export function Counter({ value, label }: { value: number; label: string }) {
     >
       {value}
     </span>
+  );
+}
+
+/** D7 · etichetta «admin» accanto al titolo delle pagine di Gestione */
+export function AdminTag() {
+  return (
+    <Tag tone="admin" icon={<LockKeyhole />} className="ml-[0.5em] align-[0.3em]">
+      admin
+    </Tag>
   );
 }

@@ -1,7 +1,12 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { CalendarDays, ChevronDown, Check } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { BarChart3, CalendarDays } from "lucide-react";
+import { Panel } from "@/components/ds/Panel";
+import { Field, Select, TextInput } from "@/components/ds/Field";
+import { Segmented } from "@/components/ds/Controls";
+import { Button, IconButton } from "@/components/ds/Button";
+import { Modal } from "@/components/ui/Modal";
 import {
   BarChart,
   Bar,
@@ -20,6 +25,17 @@ interface ChartItem {
 interface CategoryItem extends ChartItem {
   color: string;
 }
+
+/** Colori dei grafici (token del restyle; Recharts vuole valori, non classi) */
+const CHART_COLOR = {
+  recipes: "oklch(52% 0.091 228)", // blu-700
+  tags: "oklch(58% 0.12 70)", // area vocabolario
+  ingredients: "oklch(55% 0.11 135)", // area ingredienti
+  text: "oklch(25% 0.038 228)", // blu-950
+  muted: "oklch(51% 0.038 226)", // grigio
+  line: "oklch(91% 0.021 224)", // blu-150
+  hover: "oklch(98% 0.006 224)", // blu-50
+};
 
 function YAxisTick({
   x,
@@ -43,7 +59,7 @@ function YAxisTick({
         y={0}
         dy={4}
         textAnchor="end"
-        fill="#374151"
+        fill={CHART_COLOR.text}
         fontSize={12}
         fontFamily="inherit"
       >
@@ -56,14 +72,15 @@ function YAxisTick({
           style={{ cursor: "pointer" }}
           aria-label={`Escludi ${raw} dalle statistiche`}
         >
-          <circle cx={0} cy={6} r={7} fill="#f3f4f6" stroke="#d1d5db" strokeWidth={0.5} />
+          <circle cx={0} cy={6} r={8} fill="oklch(95% 0.03 6)" stroke="oklch(85% 0.08 6)" strokeWidth={1} />
           <text
             x={0}
             y={6}
             textAnchor="middle"
             dominantBaseline="middle"
-            fontSize={9}
-            fill="#9ca3af"
+            fontSize={11}
+            fontWeight={700}
+            fill="oklch(53.9% 0.193 6.5)"
             fontFamily="inherit"
           >
             ×
@@ -91,9 +108,21 @@ function HorizontalBarChart({
   onExclude?: (name: string) => void;
 }) {
   const maxValue = Math.max(...data.map((d) => d.value), 1);
+  // Su telefono la colonna dei nomi non deve mangiarsi le barre: al massimo ~40% della larghezza
+  const boxRef = useRef<HTMLDivElement>(null);
+  const [boxWidth, setBoxWidth] = useState(0);
+  useEffect(() => {
+    const el = boxRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([e]) => setBoxWidth(e.contentRect.width));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const yWidth = boxWidth ? Math.min(yAxisWidth, Math.round(boxWidth * 0.4)) : yAxisWidth;
+  const maxChars = Math.max(10, Math.floor((yWidth - (onExclude ? 24 : 8)) / 6.6));
 
   return (
-    <div className="[&_*:focus]:outline-none [&_svg:focus]:outline-none">
+    <div ref={boxRef} className="[&_*:focus]:outline-none [&_svg:focus]:outline-none">
     <ResponsiveContainer width="100%" height={Math.max(data.length * 36 + 16, 80)}>
       <BarChart
         layout="vertical"
@@ -106,37 +135,36 @@ function HorizontalBarChart({
           domain={[0, maxValue]}
           tickCount={Math.min(maxValue + 1, 6)}
           allowDecimals={false}
-          tick={{ fontSize: 11, fill: "#9ca3af" }}
+          tick={{ fontSize: 11, fill: CHART_COLOR.muted }}
           axisLine={false}
           tickLine={false}
         />
         <YAxis
           type="category"
           dataKey="name"
-          width={yAxisWidth}
+          width={yWidth}
           axisLine={false}
           tickLine={false}
           tick={(props) => (
-            <YAxisTick {...props} onExclude={onExclude} maxChars={onExclude ? 22 : 26} />
+            <YAxisTick {...props} onExclude={onExclude} maxChars={maxChars} />
           )}
         />
         <Tooltip
-          cursor={{ fill: "#f9fafb" }}
+          cursor={{ fill: CHART_COLOR.hover }}
           formatter={(val) =>
             unit ? [`${val ?? 0} ${unit}`, ""] : [val ?? 0, ""]
           }
           contentStyle={{
-            borderRadius: "8px",
-            border: "1px solid #e5e7eb",
+            borderRadius: "10px",
+            border: `1px solid ${CHART_COLOR.line}`,
             fontSize: 12,
           }}
-          labelStyle={{ fontWeight: 600, color: "#111827" }}
+          labelStyle={{ fontWeight: 700, color: CHART_COLOR.text }}
         />
         <Bar
           dataKey="value"
           radius={[0, 4, 4, 0]}
           fill={color}
-          fillOpacity={0.85}
         >
           {colors &&
             data.map((d, i) => <Cell key={d.name} fill={colors[i] ?? color} />)}
@@ -159,10 +187,10 @@ const CHART_OPTIONS: { key: ChartKey; label: string }[] = [
 type PresetKey = "all" | "month" | "3months" | "year" | "custom";
 
 const PRESET_OPTIONS: { key: Exclude<PresetKey, "custom">; label: string }[] = [
+  { key: "month", label: "Mese" },
+  { key: "3months", label: "3 mesi" },
+  { key: "year", label: "Anno" },
   { key: "all", label: "Tutto" },
-  { key: "month", label: "Ultimo mese" },
-  { key: "3months", label: "Ultimi 3 mesi" },
-  { key: "year", label: "Quest'anno" },
 ];
 
 function fmtDate(d: Date) {
@@ -213,6 +241,13 @@ function periodLabel(p: PeriodState) {
     return "Personalizzato";
   }
   return PRESET_OPTIONS.find((o) => o.key === p.preset)?.label ?? "Tutto";
+}
+
+export interface ChartsData {
+  topCategories: CategoryItem[];
+  topTags: ChartItem[];
+  topCooked: ChartItem[];
+  topIngredients: ChartItem[];
 }
 
 export default function ChartsSection({
@@ -294,127 +329,50 @@ export default function ChartsSection({
 
   const periodActive = period.preset !== "all";
   const emptyPeriodSuffix = periodActive ? " in questo periodo" : "";
+  const empty = (text: string) => <p className="py-6 text-center text-grigio">{text}{emptyPeriodSuffix}.</p>;
 
   return (
-    <section className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6">
-      {/* Header: titolo + controlli (periodo + scelta grafico) */}
-      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <span className="h-5 w-1.5 shrink-0 rounded-full bg-gradient-to-b from-orange-400 to-rose-500" />
-          <h2 className="truncate text-base font-bold text-gray-800">
-            {CHART_OPTIONS.find((o) => o.key === active)?.label}
-          </h2>
-        </div>
-
-        <div className="relative flex items-center gap-2">
-          {/* Period picker */}
-          <div>
-            <button
-              onClick={openPicker}
-              aria-label="Scegli il periodo"
-              className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium shadow-sm transition-colors ${
-                periodActive
-                  ? "border-orange-300 bg-orange-50 text-orange-700"
-                  : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
-              }`}
-            >
-              <CalendarDays size={13} className="shrink-0" />
-              <span className="max-w-[7.5rem] truncate">{periodLabel(period)}</span>
-              <ChevronDown size={12} className="shrink-0" />
-            </button>
-
-            {pickerOpen && (
-              <>
-                <div className="fixed inset-0 z-20" onClick={() => setPickerOpen(false)} />
-                <div className="absolute right-0 top-full z-30 mt-2 w-[min(17rem,calc(100vw-2.5rem))] space-y-3 rounded-xl border border-gray-100 bg-white p-3 shadow-xl">
-                  {/* Range personalizzato */}
-                  <div className="space-y-2">
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
-                      Intervallo
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <label className="flex-1 space-y-1">
-                        <span className="block text-[10px] text-gray-400">Da</span>
-                        <input
-                          type="date"
-                          value={customFrom}
-                          max={customTo || undefined}
-                          onChange={(e) => setCustomFrom(e.target.value)}
-                          className="w-full rounded-lg border border-gray-200 px-2 py-1 text-xs text-gray-700 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-300/30"
-                        />
-                      </label>
-                      <label className="flex-1 space-y-1">
-                        <span className="block text-[10px] text-gray-400">A</span>
-                        <input
-                          type="date"
-                          value={customTo}
-                          min={customFrom || undefined}
-                          onChange={(e) => setCustomTo(e.target.value)}
-                          className="w-full rounded-lg border border-gray-200 px-2 py-1 text-xs text-gray-700 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-300/30"
-                        />
-                      </label>
-                    </div>
-                    <button
-                      onClick={applyCustom}
-                      disabled={!customFrom && !customTo}
-                      className="w-full rounded-lg bg-gray-900 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      Applica intervallo
-                    </button>
-                  </div>
-
-                  {/* Preset rapidi */}
-                  <div className="space-y-1.5 border-t border-gray-100 pt-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
-                      Periodi rapidi
-                    </p>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      {PRESET_OPTIONS.map((o) => {
-                        const isActive = period.preset === o.key;
-                        return (
-                          <button
-                            key={o.key}
-                            onClick={() => applyPreset(o.key)}
-                            className={`flex items-center justify-between rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors ${
-                              isActive
-                                ? "border-orange-300 bg-orange-50 text-orange-700"
-                                : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
-                            }`}
-                          >
-                            {o.label}
-                            {isActive && <Check size={12} />}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Scelta grafico */}
-          <select
-            value={active}
-            onChange={(e) => setActive(e.target.value as ChartKey)}
-            aria-label="Scegli quale grafico mostrare"
-            className="shrink-0 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-300/30"
-          >
-            {CHART_OPTIONS.map((o) => (
-              <option key={o.key} value={o.key}>{o.label}</option>
-            ))}
-          </select>
+    <Panel
+      title="Statistiche"
+      icon={<BarChart3 />}
+      meta={period.preset === "custom" ? periodLabel(period) : undefined}
+    >
+      {/* 13.3 · scelta del grafico e del periodo */}
+      <div className="flex flex-wrap items-center gap-2">
+        <Select
+          value={active}
+          onChange={(e) => setActive(e.target.value as ChartKey)}
+          aria-label="Scegli quale grafico mostrare"
+          className="min-w-[12rem] flex-1"
+        >
+          {CHART_OPTIONS.map((o) => (
+            <option key={o.key} value={o.key}>
+              {o.label}
+            </option>
+          ))}
+        </Select>
+        <div className="flex flex-1 items-center gap-2">
+          <Segmented
+            label="Periodo"
+            value={period.preset === "custom" ? ("custom" as PresetKey) : period.preset}
+            onChange={(k) => k !== "custom" && applyPreset(k)}
+            options={PRESET_OPTIONS.map((o) => ({ value: o.key as PresetKey, label: o.label }))}
+            className="min-w-0 flex-1"
+          />
+          <IconButton label="Intervallo di date" size="md" shape="square" active={period.preset === "custom"} onClick={openPicker}>
+            <CalendarDays />
+          </IconButton>
         </div>
       </div>
 
       <div className={loading ? "pointer-events-none opacity-50 transition-opacity" : "transition-opacity"}>
         {active === "categories" &&
           (data.topCategories.length === 0 ? (
-            <p className="text-sm text-gray-400">Nessuna categoria con ricette associate{emptyPeriodSuffix}.</p>
+            empty("Nessuna categoria con ricette associate")
           ) : (
             <HorizontalBarChart
               data={data.topCategories}
-              color="#f97316"
+              color={CHART_COLOR.recipes}
               colors={data.topCategories.map((c) => c.color)}
               unit="ricette"
               yAxisWidth={170}
@@ -422,41 +380,44 @@ export default function ChartsSection({
           ))}
 
         {active === "tags" &&
-          (data.topTags.length === 0 ? (
-            <p className="text-sm text-gray-400">Nessun tag con ricette associate{emptyPeriodSuffix}.</p>
-          ) : (
-            <HorizontalBarChart data={data.topTags} color="#8b5cf6" unit="ricette" yAxisWidth={170} />
-          ))}
+          (data.topTags.length === 0 ? empty("Nessun tag con ricette associate") : <HorizontalBarChart data={data.topTags} color={CHART_COLOR.tags} unit="ricette" yAxisWidth={170} />)}
 
         {active === "cooked" &&
-          (data.topCooked.length === 0 ? (
-            <p className="text-sm text-gray-400">Nessuna cottura registrata{emptyPeriodSuffix}.</p>
-          ) : (
-            <HorizontalBarChart data={data.topCooked} color="#f97316" unit="volte" yAxisWidth={140} />
-          ))}
+          (data.topCooked.length === 0 ? empty("Nessuna cottura registrata") : <HorizontalBarChart data={data.topCooked} color={CHART_COLOR.recipes} unit="volte" yAxisWidth={140} />)}
 
         {active === "ingredients" && (
           <>
-            <div className="-mt-1 mb-3 text-right">
-              <span className="text-xs text-gray-400">× per escludere</span>
-            </div>
+            <p className="mb-2 text-right text-(length:--fs-meta) text-grigio">Tocca × per togliere un ingrediente dalle statistiche</p>
             {data.topIngredients.length === 0 ? (
-              <p className="text-sm text-gray-400">Nessun ingrediente trovato{emptyPeriodSuffix}.</p>
+              empty("Nessun ingrediente trovato")
             ) : (
-              <HorizontalBarChart
-                data={data.topIngredients}
-                color="#6366f1"
-                unit="ricette"
-                yAxisWidth={190}
-                onExclude={handleExclude}
-              />
+              <HorizontalBarChart data={data.topIngredients} color={CHART_COLOR.ingredients} unit="ricette" yAxisWidth={190} onExclude={handleExclude} />
             )}
-            {excluding && (
-              <p className="mt-2 text-xs text-gray-400">Esclusione di «{excluding}»…</p>
-            )}
+            {excluding && <p className="mt-2 text-(length:--fs-meta) text-grigio">Esclusione di «{excluding}»…</p>}
           </>
         )}
       </div>
-    </section>
+
+      <Modal open={pickerOpen} onClose={() => setPickerOpen(false)} title="Intervallo di date" size="sm">
+        <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-2 gap-2.5">
+            <Field label="Dal">
+              {(p) => <TextInput {...p} type="date" value={customFrom} max={customTo || undefined} onChange={(e) => setCustomFrom(e.target.value)} />}
+            </Field>
+            <Field label="Al">
+              {(p) => <TextInput {...p} type="date" value={customTo} min={customFrom || undefined} onChange={(e) => setCustomTo(e.target.value)} />}
+            </Field>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" onClick={() => setPickerOpen(false)}>
+              Annulla
+            </Button>
+            <Button onClick={applyCustom} disabled={!customFrom && !customTo}>
+              Applica
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    </Panel>
   );
 }

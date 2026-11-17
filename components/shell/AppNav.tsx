@@ -88,7 +88,7 @@ function Badge({ n }: { n?: number }) {
 }
 
 /** 9.1 · barra laterale (≥ 700px) */
-export function NavRail() {
+export function NavRail({ adminArea = false }: { adminArea?: boolean }) {
   const { main, admin } = useNavItems();
   const isActive = useIsActive();
   const { isAdmin, username, loading } = useAuth();
@@ -107,8 +107,9 @@ export function NavRail() {
       >
         <span
           className={clsx(
-            "relative flex h-[2.375rem] w-11 items-center justify-center rounded-ctl transition-colors [--ring:var(--color-blu-800)] [&>svg]:size-[1.375rem]",
-            on ? "bg-arancio text-white" : "group-hover:bg-blu-700"
+            "relative flex h-[2.375rem] w-11 items-center justify-center rounded-ctl transition-colors [&>svg]:size-[1.375rem]",
+            adminArea ? "[--ring:var(--color-adm-900)]" : "[--ring:var(--color-blu-800)]",
+            on ? "bg-arancio text-white" : adminArea ? "group-hover:bg-white/10" : "group-hover:bg-blu-700"
           )}
         >
           <Icon />
@@ -122,7 +123,10 @@ export function NavRail() {
   return (
     <nav
       aria-label="Navigazione principale"
-      className="sticky top-0 hidden h-dvh w-[clamp(4.5rem,calc(4.5rem+12*var(--f)),5.25rem)] shrink-0 flex-col items-center gap-3.5 bg-blu-800 pb-4 text-nav-ink min-[700px]:flex"
+      className={clsx(
+        "sticky top-0 hidden h-dvh w-[clamp(4.5rem,calc(4.5rem+12*var(--f)),5.25rem)] shrink-0 flex-col items-center gap-3.5 pb-4 text-nav-ink transition-colors min-[700px]:flex",
+        adminArea ? "bg-adm-900" : "bg-blu-800"
+      )}
       style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1rem)" }}
     >
       <Link href="/" aria-label="AN10 · home" className="mb-1 text-white">
@@ -138,7 +142,7 @@ export function NavRail() {
               onClick={() => setAccountOpen(true)}
               className="flex flex-col items-center gap-1 text-[0.6875rem] text-nav-ink hover:text-white"
             >
-              <span className="flex size-[2.375rem] items-center justify-center rounded-full border border-blu-700 bg-blu-950/30 [&>svg]:size-5">
+              <span className={clsx("flex size-[2.375rem] items-center justify-center rounded-full border bg-blu-950/30 [&>svg]:size-5", adminArea ? "border-white/20" : "border-blu-700")}>
                 <ChefHat />
               </span>
               <span className="max-w-[4.5rem] truncate">{username || "Account"}</span>
