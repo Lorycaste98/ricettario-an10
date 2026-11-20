@@ -1,6 +1,6 @@
 # Restyle · piano d'azione e TODO
 
-> Branch: `feat/restyle-frontend` · aggiornato al 17/11/2026
+> Branch: `feat/restyle-frontend` · aggiornato al 20/11/2026
 > Riferimenti: `DESIGN.md` (decisioni D1–D8), `PRODUCT.md`, tavola `docs/design/elementi-*.png` (codici elemento), prototipi `docs/design/ricetta.html` e `docs/design/schermate/`, token `docs/design/tokens.css`, logo `docs/design/loghi/kit/GUIDA.md`.
 > Prima di toccare l'interfaccia: skill `ricettario-design`.
 
@@ -173,20 +173,23 @@
 
 ## Fase 8 · Rifinitura
 **Obiettivo:** chiudere i punti rimasti aperti nelle fasi precedenti, prima delle prove complete della fase 9.
-- [ ] Animazione del logo (`docs/design/loghi/kit/logo-animato.html`) solo nei momenti speciali: avvio o pagina di accesso, mai in loop.
-- [ ] Stati vuoti (10.3) e messaggi di errore in tutte le liste.
-- [ ] Interno delle recensioni (`ReviewBubble`, `ReviewCarousel`, `Collapsible`) e voto 4.12 in `PersonalRatingCard` (vedi fase 3); poi eliminare i vecchi `components/ui/Input`, `Button`, `Rating` se restano senza uso.
-- [ ] PDF: il piè di pagina (`PdfFooter`, «Ricettario AN10 · data · pagina») non viene disegnato da react-pdf (difetto preesistente).
-- [ ] Togliere i resti dello stile vecchio: ora tutte le pagine sono rifatte, quindi `RESTYLED` in `AppShell`, il gradiente `.page-bg` e lo stile «vetro» in `globals.css` non servono più.
-- [ ] Accessibilità: contrasto, bersagli toccabili da almeno 44px su telefono, navigazione da tastiera su PC, `aria` di interruttori e segmenti.
-- [ ] Revisione con la skill `impeccable` (polish e audit) e confronto con le foto in `.playwright-mcp/before/`.
-- [ ] Rigenerare `DESIGN.md` dal codice (impeccable `document`), tenendo le decisioni D1–D8.
-- [ ] Aggiornare `CLAUDE.md`: classi base, componenti nuovi, regole su icone e logo; eliminare le note sullo stile vetro e sul gradiente.
-- [ ] **Ricerca globale (fase 3B), da riprendere a fine restyle:** rivedere insieme la prima versione e decidere le estensioni:
-  - [ ] cercare anche nel testo dei passi e nelle note (oggi solo nomi, categorie, tag, ingredienti);
-  - [ ] ricerche recenti nello stato iniziale;
-  - [ ] quantità tipiche e cotture nelle statistiche degli ingredienti;
-  - [ ] eliminare il vecchio `/api/search` se resta inutilizzato.
+- [x] Animazione del logo (`docs/design/loghi/kit/logo-animato.html`) solo nei momenti speciali: avvio o pagina di accesso, mai in loop.
+- [x] Stati vuoti (10.3) e messaggi di errore in tutte le liste.
+- [x] Interno delle recensioni (`ReviewBubble`, `ReviewCarousel`, `Collapsible`) e voto 4.12 in `PersonalRatingCard` (vedi fase 3); poi eliminare i vecchi `components/ui/Input`, `Button`, `Rating` se restano senza uso.
+- [x] PDF: il piè di pagina (`PdfFooter`, «Ricettario AN10 · data · pagina») non viene disegnato da react-pdf (difetto preesistente).
+- [x] Togliere i resti dello stile vecchio: ora tutte le pagine sono rifatte, quindi `RESTYLED` in `AppShell`, il gradiente `.page-bg` e lo stile «vetro» in `globals.css` non servono più.
+- [x] Accessibilità: contrasto, bersagli toccabili da almeno 44px su telefono, navigazione da tastiera su PC, `aria` di interruttori e segmenti.
+- [x] Revisione con la skill `impeccable` (polish e audit) e confronto con le foto in `.playwright-mcp/before/`.
+- [x] Rigenerare `DESIGN.md` dal codice (impeccable `document`), tenendo le decisioni D1–D8.
+- [x] Aggiornare `CLAUDE.md`: classi base, componenti nuovi, regole su icone e logo; eliminare le note sullo stile vetro e sul gradiente.
+- [x] **Ricerca globale (fase 3B), da riprendere a fine restyle:** rivedere insieme la prima versione e decidere le estensioni:
+  - [x] cercare anche nel testo dei passi e nelle note (oggi solo nomi, categorie, tag, ingredienti);
+  - [x] ricerche recenti nello stato iniziale;
+  - [x] quantità tipiche e cotture nelle statistiche degli ingredienti;
+  - [x] eliminare il vecchio `/api/search` se resta inutilizzato.
+
+> **Stato 20/11/2026:** fatta. Recensioni nel nuovo stile (`ReviewBubble`, carosello, `Collapsible`, testata comune, «Il mio voto» con 4.12); via lo stile vecchio (gradiente, `RESTYLED`, `ui/Input`, `ui/Button`, `ui/Rating`, `ui/Badge`, `ui/PriceTag`, `ui/Skeleton`, `ui/ConfirmDialog`, `lib/review-style`, `/api/search`); piè di pagina dei PDF di nuovo visibile; pagine di errore e «non trovata», errori di caricamento con «Riprova»; logo animato nell'accesso; accessibilità (`hit-44`, segmenti da tastiera, focus comune, verde e link più contrastati, `arancio-pieno` per i fondi con testo bianco); «Inizia a cucinare» tonale; ricerca con testo dei passi e note, ricerche recenti, quantità tipiche e cotture; `CLAUDE.md` e `DESIGN.md` (unito: token + sezioni standard + D1–D8). Audit `impeccable`: nessun problema bloccante; i 5 avvisi del rilevatore (fili e bordi di colore di area, rimbalzo del logo animato) sono scelte della tavola, non errori. Da guardare nelle prove: le soglie di 44px su iPhone vero.
+
 
 ---
 
