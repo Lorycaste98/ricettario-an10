@@ -216,7 +216,13 @@ export interface SearchIndexRecipe {
   tags: string[];
   /** Nomi degli ingredienti, nell'ordine della ricetta */
   ingredients: string[];
+  /** Quantità e unità di ogni ingrediente (stesso ordine di `ingredients`); null = non indicata/q.b. */
+  amounts: [number | null, string | null][];
   steps: number;
+  /** Testo dei passi e note, uno per riga (si cerca anche qui) */
+  text: string;
+  /** Cotture registrate (`Recipe.cookCount`) */
+  cooks: number;
 }
 
 export interface SearchIndexMenu {

@@ -1,7 +1,8 @@
 /**
  * Indice della ricerca globale (overlay «Cerca», `components/search/SearchOverlay.tsx`).
  *
- * Una sola risposta compatta con ricette, menù e nomi degli ingredienti: il browser la scarica
+ * Una sola risposta compatta con ricette (anche testo dei passi, note, quantità e cotture), menù e
+ * nomi degli ingredienti: il browser la scarica
  * alla prima apertura della ricerca e da lì cerca in locale (nessuna richiesta per lettera).
  * Gli ingredienti non hanno una lista a parte: si ricavano dalle ricette lato client.
  *
@@ -34,8 +35,10 @@ async function buildSearchIndex(isAdmin: boolean): Promise<SearchIndex> {
         published: true,
         categories: { select: { category: { select: { name: true, color: true } } } },
         tags: { select: { tag: { select: { name: true } } } },
-        ingredients: { select: { name: true }, orderBy: { order: "asc" } },
-        _count: { select: { steps: true } },
+        notes: true,
+        cookCount: true,
+        ingredients: { select: { name: true, qty: true, unit: true }, orderBy: { order: "asc" } },
+        steps: { select: { text: true }, orderBy: { order: "asc" } },
       },
     }),
     db.menu.findMany({
@@ -68,6 +71,7 @@ async function buildSearchIndex(isAdmin: boolean): Promise<SearchIndex> {
   return {
     recipes: recipes.map((r) => {
       const rt = ratingById.get(r.id);
+      const ingr = r.ingredients.map((i) => ({ ...i, name: i.name.trim() })).filter((i) => i.name);
       return {
         id: r.id,
         name: r.name,
@@ -80,8 +84,12 @@ async function buildSearchIndex(isAdmin: boolean): Promise<SearchIndex> {
         reviews: rt?._count ?? 0,
         categories: r.categories.map((c) => c.category),
         tags: r.tags.map((t) => t.tag.name),
-        ingredients: r.ingredients.map((i) => i.name.trim()).filter(Boolean),
-        steps: r._count.steps,
+        ingredients: ingr.map((i) => i.name),
+        amounts: ingr.map((i) => [i.qty != null && i.qty > 0 ? round1(i.qty) : null, i.unit?.trim() || null]),
+        steps: r.steps.length,
+        // Testo dei passi e note (fase 8): si cerca anche lì, con il punteggio più basso
+        text: [...r.steps.map((s) => s.text.trim()), r.notes?.trim() ?? ""].filter(Boolean).join("\n"),
+        cooks: r.cookCount,
       };
     }),
     menus: menus.map((m) => {

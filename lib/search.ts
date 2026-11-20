@@ -5,8 +5,11 @@
  * - `prepareIndex` normalizza una volta i testi (minuscole, senza accenti) e ricava gli
  *   **ingredienti** raggruppando per nome i `Ingredient` di tutte le ricette.
  * - `runSearch` cerca per parole: ogni parola deve comparire da qualche parte; il punteggio
- *   premia il nome (inizio > inizio di parola > dentro) rispetto a categorie, tag e ingredienti.
- * - `ingredientStats` produce le statistiche mostrate nell'anteprima di un ingrediente.
+ *   premia il nome (inizio > inizio di parola > dentro) rispetto a categorie, tag, ingredienti e,
+ *   per ultimo, testo dei passi e note (fase 8: lì la riga mostra un estratto del testo).
+ * - `ingredientStats` produce le statistiche mostrate nell'anteprima di un ingrediente
+ *   (anche quantità tipica e cotture registrate).
+ * - Le ricerche recenti le ricorda l'overlay (localStorage, `ricettario:search-recent`).
  * - `openSearch()` apre l'overlay da qualsiasi punto (evento `window`, come `openPhotoViewer`).
  */
 import type { SearchIndex, SearchIndexMenu, SearchIndexRecipe } from "@/lib/types";
@@ -37,7 +40,7 @@ export interface IngredientEntry {
 
 export interface PreparedIndex {
   raw: SearchIndex;
-  recipes: (SearchIndexRecipe & { n: string; nCats: string[]; nTags: string[]; nIngr: string[] })[];
+  recipes: (SearchIndexRecipe & { n: string; nCats: string[]; nTags: string[]; nIngr: string[]; nText: string })[];
   menus: (SearchIndexMenu & { n: string; nDesc: string; recipeNames: string[]; nRecipes: string[] })[];
   ingredients: (IngredientEntry & { n: string })[];
   recipeById: Map<number, SearchIndexRecipe>;
@@ -75,6 +78,7 @@ export function prepareIndex(raw: SearchIndex): PreparedIndex {
       nCats: r.categories.map((c) => normalizeSearchText(c.name)),
       nTags: r.tags.map(normalizeSearchText),
       nIngr: r.ingredients.map(normalizeSearchText),
+      nText: normalizeSearchText(r.text ?? ""),
     })),
     menus: raw.menus.map((m) => {
       const recipeNames = [
@@ -100,7 +104,26 @@ export function prepareIndex(raw: SearchIndex): PreparedIndex {
 // ---------------------------------------------------------------------------
 // Ricerca
 // ---------------------------------------------------------------------------
-export type SearchHit<T> = { item: T; score: number; /** perché è uscita (es. l'ingrediente trovato) */ via?: string };
+export type SearchHit<T> = {
+  item: T;
+  score: number;
+  /** perché è uscita: l'ingrediente o la ricetta trovata («con …») */
+  via?: string;
+  /** estratto del testo dei passi o delle note in cui compare la parola */
+  snippet?: string;
+};
+
+/** Pezzo di testo attorno alla posizione `at` (gli indici del testo normalizzato coincidono con
+    quelli del testo originale: le lettere accentate restano un carattere) */
+function snippetAround(text: string, at: number, len: number) {
+  const line0 = text.lastIndexOf("\n", at) + 1;
+  const lineEnd = text.indexOf("\n", at);
+  const line = text.slice(line0, lineEnd < 0 ? undefined : lineEnd);
+  const pos = at - line0;
+  const from = Math.max(0, pos - 30);
+  const to = Math.min(line.length, pos + len + 50);
+  return (from > 0 ? "…" : "") + line.slice(from, to).trim() + (to < line.length ? "…" : "");
+}
 
 export interface SearchResults {
   recipes: SearchHit<SearchIndexRecipe>[];
@@ -138,6 +161,7 @@ export function runSearch(idx: PreparedIndex, query: string): SearchResults {
   for (const r of idx.recipes) {
     let score = 0;
     let via: string | undefined;
+    let snippet: string | undefined;
     let ok = true;
     for (const t of tokens) {
       const s = nameScore(r.n, t);
@@ -145,10 +169,13 @@ export function runSearch(idx: PreparedIndex, query: string): SearchResults {
       if (r.nCats.some((c) => c.includes(t)) || r.nTags.some((g) => g.includes(t))) { score += 25; continue; }
       const i = bestIn(r.nIngr, t);
       if (i >= 0) { score += 18; via ??= r.ingredients[i]; continue; }
+      // Testo dei passi e note: ultima risorsa, solo da 3 lettere (altrimenti esce quasi tutto)
+      const at = t.length >= 3 ? r.nText.indexOf(t) : -1;
+      if (at >= 0) { score += 8; snippet ??= snippetAround(r.text, at, t.length); continue; }
       ok = false;
       break;
     }
-    if (ok) recipes.push({ item: r, score: score - r.n.length / 100, via });
+    if (ok) recipes.push({ item: r, score: score - r.n.length / 100, via, snippet: via ? undefined : snippet });
   }
 
   const menus: SearchHit<SearchIndexMenu>[] = [];
@@ -200,6 +227,17 @@ export interface IngredientStats {
   byCategory: { name: string; color: string; count: number }[];
   /** Ingredienti che compaiono più spesso nelle stesse ricette (esclusi quelli fuori statistica) */
   together: { key: string; name: string; count: number }[];
+  /** Quantità tipica: mediana nell'unità più usata, con il campo di variazione */
+  typical: { qty: number; unit: string | null; min: number; max: number; count: number } | null;
+  /** Cotture registrate delle ricette che lo usano, e la più cucinata */
+  cooks: number;
+  topCooked: SearchIndexRecipe | null;
+}
+
+function median(xs: number[]) {
+  const s = [...xs].sort((a, b) => a - b);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 }
 
 export function ingredientStats(idx: PreparedIndex, key: string): IngredientStats | null {
@@ -234,6 +272,26 @@ export function ingredientStats(idx: PreparedIndex, key: string): IngredientStat
     .slice(0, 8)
     .map(([k, count]) => ({ key: k, name: idx.ingredientByKey.get(k)?.name ?? k, count }));
 
+  // Quantità: per unità (minuscole), si tiene l'unità con più ricette
+  const byUnit = new Map<string, { unit: string | null; qtys: number[] }>();
+  for (const r of recipes) {
+    r.ingredients.forEach((name, i) => {
+      if (normalizeSearchText(name) !== key) return;
+      const [qty, unit] = r.amounts?.[i] ?? [null, null];
+      if (qty == null) return;
+      const u = unit?.toLowerCase() ?? "";
+      const g = byUnit.get(u) ?? { unit, qtys: [] };
+      g.qtys.push(qty);
+      byUnit.set(u, g);
+    });
+  }
+  const best = [...byUnit.values()].sort((a, b) => b.qtys.length - a.qtys.length)[0];
+  const typical = best
+    ? { qty: Math.round(median(best.qtys) * 10) / 10, unit: best.unit, min: Math.min(...best.qtys), max: Math.max(...best.qtys), count: best.qtys.length }
+    : null;
+
+  const cooked = recipes.filter((r) => (r.cooks ?? 0) > 0).sort((a, b) => b.cooks - a.cooks);
+
   return {
     entry,
     recipes,
@@ -241,6 +299,9 @@ export function ingredientStats(idx: PreparedIndex, key: string): IngredientStat
     menus,
     byCategory: [...cats.values()].sort((a, b) => b.count - a.count),
     together,
+    typical,
+    cooks: recipes.reduce((s, r) => s + (r.cooks ?? 0), 0),
+    topCooked: cooked[0] ?? null,
   };
 }
 

@@ -5,7 +5,9 @@ import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { clsx } from "clsx";
-import { ArrowRight, ChevronLeft, ChevronRight, Clock, ListOrdered, Search, Users } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight, Clock, History, ListOrdered, Search, Users } from "lucide-react";
+import { useLocalStore } from "@/lib/local-store";
+import { formatQty } from "@/lib/step-ingredients";
 import { useAuth } from "@/components/AuthProvider";
 import { An10Logo } from "@/components/brand/An10Logo";
 import { ClocheIcon, GroceryBagIcon } from "@/components/icons";
@@ -44,6 +46,18 @@ const GROUPS: Group[] = ["recipes", "menus", "ingredients"];
 const STALE_MS = 5 * 60 * 1000;
 let cache: { admin: boolean; at: number; idx: PreparedIndex } | null = null;
 
+/** Ricerche recenti di questo dispositivo (fase 8): le ultime 6, la più nuova in testa */
+const RECENT_KEY = "ricettario:search-recent";
+const RECENT_MAX = 6;
+function parseRecent(raw: string): string[] {
+  try {
+    const v: unknown = JSON.parse(raw);
+    return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string").slice(0, RECENT_MAX) : [];
+  } catch {
+    return [];
+  }
+}
+
 function useWide() {
   return useSyncExternalStore(
     (cb) => {
@@ -67,6 +81,7 @@ export function SearchOverlay() {
   const [idx, setIdx] = useState<PreparedIndex | null>(cache?.idx ?? null);
   const [error, setError] = useState(false);
   const [stack, setStack] = useState<Sel[]>([]);
+  const [recent, setRecent] = useLocalStore<string[]>(RECENT_KEY, [], parseRecent);
   const wide = useWide();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -156,7 +171,16 @@ export function SearchOverlay() {
   const current: Sel | null = stack.at(-1) ?? (wide ? flat[0] ?? null : null);
   const highlighted = stack[0] ?? (wide ? flat[0] ?? null : null);
 
-  const select = (s: Sel) => setStack([s]);
+  // Una ricerca entra fra le recenti quando se ne apre un risultato (non a ogni lettera)
+  const remember = () => {
+    const q = query.trim();
+    if (q.length < 2) return;
+    setRecent([q, ...recent.filter((x) => x.toLowerCase() !== q.toLowerCase())].slice(0, RECENT_MAX));
+  };
+  const select = (s: Sel) => {
+    remember();
+    setStack([s]);
+  };
   const push = (s: Sel) => setStack((st) => [...(st.length ? st : current ? [current] : []), s]);
   const back = () => setStack((st) => st.slice(0, -1));
 
@@ -269,7 +293,17 @@ export function SearchOverlay() {
               ))}
             </div>
           ) : !hasQuery ? (
-            <StartState idx={usable} onPick={(s) => select(s)} />
+            <StartState
+              idx={usable}
+              recent={recent}
+              onRecent={(q) => {
+                setQuery(q);
+                setStack([]);
+                inputRef.current?.focus();
+              }}
+              onClearRecent={() => setRecent([])}
+              onPick={(s) => select(s)}
+            />
           ) : flat.length === 0 ? (
             <EmptyState icon={<Search />} title="Nessun risultato" className="m-1">
               Prova con un&apos;altra parola o con il nome di un ingrediente.
@@ -298,7 +332,10 @@ export function SearchOverlay() {
                 backLabel={stack.length > 1 ? "Indietro" : "Risultati"}
                 onBack={back}
                 onPush={push}
-                onNavigate={close}
+                onNavigate={() => {
+                  remember();
+                  close();
+                }}
               />
             ) : (
               <div className="flex h-full items-center justify-center p-8 text-center text-[0.875rem] text-grigio">
@@ -316,10 +353,39 @@ export function SearchOverlay() {
 // ---------------------------------------------------------------------------
 // Stato iniziale e lista risultati
 // ---------------------------------------------------------------------------
-function StartState({ idx, onPick }: { idx: PreparedIndex; onPick: (s: Sel) => void }) {
+function StartState({
+  idx,
+  recent,
+  onRecent,
+  onClearRecent,
+  onPick,
+}: {
+  idx: PreparedIndex;
+  recent: string[];
+  onRecent: (q: string) => void;
+  onClearRecent: () => void;
+  onPick: (s: Sel) => void;
+}) {
   const top = topIngredients(idx, 12);
   return (
     <div className="flex flex-col gap-4 p-2">
+      {recent.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-(length:--fs-meta) font-bold tracking-wide text-grigio uppercase">Ricerche recenti</h3>
+            <Button variant="ghost" size="sm" onClick={onClearRecent}>
+              Cancella
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {recent.map((q) => (
+              <Chip key={q} icon={<History />} onClick={() => onRecent(q)}>
+                {q}
+              </Chip>
+            ))}
+          </div>
+        </div>
+      )}
       <p className="text-[0.875rem] text-grigio">
         Cerca fra <b className="text-blu-950">{idx.raw.recipes.length}</b> ricette, <b className="text-blu-950">{idx.raw.menus.length}</b> menù e{" "}
         <b className="text-blu-950">{idx.ingredients.length}</b> ingredienti.
@@ -380,7 +446,13 @@ function ResultList({
                 <RowTitle hidden={!h.item.published}>{h.item.name}</RowTitle>
                 <RowMeta>
                   {h.item.categories[0] && <span className="size-2 shrink-0 rounded-full" style={{ background: h.item.categories[0].color }} />}
-                  {h.via ? <span className="truncate">con {h.via}</span> : h.item.time > 0 && <span className="tabular">{formatMinutes(h.item.time)}</span>}
+                  {h.via ? (
+                    <span className="truncate">con {h.via}</span>
+                  ) : h.snippet ? (
+                    <span className="truncate" title={h.snippet}>«{h.snippet}»</span>
+                  ) : (
+                    h.item.time > 0 && <span className="tabular">{formatMinutes(h.item.time)}</span>
+                  )}
                 </RowMeta>
               </Row>
             );
@@ -727,6 +799,22 @@ function IngredientPreview({ idx, k, onPush }: { idx: PreparedIndex; k: string; 
       <div className="grid grid-cols-2 gap-2">
         <Stat value={st.recipes.length} label={st.recipes.length === 1 ? "ricetta" : "ricette"} note={`${Math.round(st.share * 100)}% del ricettario`} />
         <Stat value={st.menus.length} label="menù" note={st.menus.length ? "con almeno una di queste ricette" : "in nessun menù"} />
+        {st.typical && (
+          <StatText
+            value={`${formatQty(st.typical.qty)}${st.typical.unit ? ` ${st.typical.unit}` : ""}`}
+            label="di solito"
+            note={
+              st.typical.count > 1 && st.typical.min !== st.typical.max
+                ? `da ${formatQty(st.typical.min)} a ${formatQty(st.typical.max)} · ${st.typical.count} ricette`
+                : `in ${st.typical.count === 1 ? "una ricetta" : `${st.typical.count} ricette`}`
+            }
+          />
+        )}
+        <Stat
+          value={st.cooks}
+          label={st.cooks === 1 ? "cottura" : "cotture"}
+          note={st.topCooked ? `la più cucinata: ${st.topCooked.name}` : "nessuna cottura registrata"}
+        />
       </div>
 
       {st.byCategory.length > 0 && (
@@ -766,6 +854,19 @@ function IngredientPreview({ idx, k, onPush }: { idx: PreparedIndex; k: string; 
         ))}
       </div>
     </>
+  );
+}
+
+/** Come `Stat`, con un valore testuale (es. «200 g») */
+function StatText({ value, label, note }: { value: string; label: string; note: string }) {
+  return (
+    <div className="flex min-w-0 flex-col rounded-card bg-blu-100 px-3 py-2.5">
+      <span className="flex flex-wrap items-baseline gap-x-1.5">
+        <span className="tabular text-[1.375rem] leading-none font-bold text-arancio">{value}</span>
+        <span className="font-semibold">{label}</span>
+      </span>
+      <span className="mt-1 text-(length:--fs-meta) text-grigio">{note}</span>
+    </div>
   );
 }
 
