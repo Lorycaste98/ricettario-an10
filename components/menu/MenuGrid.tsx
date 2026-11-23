@@ -29,6 +29,9 @@ const PUBLISHED_OPTIONS: { value: PublishedFilter; label: string }[] = [
 
 // Persistenza filtri: restano salvati anche tornando indietro dalla pagina di dettaglio
 const K = "ricettario:menu-list:";
+// Ordinamento: in localStorage (resta anche chiudendo la scheda/app), chiavi distinte da
+// quelle per-scheda così i vecchi valori in sessionStorage non contano più
+const SK = "ricettario:menu-sort:";
 const parseStr = (raw: string): string => {
   const v = JSON.parse(raw);
   return typeof v === "string" ? v : "";
@@ -54,10 +57,11 @@ interface Props {
 
 export function MenuGrid({ menus }: Props) {
   const { isAdmin } = useAuth();
-  // Filtri per-scheda: persistono durante la navigazione ma si azzerano alla chiusura scheda
+  // Filtri per-scheda: persistono durante la navigazione ma si azzerano alla chiusura scheda.
+  // Fa eccezione l'ordinamento (sort + order), salvato sul dispositivo.
   const [q, setQ] = useLocalStore<string>(K + "q", "", parseStr, undefined, "session");
-  const [sort, setSort] = useLocalStore<SortKey>(K + "sort", "date", parseSort, undefined, "session");
-  const [order, setOrder] = useLocalStore<"asc" | "desc">(K + "order", "asc", parseOrder, undefined, "session");
+  const [sort, setSort] = useLocalStore<SortKey>(SK + "sort", "date", parseSort);
+  const [order, setOrder] = useLocalStore<"asc" | "desc">(SK + "order", "asc", parseOrder);
   const [publishedFilter, setPublishedFilter] = useLocalStore<PublishedFilter>(
     K + "published",
     "all",

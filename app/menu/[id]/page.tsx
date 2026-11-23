@@ -84,7 +84,11 @@ export default async function MenuDetailPage({ params }: Params) {
                 date: menu.date,
                 servingTime: menu.servingTime,
                 photo: menu.photo,
-                recipeIds: (menu.recipes as { recipe: { id: number } }[]).map((mr) => mr.recipe.id),
+                // Tutte le ricette in ordine di menù: le "veloci" compaiono solo nell'elenco della
+                // copertina (non hanno dettaglio: GET /api/recipes/[id] → 404)
+                recipes: (menu.recipes as { recipe: { id: number; name: string; quick: boolean } }[]).map(
+                  (mr) => ({ id: mr.recipe.id, name: mr.recipe.name, quick: mr.recipe.quick })
+                ),
               }}
             />
           }

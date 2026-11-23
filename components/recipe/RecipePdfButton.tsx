@@ -20,12 +20,44 @@ export interface RecipePdfData {
   steps: { text: string; mins: number | null; kind?: string; stepIngredients?: StepIngredientLink[] }[];
 }
 
-/** Scarica un'immagine remota e la converte in data URL (per includerla nel PDF in modo affidabile). */
+/** Formati che `@react-pdf/renderer` sa disegnare: tutto il resto fa fallire l'intero PDF. */
+const PDF_IMAGE_TYPES = new Set(["image/jpeg", "image/jpg", "image/png"]);
+
+/** Ridisegna l'immagine su un canvas e la riesporta in JPEG (WebP, HEIC, AVIF, GIF…). */
+async function blobToJpegDataUrl(blob: Blob): Promise<string | undefined> {
+  const objectUrl = URL.createObjectURL(blob);
+  try {
+    const img = new window.Image();
+    img.src = objectUrl;
+    await img.decode();
+    const canvas = document.createElement("canvas");
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx || !canvas.width || !canvas.height) return undefined;
+    // Sfondo bianco: il JPEG non ha trasparenza (un PNG/WebP trasparente diventerebbe nero)
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0);
+    return canvas.toDataURL("image/jpeg", 0.9);
+  } catch {
+    return undefined;
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
+/**
+ * Scarica un'immagine remota e la converte in data URL (per includerla nel PDF in modo affidabile).
+ * Le foto in formati che react-pdf non legge vengono convertite in JPEG; se nemmeno questo
+ * riesce si restituisce `undefined` e il PDF esce senza quella foto invece di fallire.
+ */
 export async function urlToDataUrl(url: string): Promise<string | undefined> {
   try {
     const res = await fetch(url);
     if (!res.ok) return undefined;
     const blob = await res.blob();
+    if (!PDF_IMAGE_TYPES.has(blob.type.toLowerCase())) return await blobToJpegDataUrl(blob);
     return await new Promise<string | undefined>((resolve) => {
       const fr = new FileReader();
       fr.onloadend = () => resolve(fr.result as string);
