@@ -138,7 +138,7 @@ function processMenuRow(m: {
   createdAt: Date;
   _count: { recipeReviews: number; recipes: number };
   recipeReviews: { rating: number }[];
-  recipes: { order: number; recipe: { photo: string | null } }[];
+  recipes: { order: number; recipe: { photo: string | null; name: string } }[];
 }) {
   // Media/conteggio: aggregato delle recensioni ricetta arrivate tramite il link di questo menù
   // (le vecchie MenuReview, voto al menù intero, sono dismesse — non se ne creano più)
@@ -151,6 +151,7 @@ function processMenuRow(m: {
   const previewPhotos = m.recipes
     .map((mr) => mr.recipe.photo)
     .filter((p): p is string => p !== null);
+  const previewNames = m.recipes.slice(0, 3).map((mr) => mr.recipe.name);
   return {
     id: m.id,
     name: m.name,
@@ -164,6 +165,7 @@ function processMenuRow(m: {
     _count: { reviews: m._count.recipeReviews, recipes: m._count.recipes },
     avgRating,
     previewPhotos,
+    previewNames,
   };
 }
 
@@ -188,7 +190,7 @@ async function queryMenuSummaries(take?: number, isAdmin = false) {
       recipes: {
         // Anteprime: solo foto di ricette pubblicate (niente leak delle non pronte)
         where: { recipe: { published: true } },
-        select: { order: true, recipe: { select: { photo: true } } },
+        select: { order: true, recipe: { select: { photo: true, name: true } } },
         orderBy: { order: "asc" as const },
         take: 12, // le prime 12 bastano a trovare 3 foto per i piatti della card 8.5
       },

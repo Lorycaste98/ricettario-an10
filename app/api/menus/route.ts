@@ -24,7 +24,7 @@ const menuSummarySelect = {
   recipes: {
     select: {
       order: true,
-      recipe: { select: { photo: true } },
+      recipe: { select: { photo: true, name: true } },
     },
     orderBy: { order: "asc" as const },
     take: 12,
@@ -33,7 +33,7 @@ const menuSummarySelect = {
 
 function flattenMenu(m: {
   recipeReviews: { rating: number }[];
-  recipes: { order: number; recipe: { photo: string | null } }[];
+  recipes: { order: number; recipe: { photo: string | null; name: string } }[];
   [key: string]: unknown;
 }) {
   const reviews = m.recipeReviews ?? [];
@@ -46,7 +46,8 @@ function flattenMenu(m: {
   const previewPhotos = m.recipes
     .map((mr: { order: number; recipe: { photo: string | null } }) => mr.recipe.photo)
     .filter((p): p is string => p !== null);
-  return { ...m, avgRating, previewPhotos };
+  const previewNames = m.recipes.slice(0, 3).map((mr) => mr.recipe.name);
+  return { ...m, avgRating, previewPhotos, previewNames };
 }
 
 export async function GET() {

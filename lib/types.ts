@@ -136,6 +136,8 @@ export interface MenuSummary {
   avgRating: number | null;
   _count: { reviews: number; recipes: number };
   previewPhotos: string[];
+  /** nomi delle prime ricette del menù, in ordine (card 8.5 «menù stampato») */
+  previewNames: string[];
 }
 
 /** Voce di costo generica di un menù ("altri costi"). */
