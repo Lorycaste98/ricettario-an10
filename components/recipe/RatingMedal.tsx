@@ -1,13 +1,13 @@
 import { clsx } from "clsx";
 
 /**
- * Medaglia del voto ospiti appoggiata sul bordo del piatto (card «Piatto» e lista «Carta»):
+ * 6.11 · medaglia del voto ospiti appoggiata sul bordo del piatto (`RecipeCard` «Piatto» e
+ * `RecipeRow` «Carta»):
  * tondo giallo con il bordo bianco, dietro il numero una **stella piena** di un giallo più scuro
  * (colore pieno, non trasparenza) che si intravede senza coprire le cifre.
  * Posizione e misura le decide il chiamante con `className` (sempre `absolute …` sul bordo del
  * piatto, più la larghezza; il resto scala in `em`/%). Niente `relative` qui: vincerebbe sull'`absolute`.
- *
- * il numero è in `em` del font-size impostato sul contenitore.
+ * Il numero è in `em` del font-size impostato dal chiamante.
  */
 export function RatingMedal({ value, count, className }: { value: number; count: number; className?: string }) {
   return (

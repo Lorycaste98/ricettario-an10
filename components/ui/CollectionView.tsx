@@ -158,12 +158,17 @@ function ViewControls({
   );
 }
 
-/** Contenitore delle card: griglia (colonne decise da `useCollectionView`) o lista a righe. */
+/**
+ * Contenitore delle card: griglia (colonne decise da `useCollectionView`) o lista a righe.
+ * `list="stack"` = righe a sé sul fondo pagina, separate dallo spazio (ricette, «Carta» 8.10);
+ * `list="sheet"` = righe in una scheda bianca con i filetti (menù, finché non hanno la loro gemella).
+ */
 export function CollectionBody({
   view,
   gridRef,
   gridStyle,
   fallbackCols,
+  list = "sheet",
   children,
 }: {
   view: ViewMode;
@@ -171,8 +176,16 @@ export function CollectionBody({
   gridStyle?: CSSProperties;
   /** classe grid-cols elastica usata prima della misura */
   fallbackCols: string;
+  list?: "sheet" | "stack";
   children: ReactNode;
 }) {
+  if (view === "list" && list === "stack") {
+    return (
+      <div ref={gridRef} className="flex flex-col gap-1.5">
+        {children}
+      </div>
+    );
+  }
   if (view === "list") {
     return (
       <div ref={gridRef} className="flex flex-col divide-y divide-blu-150 overflow-hidden rounded-card border border-blu-150 bg-white">

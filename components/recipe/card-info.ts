@@ -3,8 +3,8 @@ import { type RecipeSummary, formatMinutes } from "@/lib/types";
 import { useAuth } from "@/components/AuthProvider";
 
 /**
- * Dati comuni alle proposte di card (anteprima `anteprima/card`): tempo totale, categoria
- * principale, voti, stato «non pronta». Stesse regole della `RecipeCard` di oggi.
+ * Dati comuni a `RecipeCard` (8.1, «Piatto») e `RecipeRow` (8.10, «Carta»): tempo totale,
+ * categoria principale, voti, stato «non pronta» (solo admin).
  */
 export function useCardInfo(recipe: RecipeSummary) {
   const { isAdmin } = useAuth();

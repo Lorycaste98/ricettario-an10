@@ -63,6 +63,7 @@ export function FavoritesClient({ recipes }: { recipes: RecipeSummary[] }) {
         gridRef={layout.ref}
         gridStyle={layout.gridStyle}
         fallbackCols="grid-cols-[repeat(auto-fill,minmax(clamp(9.5rem,24cqi,13rem),1fr))]"
+        list="stack"
       >
         {filtered.map((r) => (layout.view === "list" ? <RecipeRow key={r.id} recipe={r} /> : <RecipeCard key={r.id} recipe={r} />))}
       </CollectionBody>
