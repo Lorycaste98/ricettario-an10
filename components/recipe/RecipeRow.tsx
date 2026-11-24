@@ -16,8 +16,8 @@ import { RatingMedal } from "./RatingMedal";
  * a sinistra il piatto (foto tonda con il bordo, gemella della card 8.1) con la medaglia 6.11 del
  * voto ospiti in basso a destra, poi il nome e i puntini di guida che portano a pentola e cuore.
  * Sotto: categoria, tempo (ambra), porzioni, cotture, numero di voti, il mio voto (indaco).
- * Non pronta (solo admin): riga con contorno tratteggiato su bianco (come la card 8.1), piatto
- * sbiadito e mini-timbro tratteggiato con l'occhio barrato sul bordo.
+ * Non pronta (solo admin): testo più chiaro (tinte, non opacità: nome grigio, dettagli grigio chiaro,
+ * tempo e mio voto senza colore), piatto sbiadito e mini-timbro tratteggiato con l'occhio barrato.
  * Ogni ricetta è a sé, **senza scheda**: appoggiata sul fondo pagina e separata dallo spazio
  * (`CollectionBody` con `list="stack"`); il foglio unico la faceva sembrare un gruppo.
  * È un `@container/row`: da 26rem porzioni e cotture, da 30rem il numero di voti, da 34rem piatto e nome più grandi.
@@ -29,10 +29,7 @@ export function RecipeRow({ recipe }: { recipe: RecipeSummary }) {
     <Link
       href={`/ricette/${recipe.id}`}
       className={clsx(
-        // bordo trasparente su tutte: le righe non pronte hanno il tratteggio senza spostare nulla
-        "group @container/row flex min-w-0 items-center gap-3 rounded-ctl border-2 px-1 py-1.5",
-        // non pronta: contorno tratteggiato su bianco come la card 8.1 (le righe non hanno bordo: così salta all'occhio)
-        c.hidden ? "border-dashed border-blu-250 bg-white hover:bg-blu-50" : "border-transparent hover:bg-blu-100",
+        "group @container/row flex min-w-0 items-center gap-3 rounded-ctl px-1 py-1.5 hover:bg-blu-100",
         "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-blu-600/35",
         pressCls
       )}
@@ -79,7 +76,12 @@ export function RecipeRow({ recipe }: { recipe: RecipeSummary }) {
       <span className="flex min-w-0 flex-1 flex-col gap-1">
         {/* nome · · · · · pentola e cuore */}
         <span className="flex min-w-0 items-center gap-2">
-          <span className="line-clamp-2 min-w-0 text-[1rem] leading-tight font-extrabold text-blu-950 group-hover:text-blu-700 @min-[34rem]/row:text-[1.125rem]">
+          <span
+            className={clsx(
+              "line-clamp-2 min-w-0 text-[1rem] leading-tight font-extrabold group-hover:text-blu-700 @min-[34rem]/row:text-[1.125rem]",
+              c.hidden ? "text-grigio" : "text-blu-950"
+            )}
+          >
             {recipe.name}
           </span>
           <span aria-hidden className="min-w-4 flex-1 border-b-2 border-dotted border-blu-250" />
@@ -91,7 +93,7 @@ export function RecipeRow({ recipe }: { recipe: RecipeSummary }) {
 
         {/* dettagli */}
         <span className="flex min-w-0 items-center gap-2">
-          <span className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs text-grigio">
+          <span className={clsx("flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs", c.hidden ? "text-grigio-chiaro" : "text-grigio")}>
             {c.cat && (
               <span className="flex min-w-0 items-center gap-1.5">
                 <span aria-hidden className="size-2 shrink-0 rounded-full" style={{ background: c.cat.color }} />
@@ -99,7 +101,7 @@ export function RecipeRow({ recipe }: { recipe: RecipeSummary }) {
               </span>
             )}
             {c.time && (
-              <span className="tabular flex items-center gap-1 font-semibold whitespace-nowrap text-ambra">
+              <span className={clsx("tabular flex items-center gap-1 font-semibold whitespace-nowrap", !c.hidden && "text-ambra")}>
                 <Clock className="size-3.5 shrink-0" aria-hidden /> {c.time}
               </span>
             )}
@@ -121,7 +123,7 @@ export function RecipeRow({ recipe }: { recipe: RecipeSummary }) {
                 {c.guest.count} {c.guest.count === 1 ? "voto" : "voti"}
               </span>
             )}
-            {c.mine != null && <span className="tabular font-bold text-mio-ink">mio {c.mine}</span>}
+            {c.mine != null && <span className={clsx("tabular font-bold", !c.hidden && "text-mio-ink")}>mio {c.mine}</span>}
           </span>
         </span>
       </span>
