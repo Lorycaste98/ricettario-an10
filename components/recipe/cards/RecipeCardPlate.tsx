@@ -2,7 +2,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { clsx } from "clsx";
-import { Clock, Star } from "lucide-react";
+import { Clock } from "lucide-react";
+import { RatingMedal } from "./RatingMedal";
 import type { RecipeSummary } from "@/lib/types";
 import { FavoriteButton } from "../FavoriteButton";
 import { CookingButton } from "@/components/cooking/CookingButton";
@@ -31,7 +32,8 @@ export function RecipeCardPlate({ recipe }: { recipe: RecipeSummary }) {
       )}
     >
       {/* pentola e cuore nei due angoli liberi della tovaglia, ai lati del piatto */}
-      <div className="absolute top-1.5 left-1.5 z-10 hidden @min-[9rem]/card:top-2 @min-[9rem]/card:left-2 @min-[9rem]/card:block">
+      {/* soglia 8rem: la tovaglia ha un margine interno, il contenuto è più stretto della card */}
+      <div className="absolute top-1.5 left-1.5 z-10 hidden @min-[8rem]/card:top-2 @min-[8rem]/card:left-2 @min-[8rem]/card:block">
         <CookingButton recipeId={recipe.id} />
       </div>
       <div className="absolute top-1.5 right-1.5 z-10 @min-[9rem]/card:top-2 @min-[9rem]/card:right-2">
@@ -61,13 +63,11 @@ export function RecipeCardPlate({ recipe }: { recipe: RecipeSummary }) {
           )}
         </div>
         {c.guest && (
-          <span
-            className="tabular absolute -right-[4%] -bottom-[2%] flex aspect-square w-[clamp(1.9rem,26cqi,3.1rem)] flex-col items-center justify-center rounded-full bg-giallo-400 leading-none font-extrabold text-blu-950 shadow-[0_0_0_3px_white]"
-            title={`Media ${c.guest.value.toFixed(1)} su ${c.guest.count} recensioni`}
-          >
-            <span className="text-[clamp(0.6875rem,8cqi,1rem)]">{c.guest.value.toFixed(1)}</span>
-            <Star className="hidden size-[0.6rem] fill-current @min-[11rem]/card:block" aria-hidden />
-          </span>
+          <RatingMedal
+            value={c.guest.value}
+            count={c.guest.count}
+            className="absolute -right-[4%] -bottom-[2%] w-[clamp(2rem,27cqi,3.25rem)] text-[clamp(0.6875rem,8cqi,1rem)]"
+          />
         )}
       </div>
 
