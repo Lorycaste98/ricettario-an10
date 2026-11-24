@@ -7,26 +7,12 @@ import { Panel } from "@/components/ds/Panel";
 import { Button, IconButton } from "@/components/ds/Button";
 import { TextInput } from "@/components/ds/Field";
 import { Chip } from "@/components/ds/Controls";
-import { useLocalStore } from "@/lib/local-store";
+import { COST_OUTPUTS, useCostOutputs } from "@/lib/preferences";
 import type { MenuCostLine } from "@/lib/types";
 
 // Etichette suggerite per le voci "altri costi" (chip quick-add)
 const QUICK_LABELS = ["Gas/energia", "Trasporto", "Confezionamento", "Attrezzatura", "Bevande"];
 
-// Output selezionabili inline (preferenza in localStorage, condivisa tra i menù)
-type OutputKey = "markup" | "perPerson" | "margin";
-const OUTPUT_KEY = "ricettario:menu-costs-outputs";
-const DEFAULT_OUTPUTS: OutputKey[] = ["markup", "perPerson", "margin"];
-
-function parseOutputs(raw: string): OutputKey[] {
-  try {
-    const p: unknown = JSON.parse(raw);
-    if (!Array.isArray(p)) return DEFAULT_OUTPUTS;
-    return p.filter((x): x is OutputKey => x === "markup" || x === "perPerson" || x === "margin");
-  } catch {
-    return DEFAULT_OUTPUTS;
-  }
-}
 
 const eur = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" });
 function fmt(n: number): string {
@@ -78,11 +64,8 @@ export function MenuCosts({
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
 
-  const [outputs, setOutputs] = useLocalStore<OutputKey[]>(OUTPUT_KEY, DEFAULT_OUTPUTS, parseOutputs);
-
-  const toggleOutput = (k: OutputKey) => {
-    setOutputs(outputs.includes(k) ? outputs.filter((o) => o !== k) : [...outputs, k]);
-  };
+  // Cosa mostrare: preferenza del dispositivo (anche dalla pagina Impostazioni)
+  const { outputs, toggle: toggleOutput } = useCostOutputs();
 
   // Calcoli live
   const ingredientsCost = groceryCost ?? 0;
@@ -236,13 +219,7 @@ export function MenuCosts({
 
       {/* Cosa mostrare: preferenza del dispositivo */}
       <div className="flex flex-wrap gap-1.5" role="group" aria-label="Risultati da mostrare">
-        {(
-          [
-            ["markup", "Prezzo"],
-            ["perPerson", "A persona"],
-            ["margin", "Margine"],
-          ] as [OutputKey, string][]
-        ).map(([k, label]) => (
+        {COST_OUTPUTS.map(({ value: k, label }) => (
           <Chip key={k} active={outputs.includes(k)} onClick={() => toggleOutput(k)}>
             {label}
           </Chip>

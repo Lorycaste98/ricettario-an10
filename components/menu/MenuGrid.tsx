@@ -20,18 +20,15 @@ import { EmptyState } from "@/components/ds/Feedback";
 import { type MenuSummary } from "@/lib/types";
 import { useAuth } from "@/components/AuthProvider";
 import { useLocalStore } from "@/lib/local-store";
+import { LIST_LAYOUT, MENU_SORT_OPTIONS, useMenuSort, type MenuSortKey } from "@/lib/preferences";
 
 // Elementi per pagina: multipli delle card per riga (pageSizeFor), tetti fissi per 1 per riga e lista
 const PAGE = { base: 12, single: 8, list: 15 };
 
-type SortKey = "date" | "createdAt" | "name";
+type SortKey = MenuSortKey;
 type PublishedFilter = "all" | "published" | "draft";
 
-const SORT_OPTIONS: { value: SortKey; label: string }[] = [
-  { value: "date", label: "Data servizio" },
-  { value: "createdAt", label: "Data creazione" },
-  { value: "name", label: "Nome" },
-];
+const SORT_OPTIONS = MENU_SORT_OPTIONS;
 
 const PUBLISHED_OPTIONS: { value: PublishedFilter; label: string; icon?: ReactNode }[] = [
   { value: "all", label: "Tutti" },
@@ -41,19 +38,10 @@ const PUBLISHED_OPTIONS: { value: PublishedFilter; label: string; icon?: ReactNo
 
 // Persistenza filtri: restano salvati anche tornando indietro dalla pagina di dettaglio
 const K = "ricettario:menu-list:";
-// Ordinamento: in localStorage (resta anche chiudendo la scheda/app), chiavi distinte da
-// quelle per-scheda così i vecchi valori in sessionStorage non contano più
-const SK = "ricettario:menu-sort:";
 const parseStr = (raw: string): string => {
   const v = JSON.parse(raw);
   return typeof v === "string" ? v : "";
 };
-const parseSort = (raw: string): SortKey => {
-  const v = JSON.parse(raw);
-  return v === "name" || v === "createdAt" ? v : "date";
-};
-// Default: dalla più vecchia alla più recente (crescente)
-const parseOrder = (raw: string): "asc" | "desc" => (JSON.parse(raw) === "desc" ? "desc" : "asc");
 const parsePublished = (raw: string): PublishedFilter => {
   const v = JSON.parse(raw);
   return v === "published" || v === "draft" ? v : "all";
@@ -70,12 +58,12 @@ interface Props {
 export function MenuGrid({ menus }: Props) {
   const { isAdmin } = useAuth();
   // Griglia o lista + card per riga (scelte del dispositivo). Menù: card da 9rem → 2 sul telefono
-  const layout = useCollectionView({ storageKey: "menus", minCardRem: 9, autoCard: [10, 0.3, 16] });
+  const layout = useCollectionView("menus");
   // Filtri per-scheda: persistono durante la navigazione ma si azzerano alla chiusura scheda.
   // Fa eccezione l'ordinamento (sort + order), salvato sul dispositivo.
   const [q, setQ] = useLocalStore<string>(K + "q", "", parseStr, undefined, "session");
-  const [sort, setSort] = useLocalStore<SortKey>(SK + "sort", "date", parseSort);
-  const [order, setOrder] = useLocalStore<"asc" | "desc">(SK + "order", "asc", parseOrder);
+  // Ordinamento: preferenza del dispositivo (anche dalla pagina Impostazioni)
+  const { sort, setSort, order, setOrder } = useMenuSort();
   const [publishedFilter, setPublishedFilter] = useLocalStore<PublishedFilter>(
     K + "published",
     "all",
@@ -213,7 +201,7 @@ export function MenuGrid({ menus }: Props) {
           view={layout.view}
           gridRef={layout.ref}
           gridStyle={layout.gridStyle}
-          fallbackCols="grid-cols-[repeat(auto-fill,minmax(clamp(10rem,30cqi,16rem),1fr))]"
+          fallbackCols={LIST_LAYOUT.menus.fallbackCols}
           list="stack"
         >
           {paginated.map((m) => (layout.view === "list" ? <MenuRow key={m.id} menu={m} /> : <MenuCard key={m.id} menu={m} />))}

@@ -7,6 +7,7 @@ import { createPortal } from "react-dom";
 import { clsx } from "clsx";
 import { ArrowRight, ChevronLeft, ChevronRight, Clock, History, ListOrdered, Search, Users } from "lucide-react";
 import { useLocalStore } from "@/lib/local-store";
+import { SEARCH_RECENT_KEY } from "@/lib/preferences";
 import { formatQty } from "@/lib/step-ingredients";
 import { useAuth } from "@/components/AuthProvider";
 import { An10Logo } from "@/components/brand/An10Logo";
@@ -47,7 +48,7 @@ const STALE_MS = 5 * 60 * 1000;
 let cache: { admin: boolean; at: number; idx: PreparedIndex } | null = null;
 
 /** Ricerche recenti di questo dispositivo (fase 8): le ultime 6, la più nuova in testa */
-const RECENT_KEY = "ricettario:search-recent";
+const RECENT_KEY = SEARCH_RECENT_KEY;
 const RECENT_MAX = 6;
 function parseRecent(raw: string): string[] {
   try {

@@ -11,6 +11,7 @@ import { TagFilterCombobox } from "./TagFilterCombobox";
 import { type RecipeSummary, type Category, type Tag } from "@/lib/types";
 import { useAuth } from "@/components/AuthProvider";
 import { useLocalStore } from "@/lib/local-store";
+import { LIST_LAYOUT, RECIPE_SORT_OPTIONS, recipeSortFor, useRecipeSort, type RecipeSortKey } from "@/lib/preferences";
 import { Modal } from "@/components/ui/Modal";
 import { Button, IconButton } from "@/components/ds/Button";
 import { SearchField, Select } from "@/components/ds/Field";
@@ -33,7 +34,7 @@ interface Props {
   tags: Tag[];
 }
 
-type SortKey = "myRating" | "createdAt" | "name" | "prep" | "cook" | "cookCount" | "avgRating" | "reviews";
+type SortKey = RecipeSortKey;
 type PublishedFilter = "all" | "published" | "draft";
 
 const PUBLISHED_OPTIONS: { value: PublishedFilter; label: string; icon?: ReactNode }[] = [
@@ -48,36 +49,14 @@ const parsePublishedFilter = (raw: string): PublishedFilter => {
   return v === "published" || v === "draft" ? v : "all";
 };
 
-// "Il mio voto" è admin-only (voto personale); filtrato per i visitatori
-const SORT_OPTIONS: { value: SortKey; label: string; adminOnly?: boolean }[] = [
-  { value: "myRating", label: "Il mio voto", adminOnly: true },
-  { value: "avgRating", label: "Valutazione" },
-  { value: "reviews", label: "Recensioni" },
-  { value: "createdAt", label: "Data" },
-  { value: "name", label: "Nome" },
-  { value: "prep", label: "Tempo prep" },
-  { value: "cook", label: "Cottura" },
-  { value: "cookCount", label: "Volte cotta" },
-];
+const SORT_OPTIONS = RECIPE_SORT_OPTIONS;
 
 // Persistenza filtri: restano salvati anche tornando indietro dalla pagina di dettaglio
 const RK = "ricettario:recipe-list:";
-// Ordinamento: in localStorage (resta anche chiudendo la scheda/app), chiavi distinte da
-// quelle per-scheda così i vecchi valori in sessionStorage non contano più
-const RSK = "ricettario:recipe-sort:";
-const SORT_KEYS = SORT_OPTIONS.map((o) => o.value);
 const parseStr = (raw: string): string => {
   const v = JSON.parse(raw);
   return typeof v === "string" ? v : "";
 };
-// Persiste solo la scelta ESPLICITA (null = nessuna). Il default effettivo lo deriva
-// il componente da isAdmin (admin → "myRating", visitatore → "avgRating"): così evitiamo
-// il caching del fallback dinamico di useLocalStore mentre isAdmin arriva async.
-const parseSortPref = (raw: string): SortKey | null => {
-  const v = JSON.parse(raw);
-  return SORT_KEYS.includes(v) ? v : null;
-};
-const parseOrder = (raw: string): "asc" | "desc" => (JSON.parse(raw) === "asc" ? "asc" : "desc");
 const parseNumArr = (raw: string): number[] => {
   const v = JSON.parse(raw);
   return Array.isArray(v) ? v.filter((x) => typeof x === "number") : [];
@@ -94,8 +73,8 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
   const [q, setQ] = useLocalStore<string>(RK + "q", "", parseStr, undefined, "session");
   const [activeCats, setActiveCats] = useLocalStore<number[]>(RK + "cats", [], parseNumArr, undefined, "session");
   const [activeTags, setActiveTags] = useLocalStore<number[]>(RK + "tags", [], parseNumArr, undefined, "session");
-  const [sortPref, setSort] = useLocalStore<SortKey | null>(RSK + "sort", null, parseSortPref);
-  const [order, setOrder] = useLocalStore<"asc" | "desc">(RSK + "order", "desc", parseOrder);
+  // Ordinamento: preferenza del dispositivo (anche dalla pagina Impostazioni)
+  const { pref: sortPref, setPref: setSort, order, setOrder } = useRecipeSort();
   const [publishedFilter, setPublishedFilter] = useLocalStore<PublishedFilter>(
     PUBLISHED_FILTER_KEY,
     "all",
@@ -108,13 +87,12 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
   const [start, setStart] = useLocalStore<number>(RK + "start", 0, parsePage, undefined, "session");
   const [filterOpen, setFilterOpen] = useState(false);
   // Griglia o lista + card per riga (scelte del dispositivo). Ricette: card da 6.5rem → 3 sul telefono
-  const layout = useCollectionView({ storageKey: "recipes", minCardRem: 6.5, autoCard: [9.5, 0.24, 13] });
+  const layout = useCollectionView("recipes");
   const [tagsOpen, setTagsOpen] = useState(false);
 
-  // Ordinamento di default: admin → "Il mio voto" personale, visitatore → "Valutazione".
+  // Ordinamento di default: admin → «Il mio voto» personale, visitatore → «Valutazione»
   const defaultSort: SortKey = isAdmin ? "myRating" : "avgRating";
-  // "Il mio voto" scelto da un admin non vale per un visitatore sullo stesso dispositivo
-  const sort: SortKey = sortPref && (isAdmin || sortPref !== "myRating") ? sortPref : defaultSort;
+  const sort: SortKey = recipeSortFor(sortPref, isAdmin);
   const sortOptions = isAdmin ? SORT_OPTIONS : SORT_OPTIONS.filter((o) => !o.adminOnly);
 
   const resetPage = () => setStart(0);
@@ -288,7 +266,7 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
           view={layout.view}
           gridRef={layout.ref}
           gridStyle={layout.gridStyle}
-          fallbackCols="grid-cols-[repeat(auto-fill,minmax(clamp(9.5rem,24cqi,13rem),1fr))]"
+          fallbackCols={LIST_LAYOUT.recipes.fallbackCols}
           list="stack"
         >
           {paginated.map((r) => (layout.view === "list" ? <RecipeRow key={r.id} recipe={r} /> : <RecipeCard key={r.id} recipe={r} />))}

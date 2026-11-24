@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useSyncExternalStore } from "react";
 import { toStepKind, type StepKind } from "@/lib/types";
+import { KEEP_AWAKE_KEY } from "@/lib/preferences";
 import { useLocalStore } from "@/lib/local-store";
 
 /**
@@ -518,7 +519,6 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
 
 // ── Schermo acceso durante i timer ──────────────────────────────────────────
 
-const KEEP_AWAKE_KEY = "ricettario:cooking-keep-awake";
 
 /** Preferenza del dispositivo: tenere lo schermo acceso mentre un timer corre (default sì). */
 export function useKeepAwake() {

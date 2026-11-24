@@ -74,3 +74,17 @@ export function useLocalStore<T>(
 
   return [value, write] as const;
 }
+
+/**
+ * Cancella una chiave e avvisa chi la sta usando, che torna al suo valore di partenza
+ * (pagina Impostazioni: «Ripristina», «Cancella le ricerche recenti»).
+ */
+export function clearLocalStore(key: string, backend: StoreBackend = "local") {
+  registry.delete(key);
+  try {
+    storageFor(backend)?.removeItem(key);
+  } catch {
+    // storage non disponibile (navigazione privata): resta solo il valore in memoria
+  }
+  window.dispatchEvent(new Event(changeEvent(key)));
+}

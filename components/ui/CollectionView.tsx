@@ -2,27 +2,21 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { clsx } from "clsx";
 import { LayoutGrid, List, Minus, Plus } from "lucide-react";
-import { useLocalStore } from "@/lib/local-store";
+import { LIST_LAYOUT, MAX_COLS, useListView, type ListKind, type ViewMode } from "@/lib/preferences";
 import { Segmented } from "@/components/ds/Controls";
 
 /**
  * Vista delle liste (Ricette, Preferiti, Menù): **griglia** o **lista**, e in griglia quante
- * card per riga. Le scelte sono del dispositivo (localStorage, come l'ordinamento), una coppia
- * per lista (`storageKey`).
+ * card per riga. Le scelte sono del dispositivo (`useListView` di `lib/preferences.ts`): la barra
+ * della lista mostra solo l'interruttore griglia/lista (`controls`), le card per riga si scelgono
+ * nella pagina Impostazioni (`colsControl`, con l'anteprima).
  *
  * Il numero di card per riga dipende dallo spazio vero del contenitore (misurato): il massimo è
  * quante card larghe almeno `minCardRem` ci stanno (telefono ~3 ricette, iPad in orizzontale e PC
  * di più), mai oltre `MAX_COLS`. «Auto» (0) = la griglia elastica di sempre, card larghe circa
  * `autoCard` (clamp in rem e % del contenitore, come il vecchio `minmax(clamp(...))`).
  */
-export type ViewMode = "grid" | "list";
-
-const MAX_COLS = 8;
-const parseView = (raw: string): ViewMode => (JSON.parse(raw) === "list" ? "list" : "grid");
-const parseCols = (raw: string): number => {
-  const v = JSON.parse(raw);
-  return Number.isInteger(v) && v >= 0 && v <= MAX_COLS ? v : 0;
-};
+export type { ViewMode };
 
 function remPx() {
   return typeof window === "undefined" ? 16 : parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
@@ -33,19 +27,9 @@ function fit(width: number, min: number, gap: number) {
   return Math.max(1, Math.floor((width + gap) / (min + gap)));
 }
 
-export function useCollectionView({
-  storageKey,
-  minCardRem,
-  autoCard,
-}: {
-  storageKey: string;
-  /** larghezza minima di una card quando si sceglie a mano (determina il massimo per riga) */
-  minCardRem: number;
-  /** card della griglia automatica: [min rem, quota del contenitore, max rem] */
-  autoCard: [number, number, number];
-}) {
-  const [view, setView] = useLocalStore<ViewMode>(`ricettario:list-view:${storageKey}:view`, "grid", parseView);
-  const [cols, setCols] = useLocalStore<number>(`ricettario:list-view:${storageKey}:cols`, 0, parseCols);
+export function useCollectionView(list: ListKind) {
+  const { minCardRem, autoCard } = LIST_LAYOUT[list];
+  const { view, setView, cols, setCols } = useListView(list);
 
   // Larghezza e spazio fra le card misurati sul contenitore della griglia. Ref a callback: il
   // contenitore può comparire dopo (preferiti in caricamento) o cambiare (griglia ↔ lista)
@@ -80,10 +64,9 @@ export function useCollectionView({
     setCols(Math.max(1, Math.min(maxCols, base + d)));
   };
 
-  const controls = (
-    <ViewControls
-      view={view}
-      onView={setView}
+  const controls = <ViewSwitch view={view} onView={setView} />;
+  const colsControl = (
+    <ColsStepper
       cols={activeCols}
       isAuto={cols === 0}
       canLess={activeCols > 1}
@@ -94,13 +77,27 @@ export function useCollectionView({
     />
   );
 
-  return { view, ref, gridStyle, controls, cols: activeCols };
+  return { view, setView, ref, gridStyle, controls, colsControl, cols: activeCols, maxCols, isAuto: cols === 0 };
 }
 
-/** Interruttore griglia/lista + «− N per riga +» (solo in griglia). */
-function ViewControls({
-  view,
-  onView,
+/** Interruttore griglia/lista (4.10 a icone), nella barra delle liste e nelle Impostazioni. */
+export function ViewSwitch({ view, onView }: { view: ViewMode; onView: (v: ViewMode) => void }) {
+  return (
+    <Segmented<ViewMode>
+      label="Vista"
+      value={view}
+      onChange={onView}
+      options={[
+        { value: "grid", label: <span className="sr-only">Griglia</span>, icon: <LayoutGrid aria-hidden /> },
+        { value: "list", label: <span className="sr-only">Lista</span>, icon: <List aria-hidden /> },
+      ]}
+      className="shrink-0 [&_button]:px-[0.6em]"
+    />
+  );
+}
+
+/** «− N per riga +»; tocco sul numero = torna automatico. */
+function ColsStepper({
   cols,
   isAuto,
   canLess,
@@ -109,8 +106,6 @@ function ViewControls({
   onMore,
   onAuto,
 }: {
-  view: ViewMode;
-  onView: (v: ViewMode) => void;
   cols: number;
   isAuto: boolean;
   canLess: boolean;
@@ -122,38 +117,24 @@ function ViewControls({
   const stepBtn =
     "hit-44 flex size-[calc(var(--h-field)-6px)] items-center justify-center rounded-[0.5rem] text-blu-800 hover:bg-white/60 disabled:opacity-35 disabled:hover:bg-transparent [&>svg]:size-4";
   return (
-    <div className="flex shrink-0 items-center gap-2">
-      {view === "grid" && cols > 0 && (
-        <div className="flex items-center rounded-[0.6875rem] bg-blu-120 p-[3px]" role="group" aria-label="Card per riga">
-          <button type="button" className={stepBtn} onClick={onLess} disabled={!canLess} aria-label="Meno card per riga">
-            <Minus />
-          </button>
-          <button
-            type="button"
-            onClick={onAuto}
-            disabled={isAuto}
-            title={isAuto ? "Automatico" : "Torna automatico"}
-            className="tabular min-w-[2.25rem] px-1 text-center text-[0.875rem] font-bold text-blu-950 disabled:cursor-default"
-            aria-label={isAuto ? `${cols} per riga, automatico` : `${cols} per riga: tocca per tornare automatico`}
-          >
-            {cols}
-            {isAuto && <span className="ml-0.5 text-[0.6875rem] font-semibold text-grigio">A</span>}
-          </button>
-          <button type="button" className={stepBtn} onClick={onMore} disabled={!canMore} aria-label="Più card per riga">
-            <Plus />
-          </button>
-        </div>
-      )}
-      <Segmented<ViewMode>
-        label="Vista"
-        value={view}
-        onChange={onView}
-        options={[
-          { value: "grid", label: <span className="sr-only">Griglia</span>, icon: <LayoutGrid aria-hidden /> },
-          { value: "list", label: <span className="sr-only">Lista</span>, icon: <List aria-hidden /> },
-        ]}
-        className="[&_button]:px-[0.6em]"
-      />
+    <div className="flex shrink-0 items-center rounded-[0.6875rem] bg-blu-120 p-[3px]" role="group" aria-label="Card per riga">
+      <button type="button" className={stepBtn} onClick={onLess} disabled={!canLess} aria-label="Meno card per riga">
+        <Minus />
+      </button>
+      <button
+        type="button"
+        onClick={onAuto}
+        disabled={isAuto}
+        title={isAuto ? "Automatico" : "Torna automatico"}
+        className="tabular min-w-[2.25rem] px-1 text-center text-[0.875rem] font-bold text-blu-950 disabled:cursor-default"
+        aria-label={isAuto ? `${cols} per riga, automatico` : `${cols} per riga: tocca per tornare automatico`}
+      >
+        {cols || "–"}
+        {isAuto && <span className="ml-0.5 text-[0.6875rem] font-semibold text-grigio">A</span>}
+      </button>
+      <button type="button" className={stepBtn} onClick={onMore} disabled={!canMore} aria-label="Più card per riga">
+        <Plus />
+      </button>
     </div>
   );
 }

@@ -2,21 +2,20 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, type ComponentType, type ReactNode } from "react";
+import { type ComponentType, type ReactNode } from "react";
 import { clsx } from "clsx";
-import { BookOpen, ChefHat, Heart, LogIn, LogOut, Search, Settings, User } from "lucide-react";
+import { BookOpen, ChefHat, Heart, Search, Settings, UserRound } from "lucide-react";
 import { openSearch } from "@/lib/search";
 import { useAuth } from "@/components/AuthProvider";
 import { useFavorites } from "@/lib/favorites";
 import { An10Logo } from "@/components/brand/An10Logo";
 import { ClocheIcon } from "@/components/icons";
-import { Modal } from "@/components/ui/Modal";
-import { Button } from "@/components/ds/Button";
 
 /**
  * Navigazione del restyle (tavola 9.1 e 9.2). Unico punto di rottura legato allo schermo (D1):
  * da 700px in su barra laterale, sotto barra in basso. Voci: Ricette, Menù, Preferiti (badge),
- * Cerca (apre l'overlay della ricerca globale, non è una pagina), Gestione (solo admin) e account (Profilo/Esci per l'admin, Accedi per i visitatori).
+ * Cerca (apre l'overlay della ricerca globale, non è una pagina), Gestione (solo admin) e **Impostazioni** (`/impostazioni`,
+ * per tutti: lì ci sono anche account, profilo ed esci per l'admin e «Accedi» per i visitatori).
  * Le azioni admin del vecchio sottomenu «Dashboard» stanno nella pagina /admin.
  */
 type Item = {
@@ -40,7 +39,10 @@ function useNavItems() {
     { href: "/preferiti", label: "Preferiti", icon: Heart, badge: favCount },
   ];
   const admin: Item | null = isAdmin ? { href: "/admin", label: "Gestione", icon: Settings, match: "/admin" } : null;
-  return { main, admin };
+  // ingranaggio = Gestione; le impostazioni sono «tue», quindi la persona. Etichetta «Account»:
+  // «Impostazioni» non ci sta nella barra in basso; la pagina si apre con la scheda account in cima
+  const settings: Item = { href: "/impostazioni", label: "Account", icon: UserRound };
+  return { main, admin, settings };
 }
 
 function useIsActive() {
@@ -52,7 +54,7 @@ function useIsActive() {
   };
 }
 
-function useLogout() {
+export function useLogout() {
   const router = useRouter();
   return async () => {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -89,11 +91,9 @@ function Badge({ n }: { n?: number }) {
 
 /** 9.1 · barra laterale (≥ 700px) */
 export function NavRail({ adminArea = false }: { adminArea?: boolean }) {
-  const { main, admin } = useNavItems();
+  const { main, admin, settings } = useNavItems();
   const isActive = useIsActive();
   const { isAdmin, username, loading } = useAuth();
-  const [accountOpen, setAccountOpen] = useState(false);
-  const logout = useLogout();
 
   const railItem = (item: Item) => {
     const on = isActive(item);
@@ -142,32 +142,36 @@ export function NavRail({ adminArea = false }: { adminArea?: boolean }) {
         {admin && railItem(admin)}
         {!loading &&
           (isAdmin ? (
-            <button
-              type="button"
-              onClick={() => setAccountOpen(true)}
-              className="flex flex-col items-center gap-1 text-[0.6875rem] text-nav-ink hover:text-white"
+            // admin: il cappello col nome, porta alle Impostazioni (account, profilo, esci)
+            <Link
+              href={settings.href}
+              aria-current={isActive(settings) ? "page" : undefined}
+              aria-label={`Account e impostazioni · ${username || ""}`}
+              className={clsx("flex flex-col items-center gap-1 text-[0.6875rem] hover:text-white", isActive(settings) ? "font-bold text-white" : "text-nav-ink")}
             >
-              <span className={clsx("flex size-[2.375rem] items-center justify-center rounded-full border bg-blu-950/30 [&>svg]:size-5", adminArea ? "border-white/20" : "border-blu-700")}>
+              <span
+                className={clsx(
+                  "flex size-[2.375rem] items-center justify-center rounded-full border [&>svg]:size-5",
+                  isActive(settings) ? "border-transparent bg-arancio-pieno text-white" : clsx("bg-blu-950/30", adminArea ? "border-white/20" : "border-blu-700")
+                )}
+              >
                 <ChefHat />
               </span>
               <span className="max-w-[4.5rem] truncate">{username || "Account"}</span>
-            </button>
+            </Link>
           ) : (
-            railItem({ href: "/login", label: "Accedi", icon: LogIn })
+            railItem(settings)
           ))}
       </div>
-      <AccountDialog open={accountOpen} onClose={() => setAccountOpen(false)} onLogout={logout} />
     </nav>
   );
 }
 
 /** 9.2 · barra in basso (< 700px) */
 export function TabBar({ adminArea = false }: { adminArea?: boolean }) {
-  const { main, admin } = useNavItems();
+  const { main, admin, settings } = useNavItems();
   const isActive = useIsActive();
-  const { isAdmin, loading } = useAuth();
-  const [accountOpen, setAccountOpen] = useState(false);
-  const logout = useLogout();
+  const { loading } = useAuth();
 
   const tab = (item: Item) => {
     const on = isActive(item);
@@ -203,47 +207,8 @@ export function TabBar({ adminArea = false }: { adminArea?: boolean }) {
     >
       {main.map(tab)}
       {admin && tab(admin)}
-      {!loading &&
-        (isAdmin ? (
-          <button type="button" onClick={() => setAccountOpen(true)} className="flex min-w-0 flex-1 flex-col items-center gap-0.5 pt-1.5 text-[0.6875rem] text-nav-ink">
-            <span className="flex h-7 w-12 items-center justify-center">
-              <User className="size-[1.25rem]" />
-            </span>
-            Account
-          </button>
-        ) : (
-          tab({ href: "/login", label: "Accedi", icon: LogIn })
-        ))}
-      <AccountDialog open={accountOpen} onClose={() => setAccountOpen(false)} onLogout={logout} />
+      {!loading && tab(settings)}
     </nav>
   );
 }
 
-function AccountDialog({ open, onClose, onLogout }: { open: boolean; onClose: () => void; onLogout: () => void }) {
-  const { username } = useAuth();
-  return (
-    <Modal open={open} onClose={onClose} title="Account" size="sm">
-      <div className="ds flex flex-col gap-3">
-        <p className="flex items-center gap-2.5">
-          <span className="flex size-10 items-center justify-center rounded-full bg-blu-120 text-blu-800">
-            <ChefHat className="size-5" aria-hidden />
-          </span>
-          <span>
-            <span className="block text-xs text-grigio">Connesso come</span>
-            <span className="font-bold">{username}</span>
-          </span>
-        </p>
-        <Link
-          href="/admin/profilo"
-          onClick={onClose}
-          className="inline-flex h-(--h-btn) items-center gap-2 rounded-ctl border border-blu-200 bg-white px-[1.05em] font-semibold hover:bg-blu-100"
-        >
-          <User className="size-[1.15em]" aria-hidden /> Profilo e password
-        </Link>
-        <Button variant="danger" icon={<LogOut />} onClick={onLogout}>
-          Esci dall&apos;account
-        </Button>
-      </div>
-    </Modal>
-  );
-}

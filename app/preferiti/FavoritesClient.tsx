@@ -5,6 +5,7 @@ import { Heart } from "lucide-react";
 import { EmptyState } from "@/components/ds/Feedback";
 import { RecipeCard } from "@/components/recipe/RecipeCard";
 import { RecipeRow } from "@/components/recipe/RecipeRow";
+import { LIST_LAYOUT } from "@/lib/preferences";
 import { CollectionBody, useCollectionView } from "@/components/ui/CollectionView";
 import { useFavorites } from "@/lib/favorites";
 import type { RecipeSummary } from "@/lib/types";
@@ -12,7 +13,7 @@ import type { RecipeSummary } from "@/lib/types";
 export function FavoritesClient({ recipes }: { recipes: RecipeSummary[] }) {
   const { favorites, hydrated, reconcile } = useFavorites();
   // stessa vista della libreria (griglia/lista e card per riga condivise)
-  const layout = useCollectionView({ storageKey: "recipes", minCardRem: 6.5, autoCard: [9.5, 0.24, 13] });
+  const layout = useCollectionView("recipes");
 
   const validIds = useMemo(() => new Set(recipes.map((r) => r.id)), [recipes]);
 
@@ -62,7 +63,7 @@ export function FavoritesClient({ recipes }: { recipes: RecipeSummary[] }) {
         view={layout.view}
         gridRef={layout.ref}
         gridStyle={layout.gridStyle}
-        fallbackCols="grid-cols-[repeat(auto-fill,minmax(clamp(9.5rem,24cqi,13rem),1fr))]"
+        fallbackCols={LIST_LAYOUT.recipes.fallbackCols}
         list="stack"
       >
         {filtered.map((r) => (layout.view === "list" ? <RecipeRow key={r.id} recipe={r} /> : <RecipeCard key={r.id} recipe={r} />))}
