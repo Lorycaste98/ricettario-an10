@@ -186,3 +186,16 @@ export function CollectionBody({
     </div>
   );
 }
+
+/**
+ * Elementi per pagina **multipli delle card per riga**, così ogni pagina finisce con righe piene
+ * (tranne l'ultima): righe intere più vicine a `base` (es. 20 ricette → 3 per riga = 21, 6 = 24).
+ * Con una card per riga e nella vista a lista non c'è nulla da riempire: valgono i tetti fissi
+ * `single` e `list`. Prima della misura (`cols` 0) vale `base`.
+ */
+export function pageSizeFor(view: ViewMode, cols: number, { base, single, list }: { base: number; single: number; list: number }) {
+  if (view === "list") return list;
+  if (cols <= 0) return base;
+  if (cols === 1) return single;
+  return cols * Math.max(1, Math.round(base / cols));
+}

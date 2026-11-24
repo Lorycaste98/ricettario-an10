@@ -6,7 +6,7 @@ import { clsx } from "clsx";
 import { ArrowDown, ArrowUp, Eye, EyeOff, Hash, Plus, Search, SlidersHorizontal } from "lucide-react";
 import { RecipeCard } from "./RecipeCard";
 import { RecipeRow } from "./RecipeRow";
-import { CollectionBody, useCollectionView } from "@/components/ui/CollectionView";
+import { CollectionBody, pageSizeFor, useCollectionView } from "@/components/ui/CollectionView";
 import { TagFilterCombobox } from "./TagFilterCombobox";
 import { type RecipeSummary, type Category, type Tag } from "@/lib/types";
 import { useAuth } from "@/components/AuthProvider";
@@ -24,7 +24,8 @@ import { EmptyState } from "@/components/ds/Feedback";
  * in una fila scorrevole (si attivano subito), tag in un pannello, griglia elastica di card 8.1.
  * Su contenitore stretto ordinamento e visibilità stanno nel pannello «Ordina e filtra».
  */
-const PAGE_SIZE = 20;
+// Elementi per pagina: multipli delle card per riga (pageSizeFor), tetti fissi per 1 per riga e lista
+const PAGE = { base: 20, single: 10, list: 20 };
 
 interface Props {
   recipes: RecipeSummary[];
@@ -102,7 +103,9 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
     undefined,
     "session"
   );
-  const [page, setPage] = useLocalStore<number>(RK + "page", 0, parsePage, undefined, "session");
+  // Indice della PRIMA voce mostrata (non il numero di pagina): cambiando le card per riga, e quindi
+  // gli elementi per pagina, si resta sulla pagina che contiene le stesse voci
+  const [start, setStart] = useLocalStore<number>(RK + "start", 0, parsePage, undefined, "session");
   const [filterOpen, setFilterOpen] = useState(false);
   // Griglia o lista + card per riga (scelte del dispositivo). Ricette: card da 6.5rem → 3 sul telefono
   const layout = useCollectionView({ storageKey: "recipes", minCardRem: 6.5, autoCard: [9.5, 0.24, 13] });
@@ -114,7 +117,7 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
   const sort: SortKey = sortPref && (isAdmin || sortPref !== "myRating") ? sortPref : defaultSort;
   const sortOptions = isAdmin ? SORT_OPTIONS : SORT_OPTIONS.filter((o) => !o.adminOnly);
 
-  const resetPage = () => setPage(0);
+  const resetPage = () => setStart(0);
   const isSortChanged = sort !== defaultSort || order !== "desc" || (isAdmin && publishedFilter !== "all");
   const hasActiveFilters = activeCats.length > 0 || activeTags.length > 0;
 
@@ -164,9 +167,10 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
     return list;
   }, [recipes, q, activeCats, activeTags, sort, order, isAdmin, publishedFilter]);
 
-  const pageCount = Math.ceil(filtered.length / PAGE_SIZE);
-  const safePage = Math.min(page, Math.max(0, pageCount - 1));
-  const paginated = filtered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
+  const pageSize = pageSizeFor(layout.view, layout.cols, PAGE);
+  const pageCount = Math.ceil(filtered.length / pageSize);
+  const safePage = Math.min(Math.floor(start / pageSize), Math.max(0, pageCount - 1));
+  const paginated = filtered.slice(safePage * pageSize, (safePage + 1) * pageSize);
   const sortLabel = sortOptions.find((o) => o.value === sort)?.label ?? "";
 
   const sortControls = (
@@ -309,7 +313,7 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
           pageCount={pageCount}
           forcePage={safePage}
           onPageChange={({ selected }) => {
-            setPage(selected);
+            setStart(selected * pageSize);
             window.scrollTo({ top: 0, behavior: "smooth" });
           }}
           pageRangeDisplayed={3}
