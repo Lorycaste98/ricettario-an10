@@ -36,7 +36,7 @@ function TablePlate({ photo, big = false, className }: { photo?: string; big?: b
       ) : big ? (
         <span className="flex size-full items-center justify-center text-blu-800">
           {/* un po' in alto a sinistra: in basso a destra del piatto c'è la medaglia del voto */}
-          <An10MenuMark className="w-[50%] -translate-x-[9%] -translate-y-[5%]" />
+          <An10MenuMark className="w-[40%] -translate-x-[8%] -translate-y-[3%]" />
         </span>
       ) : (
         // piatto vuoto: solo il cavetto interno, come una tavola apparecchiata
