@@ -24,6 +24,12 @@ export interface MenuPdfMeta {
   servingTime: string | null;
 }
 
+/** Voce dell'elenco in copertina: le ricette veloci ci sono, ma senza pagina propria */
+export interface MenuPdfTocItem {
+  name: string;
+  quick: boolean;
+}
+
 export interface MenuPdfRecipe {
   recipe: RecipePdfData;
   photoData?: string;
@@ -85,8 +91,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginRight: 9,
   },
+  // Ricetta veloce: niente pagina propria, numero su blu chiaro
+  tocNumQuick: { backgroundColor: PDF.dot },
   tocNumText: { color: "#ffffff", fontSize: 9, fontFamily: "Helvetica-Bold", lineHeight: 1 },
   tocName: { fontSize: 11, color: PDF.ink },
+  tocQuick: { fontSize: 8, color: GRAY, marginLeft: 6, textTransform: "uppercase", letterSpacing: 0.5 },
 });
 
 function formatServeDate(date: string | null, servingTime: string | null): string | null {
@@ -100,11 +109,15 @@ function formatServeDate(date: string | null, servingTime: string | null): strin
 export function MenuPdfDocument({
   menu,
   recipes,
+  toc,
   coverPhoto,
   logoData,
 }: {
   menu: MenuPdfMeta;
+  /** Ricette con una pagina propria */
   recipes: MenuPdfRecipe[];
+  /** Elenco in copertina (tutte le ricette del menù, veloci comprese) */
+  toc: MenuPdfTocItem[];
   coverPhoto?: string;
   logoData?: string;
 }) {
@@ -134,17 +147,18 @@ export function MenuPdfDocument({
             ) : null}
             <View style={styles.metaItem}>
               <Text style={styles.metaItemLabel}>Ricette</Text>
-              <Text style={styles.metaItemValue}>{recipes.length}</Text>
+              <Text style={styles.metaItemValue}>{toc.length}</Text>
             </View>
           </View>
 
           <Text style={styles.tocTitle}>Le ricette del menù</Text>
-          {recipes.map(({ recipe }, i) => (
+          {toc.map((item, i) => (
             <View key={i} style={styles.tocItem}>
-              <View style={styles.tocNum}>
+              <View style={item.quick ? [styles.tocNum, styles.tocNumQuick] : styles.tocNum}>
                 <Text style={styles.tocNumText}>{i + 1}</Text>
               </View>
-              <Text style={styles.tocName}>{recipe.name}</Text>
+              <Text style={styles.tocName}>{item.name}</Text>
+              {item.quick ? <Text style={styles.tocQuick}>veloce</Text> : null}
             </View>
           ))}
         </View>

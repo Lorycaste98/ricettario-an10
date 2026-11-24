@@ -77,9 +77,9 @@ export default async function MenuDetailPage({ params }: Params) {
     date: menu.date,
     servingTime: menu.servingTime,
     photo: menu.photo,
-    recipeIds: recipes
-      .filter((mr) => !mr.recipe.quick)
-      .map((mr) => mr.recipe.id),
+    // Tutte le ricette in ordine di menù: le "veloci" compaiono solo nell'elenco della
+    // copertina (non hanno dettaglio: GET /api/recipes/[id] → 404)
+    recipes: recipes.map((mr) => ({ id: mr.recipe.id, name: mr.recipe.name, quick: mr.recipe.quick })),
   };
   const meta = [
     formattedDate,

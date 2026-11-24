@@ -59,6 +59,9 @@ const SORT_OPTIONS: { value: SortKey; label: string; adminOnly?: boolean }[] = [
 
 // Persistenza filtri: restano salvati anche tornando indietro dalla pagina di dettaglio
 const RK = "ricettario:recipe-list:";
+// Ordinamento: in localStorage (resta anche chiudendo la scheda/app), chiavi distinte da
+// quelle per-scheda così i vecchi valori in sessionStorage non contano più
+const RSK = "ricettario:recipe-sort:";
 const SORT_KEYS = SORT_OPTIONS.map((o) => o.value);
 const parseStr = (raw: string): string => {
   const v = JSON.parse(raw);
@@ -83,12 +86,13 @@ const parsePage = (raw: string): number => {
 
 export function RecipeGrid({ recipes, categories, tags }: Props) {
   const { isAdmin } = useAuth();
-  // Filtri per-scheda: persistono durante la navigazione ma si azzerano alla chiusura scheda
+  // Filtri per-scheda: persistono durante la navigazione ma si azzerano alla chiusura scheda.
+  // Fa eccezione l'ordinamento (sort + order), salvato sul dispositivo.
   const [q, setQ] = useLocalStore<string>(RK + "q", "", parseStr, undefined, "session");
   const [activeCats, setActiveCats] = useLocalStore<number[]>(RK + "cats", [], parseNumArr, undefined, "session");
   const [activeTags, setActiveTags] = useLocalStore<number[]>(RK + "tags", [], parseNumArr, undefined, "session");
-  const [sortPref, setSort] = useLocalStore<SortKey | null>(RK + "sort", null, parseSortPref, undefined, "session");
-  const [order, setOrder] = useLocalStore<"asc" | "desc">(RK + "order", "desc", parseOrder, undefined, "session");
+  const [sortPref, setSort] = useLocalStore<SortKey | null>(RSK + "sort", null, parseSortPref);
+  const [order, setOrder] = useLocalStore<"asc" | "desc">(RSK + "order", "desc", parseOrder);
   const [publishedFilter, setPublishedFilter] = useLocalStore<PublishedFilter>(
     PUBLISHED_FILTER_KEY,
     "all",
@@ -102,7 +106,8 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
 
   // Ordinamento di default: admin → "Il mio voto" personale, visitatore → "Valutazione".
   const defaultSort: SortKey = isAdmin ? "myRating" : "avgRating";
-  const sort: SortKey = sortPref ?? defaultSort;
+  // "Il mio voto" scelto da un admin non vale per un visitatore sullo stesso dispositivo
+  const sort: SortKey = sortPref && (isAdmin || sortPref !== "myRating") ? sortPref : defaultSort;
   const sortOptions = isAdmin ? SORT_OPTIONS : SORT_OPTIONS.filter((o) => !o.adminOnly);
 
   const resetPage = () => setPage(0);
