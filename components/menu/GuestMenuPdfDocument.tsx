@@ -8,7 +8,7 @@ import { BAND_TEXT_RIGHT, BandDecor, BottomOrnament, Divider, SheetDecor, THEME,
  * Solo nome, data e ora, descrizione e i piatti divisi per portata (veloci e voci scritte a mano
  * comprese): niente ingredienti, passi, costi né note private.
  *
- * Il **tema** (`GuestSheet.theme`: Natale, Compleanno, Evento) sceglie colori, fondo e decori
+ * Il **tema** (`GuestSheet.theme`: Natale in cinque stili, Compleanno, Evento) sceglie colori, fondo e decori
  * (`guest-themes.tsx`). Tre impaginazioni (`GuestSheet.format`):
  * - **A4 / A5**: cartoncino da stampare, tutto centrato dentro una doppia cornice, decori lungo i
  *   bordi; in cima l'ornamento del tema e il logo AN10 nel colore del titolo (una volta sola,
@@ -76,8 +76,8 @@ function SheetPage({ menu, sheet, logo }: { menu: MenuPdfMeta; sheet: GuestSheet
   const t = THEME[sheet.theme];
   const when = serveLine(menu.date, menu.servingTime);
   // Il festone del compleanno occupa la fascia in alto, i palloncini gli angoli in basso
-  const padTop = (sheet.theme === "compleanno" ? 96 : 70) * k;
-  const padBottom = (sheet.theme === "compleanno" ? 92 : 70) * k;
+  const padTop = (t.padTop ?? 70) * k;
+  const padBottom = (t.padBottom ?? 70) * k;
 
   // Altezza stimata (a scala 1) per stringere le portate se non ci stanno in una pagina
   const titleLines = Math.ceil(menu.name.length / 22);
@@ -101,7 +101,7 @@ function SheetPage({ menu, sheet, logo }: { menu: MenuPdfMeta; sheet: GuestSheet
     frameIn: { position: "absolute", top: 25 * k, left: 25 * k, right: 25 * k, bottom: 25 * k, borderWidth: 0.6 * k, borderColor: t.frameIn },
     body: { flexGrow: 1, justifyContent: "center", alignItems: "center" },
     kicker: { fontFamily: SANS_B, fontSize: 8.5 * k, letterSpacing: 3.5 * k, color: t.soft, textTransform: "uppercase", marginBottom: 10 * k },
-    title: { fontFamily: t.titleFont, fontSize: 32 * k, lineHeight: 1.15, textAlign: "center", color: t.title, maxWidth: 420 * k },
+    title: { fontFamily: t.titleFont, fontSize: 32 * k * (t.titleScale ?? 1), lineHeight: 1.15, textAlign: "center", color: t.title, maxWidth: 420 * k },
     when: { fontFamily: TIMES_I, fontSize: 13 * k, color: t.ink, marginTop: 10 * k, textAlign: "center" },
     desc: { fontFamily: TIMES_I, fontSize: 11.5 * k, lineHeight: 1.45, color: t.soft, marginTop: 8 * k, textAlign: "center", maxWidth: 380 * k },
     course: { alignItems: "center", marginBottom: 22 * k * s },
@@ -172,13 +172,13 @@ function PhonePage({
     band: {
       backgroundColor: t.band,
       paddingHorizontal: 28,
-      paddingTop: sheet.theme === "compleanno" ? 50 : 32,
+      paddingTop: t.bandTop ?? 32,
       paddingBottom: 26,
       minHeight: BAND_DECOR_H,
     },
     logo: { width: 73, height: 24, marginBottom: 18 },
     kicker: { fontFamily: SANS_B, fontSize: 8.5, letterSpacing: 3, color: t.bandSoft, textTransform: "uppercase", marginBottom: 6 },
-    title: { fontFamily: t.titleFont, fontSize: 30, lineHeight: 1.12, color: "#ffffff", maxWidth: BAND_TEXT_RIGHT - 28 },
+    title: { fontFamily: t.titleFont, fontSize: 30 * (t.titleScale ?? 1), lineHeight: 1.12, color: "#ffffff", maxWidth: BAND_TEXT_RIGHT - 28 },
     when: { fontFamily: TIMES_I, fontSize: 14, color: t.bandSoft, marginTop: 10, maxWidth: BAND_TEXT_RIGHT - 28 },
     photo: { width: PHONE_W, height: 220, objectFit: "cover" },
     body: { paddingHorizontal: 28, paddingTop: 24 },

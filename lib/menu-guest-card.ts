@@ -19,13 +19,29 @@ export const GUEST_FORMATS: { value: GuestFormat; label: string; hint: string }[
 ];
 
 /** Tema del cartoncino: decori, colori e sfondo del PDF (components/menu/guest-themes.tsx) */
-export type GuestTheme = "natale" | "compleanno" | "evento";
+export type GuestTheme =
+  | "natale"
+  | "natale-nordico"
+  | "natale-notte"
+  | "natale-cartolina"
+  | "natale-ghirlanda"
+  | "compleanno"
+  | "evento";
 
-export const GUEST_THEMES: { value: GuestTheme; label: string; hint: string }[] = [
-  { value: "natale", label: "Natale", hint: "Agrifoglio, rami di pino e fiocchi di neve, rosso e verde su cartoncino panna" },
-  { value: "compleanno", label: "Compleanno", hint: "Festone di bandierine, palloncini e coriandoli" },
-  { value: "evento", label: "Evento", hint: "Rami d'alloro e cornici d'angolo dorate, per ogni altra occasione" },
+/** Famiglia del tema: la finestra sceglie prima l'occasione, poi (per Natale) lo stile */
+export type GuestThemeFamily = "natale" | "compleanno" | "evento";
+
+export const GUEST_THEMES: { value: GuestTheme; label: string; hint: string; family: GuestThemeFamily }[] = [
+  { value: "natale", family: "natale", label: "Classico", hint: "Agrifoglio, rami di pino e fiocchi di neve, rosso e verde su cartoncino panna" },
+  { value: "natale-nordico", family: "natale", label: "Nordico", hint: "Punto croce, alberelli geometrici e stella scandinava, rosso e verde su lino" },
+  { value: "natale-notte", family: "natale", label: "Notte", hint: "Cielo stellato e stella cometa in oro su fondo blu notte, per una cena elegante" },
+  { value: "natale-cartolina", family: "natale", label: "Cartolina", hint: "Cartolina d'altri tempi: bordo a righe bastoncino di zucchero, sigillo di ceralacca, carta kraft" },
+  { value: "natale-ghirlanda", family: "natale", label: "Ghirlanda", hint: "Festone e ghirlanda di eucalipto, olivo e bacche rosse su carta bianca, verde salvia" },
+  { value: "compleanno", family: "compleanno", label: "Compleanno", hint: "Festone di bandierine, palloncini e coriandoli" },
+  { value: "evento", family: "evento", label: "Evento", hint: "Rami d'alloro e cornici d'angolo dorate, per ogni altra occasione" },
 ];
+
+export const themeFamily = (t: GuestTheme): GuestThemeFamily => GUEST_THEMES.find((x) => x.value === t)?.family ?? "evento";
 
 /**
  * Colore del titolo per tema, usato anche per il logo in cima al cartoncino (ricolorato dal
@@ -33,6 +49,10 @@ export const GUEST_THEMES: { value: GuestTheme; label: string; hint: string }[] 
  */
 export const GUEST_THEME_INK: Record<GuestTheme, string> = {
   natale: "#1d5b3a",
+  "natale-nordico": "#a3242b",
+  "natale-notte": "#d9b46a",
+  "natale-cartolina": "#9e2a2b",
+  "natale-ghirlanda": "#3f5d4a",
   compleanno: "#c8344d",
   evento: "#074f67",
 };
