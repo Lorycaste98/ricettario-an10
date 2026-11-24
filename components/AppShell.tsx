@@ -67,7 +67,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </main>
         <CookingMiniBar />
       </div>
-      <TabBar />
+      <TabBar adminArea={admin} />
     </div>
   );
 }

@@ -13,7 +13,7 @@ import { RecipeActions } from "./RecipeActions";
 import { RecipeAdminBar } from "./RecipeAdminBar";
 import { formatMinutes, formatServings } from "@/lib/types";
 import { PageHeader } from "@/components/ds/PageHeader";
-import { An10Logo } from "@/components/brand/An10Logo";
+import { NoPhoto } from "@/components/recipe/NoPhoto";
 import type { StepIngredientLink } from "@/lib/step-ingredients";
 import type { Metadata } from "next";
 
@@ -106,9 +106,7 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
               <ViewerImage photos={allPhotos} index={0} src={allPhotos[0]} alt={recipe.name} className="object-cover" sizes="64px" priority />
             </div>
           ) : (
-            <div className="flex size-full items-center justify-center bg-blu-100">
-              <An10Logo variant="simbolo" title="" className="w-3/5 text-blu-600" />
-            </div>
+            <NoPhoto logo="w-3/5" />
           )
         }
         title={recipe.name}

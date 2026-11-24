@@ -7,7 +7,7 @@ import { type RecipeSummary, formatMinutes, formatServings } from "@/lib/types";
 import { FavoriteButton } from "./FavoriteButton";
 import { CookingButton } from "@/components/cooking/CookingButton";
 import { useAuth } from "@/components/AuthProvider";
-import { An10Logo } from "@/components/brand/An10Logo";
+import { NoPhoto } from "./NoPhoto";
 import { GuestRatingTag, HiddenTag, MyRatingTag } from "@/components/ds/Tag";
 import { PotIcon } from "@/components/icons";
 
@@ -43,9 +43,7 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
             className="object-cover transition-transform duration-500 group-hover:scale-[1.03] motion-reduce:transition-none"
           />
         ) : (
-          <div className="flex h-full items-center justify-center bg-blu-100">
-            <An10Logo variant="simbolo" title="" className="w-[34%] text-blu-600" />
-          </div>
+          <NoPhoto />
         )}
         <div className="absolute top-2 right-2 flex gap-1.5">
           <CookingButton recipeId={recipe.id} />
