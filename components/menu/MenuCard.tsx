@@ -35,7 +35,8 @@ function TablePlate({ photo, big = false, className }: { photo?: string; big?: b
         <Image src={photo} alt="" fill sizes={big ? "(max-width: 700px) 40vw, 18vw" : "(max-width: 700px) 20vw, 9vw"} className="object-cover" />
       ) : big ? (
         <span className="flex size-full items-center justify-center text-blu-800">
-          <An10MenuMark className="w-[52%]" />
+          {/* un po' in alto a sinistra: in basso a destra del piatto c'è la medaglia del voto */}
+          <An10MenuMark className="w-[50%] -translate-x-[9%] -translate-y-[5%]" />
         </span>
       ) : (
         // piatto vuoto: solo il cavetto interno, come una tavola apparecchiata
@@ -48,7 +49,7 @@ function TablePlate({ photo, big = false, className }: { photo?: string; big?: b
 /**
  * 8.5 · card menù «Tavola» (gemella della card ricetta 8.1 «Piatto»). Se una ricetta è un piatto,
  * un menù è una tavola apparecchiata: sulla tovaglia `blu-100` un piatto grande (foto del menù o
- * della prima ricetta; senza foto il marchio dei menù `An10MenuMark`, il simbolo «10» intatto sotto una cloche) e due piatti più piccoli con le foto di altre ricette — piatti bianchi vuoti
+ * della prima ricetta; senza foto il marchio dei menù `An10MenuMark`, il simbolo «10» intatto con la cloche dei menù per cappello) e due piatti più piccoli con le foto di altre ricette — piatti bianchi vuoti
  * se mancano le foto, nessuno se il menù ha una ricetta sola. In alto a sinistra la data come
  * biglietto del calendario (8.12, testata prugna = area menù, al posto del vecchio filo laterale)
  * con in fondo l'ora del servizio,

@@ -108,7 +108,7 @@ export default async function MenuDetailPage({ params }: Params) {
               />
             </div>
           ) : (
-            // menù senza foto: il marchio dei menù (il «10» del logo con lo 0 a cloche), come nella card 8.5
+            // menù senza foto: il marchio dei menù (il «10» del logo con la cloche per cappello), come nella card 8.5
             <div className="flex size-full items-center justify-center bg-white text-blu-800 ring-1 ring-blu-150 ring-inset">
               <An10MenuMark className="w-[62%]" />
             </div>
