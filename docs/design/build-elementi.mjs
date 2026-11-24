@@ -2,6 +2,7 @@
 // Uso (dalla radice del progetto): node docs/design/build-elementi.mjs
 // Segnaposto: /*TOKENS*/ (tokens.css) · /*APP*/ (app.css) · {{l:nome}} icona lucide ·
 // {{c:nome}} icona del progetto · {{s:...}} versione piccola · {{logo}} logo AN10 ·
+// {{menumark}} marchio dei menù (simbolo «10» + cloche 5.23 per cappello, come `An10MenuMark`) ·
 // {{rail:voce}} {{tabs:voce}} {{pass}} {{mini}} {{subnav:voce}} pezzi di interfaccia comuni.
 import fs from "node:fs";
 import path from "node:path";
@@ -24,6 +25,13 @@ export const CUSTOM = {
 };
 
 const LOGO = `<svg class="an" viewBox="0 0 512 512" aria-label="AN10"><rect width="512" height="512" rx="80" fill="#0A7EA4"/><line x1="228" y1="100" x2="228" y2="280" stroke="#fff" stroke-width="28" stroke-linecap="round"/><line x1="200" y1="100" x2="200" y2="164" stroke="#fff" stroke-width="22" stroke-linecap="round"/><line x1="256" y1="100" x2="256" y2="164" stroke="#fff" stroke-width="22" stroke-linecap="round"/><path d="M200 164 Q228 196 256 164" fill="#fff"/><line x1="284" y1="100" x2="284" y2="280" stroke="#fff" stroke-width="28" stroke-linecap="round"/><path d="M284 100 Q336 140 284 200" fill="#fff"/><text x="256" y="390" font-family="Courier New,Courier,monospace" font-size="120" font-weight="700" fill="#fff" text-anchor="middle" letter-spacing="8">AN10</text></svg>`;
+
+// Marchio dei menù: stessa geometria di `components/brand/An10MenuMark.tsx` (simbolo di `An10Logo` + `ClocheIcon` ×13)
+let mmId = 0;
+const menuMark = () => {
+  const id = `mm${++mmId}`;
+  return `<svg class="mm" viewBox="438 -186 288 418" aria-hidden="true"><defs><mask id="${id}a" maskUnits="userSpaceOnUse" x="400" y="-50" width="400" height="400"><rect x="400" y="-50" width="400" height="400" fill="#fff"/><circle cx="512" cy="172" r="23" fill="#000"/></mask><mask id="${id}b" maskUnits="userSpaceOnUse" x="400" y="-50" width="400" height="400"><rect x="400" y="-50" width="400" height="400" fill="#fff"/><circle cx="512" cy="188" r="4" fill="#000"/><circle cx="512" cy="204" r="4" fill="#000"/></mask></defs><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><g mask="url(#${id}a)"><path d="M470 82 L512 40 V172" stroke-width="28"/><path d="M632 40 C672 40 694 96 694 146 C694 190 668 218 632 218 C596 218 570 190 570 146 C570 96 592 40 632 40 Z" stroke-width="26"/></g><path d="M512 172 V208" stroke-width="28" mask="url(#${id}b)"/></g><circle cx="632" cy="140" r="17" fill="currentColor"/><svg x="426" y="-279" width="312" height="312" viewBox="0 0 24 24" overflow="visible" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${CUSTOM.cloche}</svg></svg>`;
+};
 
 const NAV = [["ricette", "l:book-open", "Ricette"], ["menu", "c:cloche", "Menù"], ["preferiti", "l:heart", "Preferiti"], ["cerca", "l:search", "Cerca"]];
 const on = (a, b) => (a === b ? ' class="on"' : "");
@@ -71,7 +79,7 @@ let total = 0;
 for (const page of pages) {
   let html = fs.readFileSync(path.join(dir, page), "utf8").replace("/*TOKENS*/", tokens).replace("/*APP*/", app);
   html = html.replace(/\{\{(rail|tabs|pass|mini|subnav)(?::([a-z]+))?\}\}/g, (_, m, v) => MACROS[m](v));
-  html = html.replaceAll("{{logo}}", LOGO);
+  html = html.replaceAll("{{logo}}", LOGO).replace(/\{\{menumark\}\}/g, menuMark);
   const jobs = [...html.matchAll(/\{\{(s:)?(?:(l|c):)?([a-z0-9-]+)\}\}/g)];
   for (const [all, small, kind = "l", name] of jobs) {
     let inner;

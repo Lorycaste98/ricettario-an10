@@ -288,9 +288,9 @@ Ogni componente vive una volta sola in `components/ds/` (o nella cartella della 
 - **Campi (4.x)** `Field` + `TextInput` / `TextArea` / `Select` / `SearchField` / `ReadonlyValue`: sottili (34→40px), bordo `blu-200`, focus con bordo e alone blu del logo; ricerca su fondo azzurro senza bordo.
 - **Visibilità (4.8)** `VisibilityToggle`: sempre l'occhio; verde «pronta», tratteggiato grigio «non pronta».
 - **Scelte** `Checkbox` (4.9, spunta verde), `Segmented` (4.10, frecce da tastiera), `Chip` (4.11, attivo blu cornice), `RatingInput` (4.12, il voto scelto in arancio), `Switch` (4.13, solo impostazioni).
-- **Etichette (6.x)** `Tag` e derivati: tipo di passo, voto ospiti (oro), mio voto (indaco), non pronta, opzionale, veloce, dosi, sforamento. **6.11** `RatingMedal`: il voto ospiti come medaglia gialla col bordo bianco e una stella piena più scura dietro il numero, appoggiata sul bordo del piatto (8.1, 8.10).
+- **Etichette (6.x)** `Tag` e derivati: tipo di passo, voto ospiti (oro), mio voto (indaco), non pronta, opzionale, veloce, dosi, sforamento. **6.11** `RatingMedal`: il voto ospiti come medaglia gialla col bordo bianco e una stella piena più scura dietro il numero, appoggiata sul bordo del piatto (8.1, 8.10) o sul piatto grande della tavola (8.5, 8.11).
 - **Avanzamento (7.x)** `StepProgress`, `StepNumber`, `ProgressBar`, `TimerRing`, `Skeleton`.
-- **Schede**: `Panel` (sezioni dei dettagli, `tone="note"` giallo), `RecipeCard` (8.1/8.2 «Piatto»: foto tonda come un piatto visto dall'alto sulla tovaglia `blu-100`, medaglia 6.11; non pronta = timbro «Non pronta» tratteggiato e inclinato sopra il piatto, testo e medaglia spenti, niente pentola né cuore), `RecipeRow` (8.10 «Carta»: vista a lista come la carta di un ristorante, piatto piccolo, nome · puntini · pentola e cuore, righe senza scheda), `MenuCard` (8.5), `CurrentStep` (8.7, bordo arancio). Griglia o lista e card per riga le sceglie chi guarda (`CollectionView`); le card mostrano più dettagli quando sono larghe.
+- **Schede**: `Panel` (sezioni dei dettagli, `tone="note"` giallo), `RecipeCard` (8.1/8.2 «Piatto»: foto tonda come un piatto visto dall'alto sulla tovaglia `blu-100`, medaglia 6.11; non pronta = timbro «Non pronta» tratteggiato e inclinato sopra il piatto, testo e medaglia spenti, niente pentola né cuore), `RecipeRow` (8.10 «Carta»: vista a lista come la carta di un ristorante, piatto piccolo, nome · puntini · pentola e cuore, righe senza scheda), `MenuCard` (8.5 «Tavola»: gemella del Piatto, sulla tovaglia un piatto grande e due piccoli con le foto del menù e delle sue ricette, la data come biglietto del calendario 8.12 nell'angolo e la medaglia sul piatto grande), `MenuRow` (8.11: biglietto e medaglia, nome · puntini), `DateTicket` (8.12: testata prugna = area menù col giorno della settimana, giorno grande, mese e, in fondo, l'ora del servizio su striscia gialla perché il giallo è il tempo), `CurrentStep` (8.7, bordo arancio). Griglia o lista e card per riga le sceglie chi guarda (`CollectionView`); le card mostrano più dettagli quando sono larghe.
 - **Cornice (9.x)** `NavRail`, `TabBar` (blu `blu-800` come la barra laterale, voce attiva su pastiglia arancio), `CookingRow`/`CookingMiniBar`, `BackLink`, `PageHeader` (`brand`: logo completo in cima alle pagine principali sul telefono).
 - **Messaggi (10.x)** `Modal`/`ConfirmModal`, `Toast`, `EmptyState`, `Banner`, `TimerAlert`, `FormError` (con «Riprova»).
 - **Gestione (11–13)** `FormParts` (barra 11.1, blocchi 11.2, righe 11.3/11.4), `ChipSearch`, `AdminTable`, dashboard, costi, timeline.
@@ -330,7 +330,7 @@ Il blu `#0A7EA4` del logo (`oklch(55.5% 0.107 228.5)`) è il colore principale, 
 
 | Tono | Codice | Ruolo | Non usarlo per |
 |---|---|---|---|
-| Blu scuro `#0B4F68` | 1.2 | cornice: navigazione, testate di gruppo (menù 8.5), chip filtro attivo | testo lungo su bianco |
+| Blu scuro `#0B4F68` | 1.2 | cornice: navigazione, testate di gruppo, chip filtro attivo | testo lungo su bianco |
 | Blu del logo `#0A7EA4` | 1.3 | ciò che è **vivo**: fila «in corso», mini-barra, focus dei campi, link | sfondi grandi di pagina |
 | Azzurri chiari `#E3F1F7` / `#D2E8F1` | 1.5 | zone e colonne (ingredienti, colonne laterali PC), ricerca, segmenti | testo |
 | Bianco | 1.7 | schede **dove si legge** (passo, schede ricetta, finestre) | — |
@@ -348,6 +348,7 @@ Sfondo di pagina **pieno** `#F4F9FB` (1.6): niente più gradiente fisso (vedi pr
 ### D3 · Tipografia
 - Font di sistema (`-apple-system`, SF Pro su iPhone/iPad). Il Courier del vecchio marchio «AN10» (2.9) è sparito con il logo nuovo (D8).
 - Ricette senza foto: nelle card e nelle righe a lista il **«10» blu sul piatto bianco** (8.2, 8.10); nelle testate e nelle righe del dettaglio menù il logo bianco su `blu-800` (`NoPhoto`).
+- Menù senza foto: il **marchio dei menù** (`An10MenuMark`) sul piatto bianco della card 8.5 e nella miniatura della testata del dettaglio: il simbolo «10» del logo **intatto** con l'icona dei menù (cloche 5.23) dritta sopra come un cappello, in proporzione esatta (cloche ×13: il suo tratto diventa quello del logo). Non si ridisegna né il logo né la cloche: se cambia uno dei due, il marchio segue.
 - Scala: 28 titolo pagina (2.1) · 20 titolo sezione (2.2) · 12 maiuscolo spaziato per le etichette di colonna (2.3) · **20 per il passo corrente** (2.4, leggibile a un braccio) · 16 testo (2.5) · 13 dettagli (2.6).
 - Numeri che cambiano o si confrontano (timer, quantità, voti) con **cifre allineate** (`tabular-nums`).
 - Gerarchia con peso e tinta (grigio-blu 1.8), **mai con l'opacità** del testo.
