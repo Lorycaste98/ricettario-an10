@@ -2,12 +2,11 @@
 import Link from "next/link";
 import Image from "next/image";
 import { clsx } from "clsx";
-import { Clock, Users } from "lucide-react";
+import { Clock, EyeOff, Users } from "lucide-react";
 import { type RecipeSummary, formatServings } from "@/lib/types";
 import { FavoriteButton } from "./FavoriteButton";
 import { CookingButton } from "@/components/cooking/CookingButton";
 import { An10Logo } from "@/components/brand/An10Logo";
-import { HiddenTag } from "@/components/ds/Tag";
 import { PotIcon } from "@/components/icons";
 import { pressCls, useCardInfo } from "./card-info";
 import { RatingMedal } from "./RatingMedal";
@@ -17,6 +16,7 @@ import { RatingMedal } from "./RatingMedal";
  * a sinistra il piatto (foto tonda con il bordo, gemella della card 8.1) con la medaglia 6.11 del
  * voto ospiti in basso a destra, poi il nome e i puntini di guida che portano a pentola e cuore.
  * Sotto: categoria, tempo (ambra), porzioni, cotture, numero di voti, il mio voto (indaco).
+ * Non pronta (solo admin): piatto sbiadito e mini-timbro tratteggiato con l'occhio barrato sul bordo.
  * Ogni ricetta è a sé, **senza scheda**: appoggiata sul fondo pagina e separata dallo spazio
  * (`CollectionBody` con `list="stack"`); il foglio unico la faceva sembrare un gruppo.
  * È un `@container/row`: da 26rem porzioni e cotture, da 30rem il numero di voti, da 34rem piatto e nome più grandi.
@@ -51,6 +51,18 @@ export function RecipeRow({ recipe }: { recipe: RecipeSummary }) {
           </span>
         )}
       </span>
+      {/* non pronta (solo admin): mini-timbro sul bordo del piatto, dal lato opposto alla medaglia
+          (la scritta intera non ci sta; nella riga dei dettagli manderebbe il testo a capo) */}
+      {c.hidden && (
+        <span
+          role="img"
+          aria-label="Non pronta"
+          title="Non pronta"
+          className="absolute -top-1 -left-1.5 flex size-[1.625rem] items-center justify-center rounded-full border-2 border-dashed border-grigio bg-white text-grigio shadow-[0_2px_5px_oklch(25%_0.038_228/.2)]"
+        >
+          <EyeOff className="size-3.5" aria-hidden />
+        </span>
+      )}
       {c.guest && (
         <RatingMedal
           value={c.guest.value}
@@ -76,7 +88,6 @@ export function RecipeRow({ recipe }: { recipe: RecipeSummary }) {
         {/* dettagli */}
         <span className="flex min-w-0 items-center gap-2">
           <span className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs text-grigio">
-            {c.hidden && <HiddenTag />}
             {c.cat && (
               <span className="flex min-w-0 items-center gap-1.5">
                 <span aria-hidden className="size-2 shrink-0 rounded-full" style={{ background: c.cat.color }} />

@@ -8,7 +8,6 @@ import { type RecipeSummary, formatServings } from "@/lib/types";
 import { FavoriteButton } from "./FavoriteButton";
 import { CookingButton } from "@/components/cooking/CookingButton";
 import { An10Logo } from "@/components/brand/An10Logo";
-import { HiddenTag } from "@/components/ds/Tag";
 import { PotIcon } from "@/components/icons";
 import { pressCls, useCardInfo } from "./card-info";
 
@@ -17,7 +16,8 @@ import { pressCls, useCardInfo } from "./card-info";
  * dall'alto: ritagliata a cerchio con il bordo bianco e un'ombra morbida, appoggiata sulla
  * «tovaglia» `blu-100` della card. Il voto ospiti è la medaglia 6.11 sul bordo del piatto, in basso
  * a destra. Senza foto: piatto bianco con il «10». Pentola e cuore nei due angoli della tovaglia.
- * Le non pronte (solo admin) sono offuscate, con contorno tratteggiato e l'etichetta 6.4 sotto il piatto.
+ * Le non pronte (solo admin): piatto sbiadito, contorno tratteggiato della card e sopra il piatto il
+ * timbro «Non pronta» (6.4 come fac-simile: riquadro tratteggiato inclinato), senza cambiare l'altezza.
  *
  * È un `@container/card`: cosa mostra dipende dalla sua larghezza (card per riga di
  * `CollectionView`). Stretta (3 per riga sul telefono): solo cuore, nome piccolo, pallino e tempo;
@@ -47,10 +47,11 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
       </div>
 
       {/* il piatto */}
-      <div className={clsx("relative w-[76%]", c.hidden && "opacity-60 saturate-50")}>
+      <div className="relative w-[76%]">
         <div
           className={clsx(
             "relative aspect-square overflow-hidden rounded-full bg-white",
+            c.hidden && "opacity-60 saturate-50",
             "shadow-[0_0_0_clamp(4px,3.5cqi,9px)_white,0_10px_22px_-6px_oklch(25%_0.038_228/.35)]",
             "transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:rotate-[8deg] motion-reduce:transition-none"
           )}
@@ -63,6 +64,9 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
             </div>
           )}
         </div>
+        {/* non pronta (solo admin): timbro «fac-simile» sopra il piatto, non sbiadito con lui.
+            Sta sul piatto e non nel testo, così tutte le card restano alte uguali */}
+        {c.hidden && <NotReadyStamp />}
         {c.guest && (
           <RatingMedal
             value={c.guest.value}
@@ -72,12 +76,6 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
         )}
       </div>
 
-      {/* non pronta (solo admin): sotto il piatto, sopra il nome — in alto a sinistra coprirebbe la pentola */}
-      {c.hidden && (
-        <span className="mt-[0.7em] -mb-[0.35em]">
-          <HiddenTag />
-        </span>
-      )}
       <h3 className="mt-[0.75em] line-clamp-2 text-[0.8125rem] leading-tight font-extrabold text-blu-950 @min-[11rem]/card:text-[1rem] @min-[18rem]/card:text-[1.1875rem]">
         {recipe.name}
       </h3>
@@ -114,5 +112,22 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
         </p>
       )}
     </Link>
+  );
+}
+
+/** 6.4 sul piatto · timbro «Non pronta» come un fac-simile: bianco pieno, bordo tratteggiato, inclinato. */
+function NotReadyStamp() {
+  return (
+    <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
+      <span
+        className={clsx(
+          "-rotate-12 rounded-[0.375rem] border-2 border-dashed border-grigio bg-white px-[0.6em] py-[0.25em]",
+          "text-[clamp(0.625rem,7cqi,0.9375rem)] leading-none font-extrabold tracking-[0.12em] whitespace-nowrap text-grigio uppercase",
+          "shadow-[0_2px_6px_oklch(25%_0.038_228/.18)]"
+        )}
+      >
+        Non pronta
+      </span>
+    </span>
   );
 }
