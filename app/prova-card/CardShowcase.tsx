@@ -6,6 +6,8 @@ import { RecipeCard } from "@/components/recipe/RecipeCard";
 import { RecipeCardTicket } from "@/components/recipe/cards/RecipeCardTicket";
 import { RecipeCardPlate } from "@/components/recipe/cards/RecipeCardPlate";
 import { RecipeCardCover } from "@/components/recipe/cards/RecipeCardCover";
+import { CartaSheet, RecipeRowCarta } from "@/components/recipe/cards/RecipeRowCarta";
+import { RecipeRow } from "@/components/recipe/RecipeRow";
 
 const VARIANTS = [
   { key: "ticket", title: "1 · Comanda", note: "scontrino del pass: perforazione, voto come totale", Card: RecipeCardTicket },
@@ -60,6 +62,32 @@ export function CardShowcase({ recipes }: { recipes: RecipeSummary[] }) {
           </div>
         </section>
       ))}
+
+      <h1 className="mt-4 text-(length:--fs-page) font-bold">Proposte di lista</h1>
+      <section className="flex flex-col gap-3">
+        <h2 className="text-lg font-bold">
+          Carta <span className="text-sm font-normal text-grigio">· come la carta di un ristorante: piatto tondo, puntini e il voto al posto del prezzo</span>
+        </h2>
+        <div className={width === "phone" ? "w-full max-w-[358px]" : "w-full max-w-3xl"}>
+          <CartaSheet>
+            {recipes.map((r) => (
+              <RecipeRowCarta key={r.id} recipe={r} />
+            ))}
+          </CartaSheet>
+        </div>
+      </section>
+      <section className="flex flex-col gap-3">
+        <h2 className="text-lg font-bold">
+          Lista di oggi <span className="text-sm font-normal text-grigio">· per confronto</span>
+        </h2>
+        <div className={width === "phone" ? "w-full max-w-[358px]" : "w-full max-w-3xl"}>
+          <div className="flex flex-col divide-y divide-blu-150 overflow-hidden rounded-card border border-blu-150 bg-white">
+            {recipes.map((r) => (
+              <RecipeRow key={r.id} recipe={r} />
+            ))}
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
