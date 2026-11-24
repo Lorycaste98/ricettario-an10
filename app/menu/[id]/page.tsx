@@ -16,7 +16,8 @@ import { ViewerImage } from "@/components/ui/ViewerImage";
 import { PageHeader } from "@/components/ds/PageHeader";
 import { GuestRatingTag, QuickRecipeTag, Tag } from "@/components/ds/Tag";
 import { NoPhoto } from "@/components/recipe/NoPhoto";
-import { ClocheIcon, PotIcon } from "@/components/icons";
+import { PotIcon } from "@/components/icons";
+import { An10MenuMark } from "@/components/brand/An10MenuMark";
 import { MenuShoppingList } from "@/components/menu/MenuShoppingList";
 import { MenuCosts } from "@/components/menu/MenuCosts";
 import { MenuNotesCard } from "@/components/menu/MenuNotesCard";
@@ -107,8 +108,9 @@ export default async function MenuDetailPage({ params }: Params) {
               />
             </div>
           ) : (
-            <div className="flex size-full items-center justify-center bg-area-menu-50 text-area-menu [&>svg]:size-3/5">
-              <ClocheIcon />
+            // menù senza foto: il marchio dei menù (il «10» del logo con lo 0 a cloche), come nella card 8.5
+            <div className="flex size-full items-center justify-center bg-white text-blu-800 ring-1 ring-blu-150 ring-inset">
+              <An10MenuMark className="w-[62%]" />
             </div>
           )
         }

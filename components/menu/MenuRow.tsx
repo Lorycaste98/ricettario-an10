@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { clsx } from "clsx";
-import { Clock, EyeOff, Users } from "lucide-react";
+import { EyeOff, Users } from "lucide-react";
 import type { MenuSummary } from "@/lib/types";
 import { useAuth } from "@/components/AuthProvider";
 import { RatingMedal } from "@/components/recipe/RatingMedal";
@@ -11,7 +11,7 @@ import { DateTicket } from "./DateTicket";
 /**
  * 8.11 · riga menù «Carta» (vista a lista, gemella della riga ricetta 8.10): a sinistra il
  * biglietto del calendario (8.12) con la medaglia del voto ospiti (6.11) sul bordo, poi il nome e
- * i puntini di guida; sotto ora del servizio, persone e ricette. Righe senza scheda sul fondo
+ * i puntini di guida; sotto persone e ricette (l'ora del servizio sta in fondo al biglietto). Righe senza scheda sul fondo
  * pagina (`CollectionBody list="stack"`). Non pronto (solo admin): biglietto e testo spenti e
  * mini-timbro con l'occhio barrato, come le ricette.
  */
@@ -31,7 +31,7 @@ export function MenuRow({ menu }: { menu: MenuSummary }) {
       )}
     >
       <span className="relative shrink-0 pt-0.5">
-        <DateTicket date={menu.date} muted={hidden} className="w-[3.25rem] text-[0.9375rem]" />
+        <DateTicket date={menu.date} time={menu.servingTime} muted={hidden} className="w-[3.25rem] text-[0.9375rem]" />
         {hidden && (
           <span
             role="img"
@@ -47,8 +47,8 @@ export function MenuRow({ menu }: { menu: MenuSummary }) {
             value={menu.avgRating!}
             count={menu._count.reviews}
             muted={hidden}
-            // sull'angolo, quasi fuori: non copre il mese
-            className="absolute -right-[1.1rem] -bottom-1 w-[1.875rem] text-[0.6875rem]"
+            // a metà del lato destro, accanto al giorno: non copre né il mese né l'ora in fondo
+            className="absolute top-[34%] -right-[1.1rem] w-[1.875rem] text-[0.6875rem]"
           />
         )}
       </span>
@@ -66,11 +66,6 @@ export function MenuRow({ menu }: { menu: MenuSummary }) {
           <span aria-hidden className="min-w-4 flex-1 border-b-2 border-dotted border-blu-250" />
         </span>
         <span className={clsx("flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs", hidden ? "text-grigio-chiaro" : "text-grigio")}>
-          {menu.servingTime && (
-            <span className={clsx("tabular flex items-center gap-1 font-semibold whitespace-nowrap", !hidden && "text-ambra")}>
-              <Clock className="size-3.5 shrink-0" aria-hidden /> {menu.servingTime}
-            </span>
-          )}
           {menu.people != null && (
             <span className="flex items-center gap-1 whitespace-nowrap">
               <Users className="size-3.5 shrink-0" aria-hidden /> {menu.people} persone

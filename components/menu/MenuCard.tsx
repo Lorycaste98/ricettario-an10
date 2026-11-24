@@ -2,10 +2,10 @@
 import Link from "next/link";
 import Image from "next/image";
 import { clsx } from "clsx";
-import { Clock, Users } from "lucide-react";
+import { Users } from "lucide-react";
 import type { MenuSummary } from "@/lib/types";
 import { useAuth } from "@/components/AuthProvider";
-import { ClocheIcon } from "@/components/icons";
+import { An10MenuMark } from "@/components/brand/An10MenuMark";
 import { RatingMedal } from "@/components/recipe/RatingMedal";
 import { pressCls } from "@/components/recipe/card-info";
 import { DateTicket } from "./DateTicket";
@@ -34,8 +34,8 @@ function TablePlate({ photo, big = false, className }: { photo?: string; big?: b
       {photo ? (
         <Image src={photo} alt="" fill sizes={big ? "(max-width: 700px) 40vw, 18vw" : "(max-width: 700px) 20vw, 9vw"} className="object-cover" />
       ) : big ? (
-        <span className="flex size-full items-center justify-center text-area-menu">
-          <ClocheIcon className="size-[42%]" strokeWidth={1.6} />
+        <span className="flex size-full items-center justify-center text-blu-800">
+          <An10MenuMark className="w-[52%]" />
         </span>
       ) : (
         // piatto vuoto: solo il cavetto interno, come una tavola apparecchiata
@@ -48,13 +48,14 @@ function TablePlate({ photo, big = false, className }: { photo?: string; big?: b
 /**
  * 8.5 · card menù «Tavola» (gemella della card ricetta 8.1 «Piatto»). Se una ricetta è un piatto,
  * un menù è una tavola apparecchiata: sulla tovaglia `blu-100` un piatto grande (foto del menù o
- * della prima ricetta) e due piatti più piccoli con le foto di altre ricette — piatti bianchi vuoti
+ * della prima ricetta; senza foto il marchio dei menù `An10MenuMark`, il «10» con lo 0 a cloche) e due piatti più piccoli con le foto di altre ricette — piatti bianchi vuoti
  * se mancano le foto, nessuno se il menù ha una ricetta sola. In alto a sinistra la data come
- * biglietto del calendario (8.12, testata prugna = area menù, al posto del vecchio filo laterale),
+ * biglietto del calendario (8.12, testata prugna = area menù, al posto del vecchio filo laterale)
+ * con in fondo l'ora del servizio,
  * sul piatto grande la medaglia del voto ospiti (6.11). Sotto: nome, ora, persone e ricette.
  * Non pronto (solo admin): come le ricette — tavola sbiadita, contorno tratteggiato, timbro
  * «Non pronto», testo e medaglia spenti. `@container/card`: stretta (2 per riga sul telefono)
- * nome più piccolo e solo ora + ricette; da 13rem anche le persone.
+ * nome più piccolo e solo le ricette; da 13rem anche le persone.
  */
 export function MenuCard({ menu }: { menu: MenuSummary }) {
   const { isAdmin } = useAuth();
@@ -106,6 +107,7 @@ export function MenuCard({ menu }: { menu: MenuSummary }) {
       {/* biglietto del calendario, appoggiato sull'angolo della tovaglia */}
       <DateTicket
         date={menu.date}
+        time={menu.servingTime}
         muted={hidden}
         className="absolute top-[0.45rem] left-[0.45rem] w-[clamp(2.5rem,22cqi,3.5rem)] text-[clamp(0.75rem,6.5cqi,1rem)]"
       />
@@ -124,11 +126,6 @@ export function MenuCard({ menu }: { menu: MenuSummary }) {
           hidden ? "text-grigio-chiaro" : "text-grigio"
         )}
       >
-        {menu.servingTime && (
-          <span className="tabular flex items-center gap-1 whitespace-nowrap">
-            <Clock className="size-3.5 shrink-0" aria-hidden /> {menu.servingTime}
-          </span>
-        )}
         {menu.people != null && (
           <span className="hidden items-center gap-1 whitespace-nowrap @min-[13rem]/card:flex">
             <Users className="size-3.5 shrink-0" aria-hidden /> {menu.people}
