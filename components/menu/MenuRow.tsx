@@ -1,74 +1,86 @@
 "use client";
 import Link from "next/link";
 import { clsx } from "clsx";
-import { ChevronRight, Users } from "lucide-react";
+import { Clock, EyeOff, Users } from "lucide-react";
 import type { MenuSummary } from "@/lib/types";
 import { useAuth } from "@/components/AuthProvider";
-import { GuestRatingTag, HiddenTag } from "@/components/ds/Tag";
+import { RatingMedal } from "@/components/recipe/RatingMedal";
+import { pressCls } from "@/components/recipe/card-info";
+import { DateTicket } from "./DateTicket";
 
 /**
- * Riga menù della vista a **lista** (gemella della `MenuCard` 8.5): a sinistra la data come
- * piccolo calendario (giorno della settimana, giorno, mese), poi nome, ora del servizio, persone
- * e ricette; a destra il voto ospiti o «Non pronto». Va dentro il contenitore a righe di `CollectionBody`.
+ * 8.11 · riga menù «Carta» (vista a lista, gemella della riga ricetta 8.10): a sinistra il
+ * biglietto del calendario (8.12) con la medaglia del voto ospiti (6.11) sul bordo, poi il nome e
+ * i puntini di guida; sotto ora del servizio, persone e ricette. Righe senza scheda sul fondo
+ * pagina (`CollectionBody list="stack"`). Non pronto (solo admin): biglietto e testo spenti e
+ * mini-timbro con l'occhio barrato, come le ricette.
  */
 export function MenuRow({ menu }: { menu: MenuSummary }) {
   const { isAdmin } = useAuth();
+  const hidden = isAdmin && !menu.published;
   const hasRating = menu._count.reviews > 0 && menu.avgRating !== null;
-  const isHidden = isAdmin && !menu.published;
   const n = menu._count.recipes;
-  const d = menu.date ? new Date(menu.date) : null;
-  const otherYear = d && d.getFullYear() !== new Date().getFullYear();
 
   return (
     <Link
       href={`/menu/${menu.id}`}
       className={clsx(
-        "group flex min-w-0 items-center gap-3 px-[clamp(0.625rem,2cqi,1rem)] py-2.5 transition-colors hover:bg-blu-50",
-        "focus-visible:relative focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-blu-600/35 focus-visible:ring-inset"
+        "group @container/row flex min-w-0 items-center gap-6 rounded-ctl px-1 py-1.5 hover:bg-blu-100",
+        "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-blu-600/35",
+        pressCls
       )}
     >
-      <span
-        className={clsx(
-          "flex w-14 shrink-0 flex-col items-center rounded-ctl bg-blu-100 py-1 leading-none text-blu-800",
-          isHidden && "opacity-60"
+      <span className="relative shrink-0 pt-0.5">
+        <DateTicket date={menu.date} muted={hidden} className="w-[3.25rem] text-[0.9375rem]" />
+        {hidden && (
+          <span
+            role="img"
+            aria-label="Non pronto"
+            title="Non pronto"
+            className="absolute -top-1.5 -left-2 flex size-[1.625rem] items-center justify-center rounded-full border-2 border-dashed border-grigio bg-white text-grigio shadow-[0_2px_5px_oklch(25%_0.038_228/.2)]"
+          >
+            <EyeOff className="size-3.5" aria-hidden />
+          </span>
         )}
-        aria-hidden
-      >
-        {d ? (
-          <>
-            <span className="text-[0.6875rem] font-semibold text-grigio uppercase">
-              {d.toLocaleDateString("it-IT", { weekday: "short" })}
-            </span>
-            <span className="tabular text-[1.375rem] font-bold">{d.getDate()}</span>
-            <span className="text-[0.6875rem] font-semibold uppercase">
-              {d.toLocaleDateString("it-IT", { month: "short" })}
-              {otherYear && ` ${String(d.getFullYear()).slice(2)}`}
-            </span>
-          </>
-        ) : (
-          <span className="py-2 text-[0.6875rem] font-semibold text-grigio">—</span>
+        {hasRating && (
+          <RatingMedal
+            value={menu.avgRating!}
+            count={menu._count.reviews}
+            muted={hidden}
+            // sull'angolo, quasi fuori: non copre il mese
+            className="absolute -right-[1.1rem] -bottom-1 w-[1.875rem] text-[0.6875rem]"
+          />
         )}
       </span>
 
       <span className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className="line-clamp-2 leading-tight font-bold text-blu-950 group-hover:text-blu-700" title={menu.name}>
-          {menu.name}
-        </span>
-        <span className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-grigio">
-          {menu.servingTime && <span className="tabular">ore {menu.servingTime}</span>}
-          <span className="flex min-w-0 items-center gap-1">
-            <Users className="size-3.5 shrink-0" aria-hidden />
-            <span className="truncate">
-              {menu.people != null && `${menu.people} persone · `}
-              {n} {n === 1 ? "ricetta" : "ricette"}
-            </span>
+        <span className="flex min-w-0 items-center gap-2">
+          <span
+            className={clsx(
+              "line-clamp-2 min-w-0 text-[1rem] leading-tight font-extrabold group-hover:text-blu-700 @min-[34rem]/row:text-[1.125rem]",
+              hidden ? "text-grigio" : "text-blu-950"
+            )}
+          >
+            {menu.name}
           </span>
-          {isHidden && <HiddenTag label="Non pronto" />}
+          <span aria-hidden className="min-w-4 flex-1 border-b-2 border-dotted border-blu-250" />
+        </span>
+        <span className={clsx("flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs", hidden ? "text-grigio-chiaro" : "text-grigio")}>
+          {menu.servingTime && (
+            <span className={clsx("tabular flex items-center gap-1 font-semibold whitespace-nowrap", !hidden && "text-ambra")}>
+              <Clock className="size-3.5 shrink-0" aria-hidden /> {menu.servingTime}
+            </span>
+          )}
+          {menu.people != null && (
+            <span className="flex items-center gap-1 whitespace-nowrap">
+              <Users className="size-3.5 shrink-0" aria-hidden /> {menu.people} persone
+            </span>
+          )}
+          <span className="whitespace-nowrap">
+            {n} {n === 1 ? "ricetta" : "ricette"}
+          </span>
         </span>
       </span>
-
-      {hasRating && <GuestRatingTag value={menu.avgRating!} count={menu._count.reviews} />}
-      <ChevronRight className="size-4 shrink-0 text-blu-300" aria-hidden />
     </Link>
   );
 }

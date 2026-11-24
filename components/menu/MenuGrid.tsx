@@ -70,7 +70,7 @@ interface Props {
 export function MenuGrid({ menus }: Props) {
   const { isAdmin } = useAuth();
   // Griglia o lista + card per riga (scelte del dispositivo). Menù: card da 9rem → 2 sul telefono
-  const layout = useCollectionView({ storageKey: "menus", minCardRem: 9, autoCard: [15, 0.3, 20] });
+  const layout = useCollectionView({ storageKey: "menus", minCardRem: 9, autoCard: [10, 0.3, 16] });
   // Filtri per-scheda: persistono durante la navigazione ma si azzerano alla chiusura scheda.
   // Fa eccezione l'ordinamento (sort + order), salvato sul dispositivo.
   const [q, setQ] = useLocalStore<string>(K + "q", "", parseStr, undefined, "session");
@@ -213,7 +213,8 @@ export function MenuGrid({ menus }: Props) {
           view={layout.view}
           gridRef={layout.ref}
           gridStyle={layout.gridStyle}
-          fallbackCols="grid-cols-[repeat(auto-fill,minmax(clamp(15rem,30cqi,20rem),1fr))]"
+          fallbackCols="grid-cols-[repeat(auto-fill,minmax(clamp(10rem,30cqi,16rem),1fr))]"
+          list="stack"
         >
           {paginated.map((m) => (layout.view === "list" ? <MenuRow key={m.id} menu={m} /> : <MenuCard key={m.id} menu={m} />))}
         </CollectionBody>
