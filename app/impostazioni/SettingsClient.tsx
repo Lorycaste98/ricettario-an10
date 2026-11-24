@@ -106,7 +106,7 @@ function AccountPanel({ className }: { className?: string }) {
       <Panel title="Account" icon={<User />} className={className}>
         <SettingRow
           label="Non sei entrato"
-          hint="Entra per creare e modificare ricette e menù. Queste impostazioni valgono anche senza entrare."
+          hint="Entra per creare e modificare ricette e menù. Queste impostazioni valgono anche senza entrare, su questo dispositivo."
         >
           <Link href="/login" className={buttonClasses("primary", "md")}>
             <LogIn className="size-[1.15em]" aria-hidden /> Accedi
@@ -527,6 +527,7 @@ function SearchPanel() {
 // ── Ripristina ───────────────────────────────────────────────────────────────
 
 function ResetPanel({ className }: { className?: string }) {
+  const { isAdmin } = useAuth();
   const [confirm, setConfirm] = useState(false);
   return (
     <Panel title="Ripristina" icon={<RotateCcw />} className={className}>
@@ -546,7 +547,7 @@ function ResetPanel({ className }: { className?: string }) {
           setConfirm(false);
         }}
         title="Ripristinare le impostazioni?"
-        message="Le scelte di questa pagina tornano come all'inizio, solo su questo dispositivo."
+        message={isAdmin ? "Le scelte di questa pagina tornano come all'inizio, sul tuo account e quindi su tutti i tuoi dispositivi." : "Le scelte di questa pagina tornano come all'inizio, su questo dispositivo."}
         confirmLabel="Ripristina"
       />
     </Panel>

@@ -1,11 +1,16 @@
 "use client";
-import { clearLocalStore, useLocalStore } from "@/lib/local-store";
+import { useEffect } from "react";
+import { useAuth } from "@/components/AuthProvider";
+import { clearLocalStore, localStoreEvent, setLocalStoreRaw, useLocalStore } from "@/lib/local-store";
+import { PREF_KEYS } from "@/lib/preference-keys";
 
 /**
- * Preferenze del dispositivo, in un posto solo: le usano le liste (Ricette, Preferiti, Menù), il
- * pannello «Sto cucinando», i costi del menù, la ricerca e la pagina **Impostazioni** (`/impostazioni`).
- * Tutte in `localStorage`: valgono su questo dispositivo, per chi è entrato e per chi no.
- * Salvarle nell'account vorrà dire cambiare solo dove si leggono e scrivono, qui.
+ * Preferenze della pagina **Impostazioni** in un posto solo: le usano le liste (Ricette, Preferiti,
+ * Menù), il pannello «Sto cucinando», i costi del menù, la ricerca e `/impostazioni`.
+ * Si leggono e scrivono sempre in `localStorage` (risposta immediata, funziona offline); per l'admin
+ * loggato `usePreferenceSync` le tiene allineate con l'account (`AdminPreference`, `/api/preferences`):
+ * all'ingresso vincono quelle dell'account, ogni modifica si salva nell'account. Visitatori: solo
+ * dispositivo. Le chiavi sincronizzate sono `PREF_KEYS` (`lib/preference-keys.ts`).
  */
 
 // ── Ordinamento delle ricette ───────────────────────────────────────────────
@@ -142,20 +147,80 @@ export const KEEP_AWAKE_KEY = "ricettario:cooking-keep-awake";
 /**
  * «Ripristina le impostazioni»: torna ai valori di partenza **solo** le scelte di questa pagina.
  * Non tocca i dati (preferiti, lista della spesa, avanzamento dei passi, «Sto cucinando»).
+ * Per l'admin il ripristino arriva anche all'account (lo salva `usePreferenceSync`).
  */
 export function resetPreferences() {
-  for (const key of [
-    RECIPE_SORT,
-    RECIPE_ORDER,
-    MENU_SORT,
-    MENU_ORDER,
-    viewKey("recipes"),
-    colsKey("recipes"),
-    viewKey("menus"),
-    colsKey("menus"),
-    COST_OUTPUTS_KEY,
-    KEEP_AWAKE_KEY,
-  ]) {
-    clearLocalStore(key);
+  for (const key of PREF_KEYS) clearLocalStore(key);
+}
+
+// ── Sincronizzazione con l'account (solo admin) ─────────────────────────────
+
+function snapshot() {
+  const data: Record<string, unknown> = {};
+  for (const key of PREF_KEYS) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw !== null) data[key] = JSON.parse(raw);
+    } catch {
+      // valore illeggibile: non si manda
+    }
   }
+  return data;
+}
+
+/**
+ * Montato una volta (in `AppShell`). Admin loggato: scarica le preferenze dell'account e le
+ * scrive sul dispositivo (vincono quelle dell'account; una chiave assente torna al valore di
+ * partenza); se l'account non ne ha ancora, ci carica quelle del dispositivo. Poi ogni modifica
+ * di una chiave `PREF_KEYS` si salva nell'account (PUT dello stato completo, dopo 600 ms).
+ * Al logout le scelte restano sul dispositivo come ultime viste.
+ */
+export function usePreferenceSync() {
+  const { isAdmin, loading } = useAuth();
+  useEffect(() => {
+    if (loading || !isAdmin) return;
+    let cancelled = false;
+    let ready = false;
+    let applying = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const push = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        void fetch("/api/preferences", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ data: snapshot() }),
+          keepalive: true,
+        }).catch(() => {});
+      }, 600);
+    };
+    // le scritture fatte qui sotto (dall'account al dispositivo) non vanno rimandate indietro
+    const onChange = () => {
+      if (ready && !applying) push();
+    };
+    for (const key of PREF_KEYS) window.addEventListener(localStoreEvent(key), onChange);
+
+    void fetch("/api/preferences")
+      .then((r) => (r.ok ? (r.json() as Promise<{ data: Record<string, unknown> | null }>) : null))
+      .then((res) => {
+        if (cancelled || !res) return;
+        if (res.data === null) {
+          ready = true;
+          push(); // primo accesso: l'account prende le scelte di questo dispositivo
+          return;
+        }
+        applying = true;
+        for (const key of PREF_KEYS) setLocalStoreRaw(key, key in res.data! ? JSON.stringify(res.data![key]) : null);
+        applying = false;
+        ready = true;
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      for (const key of PREF_KEYS) window.removeEventListener(localStoreEvent(key), onChange);
+    };
+  }, [isAdmin, loading]);
 }

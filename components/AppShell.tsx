@@ -3,6 +3,7 @@ import { usePathname } from "next/navigation";
 import { clsx } from "clsx";
 import type { CSSProperties, ReactNode } from "react";
 import { useNavHistoryTracker } from "@/lib/nav-history";
+import { usePreferenceSync } from "@/lib/preferences";
 import { NavRail, TabBar } from "@/components/shell/AppNav";
 import { ADMIN_FORM_ROUTE } from "@/components/admin/admin-sections";
 import { CookingMiniBar, CookingRow, useHasCooking } from "@/components/shell/CookingBar";
@@ -22,6 +23,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   // Registra la provenienza di ogni pagina: la usa BackLink per tornare davvero indietro
   useNavHistoryTracker();
+  // admin: preferenze della pagina Impostazioni allineate con l'account
+  usePreferenceSync();
   const cooking = useHasCooking();
 
   // Gestione (D7): stessa cornice con la barra inchiostro-indaco e i fondi freddi

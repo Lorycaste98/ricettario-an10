@@ -88,3 +88,21 @@ export function clearLocalStore(key: string, backend: StoreBackend = "local") {
   }
   window.dispatchEvent(new Event(changeEvent(key)));
 }
+
+/** Nome dell'evento che avvisa i `useLocalStore` di una chiave (per chi deve accorgersi delle modifiche). */
+export function localStoreEvent(key: string) {
+  return changeEvent(key);
+}
+
+/** Scrive il valore grezzo (già serializzato; `null` = cancella) e avvisa chi usa la chiave. */
+export function setLocalStoreRaw(key: string, raw: string | null, backend: StoreBackend = "local") {
+  registry.delete(key);
+  try {
+    const storage = storageFor(backend);
+    if (raw === null) storage?.removeItem(key);
+    else storage?.setItem(key, raw);
+  } catch {
+    // storage non disponibile: resta solo l'avviso
+  }
+  window.dispatchEvent(new Event(changeEvent(key)));
+}

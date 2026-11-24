@@ -168,6 +168,7 @@ model Admin {
   recipeProgress RecipeProgress[]
   recipeRatings  RecipeRating[]
   recipeFavorites RecipeFavorite[]
+  preference      AdminPreference?
 }
 
 /** Voto personale dell'admin su una ricetta (uno per account): 1-10 + nota opzionale.
@@ -308,4 +309,16 @@ model MenuReview {
   createdAt DateTime @default(now())
   menuId    Int
   menu      Menu     @relation(fields: [menuId], references: [id], onDelete: Cascade)
+}
+
+/** Preferenze dell'admin dalla pagina Impostazioni (vista delle liste, ordinamenti, schermo acceso,
+    costi del menù), una riga per account: così valgono su tutti i suoi dispositivi. `data` =
+    { chiave localStorage: valore }, solo le chiavi di `lib/preference-keys.ts`. I visitatori
+    restano su localStorage. */
+model AdminPreference {
+  adminId   Int      @id
+  data      Json
+  updatedAt DateTime @updatedAt
+
+  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
 }
