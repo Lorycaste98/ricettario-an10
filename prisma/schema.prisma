@@ -259,6 +259,21 @@ model Menu {
   costs         MenuCost[]
   /** Ingredienti "extra" aggiunti a mano alla lista spesa, specifici di questo menù */
   extraItems    MenuExtraItem[]
+  /** Menù da mandare agli ospiti (PDF «Per gli ospiti»): portate, voci a mano, formato */
+  guestCard     MenuGuestCard?
+}
+
+/**
+ * Organizzazione del PDF «Per gli ospiti» di un menù (solo admin): portate con le ricette del
+ * menù e le voci scritte a mano, ricette nascoste, formato della pagina. Forma in
+ * `lib/menu-guest-card.ts`. Tabella a parte (non una colonna di Menu) così, se manca, si rompe
+ * solo questa funzione e non ogni lettura dei menù.
+ */
+model MenuGuestCard {
+  menuId    Int      @id
+  data      Json
+  updatedAt DateTime @updatedAt
+  menu      Menu     @relation(fields: [menuId], references: [id], onDelete: Cascade)
 }
 
 /** Voce di costo generica di un menù ("altri costi": gas/energia, trasporto, confezionamento…). */

@@ -83,17 +83,21 @@ export async function urlToDataUrl(url: string): Promise<string | undefined> {
 }
 
 /**
- * Logo AN10 orizzontale (blu) per l'intestazione dei PDF, come PNG. Il file SVG ha i ritagli
+ * Logo AN10 orizzontale (blu, o bianco per i fondi colorati) per i PDF, come PNG; `tint` lo
+ * ricolora (il blu del file è un solo colore, le maschere sono in bianco e nero). Il file SVG ha i ritagli
  * come maschere, che react-pdf non disegna: lo rasterizza il browser su un canvas (3× la misura
  * di stampa, per restare nitido). Se qualcosa va storto il PDF esce senza logo.
  */
-export async function logoPngDataUrl(): Promise<string | undefined> {
+export async function logoPngDataUrl(color: "blu" | "bianco" = "blu", tint?: string): Promise<string | undefined> {
   let objectUrl: string | undefined;
   try {
     // Misure esplicite: senza width/height alcuni browser (Firefox) non disegnano l'SVG sul canvas
     const svg = (
-      await (await fetch("/brand/an10-orizzontale-blu.svg")).text()
-    ).replace("<svg ", '<svg width="720" height="236" ');
+      await (await fetch(`/brand/an10-orizzontale-${color}.svg`)).text()
+    )
+      .replace("<svg ", '<svg width="720" height="236" ')
+      // `tint`: il logo blu ridisegnato in un altro colore (cartoncino ospiti a tema)
+      .replace(/#0A7EA4/gi, tint ?? "#0A7EA4");
     objectUrl = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
     const img = new window.Image();
     img.src = objectUrl;

@@ -195,8 +195,11 @@ function fmtQty(qty: number | null, unit: string | null): string {
   return unit ? `${num} ${unit}` : num;
 }
 
-/** Footer fisso condiviso (Ricettario AN10 · data · pagina). */
-export function PdfFooter() {
+/**
+ * Footer fisso condiviso (Ricettario AN10 · data · pagina). `label` lo sostituisce a sinistra
+ * (il PDF del menù ci scrive nome e data del menù); il numero di pagina resta.
+ */
+export function PdfFooter({ label }: { label?: string } = {}) {
   const today = new Date().toLocaleDateString("it-IT", {
     day: "numeric",
     month: "long",
@@ -205,7 +208,7 @@ export function PdfFooter() {
   return (
     <>
       <View style={pdfStyles.footer} fixed>
-        <Text>Ricettario AN10 · {today}</Text>
+        <Text>{label ?? `Ricettario AN10 · ${today}`}</Text>
       </View>
       <Text style={pdfStyles.footerPage} fixed render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />
     </>

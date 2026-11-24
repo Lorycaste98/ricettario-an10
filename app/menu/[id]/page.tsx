@@ -73,6 +73,8 @@ export default async function MenuDetailPage({ params }: Params) {
     recipe: ReturnType<typeof flattenRecipe>;
   }[];
   const pdf = {
+    id: menu.id,
+    people: menu.people,
     name: menu.name,
     description: menu.description,
     date: menu.date,
