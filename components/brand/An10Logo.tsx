@@ -24,7 +24,8 @@ const S = 26; // tratto delle lettere
 const EGG =
   "M632 40 C672 40 694 96 694 146 C694 190 668 218 632 218 C596 218 570 190 570 146 C570 96 592 40 632 40 Z";
 
-function Letters({ id, part }: { id: string; part: "AN" | "10" | "tutto" }) {
+/** Le lettere del logo (senza `<svg>` attorno), per comporle dentro altri marchi (`An10MenuMark`). */
+export function Letters({ id, part }: { id: string; part: "AN" | "10" | "tutto" }) {
   const an = part !== "10";
   const ten = part !== "AN";
   const stroke = {

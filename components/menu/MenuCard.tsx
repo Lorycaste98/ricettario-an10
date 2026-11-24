@@ -48,7 +48,7 @@ function TablePlate({ photo, big = false, className }: { photo?: string; big?: b
 /**
  * 8.5 · card menù «Tavola» (gemella della card ricetta 8.1 «Piatto»). Se una ricetta è un piatto,
  * un menù è una tavola apparecchiata: sulla tovaglia `blu-100` un piatto grande (foto del menù o
- * della prima ricetta; senza foto il marchio dei menù `An10MenuMark`, il «10» con lo 0 a cloche) e due piatti più piccoli con le foto di altre ricette — piatti bianchi vuoti
+ * della prima ricetta; senza foto il marchio dei menù `An10MenuMark`, il simbolo «10» intatto sotto una cloche) e due piatti più piccoli con le foto di altre ricette — piatti bianchi vuoti
  * se mancano le foto, nessuno se il menù ha una ricetta sola. In alto a sinistra la data come
  * biglietto del calendario (8.12, testata prugna = area menù, al posto del vecchio filo laterale)
  * con in fondo l'ora del servizio,

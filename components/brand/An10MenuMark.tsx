@@ -1,46 +1,35 @@
 "use client";
 
 import { useId } from "react";
+import { Letters } from "./An10Logo";
 
 /**
- * Marchio dei menù: il «10» del logo AN10 in cui lo **0 diventa una cloche**. L'1 è il coltello del
- * logo identico (manico tondo, incavo, rivetti: stessa geometria di `An10Logo`), la cupola ha la
- * curva alta dell'uovo, il pomello è il pallino del tuorlo, sotto la linea del piatto e il vassoio.
- * Stesso tratto (26) e terminazioni tonde del logo; colore = `currentColor`.
- * Usato dove un menù non ha foto (piatto grande della card 8.5).
+ * Marchio dei menù: il simbolo «10» del logo AN10, **intatto**, servito sotto una cloche.
+ * Il logo non si tocca (stessa geometria di `An10Logo`, che fornisce le lettere): la cupola,
+ * il pomello e il piatto gli stanno attorno con lo stesso tratto a vista (il simbolo è scalato,
+ * quindi il tratto della cloche è quello del logo ridotto nella stessa proporzione) e le stesse
+ * terminazioni tonde. Colore = `currentColor`. Usato dove un menù non ha foto (piatto grande della
+ * card 8.5, miniatura della testata del dettaglio menù).
  */
+const K = 0.42; // scala del simbolo dentro la cupola
+const SW = 26 * K; // tratto della cloche = tratto del logo alla stessa scala
+
 export function An10MenuMark({ className, title = "" }: { className?: string; title?: string }) {
   const id = useId().replace(/:/g, "");
   const stroke = { fill: "none", stroke: "currentColor", strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
   return (
-    <svg viewBox="450 -4 264 264" className={className} role={title ? "img" : undefined} aria-label={title || undefined} aria-hidden={title ? undefined : true}>
-      <defs>
-        {/* stacco fra lama e manico del coltello */}
-        <mask id={`${id}-a`} maskUnits="userSpaceOnUse" x={400} y={-50} width={400} height={400}>
-          <rect x={400} y={-50} width={400} height={400} fill="#fff" />
-          <circle cx={512} cy={172} r={23} fill="#000" />
-        </mask>
-        {/* rivetti del manico */}
-        <mask id={`${id}-b`} maskUnits="userSpaceOnUse" x={400} y={-50} width={400} height={400}>
-          <rect x={400} y={-50} width={400} height={400} fill="#fff" />
-          <circle cx={512} cy={188} r={4} fill="#000" />
-          <circle cx={512} cy={204} r={4} fill="#000" />
-        </mask>
-      </defs>
-      {/* 1 = coltello */}
-      <g {...stroke} mask={`url(#${id}-a)`}>
-        <path d="M470 82 L512 40 V172" strokeWidth={28} />
+    <svg viewBox="0 0 240 216" className={className} role={title ? "img" : undefined} aria-label={title || undefined} aria-hidden={title ? undefined : true}>
+      {/* il simbolo «10» del logo, così com'è, sotto la cupola */}
+      <svg x={120 - 131.5 * K} y={130 - 128 * K} width={264 * K} height={264 * K} viewBox="450 -4 264 264" overflow="visible">
+        <Letters id={id} part="10" />
+      </svg>
+      {/* cloche: cupola, pomello, piatto */}
+      <g {...stroke} strokeWidth={SW}>
+        <path d="M22 182 C22 96 66 46 120 46 C174 46 218 96 218 182" />
+        <path d="M10 190 H230" />
+        <path d="M120 46 V34" />
       </g>
-      <g {...stroke} mask={`url(#${id}-b)`}>
-        <path d="M512 172 V208" strokeWidth={28} />
-      </g>
-      {/* 0 = cloche: cupola con la curva dell'uovo, pomello = tuorlo, piatto e vassoio */}
-      <g {...stroke}>
-        <path d="M576 170 C576 104 598 66 632 66 C666 66 688 104 688 170" strokeWidth={26} />
-        <path d="M556 172 H708" strokeWidth={26} />
-        <path d="M572 208 H692" strokeWidth={18} />
-      </g>
-      <circle cx={632} cy={36} r={17} fill="currentColor" />
+      <circle cx={120} cy={26} r={11} fill="currentColor" />
     </svg>
   );
 }
