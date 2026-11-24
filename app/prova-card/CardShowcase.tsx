@@ -6,7 +6,7 @@ import { RecipeCard } from "@/components/recipe/RecipeCard";
 import { RecipeCardTicket } from "@/components/recipe/cards/RecipeCardTicket";
 import { RecipeCardPlate } from "@/components/recipe/cards/RecipeCardPlate";
 import { RecipeCardCover } from "@/components/recipe/cards/RecipeCardCover";
-import { CartaSheet, RecipeRowCarta } from "@/components/recipe/cards/RecipeRowCarta";
+import { CartaStack, RecipeRowCarta } from "@/components/recipe/cards/RecipeRowCarta";
 import { RecipeRow } from "@/components/recipe/RecipeRow";
 
 const VARIANTS = [
@@ -66,14 +66,26 @@ export function CardShowcase({ recipes }: { recipes: RecipeSummary[] }) {
       <h1 className="mt-4 text-(length:--fs-page) font-bold">Proposte di lista</h1>
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-bold">
-          Carta <span className="text-sm font-normal text-grigio">· come la carta di un ristorante: piatto tondo, puntini e il voto al posto del prezzo</span>
+          Carta · schede separate <span className="text-sm font-normal text-grigio">· ogni ricetta nella sua scheda: piatto tondo, puntini e il voto al posto del prezzo</span>
         </h2>
         <div className={width === "phone" ? "w-full max-w-[358px]" : "w-full max-w-3xl"}>
-          <CartaSheet>
+          <CartaStack variant="card">
             {recipes.map((r) => (
-              <RecipeRowCarta key={r.id} recipe={r} />
+              <RecipeRowCarta key={r.id} recipe={r} variant="card" />
             ))}
-          </CartaSheet>
+          </CartaStack>
+        </div>
+      </section>
+      <section className="flex flex-col gap-3">
+        <h2 className="text-lg font-bold">
+          Carta · senza scheda <span className="text-sm font-normal text-grigio">· le righe direttamente sul fondo, separate dallo spazio</span>
+        </h2>
+        <div className={width === "phone" ? "w-full max-w-[358px]" : "w-full max-w-3xl"}>
+          <CartaStack variant="bare">
+            {recipes.map((r) => (
+              <RecipeRowCarta key={r.id} recipe={r} variant="bare" />
+            ))}
+          </CartaStack>
         </div>
       </section>
       <section className="flex flex-col gap-3">

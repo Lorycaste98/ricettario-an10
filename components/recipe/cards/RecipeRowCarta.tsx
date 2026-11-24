@@ -16,10 +16,11 @@ import { pressCls, useCardInfo } from "./shared";
  * (foto tonda con il bordo, gemella della card «Piatto»), il nome, i puntini di guida e — dove
  * starebbe il prezzo — il voto ospiti in grande (il mio voto in indaco se non ci sono voti
  * ospiti). Sotto, categoria, tempo (ambra), porzioni e cotture; pentola e cuore in fondo a destra.
- * Va dentro un foglio bianco (`CartaSheet`) senza filetti fra le righe: è il ritmo dei puntini a
- * separarle. Da 34rem di riga il piatto cresce e il nome passa a 1.125rem.
+ * Ogni ricetta è a sé (non un foglio unico, che le faceva sembrare un gruppo): `variant="card"` =
+ * scheda bianca propria, `variant="bare"` = appoggiata sul fondo pagina, separata solo dallo spazio.
+ * Le righe vanno in una colonna con spazio (`CartaStack`). Da 34rem il piatto cresce e il nome passa a 1.125rem.
  */
-export function RecipeRowCarta({ recipe }: { recipe: RecipeSummary }) {
+export function RecipeRowCarta({ recipe, variant = "card" }: { recipe: RecipeSummary; variant?: "card" | "bare" }) {
   const c = useCardInfo(recipe);
   const score = c.guest ? c.guest.value.toFixed(1) : c.mine != null ? String(c.mine) : null;
 
@@ -27,7 +28,10 @@ export function RecipeRowCarta({ recipe }: { recipe: RecipeSummary }) {
     <Link
       href={`/ricette/${recipe.id}`}
       className={clsx(
-        "group @container/row flex min-w-0 items-center gap-3 rounded-ctl px-2 py-2 hover:bg-blu-50",
+        "group @container/row flex min-w-0 items-center gap-3",
+        variant === "card"
+          ? "rounded-card border border-blu-150 bg-white px-[clamp(0.625rem,2cqi,1rem)] py-2.5 hover:shadow-[0_6px_16px_oklch(25%_0.038_228/.1)]"
+          : "rounded-ctl px-1 py-1.5 hover:bg-blu-100",
         "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-blu-600/35",
         pressCls
       )}
@@ -116,7 +120,7 @@ export function RecipeRowCarta({ recipe }: { recipe: RecipeSummary }) {
   );
 }
 
-/** Foglio bianco della «Carta»: niente filetti, righe distanziate, un filo di margine interno. */
-export function CartaSheet({ children }: { children: React.ReactNode }) {
-  return <div className="flex flex-col gap-1 rounded-card border border-blu-150 bg-white p-1.5 @min-[620px]:p-2.5">{children}</div>;
+/** Colonna delle righe «Carta»: ogni ricetta separata dallo spazio (schede) o più fitta (senza scheda). */
+export function CartaStack({ variant = "card", children }: { variant?: "card" | "bare"; children: React.ReactNode }) {
+  return <div className={variant === "card" ? "flex flex-col gap-2" : "flex flex-col gap-1.5"}>{children}</div>;
 }
