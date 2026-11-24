@@ -17,7 +17,9 @@ import { pressCls, useCardInfo } from "./card-info";
  * «tovaglia» `blu-100` della card. Il voto ospiti è la medaglia 6.11 sul bordo del piatto, in basso
  * a destra. Senza foto: piatto bianco con il «10». Pentola e cuore nei due angoli della tovaglia.
  * Le non pronte (solo admin): piatto sbiadito, contorno tratteggiato della card e sopra il piatto il
- * timbro «Non pronta» (6.4 come fac-simile: riquadro tratteggiato inclinato), senza cambiare l'altezza.
+ * timbro «Non pronta» (6.4 come fac-simile: riquadro tratteggiato inclinato), senza cambiare l'altezza;
+ * testo schiarito con le tinte (nome `grigio`, dettagli `grigio-chiaro`), medaglia spenta e niente
+ * pentola né cuore (prima la ricetta va sistemata, poi si cucina o si salva). Uguale nella riga 8.10.
  *
  * È un `@container/card`: cosa mostra dipende dalla sua larghezza (card per riga di
  * `CollectionView`). Stretta (3 per riga sul telefono): solo cuore, nome piccolo, pallino e tempo;
@@ -37,14 +39,19 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
         c.hidden && "outline-2 outline-offset-[-2px] outline-blu-250 outline-dashed"
       )}
     >
-      {/* pentola e cuore nei due angoli liberi della tovaglia, ai lati del piatto */}
+      {/* pentola e cuore nei due angoli liberi della tovaglia, ai lati del piatto; non per le non
+          pronte: prima la ricetta va sistemata, poi si cucina o si salva */}
       {/* soglia 8rem: la tovaglia ha un margine interno, il contenuto è più stretto della card */}
-      <div className="absolute top-1.5 left-1.5 z-10 hidden @min-[8rem]/card:top-2 @min-[8rem]/card:left-2 @min-[8rem]/card:block">
-        <CookingButton recipeId={recipe.id} />
-      </div>
-      <div className="absolute top-1.5 right-1.5 z-10 @min-[9rem]/card:top-2 @min-[9rem]/card:right-2">
-        <FavoriteButton recipeId={recipe.id} />
-      </div>
+      {!c.hidden && (
+        <>
+          <div className="absolute top-1.5 left-1.5 z-10 hidden @min-[8rem]/card:top-2 @min-[8rem]/card:left-2 @min-[8rem]/card:block">
+            <CookingButton recipeId={recipe.id} />
+          </div>
+          <div className="absolute top-1.5 right-1.5 z-10 @min-[9rem]/card:top-2 @min-[9rem]/card:right-2">
+            <FavoriteButton recipeId={recipe.id} />
+          </div>
+        </>
+      )}
 
       {/* il piatto */}
       <div className="relative w-[76%]">
@@ -71,15 +78,26 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
           <RatingMedal
             value={c.guest.value}
             count={c.guest.count}
+            muted={c.hidden}
             className="absolute -right-[4%] -bottom-[2%] w-[clamp(2rem,27cqi,3.25rem)] text-[clamp(0.6875rem,8cqi,1rem)]"
           />
         )}
       </div>
 
-      <h3 className="mt-[0.75em] line-clamp-2 text-[0.8125rem] leading-tight font-extrabold text-blu-950 @min-[11rem]/card:text-[1rem] @min-[18rem]/card:text-[1.1875rem]">
+      <h3
+        className={clsx(
+          "mt-[0.75em] line-clamp-2 text-[0.8125rem] leading-tight font-extrabold @min-[11rem]/card:text-[1rem] @min-[18rem]/card:text-[1.1875rem]",
+          c.hidden ? "text-grigio" : "text-blu-950"
+        )}
+      >
         {recipe.name}
       </h3>
-      <span className="mt-1 flex min-w-0 items-center justify-center gap-x-2 text-[0.6875rem] text-grigio @min-[11rem]/card:text-xs">
+      <span
+        className={clsx(
+          "mt-1 flex min-w-0 items-center justify-center gap-x-2 text-[0.6875rem] @min-[11rem]/card:text-xs",
+          c.hidden ? "text-grigio-chiaro" : "text-grigio"
+        )}
+      >
         {c.cat && (
           <span className="flex min-w-0 items-center gap-1">
             <span aria-hidden className="size-2 shrink-0 rounded-full" style={{ background: c.cat.color }} />
@@ -104,7 +122,9 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
             <PotIcon className="size-3.5 shrink-0" aria-hidden /> ×{recipe.cookCount}
           </span>
         )}
-        {c.mine != null && <span className="tabular hidden font-bold text-mio-ink @min-[11rem]/card:inline">mio {c.mine}</span>}
+        {c.mine != null && (
+          <span className={clsx("tabular hidden font-bold @min-[11rem]/card:inline", !c.hidden && "text-mio-ink")}>mio {c.mine}</span>
+        )}
       </span>
       {recipe.tags.length > 0 && (
         <p className="mt-1 hidden max-w-full truncate text-xs text-blu-700 @min-[19rem]/card:block">

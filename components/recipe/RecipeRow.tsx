@@ -68,6 +68,7 @@ export function RecipeRow({ recipe }: { recipe: RecipeSummary }) {
         <RatingMedal
           value={c.guest.value}
           count={c.guest.count}
+          muted={c.hidden}
           className="absolute -right-2 -bottom-1.5 w-[1.875rem] text-[0.6875rem] @min-[34rem]/row:w-[2.125rem] @min-[34rem]/row:text-[0.75rem]"
         />
       )}
@@ -85,10 +86,13 @@ export function RecipeRow({ recipe }: { recipe: RecipeSummary }) {
             {recipe.name}
           </span>
           <span aria-hidden className="min-w-4 flex-1 border-b-2 border-dotted border-blu-250" />
-          <span className="flex shrink-0 gap-1.5 [&>button]:ring-1 [&>button]:ring-blu-150">
-            <CookingButton recipeId={recipe.id} />
-            <FavoriteButton recipeId={recipe.id} />
-          </span>
+          {/* non pronta: niente pentola e cuore, prima la ricetta va sistemata */}
+          {!c.hidden && (
+            <span className="flex shrink-0 gap-1.5 [&>button]:ring-1 [&>button]:ring-blu-150">
+              <CookingButton recipeId={recipe.id} />
+              <FavoriteButton recipeId={recipe.id} />
+            </span>
+          )}
         </span>
 
         {/* dettagli */}
