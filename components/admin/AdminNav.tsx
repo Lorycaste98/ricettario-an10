@@ -4,17 +4,19 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { clsx } from "clsx";
 import type { ComponentType, ReactNode } from "react";
-import { ChevronLeft, LayoutDashboard, Plus, User } from "lucide-react";
+import { ChevronLeft, LayoutDashboard, Plus } from "lucide-react";
 import { backLinkCls } from "@/components/ui/BackLink";
 import type { AdminOverview } from "@/lib/admin-overview";
-import { ADMIN_CREATE, ADMIN_FORM_ROUTE, ADMIN_SECTIONS, AREA_CLS, sectionCount, type AdminArea } from "@/components/admin/admin-sections";
+import { ADMIN_CREATE, ADMIN_FORM_ROUTE, ADMIN_SECTIONS, ADMIN_YOU, AREA_CLS, sectionCount, type AdminArea } from "@/components/admin/admin-sections";
 
 type Icon = ComponentType<{ className?: string }>;
 
 /**
  * Cornice dell'area Gestione (restyle fase 5, DESIGN.md D7).
  * - Le voci stanno in `admin-sections.ts` (condivise con la dashboard).
- * - `AdminFrame`: da 900px di contenitore mette a sinistra la sotto-navigazione a colonna; sotto,
+ * - `AdminFrame`: usato da `app/admin/layout.tsx` e, per l'admin, da `app/impostazioni/layout.tsx`
+ *   (le impostazioni sono nel blocco «Tu» della stessa zona, D9).
+ *   Da 900px di contenitore mette a sinistra la sotto-navigazione a colonna; sotto,
  *   ogni sotto-pagina ha in cima «‹ Gestione» (su iPhone la dashboard fa da elenco).
  *   I form (nuova/modifica ricetta e menù) occupano tutta la larghezza: hanno la loro barra.
  */
@@ -103,8 +105,10 @@ function AdminSubNav({ overview, isSuperAdmin, pathname }: { overview: AdminOver
       {sections.filter((s) => s.group === "contenuti").map((s) => item(s.href, s.label, s.icon, s.area, sectionCount(s.key, overview)))}
       <GroupTitle>Persone</GroupTitle>
       {sections.filter((s) => s.group === "persone").map((s) => item(s.href, s.label, s.icon, s.area, sectionCount(s.key, overview)))}
-      <GroupTitle>Account</GroupTitle>
-      {item("/admin/profilo", "Profilo", User, "neutro")}
+      <GroupTitle>Sito</GroupTitle>
+      {sections.filter((s) => s.group === "sito").map((s) => item(s.href, s.label, s.icon, s.area, sectionCount(s.key, overview)))}
+      <GroupTitle>Tu</GroupTitle>
+      {ADMIN_YOU.map((y) => item(y.href, y.label, y.icon, y.area))}
     </nav>
   );
 }

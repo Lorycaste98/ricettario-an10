@@ -7,23 +7,34 @@ import { ArrowDown, ArrowUp, Eye, EyeOff, Hash, Plus, Search, SlidersHorizontal 
 import { RecipeCard } from "./RecipeCard";
 import { RecipeRow } from "./RecipeRow";
 import { CollectionBody, pageSizeFor, useCollectionView } from "@/components/ui/CollectionView";
-import { TagFilterCombobox } from "./TagFilterCombobox";
+import {
+  ActiveFilters,
+  CategoryChips,
+  computeFacets,
+  FilterPopover,
+  FilterSearch,
+  FilterSectionTitle,
+  TagChecklist,
+} from "./RecipeFilters";
+import { normalizeSearchText } from "@/lib/search";
 import { type RecipeSummary, type Category, type Tag } from "@/lib/types";
 import { useAuth } from "@/components/AuthProvider";
 import { useLocalStore } from "@/lib/local-store";
 import { LIST_LAYOUT, RECIPE_SORT_OPTIONS, recipeSortFor, useRecipeSort, type RecipeSortKey } from "@/lib/preferences";
 import { Modal } from "@/components/ui/Modal";
 import { Button, IconButton } from "@/components/ds/Button";
-import { SearchField, Select } from "@/components/ds/Field";
+import { Select } from "@/components/ds/Field";
 import { Chip, Segmented } from "@/components/ds/Controls";
 import { EmptyState } from "@/components/ds/Feedback";
 
 /**
  * Libreria ricette (restyle fase 3, prototipo `docs/design/schermate/1-libreria`).
  * Logica invariata: ricerca, categorie, tag, visibilità (admin), ordinamento, filtri persistiti
- * per scheda (sessionStorage), paginazione. Interfaccia: ricerca 4.5, categorie come chip 4.11
- * in una fila scorrevole (si attivano subito), tag in un pannello, griglia elastica di card 8.1.
- * Su contenitore stretto ordinamento e visibilità stanno nel pannello «Ordina e filtra».
+ * per scheda (sessionStorage), paginazione. Filtri (fase 9, `RecipeFilters.tsx`, struttura della
+ * versione di `main`): da 860px di contenitore barra accanto alla ricerca con «Categorie ▾» e
+ * «Tag ▾» (tendine 4.14), visibilità (admin) e ordinamento; sotto, bottone «Filtri» → foglio dal
+ * basso con le stesse sezioni. Conteggi a faccette, ricerca 4.15 che propone categorie e tag, fila
+ * dei filtri attivi sopra la lista.
  */
 // Elementi per pagina: multipli delle card per riga (pageSizeFor), tetti fissi per 1 per riga e lista
 const PAGE = { base: 20, single: 10, list: 20 };
@@ -88,16 +99,15 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
   const [filterOpen, setFilterOpen] = useState(false);
   // Griglia o lista + card per riga (scelte del dispositivo). Ricette: card da 6.5rem → 3 sul telefono
   const layout = useCollectionView("recipes");
-  const [tagsOpen, setTagsOpen] = useState(false);
 
   // Ordinamento di default: admin → «Il mio voto» personale, visitatore → «Valutazione»
-  const defaultSort: SortKey = isAdmin ? "myRating" : "avgRating";
   const sort: SortKey = recipeSortFor(sortPref, isAdmin);
   const sortOptions = isAdmin ? SORT_OPTIONS : SORT_OPTIONS.filter((o) => !o.adminOnly);
 
   const resetPage = () => setStart(0);
-  const isSortChanged = sort !== defaultSort || order !== "desc" || (isAdmin && publishedFilter !== "all");
   const hasActiveFilters = activeCats.length > 0 || activeTags.length > 0;
+  // numero sul bottone «Filtri»: categorie + tag + visibilità (l'ordinamento non è un filtro)
+  const activeCount = activeCats.length + activeTags.length + (isAdmin && publishedFilter !== "all" ? 1 : 0);
 
   const toggleCat = (id: number) => {
     setActiveCats(activeCats.includes(id) ? activeCats.filter((x) => x !== id) : [...activeCats, id]);
@@ -115,17 +125,25 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
     resetPage();
   };
 
+  // Visibilità (solo admin: i visitatori non ricevono mai le non pronte)
+  const visible = useMemo(() => {
+    if (isAdmin && publishedFilter === "published") return recipes.filter((r) => r.published);
+    if (isAdmin && publishedFilter === "draft") return recipes.filter((r) => !r.published);
+    return recipes;
+  }, [recipes, isAdmin, publishedFilter]);
+  // Base dei conteggi a faccette del pannello: visibilità + ricerca per nome (senza categorie e tag)
+  const base = useMemo(() => {
+    const lq = normalizeSearchText(q);
+    return lq ? visible.filter((r) => normalizeSearchText(r.name).includes(lq)) : visible;
+  }, [visible, q]);
+  const facets = useMemo(() => computeFacets(base, activeCats, activeTags), [base, activeCats, activeTags]);
+  // Le proposte della ricerca svuotano il testo quando si sceglie: i loro numeri sono senza il testo
+  const suggestFacets = useMemo(() => computeFacets(visible, activeCats, activeTags), [visible, activeCats, activeTags]);
+
   const filtered = useMemo(() => {
-    let list = [...recipes];
-    if (q.trim()) {
-      const lq = q.toLowerCase();
-      list = list.filter((r) => r.name.toLowerCase().includes(lq));
-    }
+    let list = [...base];
     if (activeCats.length) list = list.filter((r) => r.categories.some((c) => activeCats.includes(c.id)));
     if (activeTags.length) list = list.filter((r) => r.tags.some((t) => activeTags.includes(t.id)));
-    // Visibilità (solo admin: i visitatori non ricevono mai le non pronte)
-    if (isAdmin && publishedFilter === "published") list = list.filter((r) => r.published);
-    else if (isAdmin && publishedFilter === "draft") list = list.filter((r) => !r.published);
 
     // null → 0, così le ricette senza voti/recensioni finiscono in fondo su "desc"
     const valueFor = (r: RecipeSummary): string | number => {
@@ -143,7 +161,7 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
       return 0;
     });
     return list;
-  }, [recipes, q, activeCats, activeTags, sort, order, isAdmin, publishedFilter]);
+  }, [base, activeCats, activeTags, sort, order]);
 
   const pageSize = pageSizeFor(layout.view, layout.cols, PAGE);
   const pageCount = Math.ceil(filtered.length / pageSize);
@@ -151,7 +169,7 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
   const paginated = filtered.slice(safePage * pageSize, (safePage + 1) * pageSize);
   const sortLabel = sortOptions.find((o) => o.value === sort)?.label ?? "";
 
-  const sortControls = (
+  const sortControls = (selectCls: string) => (
     <>
       <Select
         aria-label="Ordina per"
@@ -160,7 +178,7 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
           setSort(e.target.value as SortKey);
           resetPage();
         }}
-        className="w-40"
+        className={selectCls}
       >
         {sortOptions.map((o) => (
           <option key={o.value} value={o.value}>
@@ -181,80 +199,122 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
     </>
   );
 
+  // Visibilità (admin): stesso controllo nel pannello e nella fila dei filtri attivi
+  const visibilityControl = isAdmin ? (
+    <Segmented
+      label="Visibilità"
+      value={publishedFilter}
+      onChange={(v) => {
+        setPublishedFilter(v);
+        resetPage();
+      }}
+      options={PUBLISHED_OPTIONS}
+    />
+  ) : undefined;
+
+  const clearFilters = () => {
+    setActiveCats([]);
+    setActiveTags([]);
+    setPublishedFilter("all");
+    resetPage();
+  };
+
+  const visibilityChip =
+    isAdmin && publishedFilter !== "all" ? (
+      <Chip
+        icon={publishedFilter === "published" ? <Eye aria-hidden /> : <EyeOff aria-hidden />}
+        onRemove={() => {
+          setPublishedFilter("all");
+          resetPage();
+        }}
+        removeLabel="Mostra tutte, pronte e non pronte"
+      >
+        {publishedFilter === "published" ? "Pronte" : "Non pronte"}
+      </Chip>
+    ) : undefined;
+
   return (
     <div className="flex flex-col gap-3">
-      {/* Ricerca + filtri */}
-      <div className="flex items-center gap-2">
-        <SearchField
+      {/* Ricerca (propone anche categorie e tag) + barra dei filtri (largo) o bottone «Filtri» (stretto) */}
+      <div className="flex flex-wrap items-center gap-2">
+        <FilterSearch
           value={q}
-          onChange={(e) => {
-            setQ(e.target.value);
+          onChange={(v) => {
+            setQ(v);
             resetPage();
           }}
-          placeholder="Cerca ricette…"
-          aria-label="Cerca ricette"
-          className="flex-1"
+          categories={categories}
+          tags={tags}
+          facets={suggestFacets}
+          activeCats={activeCats}
+          activeTags={activeTags}
+          onPickCat={toggleCat}
+          onPickTag={toggleTag}
+          className="min-w-[12rem] flex-1 basis-[16rem]"
         />
-        <IconButton
-          shape="square"
-          label="Ordina e filtra"
+        <Button
+          variant="secondary"
+          icon={<SlidersHorizontal aria-hidden />}
           onClick={() => setFilterOpen(true)}
-          className={clsx("@min-[860px]:hidden", isSortChanged && "border-arancio text-arancio")}
+          aria-label={activeCount ? `Filtri e ordine, ${activeCount} filtri attivi` : "Filtri e ordine"}
+          className={clsx("@min-[860px]:hidden", activeCount > 0 && "border-blu-800")}
         >
-          <SlidersHorizontal />
-        </IconButton>
-        <div className="hidden items-center gap-2 @min-[860px]:flex">
-          {isAdmin && (
-            <Segmented
-              label="Visibilità"
-              value={publishedFilter}
-              onChange={(v) => {
-                setPublishedFilter(v);
+          <span className="hidden @min-[420px]:inline">Filtri</span>
+          {activeCount > 0 && (
+            <span className="tabular flex h-5 min-w-5 items-center justify-center rounded-full bg-blu-800 px-1 text-xs font-bold text-white">
+              {activeCount}
+            </span>
+          )}
+        </Button>
+        {/* 4.14 · da 860px: tendine Categorie e Tag, visibilità, ordinamento */}
+        <div className="hidden flex-wrap items-center gap-2 @min-[860px]:flex">
+          {categories.length > 0 && (
+            <FilterPopover
+              label="Categorie"
+              count={activeCats.length}
+              widthRem={22}
+              onClear={() => {
+                setActiveCats([]);
                 resetPage();
               }}
-              options={PUBLISHED_OPTIONS}
-            />
+            >
+              <CategoryChips categories={categories} facets={facets} activeCats={activeCats} onToggle={toggleCat} />
+            </FilterPopover>
           )}
-          {sortControls}
+          {tags.length > 0 && (
+            <FilterPopover
+              label="Tag"
+              icon={<Hash aria-hidden />}
+              count={activeTags.length}
+              widthRem={19}
+              onClear={() => {
+                setActiveTags([]);
+                resetPage();
+              }}
+            >
+              <TagChecklist tags={tags} facets={facets} activeTags={activeTags} onToggle={toggleTag} />
+            </FilterPopover>
+          )}
+          {visibilityControl}
+          <div className="flex items-center gap-2">{sortControls("w-44")}</div>
         </div>
       </div>
 
-      {/* Categorie (chip, subito attive) + tag */}
-      {(categories.length > 0 || tags.length > 0) && (
-        <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-0.5 [scrollbar-width:none] sm:-mx-6 sm:px-6">
-          <Chip active={!hasActiveFilters} onClick={() => { setActiveCats([]); setActiveTags([]); resetPage(); }}>
-            Tutte
-          </Chip>
-          {tags.length > 0 && (
-            <Chip active={activeTags.length > 0} icon={<Hash aria-hidden />} onClick={() => setTagsOpen(true)}>
-              Tag{activeTags.length > 0 ? ` · ${activeTags.length}` : ""}
-            </Chip>
-          )}
-          {categories.map((c) => (
-            <Chip key={c.id} active={activeCats.includes(c.id)} dot={c.color} onClick={() => toggleCat(c.id)}>
-              {c.name}
-            </Chip>
-          ))}
-        </div>
-      )}
-
-      {/* Tag scelti (rimovibili) */}
-      {activeTags.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {tags
-            .filter((t) => activeTags.includes(t.id))
-            .map((t) => (
-              <Chip key={t.id} onRemove={() => toggleTag(t.id)} removeLabel={`Togli il tag ${t.name}`}>
-                #{t.name}
-              </Chip>
-            ))}
-        </div>
-      )}
+      <ActiveFilters
+        categories={categories}
+        tags={tags}
+        activeCats={activeCats}
+        activeTags={activeTags}
+        onToggleCat={toggleCat}
+        onToggleTag={toggleTag}
+        extra={visibilityChip}
+        onClear={clearFilters}
+      />
 
       <div className="flex items-center justify-between gap-3">
         <p className="min-w-0 text-xs font-semibold tracking-[0.08em] text-grigio uppercase">
           {filtered.length} ricett{filtered.length === 1 ? "a" : "e"}
-          {(hasActiveFilters || q) && " trovate"}
+          {(hasActiveFilters || q) && (filtered.length === 1 ? " trovata" : " trovate")}
           <span className="hidden @min-[620px]:inline"> · ordinate per {sortLabel.toLowerCase()}</span>
           {pageCount > 1 && ` · pagina ${safePage + 1} di ${pageCount}`}
         </p>
@@ -312,45 +372,72 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
         />
       )}
 
-      {/* Tag: ricerca + selezione multipla */}
-      <Modal open={tagsOpen} onClose={() => setTagsOpen(false)} title="Filtra per tag" size="sm">
-        <div className="flex flex-col gap-3">
-          <TagFilterCombobox tags={tags} selectedIds={activeTags} onToggle={toggleTag} autoFocus />
-          <div className="flex justify-end gap-2">
-            {activeTags.length > 0 && (
-              <Button variant="ghost" onClick={() => { setActiveTags([]); resetPage(); }}>
+      {/* 4.14 · contenitore stretto: le stesse sezioni in un foglio dal basso */}
+      <Modal
+        open={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        title="Filtri e ordine"
+        size="md"
+        variant="sheet"
+        footer={
+          <>
+            {activeCount > 0 && (
+              <Button variant="ghost" onClick={clearFilters}>
                 Togli tutti
               </Button>
             )}
-            <Button variant="secondary" onClick={() => setTagsOpen(false)}>
-              Fatto
+            <Button className="flex-1" onClick={() => setFilterOpen(false)}>
+              Mostra {filtered.length} ricett{filtered.length === 1 ? "a" : "e"}
             </Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Contenitore stretto: ordinamento e visibilità */}
-      <Modal open={filterOpen} onClose={() => setFilterOpen(false)} title="Ordina e filtra" size="sm">
-        <div className="flex flex-col gap-4">
-          {isAdmin && (
-            <div className="flex flex-col gap-1.5">
-              <p className="text-[0.8125rem] font-semibold text-grigio">Visibilità</p>
-              <Segmented
-                label="Visibilità"
-                value={publishedFilter}
-                onChange={(v) => {
-                  setPublishedFilter(v);
-                  resetPage();
-                }}
-                options={PUBLISHED_OPTIONS}
-              />
-            </div>
+          </>
+        }
+      >
+        <div className="flex flex-col gap-5">
+          {categories.length > 0 && (
+            <section className="flex flex-col gap-1.5">
+              <FilterSectionTitle>Categorie</FilterSectionTitle>
+              <CategoryChips categories={categories} facets={facets} activeCats={activeCats} onToggle={toggleCat} />
+            </section>
           )}
-          <div className="flex flex-col gap-1.5">
-            <p className="text-[0.8125rem] font-semibold text-grigio">Ordina per</p>
-            <div className="flex gap-2">{sortControls}</div>
-          </div>
-          <Button onClick={() => setFilterOpen(false)}>Mostra {filtered.length} ricette</Button>
+          {tags.length > 0 && (
+            <section className="flex flex-col gap-1.5">
+              <FilterSectionTitle
+                aside={
+                  activeTags.length > 0 ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setActiveTags([]);
+                        resetPage();
+                      }}
+                    >
+                      Togli
+                    </Button>
+                  ) : undefined
+                }
+              >
+                Tag{activeTags.length > 0 ? ` · ${activeTags.length} scelt${activeTags.length === 1 ? "o" : "i"}` : ""}
+              </FilterSectionTitle>
+              <TagChecklist
+                tags={tags}
+                facets={facets}
+                activeTags={activeTags}
+                onToggle={toggleTag}
+                listClassName="max-h-[min(16rem,38dvh)]"
+              />
+            </section>
+          )}
+          {visibilityControl && (
+            <section className="flex flex-col gap-1.5">
+              <FilterSectionTitle>Visibilità</FilterSectionTitle>
+              {visibilityControl}
+            </section>
+          )}
+          <section className="flex flex-col gap-1.5">
+            <FilterSectionTitle>Ordina per</FilterSectionTitle>
+            <div className="flex gap-2">{sortControls("flex-1")}</div>
+          </section>
         </div>
       </Modal>
     </div>

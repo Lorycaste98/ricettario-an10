@@ -11,7 +11,7 @@ web
 - **Il cuoco (proprietario, admin).** Unico utente vero e quotidiano. Crea e modifica ricette e menù, li consulta e ci cucina sopra. Usa iPad e iPhone per **tutto**, senza divisione netta fra dispositivi: l'iPad spesso appoggiato in cucina (anche in orizzontale), l'iPhone ovunque.
 - **Lo sviluppatore (admin).** Consulta il sito per verificare le modifiche che rilascia. Non è un pubblico da progettare a parte.
 - **Gli ospiti dei menù.** Ricevono il link `/recensisci/[token]` dopo una cena e votano le ricette (1-10) senza login, quasi sempre dal telefono. È l'unico punto in cui il sito parla con persone esterne.
-- I visitatori anonimi del sito pubblico oggi non esistono in pratica: il sito pubblico va mantenuto funzionante (le ricette non pronte restano nascoste) ma non guida le decisioni.
+- **I visitatori anonimi** sono pochi ma reali (24/11/2026, corretto dal proprietario): chi riceve o conosce il link può consultare ricette e menù pronti. Il percorso pubblico va curato (le ricette non pronte restano nascoste) e chi guarda deve capire a colpo d'occhio se è entrato o no; il cuoco resta comunque l'utente che guida le decisioni.
 
 ## Product Purpose
 

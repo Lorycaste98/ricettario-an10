@@ -5,7 +5,7 @@
  * costanti esportate da un modulo client (riceverebbe un riferimento, non l'array).
  */
 import type { ComponentType } from "react";
-import { BookOpen, Star, Tags, Upload, Users } from "lucide-react";
+import { BookOpen, IdCard, Settings, Star, Tags, Upload, User, Users } from "lucide-react";
 import { ClocheIcon, GroceryBagIcon } from "@/components/icons";
 import type { AdminOverview } from "@/lib/admin-overview";
 
@@ -36,19 +36,30 @@ export const ADMIN_CREATE: (AdminEntry & { hint: string })[] = [
   { href: "/admin/import", label: "Importa ricette", hint: "Da file JSON", icon: Upload, area: "neutro" },
 ];
 
-export type AdminSectionKey = "ricette" | "menu" | "ingredienti" | "vocabolario" | "recensioni" | "utenti";
+export type AdminSectionKey = "ricette" | "menu" | "ingredienti" | "vocabolario" | "recensioni" | "utenti" | "aspetto";
 
-export const ADMIN_SECTIONS: (AdminEntry & { key: AdminSectionKey; group: "contenuti" | "persone"; superOnly?: boolean })[] = [
+/**
+ * Voci del blocco «Il sito» (hub `/admin` e sotto-navigazione): tutto ciò che vale **per tutti**.
+ * Le scelte solo tue (profilo, impostazioni del dispositivo) stanno in `ADMIN_YOU`.
+ */
+export const ADMIN_SECTIONS: (AdminEntry & { key: AdminSectionKey; group: "contenuti" | "persone" | "sito"; superOnly?: boolean })[] = [
   { key: "ricette", href: "/admin/ricette", label: "Ricette", icon: BookOpen, area: "ricette", group: "contenuti" },
   { key: "menu", href: "/admin/menu", label: "Menù", icon: ClocheIcon, area: "menu", group: "contenuti" },
   { key: "ingredienti", href: "/admin/ingredienti", label: "Ingredienti", icon: GroceryBagIcon, area: "ingredienti", group: "contenuti" },
   { key: "vocabolario", href: "/admin/vocabolario", label: "Categorie e tag", icon: Tags, area: "vocabolario", group: "contenuti" },
   { key: "recensioni", href: "/admin/recensioni", label: "Recensioni", icon: Star, area: "recensioni", group: "persone" },
   { key: "utenti", href: "/admin/utenti", label: "Utenti", icon: Users, area: "neutro", group: "persone", superOnly: true },
+  { key: "aspetto", href: "/admin/aspetto", label: "Aspetto del sito", icon: IdCard, area: "neutro", group: "sito" },
+];
+
+/** Blocco «Tu» (D7, D9): corto e sempre in fondo. «Esci» è un bottone, non una voce: sta nell'hub. */
+export const ADMIN_YOU: (AdminEntry & { hint: string })[] = [
+  { href: "/admin/profilo", label: "Profilo e password", hint: "Nome utente, password, dedica", icon: User, area: "neutro" },
+  { href: "/impostazioni", label: "Impostazioni", hint: "Liste, cucina, ricerca, costi", icon: Settings, area: "neutro" },
 ];
 
 /** Numero accanto a una voce di Gestione */
-export function sectionCount(key: AdminSectionKey, o: AdminOverview) {
+export function sectionCount(key: AdminSectionKey, o: AdminOverview): number | undefined {
   switch (key) {
     case "ricette":
       return o.recipes;
@@ -62,6 +73,8 @@ export function sectionCount(key: AdminSectionKey, o: AdminOverview) {
       return o.reviews;
     case "utenti":
       return o.users;
+    case "aspetto":
+      return undefined;
   }
 }
 

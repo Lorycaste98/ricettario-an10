@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { BookOpen, Check, Clock, FileDown, Heart, Pencil, Plus, Timer, Trash2, Users } from "lucide-react";
 import { An10Logo } from "@/components/brand/An10Logo";
+import { An10ChefMark } from "@/components/brand/An10ChefMark";
 import { Button, IconButton, Stepper } from "@/components/ds/Button";
 import { Field, ReadonlyValue, SearchField, Select, TextArea, TextInput } from "@/components/ds/Field";
 import { Checkbox, Chip, RatingInput, Segmented, Switch, VisibilityToggle } from "@/components/ds/Controls";
@@ -86,6 +87,9 @@ export function Showcase() {
           <Item code="D8" label="impilato"><An10Logo variant="impilato" className="h-24 w-auto text-blu-950" /></Item>
           <Item code="D8" label="simbolo, su blu">
             <span className="rounded-[1.25rem] bg-blu-600 p-3 text-white"><An10Logo variant="simbolo" className="size-16" /></span>
+          </Item>
+          <Item code="D9" label="sei entrato (barra laterale)">
+            <span id="chefmark" className="flex rounded-[1.25rem] bg-blu-800 px-3 py-2 text-white"><An10ChefMark className="h-[4.25rem] w-auto" /></span>
           </Item>
         </Section>
 

@@ -144,12 +144,17 @@ export function Segmented<T extends string>({
   );
 }
 
-/** 4.11 · chip di filtro (attivo = blu scuro). `dot` = colore della categoria. */
+/**
+ * 4.11 · chip di filtro (attivo = blu scuro). `dot` = colore della categoria. `count` = quante
+ * ricette (filtri a faccette 4.14); `disabled` = scelta che non darebbe risultati (tinta, mai opacità).
+ */
 export function Chip({
   active = false,
   onClick,
   dot,
   icon,
+  count,
+  disabled = false,
   children,
   onRemove,
   removeLabel = "Togli",
@@ -159,6 +164,8 @@ export function Chip({
   onClick?: () => void;
   dot?: string;
   icon?: ReactNode;
+  count?: number;
+  disabled?: boolean;
   children: ReactNode;
   /** se presente mostra la ✕ (11.7, categorie e tag scelti nel form) */
   onRemove?: () => void;
@@ -167,14 +174,21 @@ export function Chip({
 }) {
   const base = clsx(
     "inline-flex h-(--h-sm) shrink-0 items-center gap-[0.4em] rounded-full border px-[0.85em] text-[0.875rem] font-semibold whitespace-nowrap transition-colors [&_svg]:size-[1.05em]",
-    active ? "border-blu-800 bg-blu-800 text-white" : "border-blu-200 bg-white text-blu-950 hover:bg-blu-100",
+    active
+      ? "border-blu-800 bg-blu-800 text-white"
+      : disabled
+        ? "cursor-not-allowed border-dashed border-blu-200 bg-transparent text-grigio-chiaro"
+        : "border-blu-200 bg-white text-blu-950 hover:bg-blu-100",
     className
   );
   const inner = (
     <>
-      {dot && <span aria-hidden className="size-[0.6em] rounded-full" style={{ background: dot }} />}
+      {dot && <span aria-hidden className="size-[0.6em] shrink-0 rounded-full" style={{ background: dot }} />}
       {icon}
       {children}
+      {count !== undefined && (
+        <span className={clsx("tabular font-normal", active ? "text-nav-ink" : disabled ? "text-grigio-chiaro" : "text-grigio")}>{count}</span>
+      )}
     </>
   );
   if (onRemove) {
@@ -190,7 +204,7 @@ export function Chip({
     );
   }
   return (
-    <button type="button" aria-pressed={active} onClick={onClick} className={clsx("hit-44", base)}>
+    <button type="button" aria-pressed={active} onClick={onClick} disabled={disabled} className={clsx("hit-44", base)}>
       {inner}
     </button>
   );

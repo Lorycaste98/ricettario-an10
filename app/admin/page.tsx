@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { getAdminOverview } from "@/lib/admin-overview";
+import { getCardConfig } from "@/lib/site-settings";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
 
 export const metadata: Metadata = { title: "Gestione — Ricettario" };
@@ -22,8 +23,9 @@ export default async function AdminPage() {
     .findMany({ where: { excludedFromStats: true }, select: { name: true } })
     .then((rows) => rows.map((r) => r.name));
 
-  const [overview, topCookedRaw, recentReviews, topIngredientsRaw, categoriesRaw, tagsRaw] = await Promise.all([
+  const [overview, cardConfig, topCookedRaw, recentReviews, topIngredientsRaw, categoriesRaw, tagsRaw] = await Promise.all([
     getAdminOverview(),
+    getCardConfig(),
     db.recipe.findMany({
       where: { cookCount: { gt: 0 } },
       orderBy: { cookCount: "desc" },
@@ -75,6 +77,10 @@ export default async function AdminPage() {
       today={todayLabel()}
       isSuperAdmin={isSuperAdmin}
       overview={overview}
+      cardInfo={{
+        recipe: Object.values(cardConfig.recipe).filter(Boolean).length,
+        menu: Object.values(cardConfig.menu).filter(Boolean).length,
+      }}
       charts={{ topCategories, topTags, topCooked, topIngredients }}
       recentReviews={recentReviews}
     />

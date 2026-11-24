@@ -4,7 +4,8 @@ import { clsx } from "clsx";
 import type { CSSProperties, ReactNode } from "react";
 import { useNavHistoryTracker } from "@/lib/nav-history";
 import { usePreferenceSync } from "@/lib/preferences";
-import { NavRail, TabBar } from "@/components/shell/AppNav";
+import { NavRail, TabBar, navToneFor } from "@/components/shell/AppNav";
+import { useAuth } from "@/components/AuthProvider";
 import { ADMIN_FORM_ROUTE } from "@/components/admin/admin-sections";
 import { CookingMiniBar, CookingRow, useHasCooking } from "@/components/shell/CookingBar";
 
@@ -15,8 +16,12 @@ import { CookingMiniBar, CookingRow, useHasCooking } from "@/components/shell/Co
  *   un container (`@container`), quindi le pagine usano le varianti `@min-[620px]:` ecc.
  * - «Sto cucinando»: fila blu in cima (contenitore largo) o mini-barra (stretto).
  * - Sfondo pieno `blu-50` (in Gestione `adm-50`).
- * - Gestione (`/admin/*`, D7): barra laterale inchiostro-indaco `adm-900` e fondo `adm-50`; la
- *   sotto-navigazione di Gestione sta in `app/admin/layout.tsx`.
+ * - Tono della navigazione = chi sei (D9, `navToneFor` in AppNav): visitatore barra chiara,
+ *   entrato blu scuro, «dietro le quinte» (`/admin/*` e, per l'admin, `/impostazioni`, D7) indaco
+ *   `adm-900` con fondo `adm-50`. La sotto-navigazione di Gestione sta in `AdminFrame`.
+ * - La fascia del notch resta **sempre scura** (blu-800, indaco dietro le quinte), anche per il
+ *   visitatore con la barra chiara: da app installata la barra di stato è trasparente con il testo
+ *   bianco (`black-translucent`), su una fascia chiara non si leggerebbe.
  * La vetrina pubblica `/` sta dentro la cornice come le altre pagine (fase 6).
  */
 export function AppShell({ children }: { children: ReactNode }) {
@@ -26,9 +31,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   // admin: preferenze della pagina Impostazioni allineate con l'account
   usePreferenceSync();
   const cooking = useHasCooking();
+  const { isAdmin, loading } = useAuth();
 
-  // Gestione (D7): stessa cornice con la barra inchiostro-indaco e i fondi freddi
-  const admin = pathname === "/admin" || pathname.startsWith("/admin/");
+  // Tono della navigazione (D9); dietro le quinte (D7) anche fondi freddi
+  const tone = navToneFor(pathname, isAdmin, loading);
+  const admin = tone === "backstage";
 
   return (
     <div
@@ -49,7 +56,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         className={clsx("pointer-events-none fixed inset-x-0 top-0 z-50", admin ? "bg-adm-900" : "bg-blu-800")}
         style={{ height: "env(safe-area-inset-top, 0px)" }}
       />
-      <NavRail adminArea={admin} />
+      <NavRail tone={tone} />
       <div className="@container flex min-w-0 flex-1 flex-col">
         {/* nei form la barra 11.1 resta in alto: la fila «Sto cucinando» lì scorre via con la pagina */}
         <CookingRow sticky={!ADMIN_FORM_ROUTE.test(pathname)} />
@@ -70,7 +77,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </main>
         <CookingMiniBar />
       </div>
-      <TabBar adminArea={admin} />
+      <TabBar tone={tone} />
     </div>
   );
 }
