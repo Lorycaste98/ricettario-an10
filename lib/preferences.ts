@@ -2,7 +2,7 @@
 import { useEffect } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { clearLocalStore, localStoreEvent, setLocalStoreRaw, useLocalStore } from "@/lib/local-store";
-import { PREF_KEYS } from "@/lib/preference-keys";
+import { DEVICE_PREF_KEYS, PREF_KEYS } from "@/lib/preference-keys";
 
 /**
  * Preferenze della pagina **Impostazioni** in un posto solo: le usano le liste (Ricette, Preferiti,
@@ -150,7 +150,7 @@ export const KEEP_AWAKE_KEY = "ricettario:cooking-keep-awake";
  * Per l'admin il ripristino arriva anche all'account (lo salva `usePreferenceSync`).
  */
 export function resetPreferences() {
-  for (const key of PREF_KEYS) clearLocalStore(key);
+  for (const key of [...PREF_KEYS, ...DEVICE_PREF_KEYS]) clearLocalStore(key);
 }
 
 // ── Sincronizzazione con l'account (solo admin) ─────────────────────────────

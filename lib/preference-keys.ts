@@ -9,11 +9,16 @@ export const PREF_KEYS = [
   "ricettario:menu-sort:sort",
   "ricettario:menu-sort:order",
   "ricettario:list-view:recipes:view",
-  "ricettario:list-view:recipes:cols",
   "ricettario:list-view:menus:view",
-  "ricettario:list-view:menus:cols",
   "ricettario:menu-costs-outputs",
   "ricettario:cooking-keep-awake",
 ] as const;
 
 export type PrefKey = (typeof PREF_KEYS)[number];
+
+/**
+ * Preferenze che restano **sempre del dispositivo**, anche per l'admin: le card per riga dipendono
+ * dalla larghezza dello schermo (2 scelte sul telefono non devono diventare 2 sul PC).
+ * Non vanno all'account; «Ripristina» le azzera insieme alle altre.
+ */
+export const DEVICE_PREF_KEYS = ["ricettario:list-view:recipes:cols", "ricettario:list-view:menus:cols"] as const;

@@ -211,9 +211,10 @@ function ListSettings({ list }: { list: ListKind }) {
           <SettingRow
             label="Card per riga"
             hint={
+              // dipende dallo schermo: resta su questo dispositivo anche da admin (non va all'account)
               isAuto
-                ? "Automatico: dipende dalla larghezza dello schermo. Con − e + scegli tu; tocca il numero per tornare automatico."
-                : `Al massimo ${maxCols} su questo schermo. Tocca il numero per tornare automatico.`
+                ? "Solo su questo dispositivo. Automatico: quante ne stanno. Con − e + scegli tu; tocca il numero per tornare automatico."
+                : `Solo su questo dispositivo, al massimo ${maxCols}. Tocca il numero per tornare automatico.`
             }
           >
             {colsControl}

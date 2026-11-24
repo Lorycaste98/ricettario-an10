@@ -82,15 +82,17 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
             value={c.guest.value}
             count={c.guest.count}
             muted={c.hidden}
-            className="absolute -right-[4%] -bottom-[2%] w-[clamp(2rem,27cqi,3.25rem)] text-[clamp(0.6875rem,8cqi,1rem)]"
+            className="absolute top-[85%] left-[85%] w-[clamp(2rem,27cqi,3.5rem)] -translate-x-[58%] -translate-y-[58%] text-[clamp(0.6875rem,8cqi,1.0625rem)]"
           />
         )}
-        {/* il mio voto (6.12): speculare, in basso a sinistra, un po' più piccola */}
+        {/* medaglie agganciate al bordo del cerchio a 45° (85% / 15% del quadrato), non all'angolo del
+            quadrato: sulle card grandi l'angolo è lontano dal piatto e la medaglia restava sulla tovaglia.
+            Il mio voto (6.12): speculare, in basso a sinistra, un po' più piccola */}
         {f.myRating && c.mine != null && (
           <MyRatingMedal
             value={c.mine}
             muted={c.hidden}
-            className="absolute -bottom-[2%] -left-[4%] w-[clamp(1.75rem,22cqi,2.625rem)] text-[clamp(0.6875rem,7.5cqi,0.9375rem)]"
+            className="absolute top-[85%] left-[15%] w-[clamp(1.75rem,22cqi,2.875rem)] -translate-x-[42%] -translate-y-[58%] text-[clamp(0.6875rem,7.5cqi,1rem)]"
           />
         )}
       </div>
