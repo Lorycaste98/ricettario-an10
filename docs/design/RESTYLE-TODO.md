@@ -203,7 +203,11 @@
 - [ ] Nuovo giro di prove sui punti sistemati, finché il proprietario non approva il nuovo stile.
 
 ### Punti da sistemare
-*(vuoto: si riempie durante le prove)*
+- [x] **Proprietario · dettaglio menù · PDF che non si generava + ordinamento perso** (24/11/2026). Corretto su `main` (`239ae43`, già in produzione) e unito qui: le ricette veloci non si chiedono più all'API (404 → falliva tutto il PDF) e stanno solo nell'elenco in copertina con «veloce»; finestra «Esporta senza» se una ricetta non si legge; foto WebP/HEIC convertite in JPEG; ordinamento delle liste ricette e menù in `localStorage`.
+- [ ] **Proprietario · dettaglio menù · PDF in due formati** (24/11/2026, nuova funzione). Premendo il PDF del menù, prima una scelta fra due formati (nomi da decidere, «cucina» e «ristorante» erano solo indicativi):
+  - **per chi cucina**: il PDF di oggi (copertina con l'elenco + una pagina per ricetta con ingredienti e passi), già nello stile del restyle;
+  - **da mandare agli ospiti** (amici, parenti): un foglio carino da condividere, tipo menù del ristorante, con nome del menù, data e ora del servizio e l'elenco dei piatti (veloci comprese); niente ingredienti, passi, costi né note private. Da decidere insieme: cosa ci sta in più (descrizione del menù, foto, descrizione breve dei piatti, raggruppamento per portata, logo, messaggio/dedica), formato (A4 verticale, A5 o una pagina da mandare sul telefono) e se condividerlo anche col tasto «Invia» (`navigator.share`) oltre allo scaricamento.
+  - Dove: `MenuPdfButton` (la scelta, una finestra 10.1 con le due opzioni) e un nuovo documento accanto a `MenuPdfDocument`. Il formato ospiti è per tutti o solo admin? Da decidere (oggi il PDF del menù è per tutti).
 
 ---
 
