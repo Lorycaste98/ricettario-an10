@@ -9,6 +9,7 @@ import { CookingButton } from "@/components/cooking/CookingButton";
 import { An10Logo } from "@/components/brand/An10Logo";
 import { PotIcon } from "@/components/icons";
 import { pressCls, useCardInfo } from "./card-info";
+import { useCardConfig } from "@/components/CardConfigProvider";
 import { RatingMedal } from "./RatingMedal";
 
 /**
@@ -20,10 +21,12 @@ import { RatingMedal } from "./RatingMedal";
  * tempo e mio voto senza colore), piatto sbiadito e mini-timbro tratteggiato con l'occhio barrato.
  * Ogni ricetta è a sé, **senza scheda**: appoggiata sul fondo pagina e separata dallo spazio
  * (`CollectionBody` con `list="stack"`); il foglio unico la faceva sembrare un gruppo.
- * È un `@container/row`: da 26rem porzioni e cotture, da 30rem il numero di voti, da 34rem piatto e nome più grandi.
+ * Quali informazioni: le decide l'admin per tutti (Impostazioni → `useCardConfig`), come per la card.
+ * È un `@container/row`: da 34rem piatto e nome più grandi.
  */
 export function RecipeRow({ recipe }: { recipe: RecipeSummary }) {
   const c = useCardInfo(recipe);
+  const f = useCardConfig().recipe;
 
   return (
     <Link
@@ -64,7 +67,7 @@ export function RecipeRow({ recipe }: { recipe: RecipeSummary }) {
           <EyeOff className="size-3.5" aria-hidden />
         </span>
       )}
-      {c.guest && (
+      {c.guest && f.guestRating && (
         <RatingMedal
           value={c.guest.value}
           count={c.guest.count}
@@ -87,7 +90,7 @@ export function RecipeRow({ recipe }: { recipe: RecipeSummary }) {
           </span>
           <span aria-hidden className="min-w-4 flex-1 border-b-2 border-dotted border-blu-250" />
           {/* non pronta: niente pentola e cuore, prima la ricetta va sistemata */}
-          {!c.hidden && (
+          {!c.hidden && f.actions && (
             <span className="flex shrink-0 gap-1.5 [&>button]:ring-1 [&>button]:ring-blu-150">
               <CookingButton recipeId={recipe.id} />
               <FavoriteButton recipeId={recipe.id} />
@@ -98,38 +101,43 @@ export function RecipeRow({ recipe }: { recipe: RecipeSummary }) {
         {/* dettagli */}
         <span className="flex min-w-0 items-center gap-2">
           <span className={clsx("flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs", c.hidden ? "text-grigio-chiaro" : "text-grigio")}>
-            {c.cat && (
+            {f.category && c.cat && (
               <span className="flex min-w-0 items-center gap-1.5">
                 <span aria-hidden className="size-2 shrink-0 rounded-full" style={{ background: c.cat.color }} />
                 <span className="truncate">{c.cat.name}</span>
               </span>
             )}
-            {c.time && (
+            {f.time && c.time && (
               <span className={clsx("tabular flex items-center gap-1 font-semibold whitespace-nowrap", !c.hidden && "text-ambra")}>
                 <Clock className="size-3.5 shrink-0" aria-hidden /> {c.time}
               </span>
             )}
-            {recipe.servings && (
-              <span className="hidden min-w-0 items-center gap-1 @min-[26rem]/row:flex">
+            {f.servings && recipe.servings && (
+              <span className="flex min-w-0 items-center gap-1">
                 <Users className="size-3.5 shrink-0" aria-hidden />
                 <span className="truncate">
                   {recipe.servingsUnit ? formatServings(recipe.servings, recipe.servingsUnit) : `${recipe.servings}p`}
                 </span>
               </span>
             )}
-            {c.isAdmin && recipe.cookCount > 0 && (
-              <span className="tabular hidden items-center gap-1 @min-[26rem]/row:flex">
+            {f.cookCount && c.isAdmin && recipe.cookCount > 0 && (
+              <span className="tabular flex items-center gap-1">
                 <PotIcon className="size-3.5 shrink-0" aria-hidden /> ×{recipe.cookCount}
               </span>
             )}
-            {c.guest && (
-              <span className="tabular hidden @min-[30rem]/row:inline">
+            {f.reviewCount && c.guest && (
+              <span className="tabular whitespace-nowrap">
                 {c.guest.count} {c.guest.count === 1 ? "voto" : "voti"}
               </span>
             )}
-            {c.mine != null && <span className={clsx("tabular font-bold", !c.hidden && "text-mio-ink")}>mio {c.mine}</span>}
+            {f.myRating && c.mine != null && <span className={clsx("tabular font-bold", !c.hidden && "text-mio-ink")}>mio {c.mine}</span>}
           </span>
         </span>
+        {f.tags && recipe.tags.length > 0 && (
+          <span className={clsx("truncate text-xs", c.hidden ? "text-grigio-chiaro" : "text-blu-700")}>
+            {recipe.tags.slice(0, 4).map((t) => `#${t.name}`).join("  ")}
+          </span>
+        )}
       </span>
     </Link>
   );

@@ -9,6 +9,7 @@ import { ClocheIcon } from "@/components/icons";
 import { RatingMedal } from "@/components/recipe/RatingMedal";
 import { pressCls } from "@/components/recipe/card-info";
 import { DateTicket } from "./DateTicket";
+import { useCardConfig } from "@/components/CardConfigProvider";
 
 /** «sab 13 dic · 20:00»; anno solo se diverso da quello corrente */
 export function formatMenuWhen(date: string | null, servingTime: string | null) {
@@ -33,8 +34,8 @@ export function formatMenuWhen(date: string | null, servingTime: string | null) 
  * medaglia del voto ospiti (6.11, media di tutti i voti arrivati dal link del menù), che così sta
  * sul menù e non su un piatto. Sotto: nome, persone e ricette.
  * Non pronto (solo admin): come le ricette — tavola sbiadita, contorno tratteggiato, timbro
- * «Non pronto» sul cartoncino, testo e medaglia spenti. `@container/card`: stretta (2 per riga sul
- * telefono) nome più piccolo e solo le ricette; da 13rem anche le persone.
+ * «Non pronto» sul cartoncino, testo e medaglia spenti. Ora del servizio, voto, foto, persone e
+ * numero di ricette: li decide l'admin per tutti (Impostazioni → `useCardConfig`).
  */
 export function MenuCard({ menu }: { menu: MenuSummary }) {
   const { isAdmin } = useAuth();
@@ -46,7 +47,8 @@ export function MenuCard({ menu }: { menu: MenuSummary }) {
   const moreWide = Math.max(0, n - names.length);
   const moreNarrow = Math.max(0, n - Math.min(names.length, 2));
   const moreLabel = (k: number) => (k === 1 ? "e un'altra" : `e altre ${k}`);
-  const photo = menu.previewPhotos[0];
+  const f = useCardConfig().menu;
+  const photo = f.photo ? menu.previewPhotos[0] : undefined;
 
   return (
     <Link
@@ -116,7 +118,7 @@ export function MenuCard({ menu }: { menu: MenuSummary }) {
       </div>
 
       {/* voto del menù: sulla tovaglia, nell'angolo opposto alla data */}
-      {hasRating && (
+      {f.guestRating && hasRating && (
         <RatingMedal
           value={menu.avgRating!}
           count={menu._count.reviews}
@@ -128,7 +130,7 @@ export function MenuCard({ menu }: { menu: MenuSummary }) {
       {/* biglietto del calendario, appoggiato sull'angolo della tovaglia */}
       <DateTicket
         date={menu.date}
-        time={menu.servingTime}
+        time={f.servingTime ? menu.servingTime : null}
         muted={hidden}
         className="absolute top-[0.45rem] left-[0.45rem] w-[clamp(2.25rem,20cqi,3.5rem)] text-[clamp(0.6875rem,6cqi,1rem)]"
       />
@@ -147,14 +149,16 @@ export function MenuCard({ menu }: { menu: MenuSummary }) {
           hidden ? "text-grigio-chiaro" : "text-grigio"
         )}
       >
-        {menu.people != null && (
-          <span className="hidden items-center gap-1 whitespace-nowrap @min-[13rem]/card:flex">
+        {f.people && menu.people != null && (
+          <span className="flex items-center gap-1 whitespace-nowrap">
             <Users className="size-3.5 shrink-0" aria-hidden /> {menu.people}
           </span>
         )}
-        <span className="whitespace-nowrap">
-          {n} {n === 1 ? "ricetta" : "ricette"}
-        </span>
+        {f.recipeCount && (
+          <span className="whitespace-nowrap">
+            {n} {n === 1 ? "ricetta" : "ricette"}
+          </span>
+        )}
       </span>
     </Link>
   );

@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AppShell } from "@/components/AppShell";
 import { AuthProvider } from "@/components/AuthProvider";
+import { CardConfigProvider } from "@/components/CardConfigProvider";
+import { getCardConfig } from "@/lib/site-settings";
 import { PhotoViewer } from "@/components/ui/PhotoViewer";
 import { CookingDock } from "@/components/cooking/CookingDock";
 import { SearchOverlay } from "@/components/search/SearchOverlay";
@@ -48,12 +50,16 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // informazioni delle card decise dall'admin per tutti (Impostazioni), cachate a tag
+  const cardConfig = await getCardConfig();
   return (
     <html lang="it" className="h-full antialiased">
       <body className="ds min-h-screen">
         <AuthProvider>
-          <AppShell>{children}</AppShell>
+          <CardConfigProvider value={cardConfig}>
+            <AppShell>{children}</AppShell>
+          </CardConfigProvider>
           {/* Visore foto a schermo intero: montato una volta, si apre via evento (ViewerImage) */}
           <PhotoViewer />
           {/* «Sto cucinando»: pannello + scheduler dei timer (fila e mini-barra stanno in AppShell) */}

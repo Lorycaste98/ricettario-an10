@@ -7,6 +7,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { RatingMedal } from "@/components/recipe/RatingMedal";
 import { pressCls } from "@/components/recipe/card-info";
 import { DateTicket } from "./DateTicket";
+import { useCardConfig } from "@/components/CardConfigProvider";
 
 /**
  * 8.11 · riga menù «Carta» (vista a lista, gemella della riga ricetta 8.10): a sinistra il
@@ -20,6 +21,7 @@ export function MenuRow({ menu }: { menu: MenuSummary }) {
   const hidden = isAdmin && !menu.published;
   const hasRating = menu._count.reviews > 0 && menu.avgRating !== null;
   const n = menu._count.recipes;
+  const f = useCardConfig().menu;
 
   return (
     <Link
@@ -31,7 +33,7 @@ export function MenuRow({ menu }: { menu: MenuSummary }) {
       )}
     >
       <span className="relative shrink-0 pt-0.5">
-        <DateTicket date={menu.date} time={menu.servingTime} muted={hidden} className="w-[3.25rem] text-[0.9375rem]" />
+        <DateTicket date={menu.date} time={f.servingTime ? menu.servingTime : null} muted={hidden} className="w-[3.25rem] text-[0.9375rem]" />
         {hidden && (
           <span
             role="img"
@@ -42,7 +44,7 @@ export function MenuRow({ menu }: { menu: MenuSummary }) {
             <EyeOff className="size-3.5" aria-hidden />
           </span>
         )}
-        {hasRating && (
+        {f.guestRating && hasRating && (
           <RatingMedal
             value={menu.avgRating!}
             count={menu._count.reviews}
@@ -66,14 +68,16 @@ export function MenuRow({ menu }: { menu: MenuSummary }) {
           <span aria-hidden className="min-w-4 flex-1 border-b-2 border-dotted border-blu-250" />
         </span>
         <span className={clsx("flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs", hidden ? "text-grigio-chiaro" : "text-grigio")}>
-          {menu.people != null && (
+          {f.people && menu.people != null && (
             <span className="flex items-center gap-1 whitespace-nowrap">
               <Users className="size-3.5 shrink-0" aria-hidden /> {menu.people} persone
             </span>
           )}
-          <span className="whitespace-nowrap">
-            {n} {n === 1 ? "ricetta" : "ricette"}
-          </span>
+          {f.recipeCount && (
+            <span className="whitespace-nowrap">
+              {n} {n === 1 ? "ricetta" : "ricette"}
+            </span>
+          )}
         </span>
       </span>
     </Link>

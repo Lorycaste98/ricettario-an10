@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/ds/Feedback";
 import { RecipeCard } from "@/components/recipe/RecipeCard";
 import { RecipeRow } from "@/components/recipe/RecipeRow";
 import { LIST_LAYOUT } from "@/lib/preferences";
+import { ListSkeleton } from "@/components/ui/ListSkeleton";
 import { CollectionBody, useCollectionView } from "@/components/ui/CollectionView";
 import { useFavorites } from "@/lib/favorites";
 import type { RecipeSummary } from "@/lib/types";
@@ -29,7 +30,8 @@ export function FavoritesClient({ recipes }: { recipes: RecipeSummary[] }) {
   );
 
   if (!hydrated) {
-    return <p className="py-10 text-center text-grigio">Carico i preferiti…</p>;
+    // stessa forma della lista (griglia/lista e card per riga scelte da chi guarda)
+    return <ListSkeleton list="recipes" />;
   }
 
   if (filtered.length === 0) {

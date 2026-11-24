@@ -10,6 +10,7 @@ import { CookingButton } from "@/components/cooking/CookingButton";
 import { An10Logo } from "@/components/brand/An10Logo";
 import { PotIcon } from "@/components/icons";
 import { pressCls, useCardInfo } from "./card-info";
+import { useCardConfig } from "@/components/CardConfigProvider";
 
 /**
  * 8.1 · card ricetta «Piatto» (griglia: libreria, preferiti, vetrina). La foto è il piatto visto
@@ -21,13 +22,15 @@ import { pressCls, useCardInfo } from "./card-info";
  * testo schiarito con le tinte (nome `grigio`, dettagli `grigio-chiaro`), medaglia spenta e niente
  * pentola né cuore (prima la ricetta va sistemata, poi si cucina o si salva). Uguale nella riga 8.10.
  *
- * È un `@container/card`: cosa mostra dipende dalla sua larghezza (card per riga di
- * `CollectionView`). Stretta (3 per riga sul telefono): solo cuore, nome piccolo, pallino e tempo;
- * da 11rem il mio voto, da 13rem il nome della categoria, da 15rem porzioni e cotture, da 19rem i tag.
+ * **Quali informazioni** le decide l'admin per tutti (Impostazioni → `useCardConfig`): ognuna accesa
+ * si vede a ogni larghezza, la riga dei dettagli va a capo e la card si allunga. È un
+ * `@container/card`: la larghezza decide solo le misure (nome e testo più grandi da 11rem e 18rem)
+ * e la pentola, che sotto gli 8rem non ci sta.
  * Movimento: al tocco si abbassa appena, al mouse il piatto gira di 8°.
  */
 export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
   const c = useCardInfo(recipe);
+  const f = useCardConfig().recipe;
   return (
     <Link
       href={`/ricette/${recipe.id}`}
@@ -42,7 +45,7 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
       {/* pentola e cuore nei due angoli liberi della tovaglia, ai lati del piatto; non per le non
           pronte: prima la ricetta va sistemata, poi si cucina o si salva */}
       {/* soglia 8rem: la tovaglia ha un margine interno, il contenuto è più stretto della card */}
-      {!c.hidden && (
+      {!c.hidden && f.actions && (
         <>
           <div className="absolute top-1.5 left-1.5 z-10 hidden @min-[8rem]/card:top-2 @min-[8rem]/card:left-2 @min-[8rem]/card:block">
             <CookingButton recipeId={recipe.id} />
@@ -74,7 +77,7 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
         {/* non pronta (solo admin): timbro «fac-simile» sopra il piatto, non sbiadito con lui.
             Sta sul piatto e non nel testo, così tutte le card restano alte uguali */}
         {c.hidden && <NotReadyStamp />}
-        {c.guest && (
+        {c.guest && f.guestRating && (
           <RatingMedal
             value={c.guest.value}
             count={c.guest.count}
@@ -94,40 +97,45 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
       </h3>
       <span
         className={clsx(
-          "mt-1 flex min-w-0 items-center justify-center gap-x-2 text-[0.6875rem] @min-[11rem]/card:text-xs",
+          "mt-1 flex max-w-full min-w-0 flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-[0.6875rem] @min-[11rem]/card:text-xs",
           c.hidden ? "text-grigio-chiaro" : "text-grigio"
         )}
       >
-        {c.cat && (
-          <span className="flex min-w-0 items-center gap-1">
+        {f.category && c.cat && (
+          <span className="flex max-w-full min-w-0 items-center gap-1">
             <span aria-hidden className="size-2 shrink-0 rounded-full" style={{ background: c.cat.color }} />
-            <span className="hidden truncate @min-[13rem]/card:inline">{c.cat.name}</span>
+            <span className="truncate">{c.cat.name}</span>
           </span>
         )}
-        {c.time && (
+        {f.time && c.time && (
           <span className="tabular flex items-center gap-1 whitespace-nowrap">
             <Clock className="size-3.5 shrink-0" aria-hidden /> {c.time}
           </span>
         )}
-        {recipe.servings && (
-          <span className="hidden min-w-0 items-center gap-1 @min-[15rem]/card:flex">
+        {f.servings && recipe.servings && (
+          <span className="flex min-w-0 items-center gap-1">
             <Users className="size-3.5 shrink-0" aria-hidden />
             <span className="truncate">
               {recipe.servingsUnit ? formatServings(recipe.servings, recipe.servingsUnit) : `${recipe.servings}p`}
             </span>
           </span>
         )}
-        {c.isAdmin && recipe.cookCount > 0 && (
-          <span className="tabular hidden items-center gap-1 @min-[15rem]/card:flex" title={`Cucinata ${recipe.cookCount} volte`}>
+        {f.cookCount && c.isAdmin && recipe.cookCount > 0 && (
+          <span className="tabular flex items-center gap-1" title={`Cucinata ${recipe.cookCount} volte`}>
             <PotIcon className="size-3.5 shrink-0" aria-hidden /> ×{recipe.cookCount}
           </span>
         )}
-        {c.mine != null && (
-          <span className={clsx("tabular hidden font-bold @min-[11rem]/card:inline", !c.hidden && "text-mio-ink")}>mio {c.mine}</span>
+        {f.reviewCount && c.guest && (
+          <span className="tabular whitespace-nowrap">
+            {c.guest.count} {c.guest.count === 1 ? "voto" : "voti"}
+          </span>
+        )}
+        {f.myRating && c.mine != null && (
+          <span className={clsx("tabular font-bold whitespace-nowrap", !c.hidden && "text-mio-ink")}>mio {c.mine}</span>
         )}
       </span>
-      {recipe.tags.length > 0 && (
-        <p className="mt-1 hidden max-w-full truncate text-xs text-blu-700 @min-[19rem]/card:block">
+      {f.tags && recipe.tags.length > 0 && (
+        <p className={clsx("mt-1 max-w-full truncate text-[0.6875rem] @min-[11rem]/card:text-xs", c.hidden ? "text-grigio-chiaro" : "text-blu-700")}>
           {recipe.tags.slice(0, 4).map((t) => `#${t.name}`).join("  ")}
         </p>
       )}

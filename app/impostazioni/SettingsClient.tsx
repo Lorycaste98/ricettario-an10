@@ -1,11 +1,13 @@
 "use client";
 import { useState, useSyncExternalStore, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { clsx } from "clsx";
 import {
   ArrowDown,
   ArrowUp,
   BellRing,
+  IdCard,
   ChefHat,
   LayoutGrid,
   LogIn,
@@ -28,6 +30,13 @@ import {
   ViewSwitch,
 } from "@/components/ui/CollectionView";
 import { PotIcon } from "@/components/icons";
+import { CardConfigProvider, useCardConfig } from "@/components/CardConfigProvider";
+import { RecipeCard } from "@/components/recipe/RecipeCard";
+import { RecipeRow } from "@/components/recipe/RecipeRow";
+import { MenuCard } from "@/components/menu/MenuCard";
+import { MenuRow } from "@/components/menu/MenuRow";
+import { MENU_FIELDS, RECIPE_FIELDS, type CardConfig } from "@/lib/card-config";
+import type { MenuSummary, RecipeSummary } from "@/lib/types";
 import {
   requestNotificationPermission,
   useKeepAwake,
@@ -61,12 +70,15 @@ const noRef = () => {};
  * costi del menù (solo admin), ricerca — e in fondo «Ripristina». Nessun «Salva»: ogni scelta
  * vale subito. Le righe sono «etichetta · spiegazione · controllo» (`SettingRow`).
  */
-export function SettingsClient() {
+type Samples = { recipe: RecipeSummary | null; menu: MenuSummary | null } | null;
+
+export function SettingsClient({ samples }: { samples: Samples }) {
   const { isAdmin, loading } = useAuth();
   return (
     <div className="grid gap-(--gap) @min-[760px]:grid-cols-2">
       {!loading && <AccountPanel className="@min-[760px]:col-span-2" />}
       <ListsPanel className="@min-[760px]:col-span-2" />
+      {isAdmin && samples && <CardInfoPanel samples={samples} className="@min-[760px]:col-span-2" />}
       <KitchenPanel />
       {isAdmin && <CostsPanel />}
       <SearchPanel />
@@ -485,6 +497,108 @@ function CostsPanel() {
           {COST_OUTPUTS.map((o) => `${o.label}: ${o.hint}`).join(" · ")}. Le
           stesse scelte sono anche nella sezione Costi di ogni menù.
         </p>
+      </div>
+    </Panel>
+  );
+}
+
+// ── Informazioni sulle card (admin, per tutti) ───────────────────────────────
+
+/**
+ * Cosa mostrano card e righe delle liste, per tutti (`lib/card-config.ts`). Bozza locale con
+ * l'anteprima su una ricetta e un menù veri, a due larghezze (card stretta come sul telefono e
+ * larga) e in riga; «Salva per tutti» la scrive nel database e ricarica la pagina.
+ */
+function CardInfoPanel({ samples, className }: { samples: NonNullable<Samples>; className?: string }) {
+  const saved = useCardConfig();
+  const router = useRouter();
+  const [kind, setKind] = useState<"recipe" | "menu">("recipe");
+  const [draft, setDraft] = useState<CardConfig>(saved);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const changed = JSON.stringify(draft) !== JSON.stringify(saved);
+
+  const fields = kind === "recipe" ? RECIPE_FIELDS : MENU_FIELDS;
+  const values = draft[kind] as Record<string, boolean>;
+  const toggle = (field: string, on: boolean) => setDraft({ ...draft, [kind]: { ...draft[kind], [field]: on } });
+
+  const save = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/site-settings/card-info", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(draft),
+      });
+      if (!res.ok) throw new Error();
+      router.refresh();
+    } catch {
+      setError("Non sono riuscito a salvare. Riprova tra poco.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Panel
+      title="Informazioni sulle card"
+      icon={<IdCard />}
+      meta="Le scegli tu per tutti: le vedono anche gli ospiti e chi non è entrato"
+      className={className}
+      actions={
+        <Segmented<"recipe" | "menu">
+          label="Card da impostare"
+          value={kind}
+          onChange={setKind}
+          options={[
+            { value: "recipe", label: "Ricette" },
+            { value: "menu", label: "Menù" },
+          ]}
+        />
+      }
+    >
+      <div className="grid gap-[1.25em] @min-[760px]:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
+        <div>
+          {fields.map((f) => (
+            <SettingRow key={f.value} label={f.label} hint={f.hint}>
+              <Switch checked={values[f.value]} onChange={(on) => toggle(f.value, on)} label={f.label} hideLabel />
+            </SettingRow>
+          ))}
+        </div>
+
+        {/* anteprima con la bozza: card vere, non cliccabili */}
+        <div className="flex flex-col gap-2 rounded-ctl bg-blu-50 p-[0.75em]">
+          <p className="text-xs font-bold tracking-[0.08em] text-grigio uppercase">Anteprima</p>
+          <CardConfigProvider value={draft}>
+            <div inert className="flex flex-col gap-3">
+              <div className="flex flex-wrap items-start gap-3">
+                <figure className="flex w-[10.5rem] flex-col gap-1">
+                  {kind === "recipe" ? samples.recipe && <RecipeCard recipe={samples.recipe} /> : samples.menu && <MenuCard menu={samples.menu} />}
+                  <figcaption className="text-center text-[0.6875rem] text-grigio">stretta (telefono)</figcaption>
+                </figure>
+                <figure className="flex w-[15rem] max-w-full flex-col gap-1">
+                  {kind === "recipe" ? samples.recipe && <RecipeCard recipe={samples.recipe} /> : samples.menu && <MenuCard menu={samples.menu} />}
+                  <figcaption className="text-center text-[0.6875rem] text-grigio">larga (iPad, PC)</figcaption>
+                </figure>
+              </div>
+              <div>
+                {kind === "recipe" ? samples.recipe && <RecipeRow recipe={samples.recipe} /> : samples.menu && <MenuRow menu={samples.menu} />}
+                <p className="text-center text-[0.6875rem] text-grigio">vista a lista</p>
+              </div>
+            </div>
+          </CardConfigProvider>
+        </div>
+      </div>
+
+      {error && <p className="text-[0.8125rem] text-rosa">{error}</p>}
+      <div className="flex flex-wrap justify-end gap-2">
+        <Button variant="ghost" onClick={() => setDraft(saved)} disabled={!changed || saving}>
+          Annulla modifiche
+        </Button>
+        <Button onClick={save} disabled={!changed} loading={saving}>
+          Salva per tutti
+        </Button>
       </div>
     </Panel>
   );

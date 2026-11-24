@@ -322,3 +322,11 @@ model AdminPreference {
 
   admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
 }
+
+/** Impostazioni del sito decise dall'admin per tutti, una riga per chiave. Oggi solo «card-info»:
+    le informazioni mostrate sulle card delle liste (`lib/card-config.ts`). */
+model SiteSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}

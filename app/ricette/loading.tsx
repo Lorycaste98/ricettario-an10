@@ -1,7 +1,7 @@
-import { RecipeCardSkeleton } from "@/components/recipe/RecipeCardSkeleton";
+import { ListSkeleton } from "@/components/ui/ListSkeleton";
 import { Skeleton } from "@/components/ds/Progress";
 
-/** Stessa forma della libreria (PageHeader + ricerca + chip + griglia elastica). */
+/** Stessa forma della libreria (PageHeader + ricerca + chip + griglia o lista come la sceglie chi guarda). */
 export default function RicetteLoading() {
   return (
     <div className="flex flex-col gap-4">
@@ -15,11 +15,8 @@ export default function RicetteLoading() {
           <Skeleton key={i} className="h-(--h-sm) w-24 shrink-0 rounded-full" />
         ))}
       </div>
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(clamp(9.5rem,24cqi,13rem),1fr))] gap-(--gap)">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <RecipeCardSkeleton key={i} index={i} />
-        ))}
-      </div>
+      {/* stesse scelte della lista vera (griglia/lista, card per riga) */}
+      <ListSkeleton list="recipes" />
     </div>
   );
 }
