@@ -15,7 +15,7 @@ import { BackLink } from "@/components/ui/BackLink";
 import { ViewerImage } from "@/components/ui/ViewerImage";
 import { PageHeader } from "@/components/ds/PageHeader";
 import { GuestRatingTag, QuickRecipeTag, Tag } from "@/components/ds/Tag";
-import { An10Logo } from "@/components/brand/An10Logo";
+import { NoPhoto } from "@/components/recipe/NoPhoto";
 import { ClocheIcon, PotIcon } from "@/components/icons";
 import { MenuShoppingList } from "@/components/menu/MenuShoppingList";
 import { MenuCosts } from "@/components/menu/MenuCosts";
@@ -187,7 +187,7 @@ export default async function MenuDetailPage({ params }: Params) {
                     <span className="tabular flex size-7 shrink-0 items-center justify-center rounded-full bg-blu-120 text-[0.8125rem] font-bold text-blu-800">
                       {order + 1}
                     </span>
-                    <span className="relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-ctl bg-blu-100 text-blu-600">
+                    <span className="relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-ctl">
                       {recipe.photo ? (
                         <Image
                           src={recipe.photo}
@@ -197,11 +197,7 @@ export default async function MenuDetailPage({ params }: Params) {
                           sizes="48px"
                         />
                       ) : (
-                        <An10Logo
-                          variant="simbolo"
-                          title=""
-                          className="w-1/2"
-                        />
+                        <NoPhoto logo="w-1/2" />
                       )}
                     </span>
                     <span className="flex min-w-0 flex-1 flex-col gap-1">

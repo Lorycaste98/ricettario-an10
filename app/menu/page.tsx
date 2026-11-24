@@ -21,6 +21,7 @@ export default async function MenuListPage() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
+        brand
         title="Menù"
         meta={`${menus.length} menù${upcoming ? ` · ${upcoming} in programma` : ""}`}
         actions={<NewMenuLink />}

@@ -162,7 +162,7 @@ export function NavRail({ adminArea = false }: { adminArea?: boolean }) {
 }
 
 /** 9.2 · barra in basso (< 700px) */
-export function TabBar() {
+export function TabBar({ adminArea = false }: { adminArea?: boolean }) {
   const { main, admin } = useNavItems();
   const isActive = useIsActive();
   const { isAdmin, loading } = useAuth();
@@ -177,9 +177,16 @@ export function TabBar() {
         key={item.href}
         item={item}
         on={on}
-        className={clsx("flex min-w-0 flex-1 flex-col items-center gap-0.5 pt-1.5 text-[0.6875rem]", on ? "font-bold text-arancio" : "text-grigio")}
+        className={clsx("flex min-w-0 flex-1 flex-col items-center gap-0.5 pt-1.5 text-[0.6875rem]", on ? "font-bold text-white" : "text-nav-ink")}
       >
-        <span className="relative [--ring:white] [&>svg]:size-[1.375rem]">
+        {/* stessa resa della barra laterale (9.1): voce attiva su pastiglia arancio */}
+        <span
+          className={clsx(
+            "relative flex h-7 w-12 items-center justify-center rounded-full [&>svg]:size-[1.25rem]",
+            adminArea ? "[--ring:var(--color-adm-900)]" : "[--ring:var(--color-blu-800)]",
+            on && "bg-arancio-pieno text-white"
+          )}
+        >
           <Icon />
           <Badge n={item.badge} />
         </span>
@@ -191,15 +198,17 @@ export function TabBar() {
   return (
     <nav
       aria-label="Navigazione principale"
-      className="fixed inset-x-0 bottom-0 z-40 flex border-t border-blu-150 bg-white min-[700px]:hidden"
+      className={clsx("fixed inset-x-0 bottom-0 z-40 flex min-[700px]:hidden", adminArea ? "bg-adm-900" : "bg-blu-800")}
       style={{ paddingBottom: "max(env(safe-area-inset-bottom, 0px), 0.5rem)", height: "calc(var(--tabs-h) + env(safe-area-inset-bottom, 0px))" }}
     >
       {main.map(tab)}
       {admin && tab(admin)}
       {!loading &&
         (isAdmin ? (
-          <button type="button" onClick={() => setAccountOpen(true)} className="flex min-w-0 flex-1 flex-col items-center gap-0.5 pt-1.5 text-[0.6875rem] text-grigio">
-            <User className="size-[1.375rem]" />
+          <button type="button" onClick={() => setAccountOpen(true)} className="flex min-w-0 flex-1 flex-col items-center gap-0.5 pt-1.5 text-[0.6875rem] text-nav-ink">
+            <span className="flex h-7 w-12 items-center justify-center">
+              <User className="size-[1.25rem]" />
+            </span>
             Account
           </button>
         ) : (

@@ -13,6 +13,7 @@ export default async function PreferitiPage() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
+        brand
         title="Preferiti"
         meta={session ? "Salvati sul tuo account, su tutti i dispositivi" : "Salvati su questo dispositivo"}
       />

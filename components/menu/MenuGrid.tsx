@@ -10,6 +10,8 @@ import ReactPaginate from "react-paginate";
 import { clsx } from "clsx";
 import { ArrowDown, ArrowUp, Eye, EyeOff, Plus, Search, SlidersHorizontal } from "lucide-react";
 import { MenuCard } from "./MenuCard";
+import { MenuRow } from "./MenuRow";
+import { CollectionBody, pageSizeFor, useCollectionView } from "@/components/ui/CollectionView";
 import { Modal } from "@/components/ui/Modal";
 import { Button, IconButton } from "@/components/ds/Button";
 import { SearchField, Select } from "@/components/ds/Field";
@@ -19,7 +21,8 @@ import { type MenuSummary } from "@/lib/types";
 import { useAuth } from "@/components/AuthProvider";
 import { useLocalStore } from "@/lib/local-store";
 
-const PAGE_SIZE = 12;
+// Elementi per pagina: multipli delle card per riga (pageSizeFor), tetti fissi per 1 per riga e lista
+const PAGE = { base: 12, single: 8, list: 15 };
 
 type SortKey = "date" | "createdAt" | "name";
 type PublishedFilter = "all" | "published" | "draft";
@@ -66,6 +69,8 @@ interface Props {
 
 export function MenuGrid({ menus }: Props) {
   const { isAdmin } = useAuth();
+  // Griglia o lista + card per riga (scelte del dispositivo). Menù: card da 9rem → 2 sul telefono
+  const layout = useCollectionView({ storageKey: "menus", minCardRem: 9, autoCard: [15, 0.3, 20] });
   // Filtri per-scheda: persistono durante la navigazione ma si azzerano alla chiusura scheda.
   // Fa eccezione l'ordinamento (sort + order), salvato sul dispositivo.
   const [q, setQ] = useLocalStore<string>(K + "q", "", parseStr, undefined, "session");
@@ -78,11 +83,13 @@ export function MenuGrid({ menus }: Props) {
     undefined,
     "session"
   );
-  const [page, setPage] = useLocalStore<number>(K + "page", 0, parsePage, undefined, "session");
+  // Indice della PRIMA voce mostrata (non il numero di pagina): cambiando le card per riga, e quindi
+  // gli elementi per pagina, si resta sulla pagina che contiene le stesse voci
+  const [start, setStart] = useLocalStore<number>(K + "start", 0, parsePage, undefined, "session");
   const [filterOpen, setFilterOpen] = useState(false);
   const sortLabel = SORT_OPTIONS.find((o) => o.value === sort)?.label ?? "";
 
-  const resetPage = () => setPage(0);
+  const resetPage = () => setStart(0);
   const isFilterActive =
     sort !== "date" || order !== "asc" || (isAdmin && publishedFilter !== "all");
 
@@ -116,9 +123,10 @@ export function MenuGrid({ menus }: Props) {
     return list;
   }, [menus, q, sort, order, isAdmin, publishedFilter]);
 
-  const pageCount = Math.ceil(filtered.length / PAGE_SIZE);
-  const safePage = Math.min(page, Math.max(0, pageCount - 1));
-  const paginated = filtered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
+  const pageSize = pageSizeFor(layout.view, layout.cols, PAGE);
+  const pageCount = Math.ceil(filtered.length / pageSize);
+  const safePage = Math.min(Math.floor(start / pageSize), Math.max(0, pageCount - 1));
+  const paginated = filtered.slice(safePage * pageSize, (safePage + 1) * pageSize);
 
   const toggleOrder = () => {
     setOrder(order === "asc" ? "desc" : "asc");
@@ -191,17 +199,24 @@ export function MenuGrid({ menus }: Props) {
         </div>
       </div>
 
-      <p className="text-xs font-semibold tracking-[0.08em] text-grigio uppercase">
-        {q ? `${filtered.length} menù trovati` : "Tutti i menù"} · per {sortLabel.toLowerCase()}
-        {pageCount > 1 && ` · pagina ${safePage + 1} di ${pageCount}`}
-      </p>
+      <div className="flex items-center justify-between gap-3">
+        <p className="min-w-0 text-xs font-semibold tracking-[0.08em] text-grigio uppercase">
+          {q ? `${filtered.length} menù trovati` : "Tutti i menù"}
+          <span className="hidden @min-[620px]:inline"> · per {sortLabel.toLowerCase()}</span>
+          {pageCount > 1 && ` · pagina ${safePage + 1} di ${pageCount}`}
+        </p>
+        {paginated.length > 0 && layout.controls}
+      </div>
 
       {paginated.length > 0 ? (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(clamp(15rem,30cqi,20rem),1fr))] gap-(--gap)">
-          {paginated.map((m) => (
-            <MenuCard key={m.id} menu={m} />
-          ))}
-        </div>
+        <CollectionBody
+          view={layout.view}
+          gridRef={layout.ref}
+          gridStyle={layout.gridStyle}
+          fallbackCols="grid-cols-[repeat(auto-fill,minmax(clamp(15rem,30cqi,20rem),1fr))]"
+        >
+          {paginated.map((m) => (layout.view === "list" ? <MenuRow key={m.id} menu={m} /> : <MenuCard key={m.id} menu={m} />))}
+        </CollectionBody>
       ) : (
         <EmptyState
           icon={<Search />}
@@ -229,7 +244,7 @@ export function MenuGrid({ menus }: Props) {
           pageCount={pageCount}
           forcePage={safePage}
           onPageChange={({ selected }) => {
-            setPage(selected);
+            setStart(selected * pageSize);
             window.scrollTo({ top: 0, behavior: "smooth" });
           }}
           pageRangeDisplayed={3}
