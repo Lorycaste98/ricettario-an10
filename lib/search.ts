@@ -28,6 +28,21 @@ export function openSearch(query = "") {
   window.dispatchEvent(new CustomEvent<string>(OPEN_SEARCH_EVENT, { detail: query }));
 }
 
+// Overlay aperto o chiuso: lo scrive `SearchOverlay`, lo legge la navigazione per accendere la
+// voce «Cerca» (riquadro arancio) finché la ricerca è aperta. Store module-level come `favorites.ts`.
+let searchOpen = false;
+const searchOpenListeners = new Set<() => void>();
+export function setSearchOpenState(open: boolean) {
+  if (open === searchOpen) return;
+  searchOpen = open;
+  searchOpenListeners.forEach((l) => l());
+}
+export function subscribeSearchOpen(l: () => void) {
+  searchOpenListeners.add(l);
+  return () => searchOpenListeners.delete(l);
+}
+export const getSearchOpen = () => searchOpen;
+
 // ---------------------------------------------------------------------------
 // Indice preparato
 // ---------------------------------------------------------------------------

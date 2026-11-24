@@ -7,7 +7,7 @@ import { usePreferenceSync } from "@/lib/preferences";
 import { NavRail, TabBar, navToneFor } from "@/components/shell/AppNav";
 import { useAuth } from "@/components/AuthProvider";
 import { ADMIN_FORM_ROUTE } from "@/components/admin/admin-sections";
-import { CookingMiniBar, CookingRow, useHasCooking } from "@/components/shell/CookingBar";
+import { CookingMiniBar, CookingRow } from "@/components/shell/CookingBar";
 
 /**
  * Cornice dell'app (restyle, fase 2 — DESIGN.md D1).
@@ -30,7 +30,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   useNavHistoryTracker();
   // admin: preferenze della pagina Impostazioni allineate con l'account
   usePreferenceSync();
-  const cooking = useHasCooking();
   const { isAdmin, loading } = useAuth();
 
   // Tono della navigazione (D9); dietro le quinte (D7) anche fondi freddi
@@ -42,10 +41,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       className={clsx("flex min-h-dvh [--tabs-h:3.75rem]", admin ? "bg-adm-50" : "bg-blu-50")}
       style={
         {
-          // spazio in fondo su telefono: barra in basso (+ mini-barra se si sta cucinando)
-          "--bottom-space": cooking
-            ? "calc(var(--tabs-h) + env(safe-area-inset-bottom, 0px) + 4.75rem)"
-            : "calc(var(--tabs-h) + env(safe-area-inset-bottom, 0px) + 1rem)",
+          // spazio in fondo su telefono: barra in basso (la mini-barra «Sto cucinando» sta in cima)
+          "--bottom-space": "calc(var(--tabs-h) + env(safe-area-inset-bottom, 0px) + 1rem)",
         } as CSSProperties
       }
     >
@@ -60,6 +57,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="@container flex min-w-0 flex-1 flex-col">
         {/* nei form la barra 11.1 resta in alto: la fila «Sto cucinando» lì scorre via con la pagina */}
         <CookingRow sticky={!ADMIN_FORM_ROUTE.test(pathname)} />
+        {/* contenitore stretto: la mini-barra 9.3 è un banner in cima (in basso c'è la collinetta della lente) */}
+        <CookingMiniBar sticky={!ADMIN_FORM_ROUTE.test(pathname)} />
         <main
           className={clsx(
             // --main-px = margine laterale; a destra si allarga sotto il notch (iPhone in orizzontale).
@@ -75,7 +74,6 @@ export function AppShell({ children }: { children: ReactNode }) {
         >
           {children}
         </main>
-        <CookingMiniBar />
       </div>
       <TabBar tone={tone} />
     </div>

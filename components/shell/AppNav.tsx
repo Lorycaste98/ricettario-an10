@@ -2,15 +2,14 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, type ComponentType, type MouseEvent } from "react";
+import { useState, useSyncExternalStore, type ComponentType, type MouseEvent } from "react";
 import { clsx } from "clsx";
 import { motion, useReducedMotion } from "motion/react";
-import { BookOpen, ChefHat, Heart, Search, UserRound } from "lucide-react";
-import { openSearch } from "@/lib/search";
+import { BookOpen, ChefHat, Heart, UserRound } from "lucide-react";
+import { getSearchOpen, openSearch, subscribeSearchOpen } from "@/lib/search";
 import { useAuth } from "@/components/AuthProvider";
 import { useFavorites } from "@/lib/favorites";
-import { An10Logo } from "@/components/brand/An10Logo";
-import { An10ChefMark } from "@/components/brand/An10ChefMark";
+import { An10SearchMark } from "@/components/brand/An10SearchMark";
 import { ClocheIcon } from "@/components/icons";
 
 /**
@@ -26,10 +25,14 @@ import { ClocheIcon } from "@/components/icons";
  *
  * **Voce attiva**: riquadro `arancio-pieno` attorno a icona e scritta, che scivola fra le voci
  * (`layoutId`, 220 ms, niente rimbalzo; nessuno scorrimento con «Riduci movimento»). Parte al
- * tocco: lo stato ottimistico `pending` vale finché il pathname non cambia. Cerca non è mai attiva.
- * Il badge dei Preferiti resta rosa: l'arancio pieno è l'unica cosa arancio della barra.
+ * tocco: lo stato ottimistico `pending` vale finché il pathname non cambia. **Cerca** si accende
+ * finché l'overlay della ricerca è aperto (`subscribeSearchOpen` di `lib/search.ts`), poi il riquadro
+ * torna sulla pagina. Il badge dei Preferiti resta rosa: l'arancio pieno è l'unica cosa arancio della barra.
  *
- * Cerca sta in uno slot a sé (`NavSearchItem`), separato dalle voci-pagina.
+ * **Cerca = lente AN10** (9.6, `An10SearchMark`: il «10» dentro una lente, col cappello se sei
+ * entrato), in uno slot a sé (`NavSearchItem`): al centro della barra in basso su una **collinetta**
+ * del colore della barra, in cima alla barra laterale al posto del logo. Il logo non porta più a `/`:
+ * la vetrina pubblica è solo la pagina d'ingresso di chi apre il link (scelta B, 24/11/2026).
  */
 export type NavTone = "guest" | "chef" | "backstage";
 
@@ -85,13 +88,15 @@ const matches = (path: string, base: string) => path === base || path.startsWith
 function useActive() {
   const pathname = usePathname();
   const [pending, setPending] = useState<{ href: string; from: string } | null>(null);
+  const searchOpen = useSyncExternalStore(subscribeSearchOpen, getSearchOpen, () => false);
   const target = pending && pending.from === pathname ? pending.href : null;
-  const isActive = (item: Item) => (target ? target === item.href : (item.match ?? [item.href]).some((b) => matches(pathname, b)));
+  const isActive = (item: Item) =>
+    !searchOpen && (target ? target === item.href : (item.match ?? [item.href]).some((b) => matches(pathname, b)));
   const onNavigate = (item: Item) => (e: MouseEvent) => {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
     setPending({ href: item.href, from: pathname });
   };
-  return { isActive, onNavigate };
+  return { isActive, onNavigate, searchOpen };
 }
 
 const TONE = {
@@ -102,6 +107,7 @@ const TONE = {
     ink: "text-blu-800",
     hover: "hover:bg-blu-150",
     ring: "[--ring:var(--color-blu-100)]",
+    hump: "text-blu-100",
   },
   chef: {
     bar: "bg-blu-800 text-nav-ink",
@@ -110,6 +116,7 @@ const TONE = {
     ink: "text-nav-ink",
     hover: "hover:bg-blu-700 hover:text-white",
     ring: "[--ring:var(--color-blu-800)]",
+    hump: "text-blu-800",
   },
   backstage: {
     bar: "bg-adm-900 text-nav-ink",
@@ -118,6 +125,7 @@ const TONE = {
     ink: "text-nav-ink",
     hover: "hover:bg-white/10 hover:text-white",
     ring: "[--ring:var(--color-adm-900)]",
+    hump: "text-adm-900",
   },
 } as const;
 
@@ -189,18 +197,44 @@ function NavItem({ item, variant, tone, on, onClick }: { item: Item; variant: Va
   );
 }
 
+/** Collinetta sopra la barra in basso, del colore della barra, sotto la lente */
+function Hump({ tone }: { tone: NavTone }) {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 92 14"
+      preserveAspectRatio="none"
+      className={clsx("pointer-events-none absolute bottom-full left-1/2 h-3.5 w-[5.75rem] -translate-x-1/2 transition-colors duration-300", TONE[tone].hump)}
+    >
+      <path d="M0 14 C20 14 25 0 46 0 C67 0 72 14 92 14 Z" fill="currentColor" />
+      {/* visitatore: la barra chiara ha un filo in cima, la collinetta lo segue */}
+      {tone === "guest" && <path d="M0 13.5 C20 13.5 25 0.5 46 0.5 C67 0.5 72 13.5 92 13.5" fill="none" className="stroke-blu-150" strokeWidth={1} vectorEffect="non-scaling-stroke" />}
+    </svg>
+  );
+}
+
 /**
- * Voce «Cerca»: un'azione, non una pagina (apre l'overlay della ricerca globale, mai attiva).
- * Slot a sé: è il posto destinato al logo «10» centrale.
+ * 9.6 · voce «Cerca»: un'azione, non una pagina (apre l'overlay della ricerca globale). Lente AN10
+ * un po' più grande delle altre icone; accesa (riquadro arancio) finché la ricerca è aperta.
+ * Barra in basso: al centro, alzata sulla collinetta. Barra laterale: in cima, al posto del logo.
  */
-export function NavSearchItem({ variant, tone }: { variant: Variant; tone: NavTone }) {
+export function NavSearchItem({ variant, tone, on }: { variant: Variant; tone: NavTone; on: boolean }) {
   const t = TONE[tone];
   const s = SHAPE[variant];
+  const chef = tone !== "guest";
   return (
-    <button type="button" onClick={() => openSearch()} className={s.outer}>
-      <span className={clsx(s.box, t.ink, t.hover)}>
-        <span className={s.icon}>
-          <Search />
+    <button type="button" onClick={() => openSearch()} aria-label="Cerca" className={clsx(s.outer, "relative")}>
+      {variant === "tab" && <Hump tone={tone} />}
+      <span className={clsx(s.box, variant === "tab" ? "-mt-[1.125rem]" : "mb-1", on ? "font-bold text-white" : clsx(t.ink, t.hover))}>
+        {on && <ActiveBox id={`nav-active-${variant}`} />}
+        {/* la lente si appoggia in basso: col cappello cresce verso l'alto, la scritta resta allineata */}
+        <span className={clsx("relative flex w-full items-end justify-center", variant === "tab" ? "h-[2.5rem]" : "h-[3.25rem]")}>
+          {/* misura in linea: la regola `[&_svg]:size-…` delle voci la rimpicciolirebbe come le altre icone */}
+          <An10SearchMark
+            chef={chef}
+            className={clsx(!on && tone === "guest" && "text-blu-700")}
+            style={{ width: variant === "tab" ? (chef ? "1.875rem" : "2.25rem") : chef ? "2.125rem" : "2.5rem", height: "auto" }}
+          />
         </span>
         <span className="relative max-w-full truncate px-1">Cerca</span>
       </span>
@@ -211,7 +245,7 @@ export function NavSearchItem({ variant, tone }: { variant: Variant; tone: NavTo
 /** 9.1 · barra laterale (≥ 700px) */
 export function NavRail({ tone }: { tone: NavTone }) {
   const { before, after, you } = useNavItems();
-  const { isActive, onNavigate } = useActive();
+  const { isActive, onNavigate, searchOpen } = useActive();
   const t = TONE[tone];
   const item = (i: Item) => <NavItem key={i.href} item={i} variant="rail" tone={tone} on={isActive(i)} onClick={onNavigate(i)} />;
 
@@ -231,16 +265,9 @@ export function NavRail({ tone }: { tone: NavTone }) {
         width: "calc(clamp(4.5rem, calc(4.5rem + 12 * var(--f)), 5.25rem) + env(safe-area-inset-left, 0px))",
       }}
     >
-      {/* entrato: il «10» porta il cappello da cuoco (D9) */}
-      <Link href="/" aria-label="AN10 · home" className={clsx("mb-2", tone === "guest" ? "text-blu-700" : "text-white")}>
-        {tone === "guest" ? (
-          <An10Logo variant="simbolo" title="" className="size-10" />
-        ) : (
-          <An10ChefMark className="h-[4.25rem] w-auto" />
-        )}
-      </Link>
+      {/* in cima la lente AN10 (Cerca, 9.6): entrato, col cappello da cuoco (D9) */}
+      <NavSearchItem variant="rail" tone={tone} on={searchOpen} />
       {before.map(item)}
-      <NavSearchItem variant="rail" tone={tone} />
       {after.map(item)}
       <div className="mt-auto flex w-full flex-col items-center">{you && item(you)}</div>
     </nav>
@@ -250,7 +277,7 @@ export function NavRail({ tone }: { tone: NavTone }) {
 /** 9.2 · barra in basso (< 700px) */
 export function TabBar({ tone }: { tone: NavTone }) {
   const { before, after, you } = useNavItems();
-  const { isActive, onNavigate } = useActive();
+  const { isActive, onNavigate, searchOpen } = useActive();
   const t = TONE[tone];
   const item = (i: Item) => <NavItem key={i.href} item={i} variant="tab" tone={tone} on={isActive(i)} onClick={onNavigate(i)} />;
 
@@ -261,7 +288,7 @@ export function TabBar({ tone }: { tone: NavTone }) {
       style={{ paddingBottom: "max(env(safe-area-inset-bottom, 0px), 0.5rem)", height: "calc(var(--tabs-h) + env(safe-area-inset-bottom, 0px))" }}
     >
       {before.map(item)}
-      <NavSearchItem variant="tab" tone={tone} />
+      <NavSearchItem variant="tab" tone={tone} on={searchOpen} />
       {after.map(item)}
       {/* finché la sessione non è nota la quinta voce tiene il posto, vuota */}
       {you ? item(you) : <span aria-hidden className="flex-1" />}

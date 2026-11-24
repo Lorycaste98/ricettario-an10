@@ -17,7 +17,8 @@ import { PotIcon } from "@/components/icons";
 /**
  * «Sto cucinando» nella cornice (tavola 8.4 e 9.3). Sostituisce il vecchio bottone flottante:
  * - pagina larga (≥ 620px di contenitore): fila blu in cima, una scheda per ricetta in corso;
- * - pagina stretta: mini-barra blu sopra la barra in basso.
+ * - pagina stretta: mini-barra blu in cima come un banner (24/11/2026: prima stava sopra la barra in
+ *   basso, ma lì ora c'è la collinetta della lente «Cerca»).
  * Toccando si apre il pannello di sempre (`CookingDock`, via `openCookingDock`).
  * I dati vengono da `lib/cooking-session.ts` e `lib/recipe-progress.ts`, che non cambiano.
  */
@@ -92,8 +93,8 @@ export function CookingRow({ sticky = true }: { sticky?: boolean }) {
   );
 }
 
-/** 9.3 · mini-barra sopra la barra in basso (contenitori stretti) */
-export function CookingMiniBar() {
+/** 9.3 · mini-barra in cima alla pagina, come un banner (contenitori stretti). Resta in vista mentre si scorre. */
+export function CookingMiniBar({ sticky = true }: { sticky?: boolean }) {
   const { session, recipes, now, finished } = useCookingData();
   if (!session.hydrated || recipes.length === 0) return null;
   const timer = pickTimer(session.timers);
@@ -103,8 +104,8 @@ export function CookingMiniBar() {
       type="button"
       onClick={openCookingDock}
       aria-label={`Sto cucinando: ${recipes.length} ricette${finished ? `, ${finished} timer finiti` : ""}. Apri il pannello`}
-      className="fixed inset-x-2.5 z-40 flex items-center gap-2.5 rounded-[0.875rem] bg-blu-600 px-3 py-2 text-left text-white shadow-lg @min-[620px]:hidden"
-      style={{ bottom: "calc(var(--tabs-h) + env(safe-area-inset-bottom, 0px) + 0.5rem)" }}
+      className={clsx(sticky && "sticky top-0 z-30", "flex w-full items-center gap-2.5 bg-blu-600 px-(--pad) pb-2 text-left text-white @min-[620px]:hidden")}
+      style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.5rem)" }}
     >
       <span className="relative shrink-0">
         <PotIcon className="size-6" />
@@ -125,7 +126,7 @@ export function CookingMiniBar() {
   );
 }
 
-/** true se c'è almeno una ricetta in corso (serve alla cornice per lasciare spazio alla mini-barra) */
+/** true se c'è almeno una ricetta in corso */
 export function useHasCooking() {
   const session = useCookingSession();
   return session.hydrated && session.recipes.length > 0;

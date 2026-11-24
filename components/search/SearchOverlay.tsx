@@ -24,6 +24,7 @@ import {
   normalizeSearchText,
   prepareIndex,
   runSearch,
+  setSearchOpenState,
   topIngredients,
   type PreparedIndex,
 } from "@/lib/search";
@@ -127,6 +128,11 @@ export function SearchOverlay() {
     if (cache && cache.admin === isAdmin && Date.now() - cache.at < STALE_MS) return;
     load();
   }, [open, authLoading, isAdmin, load]);
+
+  // La navigazione accende «Cerca» finché l'overlay è aperto
+  useEffect(() => {
+    setSearchOpenState(open);
+  }, [open]);
 
   // Dialog nativo (top layer, Esc, focus) + pagina sotto ferma
   useEffect(() => {
