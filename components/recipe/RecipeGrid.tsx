@@ -5,6 +5,8 @@ import ReactPaginate from "react-paginate";
 import { clsx } from "clsx";
 import { ArrowDown, ArrowUp, Eye, EyeOff, Hash, Plus, Search, SlidersHorizontal } from "lucide-react";
 import { RecipeCard } from "./RecipeCard";
+import { RecipeRow } from "./RecipeRow";
+import { CollectionBody, useCollectionView } from "@/components/ui/CollectionView";
 import { TagFilterCombobox } from "./TagFilterCombobox";
 import { type RecipeSummary, type Category, type Tag } from "@/lib/types";
 import { useAuth } from "@/components/AuthProvider";
@@ -102,6 +104,8 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
   );
   const [page, setPage] = useLocalStore<number>(RK + "page", 0, parsePage, undefined, "session");
   const [filterOpen, setFilterOpen] = useState(false);
+  // Griglia o lista + card per riga (scelte del dispositivo). Ricette: card da 6.5rem → 3 sul telefono
+  const layout = useCollectionView({ storageKey: "recipes", minCardRem: 6.5, autoCard: [9.5, 0.24, 13] });
   const [tagsOpen, setTagsOpen] = useState(false);
 
   // Ordinamento di default: admin → "Il mio voto" personale, visitatore → "Valutazione".
@@ -265,18 +269,25 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
         </div>
       )}
 
-      <p className="text-xs font-semibold tracking-[0.08em] text-grigio uppercase">
-        {filtered.length} ricett{filtered.length === 1 ? "a" : "e"}
-        {(hasActiveFilters || q) && " trovate"} · ordinate per {sortLabel.toLowerCase()}
-        {pageCount > 1 && ` · pagina ${safePage + 1} di ${pageCount}`}
-      </p>
+      <div className="flex items-center justify-between gap-3">
+        <p className="min-w-0 text-xs font-semibold tracking-[0.08em] text-grigio uppercase">
+          {filtered.length} ricett{filtered.length === 1 ? "a" : "e"}
+          {(hasActiveFilters || q) && " trovate"}
+          <span className="hidden @min-[620px]:inline"> · ordinate per {sortLabel.toLowerCase()}</span>
+          {pageCount > 1 && ` · pagina ${safePage + 1} di ${pageCount}`}
+        </p>
+        {paginated.length > 0 && layout.controls}
+      </div>
 
       {paginated.length > 0 ? (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(clamp(9.5rem,24cqi,13rem),1fr))] gap-(--gap)">
-          {paginated.map((r) => (
-            <RecipeCard key={r.id} recipe={r} />
-          ))}
-        </div>
+        <CollectionBody
+          view={layout.view}
+          gridRef={layout.ref}
+          gridStyle={layout.gridStyle}
+          fallbackCols="grid-cols-[repeat(auto-fill,minmax(clamp(9.5rem,24cqi,13rem),1fr))]"
+        >
+          {paginated.map((r) => (layout.view === "list" ? <RecipeRow key={r.id} recipe={r} /> : <RecipeCard key={r.id} recipe={r} />))}
+        </CollectionBody>
       ) : (
         <EmptyState
           icon={<Search />}

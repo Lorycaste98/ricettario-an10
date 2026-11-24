@@ -4,11 +4,15 @@ import Link from "next/link";
 import { Heart } from "lucide-react";
 import { EmptyState } from "@/components/ds/Feedback";
 import { RecipeCard } from "@/components/recipe/RecipeCard";
+import { RecipeRow } from "@/components/recipe/RecipeRow";
+import { CollectionBody, useCollectionView } from "@/components/ui/CollectionView";
 import { useFavorites } from "@/lib/favorites";
 import type { RecipeSummary } from "@/lib/types";
 
 export function FavoritesClient({ recipes }: { recipes: RecipeSummary[] }) {
   const { favorites, hydrated, reconcile } = useFavorites();
+  // stessa vista della libreria (griglia/lista e card per riga condivise)
+  const layout = useCollectionView({ storageKey: "recipes", minCardRem: 6.5, autoCard: [9.5, 0.24, 13] });
 
   const validIds = useMemo(() => new Set(recipes.map((r) => r.id)), [recipes]);
 
@@ -48,14 +52,20 @@ export function FavoritesClient({ recipes }: { recipes: RecipeSummary[] }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-xs font-semibold tracking-[0.08em] text-grigio uppercase">
-        {filtered.length} ricett{filtered.length === 1 ? "a" : "e"} preferit{filtered.length === 1 ? "a" : "e"}
-      </p>
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(clamp(9.5rem,24cqi,13rem),1fr))] gap-(--gap)">
-        {filtered.map((r) => (
-          <RecipeCard key={r.id} recipe={r} />
-        ))}
+      <div className="flex items-center justify-between gap-3">
+        <p className="min-w-0 text-xs font-semibold tracking-[0.08em] text-grigio uppercase">
+          {filtered.length} ricett{filtered.length === 1 ? "a" : "e"} preferit{filtered.length === 1 ? "a" : "e"}
+        </p>
+        {layout.controls}
       </div>
+      <CollectionBody
+        view={layout.view}
+        gridRef={layout.ref}
+        gridStyle={layout.gridStyle}
+        fallbackCols="grid-cols-[repeat(auto-fill,minmax(clamp(9.5rem,24cqi,13rem),1fr))]"
+      >
+        {filtered.map((r) => (layout.view === "list" ? <RecipeRow key={r.id} recipe={r} /> : <RecipeCard key={r.id} recipe={r} />))}
+      </CollectionBody>
     </div>
   );
 }
