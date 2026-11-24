@@ -27,7 +27,8 @@ export function formatMenuWhen(date: string | null, servingTime: string | null) 
  * sempre: quasi nessun menù ha foto proprie e molte ricette non ne hanno.
  * Se almeno una ricetta ha la foto, un piatto tondo con quella foto è appoggiato in basso a
  * sinistra, sopra il bordo del cartoncino (che si sposta a destra, lontano dal biglietto della
- * data); senza foto il cartoncino resta solo, centrato. Card stretta: 2 nomi, da 13rem 3. Agli angoli in alto, sulla tovaglia: a
+ * data); senza foto il cartoncino resta solo, centrato. Card stretta: 2 nomi, ognuno fino a due
+ * righe con interlinea stretta e più spazio fra un nome e l'altro; da 13rem 3 nomi su una riga. Agli angoli in alto, sulla tovaglia: a
  * sinistra la data come biglietto del calendario (8.12, con l'ora del servizio), a destra la
  * medaglia del voto ospiti (6.11, media di tutti i voti arrivati dal link del menù), che così sta
  * sul menù e non su un piatto. Sotto: nome, persone e ricette.
@@ -62,29 +63,34 @@ export function MenuCard({ menu }: { menu: MenuSummary }) {
         <div className={clsx("absolute inset-0", hidden && "opacity-60 saturate-50")}>
           <div
             className={clsx(
-              "absolute top-[4%] bottom-[4%] flex -rotate-2 flex-col items-center justify-center gap-[0.35em] rounded-[0.5rem] bg-white text-center",
+              "absolute top-[4%] bottom-[4%] flex -rotate-2 flex-col items-center justify-center gap-[0.25em] @min-[13rem]/card:gap-[0.35em] rounded-[0.5rem] bg-white text-center",
               "shadow-[0_1px_2px_oklch(25%_0.038_228/.12),0_10px_22px_-8px_oklch(25%_0.038_228/.35)]",
               "transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:rotate-0 motion-reduce:transition-none",
               // con la foto il testo si tiene a destra del piatto
               photo ? "left-[25%] w-[72%] pr-[6%] pl-[13%]" : "left-[18%] w-[64%] px-[8%]"
             )}
           >
-            <ClocheIcon className="size-[clamp(0.875rem,9cqi,1.375rem)] shrink-0 text-blu-800" aria-hidden />
+            <ClocheIcon className="size-[0.8125rem] shrink-0 text-blu-800 @min-[13rem]/card:size-[clamp(0.875rem,9cqi,1.375rem)]" aria-hidden />
             <span aria-hidden className="w-[38%] border-t border-blu-150" />
-            <ul className="flex w-full min-w-0 flex-col gap-[0.25em] text-[0.75rem] leading-tight @min-[13rem]/card:text-[clamp(0.75rem,5cqi,0.9375rem)]">
+            <ul className="flex w-full min-w-0 flex-col gap-[0.5em] text-[0.75rem] @min-[13rem]/card:gap-[0.25em] @min-[13rem]/card:text-[clamp(0.75rem,5cqi,0.9375rem)]">
               {names.map((name, i) => (
                 <li
                   key={i}
-                  className={clsx("truncate font-semibold", hidden ? "text-grigio" : "text-blu-950", i === 2 && "hidden @min-[13rem]/card:block")}
+                  // stretta: il nome va su due righe, strette fra loro (interlinea 1.05) e più distanti dal nome dopo
+                  className={clsx(
+                    "line-clamp-2 leading-[1.05] font-semibold [overflow-wrap:anywhere] hyphens-auto @min-[13rem]/card:line-clamp-1 @min-[13rem]/card:leading-tight",
+                    hidden ? "text-grigio" : "text-blu-950",
+                    i === 2 && "hidden @min-[13rem]/card:block"
+                  )}
                 >
                   {name}
                 </li>
               ))}
               {moreNarrow > 0 && (
-                <li className={clsx("font-medium @min-[13rem]/card:hidden", hidden ? "text-grigio-chiaro" : "text-grigio")}>{moreLabel(moreNarrow)}</li>
+                <li className={clsx("font-medium leading-tight @min-[13rem]/card:hidden", hidden ? "text-grigio-chiaro" : "text-grigio")}>{moreLabel(moreNarrow)}</li>
               )}
               {moreWide > 0 && (
-                <li className={clsx("hidden font-medium @min-[13rem]/card:block", hidden ? "text-grigio-chiaro" : "text-grigio")}>{moreLabel(moreWide)}</li>
+                <li className={clsx("hidden leading-tight font-medium @min-[13rem]/card:block", hidden ? "text-grigio-chiaro" : "text-grigio")}>{moreLabel(moreWide)}</li>
               )}
             </ul>
           </div>
