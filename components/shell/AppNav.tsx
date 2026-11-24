@@ -29,8 +29,7 @@ import { ClocheIcon } from "@/components/icons";
  * finché l'overlay della ricerca è aperto (`subscribeSearchOpen` di `lib/search.ts`), poi il riquadro
  * torna sulla pagina. Il badge dei Preferiti resta rosa: l'arancio pieno è l'unica cosa arancio della barra.
  *
- * **Cerca = lente AN10** (9.6, `An10SearchMark`: il «10» dentro una lente, col cappello se sei
- * entrato), in uno slot a sé (`NavSearchItem`): al centro della barra in basso su una **collinetta**
+ * **Cerca = lente AN10** (9.6, `An10SearchMark`: il «10» dentro una lente), in uno slot a sé (`NavSearchItem`): al centro della barra in basso su una **collinetta**
  * del colore della barra, in cima alla barra laterale al posto del logo. Il logo non porta più a `/`:
  * la vetrina pubblica è solo la pagina d'ingresso di chi apre il link (scelta B, 24/11/2026).
  */
@@ -204,7 +203,7 @@ function Hump({ tone }: { tone: NavTone }) {
       aria-hidden
       viewBox="0 0 92 14"
       preserveAspectRatio="none"
-      className={clsx("pointer-events-none absolute bottom-full left-1/2 h-3.5 w-[5.75rem] -translate-x-1/2 transition-colors duration-300", TONE[tone].hump)}
+      className={clsx("pointer-events-none absolute bottom-[calc(100%-1px)] left-1/2 h-[calc(0.875rem+1px)] w-[5.75rem] -translate-x-1/2 transition-colors duration-300", TONE[tone].hump)}
     >
       <path d="M0 14 C20 14 25 0 46 0 C67 0 72 14 92 14 Z" fill="currentColor" />
       {/* visitatore: la barra chiara ha un filo in cima, la collinetta lo segue */}
@@ -221,19 +220,17 @@ function Hump({ tone }: { tone: NavTone }) {
 export function NavSearchItem({ variant, tone, on }: { variant: Variant; tone: NavTone; on: boolean }) {
   const t = TONE[tone];
   const s = SHAPE[variant];
-  const chef = tone !== "guest";
   return (
     <button type="button" onClick={() => openSearch()} aria-label="Cerca" className={clsx(s.outer, "relative")}>
       {variant === "tab" && <Hump tone={tone} />}
       <span className={clsx(s.box, variant === "tab" ? "-mt-[1.125rem]" : "mb-1", on ? "font-bold text-white" : clsx(t.ink, t.hover))}>
         {on && <ActiveBox id={`nav-active-${variant}`} />}
-        {/* la lente si appoggia in basso: col cappello cresce verso l'alto, la scritta resta allineata */}
+        {/* la lente si appoggia in basso: la scritta resta allineata a quelle delle altre voci */}
         <span className={clsx("relative flex w-full items-end justify-center", variant === "tab" ? "h-[2.5rem]" : "h-[3.25rem]")}>
           {/* misura in linea: la regola `[&_svg]:size-…` delle voci la rimpicciolirebbe come le altre icone */}
           <An10SearchMark
-            chef={chef}
             className={clsx(!on && tone === "guest" && "text-blu-700")}
-            style={{ width: variant === "tab" ? (chef ? "1.875rem" : "2.25rem") : chef ? "2.125rem" : "2.5rem", height: "auto" }}
+            style={{ width: variant === "tab" ? "2.25rem" : "2.5rem", height: "auto" }}
           />
         </span>
         <span className="relative max-w-full truncate px-1">Cerca</span>
@@ -265,7 +262,7 @@ export function NavRail({ tone }: { tone: NavTone }) {
         width: "calc(clamp(4.5rem, calc(4.5rem + 12 * var(--f)), 5.25rem) + env(safe-area-inset-left, 0px))",
       }}
     >
-      {/* in cima la lente AN10 (Cerca, 9.6): entrato, col cappello da cuoco (D9) */}
+      {/* in cima la lente AN10 (Cerca, 9.6) */}
       <NavSearchItem variant="rail" tone={tone} on={searchOpen} />
       {before.map(item)}
       {after.map(item)}

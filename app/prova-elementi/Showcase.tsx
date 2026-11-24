@@ -88,11 +88,11 @@ export function Showcase() {
           <Item code="D8" label="simbolo, su blu">
             <span className="rounded-[1.25rem] bg-blu-600 p-3 text-white"><An10Logo variant="simbolo" className="size-16" /></span>
           </Item>
-          <Item code="9.6" label="lente «Cerca», visitatore">
+          <Item code="9.6" label="lente «Cerca», barra chiara">
             <span className="flex rounded-[1.25rem] bg-blu-100 p-3 text-blu-700"><An10SearchMark style={{ width: "4rem", height: "auto" }} /></span>
           </Item>
-          <Item code="9.6" label="lente «Cerca», sei entrato (D9)">
-            <span id="chefmark" className="flex rounded-[1.25rem] bg-blu-800 p-3 text-white"><An10SearchMark chef style={{ width: "4rem", height: "auto" }} /></span>
+          <Item code="9.6" label="lente «Cerca», barra scura">
+            <span className="flex rounded-[1.25rem] bg-blu-800 p-3 text-white"><An10SearchMark style={{ width: "4rem", height: "auto" }} /></span>
           </Item>
         </Section>
 
