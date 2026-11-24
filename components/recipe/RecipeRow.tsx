@@ -16,7 +16,8 @@ import { RatingMedal } from "./RatingMedal";
  * a sinistra il piatto (foto tonda con il bordo, gemella della card 8.1) con la medaglia 6.11 del
  * voto ospiti in basso a destra, poi il nome e i puntini di guida che portano a pentola e cuore.
  * Sotto: categoria, tempo (ambra), porzioni, cotture, numero di voti, il mio voto (indaco).
- * Non pronta (solo admin): piatto sbiadito e mini-timbro tratteggiato con l'occhio barrato sul bordo.
+ * Non pronta (solo admin): riga con contorno tratteggiato su bianco (come la card 8.1), piatto
+ * sbiadito e mini-timbro tratteggiato con l'occhio barrato sul bordo.
  * Ogni ricetta è a sé, **senza scheda**: appoggiata sul fondo pagina e separata dallo spazio
  * (`CollectionBody` con `list="stack"`); il foglio unico la faceva sembrare un gruppo.
  * È un `@container/row`: da 26rem porzioni e cotture, da 30rem il numero di voti, da 34rem piatto e nome più grandi.
@@ -28,7 +29,10 @@ export function RecipeRow({ recipe }: { recipe: RecipeSummary }) {
     <Link
       href={`/ricette/${recipe.id}`}
       className={clsx(
-        "group @container/row flex min-w-0 items-center gap-3 rounded-ctl px-1 py-1.5 hover:bg-blu-100",
+        // bordo trasparente su tutte: le righe non pronte hanno il tratteggio senza spostare nulla
+        "group @container/row flex min-w-0 items-center gap-3 rounded-ctl border-2 px-1 py-1.5",
+        // non pronta: contorno tratteggiato su bianco come la card 8.1 (le righe non hanno bordo: così salta all'occhio)
+        c.hidden ? "border-dashed border-blu-250 bg-white hover:bg-blu-50" : "border-transparent hover:bg-blu-100",
         "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-blu-600/35",
         pressCls
       )}
