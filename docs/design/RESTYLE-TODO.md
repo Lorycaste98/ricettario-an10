@@ -230,6 +230,7 @@
 ## Fase 10 · Rilascio
 **Si fa solo dopo l'approvazione della fase 9.**
 - [ ] Ultimo controllo: `npm run build`, `tsc` e lint puliti; nessuna pagina di prova temporanea rimasta.
+- [ ] **Migrazioni del database applicate prima del merge** (il codice del restyle le usa: `AdminPreference` per le preferenze dell'account, `SiteSetting` per le informazioni sulle card). Controllo: `migrate status` deve dire «Database schema is up to date». Da qui la connessione diretta di Supabase non è raggiungibile: si passa dal pooler in modalità sessione (stesso host e credenziali di `DATABASE_URL`, porta 5432 invece di 6543), lanciato dal proprietario: `SESSION_URL=$(grep -E '^DATABASE_URL=' .env | head -1 | sed -E 's/^DATABASE_URL="?//; s/"$//; s/:6543\//:5432\//') && DATABASE_URL="$SESSION_URL" npx prisma migrate deploy` (poi `migrate status` con lo stesso indirizzo). Sono solo tabelle nuove: applicarle prima non tocca la produzione.
 - [ ] Eliminare `app/prova-elementi/` (pagina di prova dei componenti).
 - [ ] Unione di `feat/restyle-frontend` in `main` e pubblicazione in produzione.
 - [ ] Prova veloce in produzione (vetrina, accesso, una ricetta, un menù, Gestione).
