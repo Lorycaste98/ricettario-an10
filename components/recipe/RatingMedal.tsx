@@ -44,3 +44,35 @@ export function RatingMedal({
     </span>
   );
 }
+
+/**
+ * 6.12 · medaglia del **mio voto** (voto personale dell'admin, `RecipeRating`), gemella della 6.11:
+ * tondo indaco `mio-ink` (il colore del voto personale, 6.3) col bordo bianco, dietro il numero il
+ * **cappello da cuoco** pieno in un indaco più chiaro, cifre bianche. Numero intero (il voto
+ * personale è 1-10 senza decimali), quindi un po' più piccola della 6.11. Sul piatto sta in basso
+ * a sinistra, speculare a quella degli ospiti. Posizione e misura dal chiamante, come la 6.11.
+ */
+export function MyRatingMedal({ value, muted = false, className }: { value: number; muted?: boolean; className?: string }) {
+  return (
+    <span
+      className={clsx(
+        "tabular flex aspect-square items-center justify-center rounded-full leading-none font-extrabold shadow-[0_0_0_3px_white,0_3px_6px_-2px_oklch(25%_0.038_228/.35)]",
+        muted ? "bg-blu-120 text-grigio" : "bg-mio-ink text-white",
+        className
+      )}
+      title={`Il mio voto: ${value}/10`}
+    >
+      {/* cappello da cuoco pieno: tre sbuffi in cima e la fascia, un indaco più chiaro dietro il numero */}
+      <svg viewBox="0 0 100 100" aria-hidden className={clsx("absolute inset-[10%] size-[80%]", muted ? "text-blu-200" : "text-[oklch(57%_0.15_270)]")}>
+        <g fill="currentColor">
+          <circle cx="29" cy="45" r="17" />
+          <circle cx="50" cy="34" r="21" />
+          <circle cx="71" cy="45" r="17" />
+          <rect x="27" y="44" width="46" height="26" />
+          <rect x="27" y="73" width="46" height="13" rx="4" />
+        </g>
+      </svg>
+      <span className="relative">{Math.round(value)}</span>
+    </span>
+  );
+}

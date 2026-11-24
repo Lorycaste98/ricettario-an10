@@ -20,7 +20,7 @@ export const RECIPE_FIELDS: { value: RecipeField; label: string; hint: string; a
   { value: "reviewCount", label: "Numero di voti", hint: "quanti ospiti hanno votato" },
   { value: "tags", label: "Tag", hint: "i primi tag della ricetta" },
   { value: "actions", label: "Pentola e cuore", hint: "«Sto cucinando» e preferiti" },
-  { value: "myRating", label: "Il mio voto", hint: "solo per chi è entrato", adminOnly: true },
+  { value: "myRating", label: "Il mio voto", hint: "medaglia indaco col cappello, solo per chi è entrato", adminOnly: true },
   { value: "cookCount", label: "Volte cucinata", hint: "solo per chi è entrato", adminOnly: true },
 ];
 

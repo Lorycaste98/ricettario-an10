@@ -10,7 +10,7 @@ import { An10Logo } from "@/components/brand/An10Logo";
 import { PotIcon } from "@/components/icons";
 import { pressCls, useCardInfo } from "./card-info";
 import { useCardConfig } from "@/components/CardConfigProvider";
-import { RatingMedal } from "./RatingMedal";
+import { MyRatingMedal, RatingMedal } from "./RatingMedal";
 
 /**
  * 8.10 · riga ricetta «Carta» (vista a lista: libreria, preferiti). Come la carta di un ristorante:
@@ -75,6 +75,14 @@ export function RecipeRow({ recipe }: { recipe: RecipeSummary }) {
           className="absolute -right-2 -bottom-1.5 w-[1.875rem] text-[0.6875rem] @min-[34rem]/row:w-[2.125rem] @min-[34rem]/row:text-[0.75rem]"
         />
       )}
+      {/* il mio voto (6.12): speculare, in basso a sinistra */}
+      {f.myRating && c.mine != null && (
+        <MyRatingMedal
+          value={c.mine}
+          muted={c.hidden}
+          className="absolute -bottom-1.5 -left-2 w-[1.625rem] text-[0.6875rem] @min-[34rem]/row:w-[1.875rem]"
+        />
+      )}
       </span>
 
       <span className="flex min-w-0 flex-1 flex-col gap-1">
@@ -130,7 +138,6 @@ export function RecipeRow({ recipe }: { recipe: RecipeSummary }) {
                 {c.guest.count} {c.guest.count === 1 ? "voto" : "voti"}
               </span>
             )}
-            {f.myRating && c.mine != null && <span className={clsx("tabular font-bold", !c.hidden && "text-mio-ink")}>mio {c.mine}</span>}
           </span>
         </span>
         {f.tags && recipe.tags.length > 0 && (

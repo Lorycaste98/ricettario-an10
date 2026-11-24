@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { clsx } from "clsx";
 import { Clock, Users } from "lucide-react";
-import { RatingMedal } from "./RatingMedal";
+import { MyRatingMedal, RatingMedal } from "./RatingMedal";
 import { type RecipeSummary, formatServings } from "@/lib/types";
 import { FavoriteButton } from "./FavoriteButton";
 import { CookingButton } from "@/components/cooking/CookingButton";
@@ -85,6 +85,14 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
             className="absolute -right-[4%] -bottom-[2%] w-[clamp(2rem,27cqi,3.25rem)] text-[clamp(0.6875rem,8cqi,1rem)]"
           />
         )}
+        {/* il mio voto (6.12): speculare, in basso a sinistra, un po' più piccola */}
+        {f.myRating && c.mine != null && (
+          <MyRatingMedal
+            value={c.mine}
+            muted={c.hidden}
+            className="absolute -bottom-[2%] -left-[4%] w-[clamp(1.75rem,22cqi,2.625rem)] text-[clamp(0.6875rem,7.5cqi,0.9375rem)]"
+          />
+        )}
       </div>
 
       <h3
@@ -129,9 +137,6 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
           <span className="tabular whitespace-nowrap">
             {c.guest.count} {c.guest.count === 1 ? "voto" : "voti"}
           </span>
-        )}
-        {f.myRating && c.mine != null && (
-          <span className={clsx("tabular font-bold whitespace-nowrap", !c.hidden && "text-mio-ink")}>mio {c.mine}</span>
         )}
       </span>
       {f.tags && recipe.tags.length > 0 && (
