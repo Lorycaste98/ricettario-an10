@@ -17,7 +17,7 @@ import { pressCls, useCardInfo } from "./card-info";
  * dall'alto: ritagliata a cerchio con il bordo bianco e un'ombra morbida, appoggiata sulla
  * «tovaglia» `blu-100` della card. Il voto ospiti è la medaglia 6.11 sul bordo del piatto, in basso
  * a destra. Senza foto: piatto bianco con il «10». Pentola e cuore nei due angoli della tovaglia.
- * Le non pronte (solo admin) sono offuscate, con contorno tratteggiato e l'etichetta 6.4.
+ * Le non pronte (solo admin) sono offuscate, con contorno tratteggiato e l'etichetta 6.4 sotto il piatto.
  *
  * È un `@container/card`: cosa mostra dipende dalla sua larghezza (card per riga di
  * `CollectionView`). Stretta (3 per riga sul telefono): solo cuore, nome piccolo, pallino e tempo;
@@ -45,11 +45,6 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
       <div className="absolute top-1.5 right-1.5 z-10 @min-[9rem]/card:top-2 @min-[9rem]/card:right-2">
         <FavoriteButton recipeId={recipe.id} />
       </div>
-      {c.hidden && (
-        <div className="absolute top-2 left-2 z-10">
-          <HiddenTag />
-        </div>
-      )}
 
       {/* il piatto */}
       <div className={clsx("relative w-[76%]", c.hidden && "opacity-60 saturate-50")}>
@@ -77,6 +72,12 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
         )}
       </div>
 
+      {/* non pronta (solo admin): sotto il piatto, sopra il nome — in alto a sinistra coprirebbe la pentola */}
+      {c.hidden && (
+        <span className="mt-[0.7em] -mb-[0.35em]">
+          <HiddenTag />
+        </span>
+      )}
       <h3 className="mt-[0.75em] line-clamp-2 text-[0.8125rem] leading-tight font-extrabold text-blu-950 @min-[11rem]/card:text-[1rem] @min-[18rem]/card:text-[1.1875rem]">
         {recipe.name}
       </h3>
