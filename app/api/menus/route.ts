@@ -27,7 +27,7 @@ const menuSummarySelect = {
       recipe: { select: { photo: true } },
     },
     orderBy: { order: "asc" as const },
-    take: 4,
+    take: 12,
   },
 } as const;
 

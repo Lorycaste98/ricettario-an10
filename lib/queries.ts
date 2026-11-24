@@ -190,7 +190,7 @@ async function queryMenuSummaries(take?: number, isAdmin = false) {
         where: { recipe: { published: true } },
         select: { order: true, recipe: { select: { photo: true } } },
         orderBy: { order: "asc" as const },
-        take: 4,
+        take: 12, // le prime 12 bastano a trovare 3 foto per i piatti della card 8.5
       },
     },
   });
