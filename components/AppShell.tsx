@@ -8,6 +8,10 @@ import { NavRail, TabBar, navToneFor } from "@/components/shell/AppNav";
 import { useAuth } from "@/components/AuthProvider";
 import { ADMIN_FORM_ROUTE } from "@/components/admin/admin-sections";
 import { CookingMiniBar, CookingRow } from "@/components/shell/CookingBar";
+import { An10Logo } from "@/components/brand/An10Logo";
+
+// Pagine senza il logo di testata: la vetrina e l'accesso hanno il loro logo grande, i form la barra 11.1 in cima
+const NO_BRAND_ROUTE = /^\/(login\/?)?$/;
 
 /**
  * Cornice dell'app (restyle, fase 2 — DESIGN.md D1).
@@ -23,6 +27,9 @@ import { CookingMiniBar, CookingRow } from "@/components/shell/CookingBar";
  *   visitatore con la barra chiara: da app installata la barra di stato è trasparente con il testo
  *   bianco (`black-translucent`), su una fascia chiara non si leggerebbe.
  * La vetrina pubblica `/` sta dentro la cornice come le altre pagine (fase 6).
+ * - **Logo di testata** (9.7) in cima a `main`, a tutte le larghezze e su tutte le pagine tranne vetrina,
+ *   accesso e form: sta nella cornice e non nella pagina, così non sparisce cambiando pagina né
+ *   durante il caricamento (gli skeleton gli stanno sotto). Scorre via con la pagina.
  */
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -72,10 +79,22 @@ export function AppShell({ children }: { children: ReactNode }) {
             paddingRight: "max(var(--main-px), env(safe-area-inset-right, 0px))",
           }}
         >
+          {!NO_BRAND_ROUTE.test(pathname) && !ADMIN_FORM_ROUTE.test(pathname) && (
+            <BrandHeader className={clsx("mb-4", admin ? "text-adm-900" : "text-blu-800")} />
+          )}
           {children}
         </main>
       </div>
       <TabBar tone={tone} />
+    </div>
+  );
+}
+
+/** 9.7 · logo di testata: anche `SearchOverlay` lo usa, nello stesso punto, così aprendo la ricerca resta fermo */
+export function BrandHeader({ className }: { className?: string }) {
+  return (
+    <div className={clsx("-mt-3 flex justify-center", className)}>
+      <An10Logo variant="orizzontale" title="Ricettario AN10" className="h-8 w-auto" />
     </div>
   );
 }

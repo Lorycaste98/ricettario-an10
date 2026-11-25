@@ -1,6 +1,5 @@
 import { clsx } from "clsx";
 import type { ReactNode } from "react";
-import { An10Logo } from "@/components/brand/An10Logo";
 
 /**
  * 9.5 · testata di pagina: (miniatura) · titolo e dettagli · azioni a destra.
@@ -13,7 +12,6 @@ export function PageHeader({
   thumb,
   back,
   actions,
-  brand = false,
   className,
 }: {
   title: ReactNode;
@@ -24,20 +22,10 @@ export function PageHeader({
   /** BackLink (9.4) sopra il titolo */
   back?: ReactNode;
   actions?: ReactNode;
-  /**
-   * Logo completo in cima (pagine principali: Ricette, Menù, Preferiti). Solo sotto i 700px, dove
-   * manca la barra laterale col logo: fa parte della pagina e scorre via con lei (niente barra fissa).
-   */
-  brand?: boolean;
   className?: string;
 }) {
   return (
     <header className={clsx("flex flex-col gap-2.5", className)}>
-      {brand && (
-        <div className="-mt-3 mb-2 flex justify-center text-blu-800 min-[700px]:hidden">
-          <An10Logo variant="orizzontale" title="AN10" className="h-8 w-auto" />
-        </div>
-      )}
       {back && <div>{back}</div>}
       <div className="flex flex-wrap items-center gap-3">
         {thumb && <div className="size-[clamp(2.75rem,8cqi,3.75rem)] shrink-0 overflow-hidden rounded-ctl">{thumb}</div>}

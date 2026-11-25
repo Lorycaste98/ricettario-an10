@@ -18,6 +18,7 @@ import { GuestRatingTag, HiddenTag } from "@/components/ds/Tag";
 import { EmptyState, Banner } from "@/components/ds/Feedback";
 import { Skeleton } from "@/components/ds/Progress";
 import { Button } from "@/components/ds/Button";
+import { BrandHeader } from "@/components/AppShell";
 import {
   CLOSE_SEARCH_EVENT,
   OPEN_SEARCH_EVENT,
@@ -263,8 +264,10 @@ export function SearchOverlay() {
           lascia libere la barra in basso con la collinetta della lente (< 700px) e la barra laterale. */}
       <div
         data-search-glass
-        className="mx-auto flex h-full w-full max-w-[64rem] flex-col gap-2 px-3 pt-[calc(env(safe-area-inset-top,0px)+0.75rem)] pb-[calc(3.75rem+env(safe-area-inset-bottom,0px)+1.75rem)] min-[700px]:pr-6 min-[700px]:pb-6 min-[700px]:pl-[calc(clamp(4.5rem,calc(4.5rem+12*var(--f)),5.25rem)+env(safe-area-inset-left,0px)+1.5rem)]"
+        className="mx-auto flex h-full w-full max-w-[64rem] flex-col gap-2 px-3 pt-[max(2rem,calc(env(safe-area-inset-top,0px)+1rem))] pb-[calc(3.75rem+env(safe-area-inset-bottom,0px)+1.75rem)] min-[700px]:pr-6 min-[700px]:pb-6 min-[700px]:pl-[calc(clamp(4.5rem,calc(4.5rem+12*var(--f)),5.25rem)+env(safe-area-inset-left,0px)+1.5rem)]"
       >
+      {/* stesso logo, nello stesso punto, della testata delle pagine (9.7): aprendo la ricerca resta fermo */}
+      <BrandHeader className="mb-2 shrink-0 text-blu-800" />
       {/* Testata: campo + chiudi + ambiti */}
       <div className="flex shrink-0 flex-col gap-2.5 rounded-dlg border border-blu-150 bg-white px-3 pt-3 pb-2.5 shadow-[0_10px_30px_oklch(25%_0.038_228/.14)]">
         <div className="flex items-center gap-2">

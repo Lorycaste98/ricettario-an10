@@ -1,5 +1,11 @@
 import { FormSkeleton } from "@/components/admin/FormSkeleton";
+import { PageLoader } from "@/components/brand/An10Loader";
 
 export default function Loading() {
-  return <FormSkeleton variant="menu" />;
+  return (
+    <>
+      <PageLoader />
+      <FormSkeleton variant="menu" />
+    </>
+  );
 }

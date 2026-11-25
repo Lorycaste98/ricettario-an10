@@ -1,5 +1,11 @@
 import { AdminListSkeleton } from "@/components/admin/AdminListSkeleton";
+import { PageLoader } from "@/components/brand/An10Loader";
 
 export default function Loading() {
-  return <AdminListSkeleton />;
+  return (
+    <>
+      <PageLoader />
+      <AdminListSkeleton />
+    </>
+  );
 }

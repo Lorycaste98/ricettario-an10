@@ -20,7 +20,6 @@ export default async function RicettePage() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        brand
         title="Ricette"
         meta={session ? `${recipes.length} ricette nel ricettario` : "Le ricette del ricettario AN10"}
         actions={<NewRecipeLink />}

@@ -1,21 +1,17 @@
 "use client";
 import { useState, useSyncExternalStore, type ReactNode } from "react";
-import Link from "next/link";
 import { clsx } from "clsx";
 import {
   ArrowDown,
   ArrowUp,
   BellRing,
   LayoutGrid,
-  LogIn,
   RotateCcw,
   Search,
-  User,
 } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { Panel } from "@/components/ds/Panel";
 import { Button, IconButton } from "@/components/ds/Button";
-import { buttonClasses } from "@/components/ds/button-classes";
 import { Select } from "@/components/ds/Field";
 import { Chip, Segmented, Switch } from "@/components/ds/Controls";
 import { ConfirmModal } from "@/components/ui/Modal";
@@ -53,18 +49,16 @@ const noopSubscribe = () => () => {};
 const noRef = () => {};
 
 /**
- * Pagina Impostazioni: per il visitatore «Accedi» in cima (admin: profilo ed esci stanno nel
- * blocco «Tu» dell'hub `/admin`, e la pagina è nella cornice di Gestione), poi le
+ * Pagina Impostazioni (la scheda «Accedi» del visitatore la mette `page.tsx` sopra la testata;
+ * admin: profilo ed esci stanno nel blocco «Tu» dell'hub `/admin`): le
  * preferenze del dispositivo in schede `Panel` — liste (con l'anteprima dal vivo), in cucina,
  * costi del menù (solo admin), ricerca — e in fondo «Ripristina». Nessun «Salva»: ogni scelta
  * vale subito. Le righe sono «etichetta · spiegazione · controllo» (`SettingRow`).
  */
 export function SettingsClient() {
-  const { isAdmin, loading } = useAuth();
+  const { isAdmin } = useAuth();
   return (
     <div className="grid gap-(--gap) @min-[760px]:grid-cols-2">
-      {/* admin: profilo ed esci stanno nel blocco «Tu» dell'hub /admin */}
-      {!loading && !isAdmin && <AccountPanel className="@min-[760px]:col-span-2" />}
       <ListsPanel className="@min-[760px]:col-span-2" />
       <KitchenPanel />
       {isAdmin && <CostsPanel />}
@@ -92,23 +86,6 @@ export function SettingRow({
       </div>
       <div className="flex shrink-0 items-center gap-2">{children}</div>
     </div>
-  );
-}
-
-// ── Account ──────────────────────────────────────────────────────────────────
-
-function AccountPanel({ className }: { className?: string }) {
-  return (
-    <Panel title="Account" icon={<User />} className={className}>
-      <SettingRow
-        label="Non sei entrato"
-        hint="Entra per creare e modificare ricette e menù. Queste impostazioni valgono anche senza entrare, su questo dispositivo."
-      >
-        <Link href="/login" className={buttonClasses("primary", "md")}>
-          <LogIn className="size-[1.15em]" aria-hidden /> Accedi
-        </Link>
-      </SettingRow>
-    </Panel>
   );
 }
 
