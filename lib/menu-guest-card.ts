@@ -18,41 +18,26 @@ export const GUEST_FORMATS: { value: GuestFormat; label: string; hint: string }[
   { value: "phone", label: "Telefono", hint: "Una pagina lunga, da mandare in chat" },
 ];
 
-/** Tema del cartoncino: decori, colori e sfondo del PDF (components/menu/guest-themes.tsx) */
-export type GuestTheme =
-  | "natale"
-  | "natale-nordico"
-  | "natale-notte"
-  | "natale-cartolina"
-  | "natale-ghirlanda"
-  | "compleanno"
-  | "evento";
+/**
+ * Tema del cartoncino: decori, colori e sfondo del PDF (components/menu/guest-themes.tsx).
+ * Natale = stile «cartolina» (kraft, righe bastoncino di zucchero, francobollo, ceralacca), scelto
+ * dal proprietario il 25/11/2026 fra cinque stili; quelli scartati (classico, nordico, notte,
+ * ghirlanda) salvati in qualche menù tornano «natale» in `parseGuestCard`.
+ */
+export type GuestTheme = "natale" | "compleanno" | "evento";
 
-/** Famiglia del tema: la finestra sceglie prima l'occasione, poi (per Natale) lo stile */
-export type GuestThemeFamily = "natale" | "compleanno" | "evento";
-
-export const GUEST_THEMES: { value: GuestTheme; label: string; hint: string; family: GuestThemeFamily }[] = [
-  { value: "natale", family: "natale", label: "Classico", hint: "Agrifoglio, rami di pino e fiocchi di neve, rosso e verde su cartoncino panna" },
-  { value: "natale-nordico", family: "natale", label: "Nordico", hint: "Punto croce, alberelli geometrici e stella scandinava, rosso e verde su lino" },
-  { value: "natale-notte", family: "natale", label: "Notte", hint: "Cielo stellato e stella cometa in oro su fondo blu notte, per una cena elegante" },
-  { value: "natale-cartolina", family: "natale", label: "Cartolina", hint: "Cartolina d'altri tempi: bordo a righe bastoncino di zucchero, sigillo di ceralacca, carta kraft" },
-  { value: "natale-ghirlanda", family: "natale", label: "Ghirlanda", hint: "Festone e ghirlanda di eucalipto, olivo e bacche rosse su carta bianca, verde salvia" },
-  { value: "compleanno", family: "compleanno", label: "Compleanno", hint: "Festone di bandierine, palloncini e coriandoli" },
-  { value: "evento", family: "evento", label: "Evento", hint: "Rami d'alloro e cornici d'angolo dorate, per ogni altra occasione" },
+export const GUEST_THEMES: { value: GuestTheme; label: string; hint: string }[] = [
+  { value: "natale", label: "Natale", hint: "Cartolina d'altri tempi: bordo a righe bastoncino di zucchero, francobollo, sigillo di ceralacca, carta kraft" },
+  { value: "compleanno", label: "Compleanno", hint: "Festone di bandierine, palloncini e coriandoli" },
+  { value: "evento", label: "Evento", hint: "Rami d'alloro e cornici d'angolo dorate, per ogni altra occasione" },
 ];
-
-export const themeFamily = (t: GuestTheme): GuestThemeFamily => GUEST_THEMES.find((x) => x.value === t)?.family ?? "evento";
 
 /**
  * Colore del titolo per tema, usato anche per il logo in cima al cartoncino (ricolorato dal
  * browser prima di disegnarlo: `logoPngDataUrl(…, tint)`). Esadecimale: è per la carta stampata.
  */
 export const GUEST_THEME_INK: Record<GuestTheme, string> = {
-  natale: "#1d5b3a",
-  "natale-nordico": "#a3242b",
-  "natale-notte": "#d9b46a",
-  "natale-cartolina": "#9e2a2b",
-  "natale-ghirlanda": "#3f5d4a",
+  natale: "#9e2a2b",
   compleanno: "#c8344d",
   evento: "#074f67",
 };
@@ -157,7 +142,9 @@ export function normalizeGuestCard(
 ): GuestCard | null {
   if (!raw || typeof raw !== "object") return null;
   const r = raw as { theme?: unknown; format?: unknown; courses?: unknown; hidden?: unknown };
-  const theme: GuestTheme = GUEST_THEMES.some((t) => t.value === r.theme) ? (r.theme as GuestTheme) : fallbackTheme;
+  // gli stili di Natale provati e scartati («natale-nordico», …) tornano al Natale di oggi
+  const rawTheme = typeof r.theme === "string" && r.theme.startsWith("natale") ? "natale" : r.theme;
+  const theme: GuestTheme = GUEST_THEMES.some((t) => t.value === rawTheme) ? (rawTheme as GuestTheme) : fallbackTheme;
   const format: GuestFormat = GUEST_FORMATS.some((f) => f.value === r.format) ? (r.format as GuestFormat) : "a4";
   const seen = new Set<number>();
   const courses: GuestCourse[] = [];

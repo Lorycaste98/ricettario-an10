@@ -3,28 +3,22 @@
 import { useRef, useState, useEffect } from "react";
 import { Cake, Sparkles, TreePine, Trash2, X } from "lucide-react";
 import { IconButton } from "@/components/ds/Button";
-import { Chip, Segmented } from "@/components/ds/Controls";
+import { Segmented } from "@/components/ds/Controls";
 import { MiniChip, rowFieldCls } from "@/components/admin/FormParts";
 import { ReorderList, ReorderRow } from "@/components/ui/ReorderList";
 import {
   COURSE_PRESETS,
   GUEST_FORMATS,
   GUEST_THEMES,
-  themeFamily,
   unassignedRecipes,
   type GuestCard,
   type GuestFormat,
   type GuestItem,
   type GuestRecipe,
   type GuestTheme,
-  type GuestThemeFamily,
 } from "@/lib/menu-guest-card";
 
-const FAMILIES: { value: GuestThemeFamily; label: string; icon: typeof TreePine }[] = [
-  { value: "natale", label: "Natale", icon: TreePine },
-  { value: "compleanno", label: "Compleanno", icon: Cake },
-  { value: "evento", label: "Evento", icon: Sparkles },
-];
+const THEME_ICON = { natale: TreePine, compleanno: Cake, evento: Sparkles } as const;
 
 /**
  * Finestra «Per gli ospiti» del PDF del menù (solo admin): tema del cartoncino (decori e colori),
@@ -161,25 +155,14 @@ export function GuestMenuEditor({
       <div className="flex flex-col gap-1.5">
         <span className="text-[0.8125rem] font-semibold text-grigio">Tema</span>
         <Segmented
-          label="Occasione"
-          value={themeFamily(value.theme)}
-          onChange={(fam) => {
-            if (fam === themeFamily(value.theme)) return;
-            const first = GUEST_THEMES.find((t) => t.family === fam);
-            if (first) onChange({ ...value, theme: first.value });
-          }}
-          options={FAMILIES.map((f) => ({ value: f.value, label: f.label, icon: <f.icon aria-hidden /> }))}
+          label="Tema del cartoncino"
+          value={value.theme}
+          onChange={(theme) => onChange({ ...value, theme })}
+          options={GUEST_THEMES.map((t) => {
+            const Icon = THEME_ICON[t.value];
+            return { value: t.value, label: t.label, icon: <Icon aria-hidden /> };
+          })}
         />
-        {/* Natale ha più stili: si sceglie qui sotto */}
-        {GUEST_THEMES.filter((t) => t.family === themeFamily(value.theme)).length > 1 && (
-          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Stile">
-            {GUEST_THEMES.filter((t) => t.family === themeFamily(value.theme)).map((t) => (
-              <Chip key={t.value} active={value.theme === t.value} onClick={() => onChange({ ...value, theme: t.value as GuestTheme })}>
-                {t.label}
-              </Chip>
-            ))}
-          </div>
-        )}
         <p className="text-xs text-grigio">{GUEST_THEMES.find((t) => t.value === value.theme)?.hint}</p>
       </div>
 
