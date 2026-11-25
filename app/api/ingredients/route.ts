@@ -1,10 +1,11 @@
 /**
  * GET  /api/ingredients  — lista ingredienti canonici (per la combobox nel form ricette)
- * POST /api/ingredients  — crea/assicura un ingrediente canonico
+ * POST /api/ingredients  — crea/assicura un ingrediente canonico (solo admin)
  */
 
 import { type NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { requireAdmin } from "@/lib/session";
 
 export async function GET() {
   const ingredients = await db.ingredientMaster.findMany({
@@ -15,6 +16,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const guard = await requireAdmin();
+  if (guard) return guard;
+
   let body: unknown;
   try {
     body = await request.json();
