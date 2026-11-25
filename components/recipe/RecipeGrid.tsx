@@ -20,7 +20,7 @@ import { normalizeSearchText } from "@/lib/search";
 import { type RecipeSummary, type Category, type Tag } from "@/lib/types";
 import { useAuth } from "@/components/AuthProvider";
 import { useLocalStore } from "@/lib/local-store";
-import { LIST_LAYOUT, RECIPE_SORT_OPTIONS, recipeSortFor, useRecipeSort, type RecipeSortKey } from "@/lib/preferences";
+import { LIST_LAYOUT, LIST_PAGE, RECIPE_SORT_OPTIONS, recipeSortFor, useRecipeSort, type RecipeSortKey } from "@/lib/preferences";
 import { Modal } from "@/components/ui/Modal";
 import { Button, IconButton } from "@/components/ds/Button";
 import { Select } from "@/components/ds/Field";
@@ -37,7 +37,7 @@ import { EmptyState } from "@/components/ds/Feedback";
  * dei filtri attivi sopra la lista.
  */
 // Elementi per pagina: multipli delle card per riga (pageSizeFor), tetti fissi per 1 per riga e lista
-const PAGE = { base: 20, single: 10, list: 20 };
+const PAGE = LIST_PAGE.recipes;
 
 interface Props {
   recipes: RecipeSummary[];

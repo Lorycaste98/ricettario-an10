@@ -88,6 +88,12 @@ export const MAX_COLS = 8;
  * `autoCard` = card della griglia automatica [min rem, quota del contenitore, max rem].
  * Ricette e preferiti condividono «recipes».
  */
+/** Elementi per pagina delle liste (`pageSizeFor`): li usano le liste vere e i loro skeleton */
+export const LIST_PAGE: Record<ListKind, { base: number; single: number; list: number }> = {
+  recipes: { base: 20, single: 10, list: 20 },
+  menus: { base: 12, single: 8, list: 15 },
+};
+
 export const LIST_LAYOUT: Record<ListKind, { minCardRem: number; autoCard: [number, number, number]; fallbackCols: string }> = {
   recipes: { minCardRem: 6.5, autoCard: [9.5, 0.24, 13], fallbackCols: "grid-cols-[repeat(auto-fill,minmax(clamp(9.5rem,24cqi,13rem),1fr))]" },
   menus: { minCardRem: 9, autoCard: [10, 0.3, 16], fallbackCols: "grid-cols-[repeat(auto-fill,minmax(clamp(10rem,30cqi,16rem),1fr))]" },

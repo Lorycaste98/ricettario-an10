@@ -20,10 +20,10 @@ import { EmptyState } from "@/components/ds/Feedback";
 import { type MenuSummary } from "@/lib/types";
 import { useAuth } from "@/components/AuthProvider";
 import { useLocalStore } from "@/lib/local-store";
-import { LIST_LAYOUT, MENU_SORT_OPTIONS, useMenuSort, type MenuSortKey } from "@/lib/preferences";
+import { LIST_LAYOUT, LIST_PAGE, MENU_SORT_OPTIONS, useMenuSort, type MenuSortKey } from "@/lib/preferences";
 
 // Elementi per pagina: multipli delle card per riga (pageSizeFor), tetti fissi per 1 per riga e lista
-const PAGE = { base: 12, single: 8, list: 15 };
+const PAGE = LIST_PAGE.menus;
 
 type SortKey = MenuSortKey;
 type PublishedFilter = "all" | "published" | "draft";

@@ -1,23 +1,32 @@
 "use client";
 import { RecipeCardSkeleton } from "@/components/recipe/RecipeCardSkeleton";
 import { MenuCardSkeleton } from "@/components/menu/MenuCardSkeleton";
-import { CollectionBody, useCollectionView } from "@/components/ui/CollectionView";
-import { LIST_LAYOUT, type ListKind } from "@/lib/preferences";
+import { CollectionBody, pageSizeFor, useCollectionView } from "@/components/ui/CollectionView";
+import { LIST_LAYOUT, LIST_PAGE, type ListKind } from "@/lib/preferences";
 
 /**
  * Skeleton delle liste (caricamento di Ricette, Preferiti, Menù) con **le stesse scelte della lista
- * vera**: griglia o lista, card per riga (misurate sullo stesso contenitore, `useCollectionView`).
- * Due righe di card in griglia, sei righe in lista. Prima della misura vale la griglia elastica.
+ * vera**: riga del totale con l'interruttore griglia/lista (quello vero, già usabile), poi griglia
+ * o lista con le card per riga misurate sullo stesso contenitore (`useCollectionView`) e **una
+ * pagina intera** di elementi (`pageSizeFor` con `LIST_PAGE`, come la lista). Prima della misura
+ * vale la griglia elastica.
  */
 export function ListSkeleton({ list }: { list: ListKind }) {
-  const { view, ref, gridStyle, cols } = useCollectionView(list);
-  const count = view === "list" ? 6 : Math.max(2, cols || 3) * 2;
+  const { view, ref, gridStyle, cols, controls } = useCollectionView(list);
+  const count = pageSizeFor(view, cols, LIST_PAGE[list]);
   return (
-    <CollectionBody view={view} gridRef={ref} gridStyle={gridStyle} fallbackCols={LIST_LAYOUT[list].fallbackCols} list="stack">
-      {Array.from({ length: count }).map((_, i) =>
-        view === "list" ? <RowSkeleton key={i} list={list} /> : list === "recipes" ? <RecipeCardSkeleton key={i} index={i} /> : <MenuCardSkeleton key={i} />
-      )}
-    </CollectionBody>
+    <div className="flex flex-col gap-3" aria-busy>
+      {/* riga del totale: «N ricette · ordinate per …» + griglia/lista */}
+      <div className="flex min-h-(--h-sm) items-center justify-between gap-3">
+        <span aria-hidden className="h-3 w-40 animate-pulse rounded bg-blu-150 motion-reduce:animate-none" />
+        {controls}
+      </div>
+      <CollectionBody view={view} gridRef={ref} gridStyle={gridStyle} fallbackCols={LIST_LAYOUT[list].fallbackCols} list="stack">
+        {Array.from({ length: count }).map((_, i) =>
+          view === "list" ? <RowSkeleton key={i} list={list} /> : list === "recipes" ? <RecipeCardSkeleton key={i} index={i} /> : <MenuCardSkeleton key={i} />
+        )}
+      </CollectionBody>
+    </div>
   );
 }
 

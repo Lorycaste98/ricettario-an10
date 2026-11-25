@@ -18,8 +18,9 @@ export default function RicetteLoading() {
         </div>
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap gap-2">
-            <Skeleton className="h-(--h-field) min-w-[12rem] flex-1 basis-[16rem]" />
-            <Skeleton className="h-(--h-btn) w-24 @min-[860px]:hidden" />
+            <Skeleton className="h-(--h-field) min-w-0 flex-1 basis-[12rem]" />
+            {/* «Filtri»: solo icona sotto i 420px di contenitore, come RecipeGrid */}
+            <Skeleton className="h-(--h-btn) w-(--h-btn) @min-[420px]:w-24 @min-[860px]:hidden" />
             <div aria-hidden className="hidden gap-2 @min-[860px]:flex">
               <Skeleton className="h-(--h-btn) w-32" />
               <Skeleton className="h-(--h-btn) w-24" />
