@@ -6,7 +6,7 @@ import { useState, useSyncExternalStore, type ComponentType, type MouseEvent } f
 import { clsx } from "clsx";
 import { motion, useReducedMotion } from "motion/react";
 import { BookOpen, ChefHat, Heart, UserRound } from "lucide-react";
-import { getSearchOpen, openSearch, subscribeSearchOpen } from "@/lib/search";
+import { closeSearch, getSearchOpen, openSearch, subscribeSearchOpen } from "@/lib/search";
 import { useAuth } from "@/components/AuthProvider";
 import { useFavorites } from "@/lib/favorites";
 import { An10SearchMark } from "@/components/brand/An10SearchMark";
@@ -221,7 +221,14 @@ export function NavSearchItem({ variant, tone, on }: { variant: Variant; tone: N
   const t = TONE[tone];
   const s = SHAPE[variant];
   return (
-    <button type="button" onClick={() => openSearch()} aria-label="Cerca" className={clsx(s.outer, "relative")}>
+    <button
+      type="button"
+      // la ricerca lascia visibile la navigazione: la lente la apre e la chiude
+      onClick={() => (getSearchOpen() ? closeSearch() : openSearch())}
+      aria-label="Cerca"
+      aria-expanded={on}
+      className={clsx(s.outer, "relative")}
+    >
       {variant === "tab" && <Hump tone={tone} />}
       <span className={clsx(s.box, variant === "tab" ? "-mt-[1.125rem]" : "mb-1", on ? "font-bold text-white" : clsx(t.ink, t.hover))}>
         {on && <ActiveBox id={`nav-active-${variant}`} />}
@@ -250,7 +257,7 @@ export function NavRail({ tone }: { tone: NavTone }) {
     <nav
       aria-label="Navigazione principale"
       className={clsx(
-        "sticky top-0 hidden h-dvh shrink-0 flex-col items-center gap-2 pb-4 transition-colors duration-300 min-[700px]:flex",
+        "sticky top-0 z-40 hidden h-dvh shrink-0 flex-col items-center gap-2 pb-4 transition-colors duration-300 min-[700px]:flex",
         t.bar,
         t.edgeRail,
         t.ring

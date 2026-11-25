@@ -32,6 +32,19 @@
   .an10a-draw, .an10a-pin, .an10a-fork, .an10a-blade, .an10a-handle, .an10a-egg, .an10a-yolk { animation: none; stroke-dashoffset: 0; }
 }
 
+/* Ricerca a pagina intera (SearchOverlay): vetro smerigliato sopra la pagina in cui eri.
+   Solo il fondo vuoto è trasparente — campo e risultati stanno su schede piene (niente testo su
+   trasparenza). Sfocatura forte: della pagina sotto restano macchie di colore, non scritte.
+   «Riduci trasparenza» → fondo pieno. */
+.search-glass {
+  background: color-mix(in oklch, var(--color-blu-50) 72%, transparent);
+  -webkit-backdrop-filter: blur(22px) saturate(1.4);
+  backdrop-filter: blur(22px) saturate(1.4);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .search-glass { background: var(--color-blu-50); -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+
 /* Bersaglio toccabile ≥ 44px su touch (DESIGN D4) per i controlli che a vista sono più piccoli
    (azioni di riga 30px, chip, bottoni piccoli): un ::after invisibile allarga l'area senza cambiare
    l'aspetto. In @layer base così le utility vincono (un `absolute` resta absolute: è già un

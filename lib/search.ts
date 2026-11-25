@@ -28,6 +28,14 @@ export function openSearch(query = "") {
   window.dispatchEvent(new CustomEvent<string>(OPEN_SEARCH_EVENT, { detail: query }));
 }
 
+export const CLOSE_SEARCH_EVENT = "ricettario:close-search";
+
+/** Chiude la ricerca (la lente della navigazione fa da interruttore: la ricerca la lascia visibile) */
+export function closeSearch() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(CLOSE_SEARCH_EVENT));
+}
+
 // Overlay aperto o chiuso: lo scrive `SearchOverlay`, lo legge la navigazione per accendere la
 // voce «Cerca» (riquadro arancio) finché la ricerca è aperta. Store module-level come `favorites.ts`.
 let searchOpen = false;

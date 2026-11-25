@@ -19,6 +19,7 @@ import { EmptyState, Banner } from "@/components/ds/Feedback";
 import { Skeleton } from "@/components/ds/Progress";
 import { Button } from "@/components/ds/Button";
 import {
+  CLOSE_SEARCH_EVENT,
   OPEN_SEARCH_EVENT,
   ingredientStats,
   normalizeSearchText,
@@ -134,23 +135,49 @@ export function SearchOverlay() {
     setSearchOpenState(open);
   }, [open]);
 
-  // Dialog nativo (top layer, Esc, focus) + pagina sotto ferma
-  useEffect(() => {
-    const el = dialogRef.current;
-    if (!open || !el) return;
-    if (!el.open) el.showModal();
-    const html = document.documentElement;
-    const prev = html.style.overflow;
-    html.style.overflow = "hidden";
-    return () => {
-      html.style.overflow = prev;
-    };
-  }, [open]);
-
   const close = useCallback(() => {
     dialogRef.current?.close();
     setOpen(false);
   }, []);
+
+  // Dialog **non modale** sotto la navigazione (z 35, la barra sta a 40): la pagina resta visibile
+  // dietro il vetro e la barra resta usabile (la lente chiude, le altre voci portano altrove).
+  // Quello che il modale dava da solo lo facciamo a mano: Esc, pagina ferma e inerte, focus restituito.
+  useEffect(() => {
+    const el = dialogRef.current;
+    if (!open || !el) return;
+    const before = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    if (!el.open) el.show();
+    const html = document.documentElement;
+    const prev = html.style.overflow;
+    html.style.overflow = "hidden";
+    const main = document.querySelector("main");
+    main?.setAttribute("inert", "");
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        close();
+      }
+    };
+    // una voce della navigazione porta altrove: la ricerca si chiude (anche se è la pagina in cui sei)
+    const onNav = (e: MouseEvent) => {
+      if (e.target instanceof Element && e.target.closest('nav[aria-label="Navigazione principale"] a')) close();
+    };
+    window.addEventListener("keydown", onKey);
+    document.addEventListener("click", onNav, true);
+    return () => {
+      html.style.overflow = prev;
+      main?.removeAttribute("inert");
+      window.removeEventListener("keydown", onKey);
+      document.removeEventListener("click", onNav, true);
+      if (before?.isConnected) before.focus({ preventScroll: true });
+    };
+  }, [open, close]);
+
+  useEffect(() => {
+    window.addEventListener(CLOSE_SEARCH_EVENT, close);
+    return () => window.removeEventListener(CLOSE_SEARCH_EVENT, close);
+  }, [close]);
 
   const usable = idx && (cache?.admin === isAdmin || !cache) ? idx : null;
   const results = useMemo(() => (usable ? runSearch(usable, query) : null), [usable, query]);
@@ -225,18 +252,21 @@ export function SearchOverlay() {
       ref={dialogRef}
       onClose={() => setOpen(false)}
       onClick={(e) => {
-        if (e.target === dialogRef.current) close();
+        // tocco sul vetro (fuori dalle schede) = chiudi
+        if (e.target === e.currentTarget || (e.target as HTMLElement).dataset.searchGlass !== undefined) close();
       }}
       aria-label="Cerca nel ricettario"
-      className="ds fixed inset-x-0 m-0 mx-auto flex max-h-none max-w-none flex-col overflow-hidden rounded-dlg border border-blu-150 bg-blu-50 p-0 text-blu-950 shadow-[0_18px_50px_oklch(25%_0.038_228/.28)] backdrop:bg-blu-950/40 backdrop:backdrop-blur-[3px]"
-      style={{
-        top: "calc(env(safe-area-inset-top, 0px) + 0.75rem)",
-        width: "min(62rem, calc(100vw - 1.5rem))",
-        height: "min(46rem, calc(100dvh - env(safe-area-inset-top, 0px) - 1.5rem))",
-      }}
+      className="search-glass ds fixed inset-0 z-[35] m-0 size-full max-h-none max-w-none p-0 text-blu-950"
     >
+      {/* Vetro a pagina intera (`.search-glass` in globals.css): la pagina sotto si intravede solo
+          sfocata, e mai sotto le scritte — campo e risultati stanno su schede piene. Il contenuto
+          lascia libere la barra in basso con la collinetta della lente (< 700px) e la barra laterale. */}
+      <div
+        data-search-glass
+        className="mx-auto flex h-full w-full max-w-[64rem] flex-col gap-2 px-3 pt-[calc(env(safe-area-inset-top,0px)+0.75rem)] pb-[calc(3.75rem+env(safe-area-inset-bottom,0px)+1.75rem)] min-[700px]:pr-6 min-[700px]:pb-6 min-[700px]:pl-[calc(clamp(4.5rem,calc(4.5rem+12*var(--f)),5.25rem)+env(safe-area-inset-left,0px)+1.5rem)]"
+      >
       {/* Testata: campo + chiudi + ambiti */}
-      <div className="flex flex-col gap-2.5 border-b border-blu-150 bg-white px-3 pt-3 pb-2.5">
+      <div className="flex shrink-0 flex-col gap-2.5 rounded-dlg border border-blu-150 bg-white px-3 pt-3 pb-2.5 shadow-[0_10px_30px_oklch(25%_0.038_228/.14)]">
         <div className="flex items-center gap-2">
           <SearchField
             ref={inputRef}
@@ -280,7 +310,14 @@ export function SearchOverlay() {
         )}
       </div>
 
-      <div className="grid min-h-0 flex-1 min-[760px]:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+      {/* Risultati: scheda piena alta quanto il contenuto (sotto resta il vetro), al massimo fino in fondo */}
+      <div
+        className={clsx(
+          "grid min-h-0 shrink grid-rows-[minmax(0,1fr)] overflow-hidden rounded-dlg border border-blu-150 bg-blu-50 shadow-[0_10px_30px_oklch(25%_0.038_228/.14)] min-[760px]:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]",
+          // in largo lista e anteprima affiancate: la scheda occupa tutta l'altezza
+          wide && "flex-1"
+        )}
+      >
         {/* Lista */}
         <div className={clsx("min-h-0 overflow-y-auto overscroll-contain p-2", showPreviewOnly && "hidden", wide && "border-r border-blu-150")}>
           {error ? (
@@ -351,6 +388,7 @@ export function SearchOverlay() {
             )}
           </div>
         )}
+      </div>
       </div>
     </dialog>,
     document.body
