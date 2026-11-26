@@ -4,10 +4,10 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { entryLabel, usePreviousPage } from "@/lib/nav-history";
 
-/** Classi del bottone "torna indietro" (tavola 9.4): pill bianca alta --h-sm (30→34px).
+/** Classi del bottone "torna indietro" (tavola 9.4): bianco alto --h-sm (30→34px), angoli da bottone piccolo (10px, come 3.9: è un bottone, non una pill).
  *  Esportate per gli skeleton (`loading.tsx`), che devono avere la stessa forma. */
 export const backLinkCls =
-  "inline-flex h-(--h-sm) max-w-full items-center gap-1 rounded-full border border-blu-200 bg-white pr-[0.9em] pl-[0.55em] text-[0.875rem] font-semibold text-blu-800 transition-colors hover:bg-blu-100";
+  "inline-flex h-(--h-sm) max-w-full items-center gap-1 rounded-[0.625rem] border border-blu-200 bg-white pr-[0.9em] pl-[0.55em] text-[0.875rem] font-semibold text-blu-800 transition-colors hover:bg-blu-100";
 
 /**
  * Bottone "torna indietro" condiviso (dettaglio ricetta, dettaglio menù,

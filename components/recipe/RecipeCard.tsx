@@ -11,6 +11,7 @@ import { An10Logo } from "@/components/brand/An10Logo";
 import { PotIcon } from "@/components/icons";
 import { pressCls, useCardInfo } from "./card-info";
 import { useCardConfig } from "@/components/CardConfigProvider";
+import { CategoryLabel } from "./CardCategory";
 
 /**
  * 8.1 · card ricetta «Piatto» (griglia: libreria, preferiti, vetrina). La foto è il piatto visto
@@ -27,15 +28,27 @@ import { useCardConfig } from "@/components/CardConfigProvider";
  * `@container/card`: la larghezza decide solo le misure (nome e testo più grandi da 11rem e 18rem)
  * e la pentola, che sotto gli 8rem non ci sta.
  * Movimento: al tocco si abbassa appena, al mouse il piatto gira di 8°.
+ *
+ * **Allineamento fra card della stessa riga**: la card occupa 5 righe della griglia che la contiene
+ * (`row-span-5` + `grid-rows-subgrid`): piatto, nome, dettagli, tag e — in fondo, perché conta meno — la categoria (6.13) stanno su righe
+ * **condivise** con le card accanto, quindi un nome su due righe sposta allo stesso modo tutte le
+ * card della riga e ogni informazione resta alla stessa altezza. Ogni pezzo ha la sua riga fissa
+ * (`row-start-*`) anche quando manca: una card senza tag lascia vuota la sua riga, non risale.
+ * Fuori da una griglia (anteprima delle Impostazioni) la subgrid non vale e la card si impila da sola.
  */
+/** Ogni riga è un `@container/card` largo quanto il contenuto della card: le container query non
+ *  possono stare sulla card stessa, perché il contenimento di layout spegne la subgrid. */
+const slot = "@container/card flex w-full min-w-0 justify-center self-start";
+
 export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
   const c = useCardInfo(recipe);
   const f = useCardConfig().recipe;
   return (
     <Link
       href={`/ricette/${recipe.id}`}
+      data-recipe-card
       className={clsx(
-        "group @container/card relative flex min-w-0 flex-col items-center overflow-hidden rounded-card bg-blu-100 px-[8%] pt-[9%] pb-[0.7em] text-center",
+        "group relative row-span-5 grid min-w-0 grid-rows-subgrid content-start gap-y-0 overflow-hidden rounded-card bg-blu-100 px-[8%] pb-[0.7rem] text-center",
         "hover:bg-blu-120",
         "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-blu-600/35",
         pressCls,
@@ -47,17 +60,24 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
       {/* soglia 8rem: la tovaglia ha un margine interno, il contenuto è più stretto della card */}
       {!c.hidden && f.actions && (
         <>
-          <div className="absolute top-1.5 left-1.5 z-10 hidden @min-[8rem]/card:top-2 @min-[8rem]/card:left-2 @min-[8rem]/card:block">
-            <CookingButton recipeId={recipe.id} />
-          </div>
-          <div className="absolute top-1.5 right-1.5 z-10 @min-[9rem]/card:top-2 @min-[9rem]/card:right-2">
-            <FavoriteButton recipeId={recipe.id} />
+          {/* contenitore largo quanto il contenuto della card (8% di margine per lato), come le righe */}
+          <div className="pointer-events-none absolute inset-x-[8%] top-0 z-10 @container/card">
+            <div className="pointer-events-auto absolute top-1.5 left-[calc(-9.524%+0.375rem)] hidden @min-[8rem]/card:top-2 @min-[8rem]/card:left-[calc(-9.524%+0.5rem)] @min-[8rem]/card:block">
+              <CookingButton recipeId={recipe.id} />
+            </div>
+            <div className="pointer-events-auto absolute top-1.5 right-[calc(-9.524%+0.375rem)] @min-[9rem]/card:top-2 @min-[9rem]/card:right-[calc(-9.524%+0.5rem)]">
+              <FavoriteButton recipeId={recipe.id} />
+            </div>
           </div>
         </>
       )}
 
       {/* il piatto */}
-      <div className="relative w-[76%]">
+      {/* margine sopra il piatto qui e non sulla card: la subgrid non conta il padding-top della
+          card nell'altezza della prima riga e il nome finiva sopra il piatto. 10.7% della riga = 9% della card */}
+      <div className={clsx(slot, "row-start-1 pt-[10.7%]")}>
+      {/* larghezza in cqi (della riga), non in %: dentro la subgrid la % falsava l'altezza della riga del piatto */}
+      <div className="relative w-[76cqi]">
         <div
           className={clsx(
             "relative aspect-square overflow-hidden rounded-full bg-white",
@@ -96,7 +116,9 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
           />
         )}
       </div>
+      </div>
 
+      <div className={clsx(slot, "row-start-2")}>
       <h3
         className={clsx(
           "mt-[0.75em] line-clamp-2 text-[0.8125rem] leading-tight font-extrabold @min-[11rem]/card:text-[1rem] @min-[18rem]/card:text-[1.1875rem]",
@@ -105,18 +127,14 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
       >
         {recipe.name}
       </h3>
+      </div>
+      <div className={clsx(slot, "row-start-3")}>
       <span
         className={clsx(
-          "mt-1 flex max-w-full min-w-0 flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-[0.6875rem] @min-[11rem]/card:text-xs",
+          "mt-1 flex max-w-full min-w-0 flex-wrap items-start justify-center gap-x-2 gap-y-0.5 text-[0.6875rem] @min-[11rem]/card:text-xs",
           c.hidden ? "text-grigio-chiaro" : "text-grigio"
         )}
       >
-        {f.category && c.cat && (
-          <span className="flex max-w-full min-w-0 items-center gap-1">
-            <span aria-hidden className="size-2 shrink-0 rounded-full" style={{ background: c.cat.color }} />
-            <span className="truncate">{c.cat.name}</span>
-          </span>
-        )}
         {f.time && c.time && (
           <span className="tabular flex items-center gap-1 whitespace-nowrap">
             <Clock className="size-3.5 shrink-0" aria-hidden /> {c.time}
@@ -141,11 +159,20 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
           </span>
         )}
       </span>
-      {f.tags && recipe.tags.length > 0 && (
-        <p className={clsx("mt-1 max-w-full truncate text-[0.6875rem] @min-[11rem]/card:text-xs", c.hidden ? "text-grigio-chiaro" : "text-blu-700")}>
-          {recipe.tags.slice(0, 4).map((t) => `#${t.name}`).join("  ")}
-        </p>
-      )}
+      </div>
+      <div className={clsx(slot, "row-start-4")}>
+        {f.tags && recipe.tags.length > 0 && (
+          <p className={clsx("mt-1 max-w-full truncate text-[0.6875rem] @min-[11rem]/card:text-xs", c.hidden ? "text-grigio-chiaro" : "text-blu-700")}>
+            {recipe.tags.slice(0, 4).map((t) => `#${t.name}`).join("  ")}
+          </p>
+        )}
+      </div>
+      {/* 6.13 · categoria in fondo: dice a che categoria appartiene, ma conta meno del resto */}
+      <div className={clsx(slot, "row-start-5")}>
+        {f.category && (
+          <CategoryLabel cats={recipe.categories} muted={c.hidden} className="mt-1.5 justify-center text-[0.6875rem] @min-[11rem]/card:text-xs" />
+        )}
+      </div>
     </Link>
   );
 }

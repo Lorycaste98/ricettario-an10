@@ -9,6 +9,7 @@ import { CookingButton } from "@/components/cooking/CookingButton";
 import { An10Logo } from "@/components/brand/An10Logo";
 import { PotIcon } from "@/components/icons";
 import { pressCls, useCardInfo } from "./card-info";
+import { CategoryLabel } from "./CardCategory";
 import { useCardConfig } from "@/components/CardConfigProvider";
 import { MyRatingMedal, RatingMedal } from "./RatingMedal";
 
@@ -109,12 +110,6 @@ export function RecipeRow({ recipe }: { recipe: RecipeSummary }) {
         {/* dettagli */}
         <span className="flex min-w-0 items-center gap-2">
           <span className={clsx("flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs", c.hidden ? "text-grigio-chiaro" : "text-grigio")}>
-            {f.category && c.cat && (
-              <span className="flex min-w-0 items-center gap-1.5">
-                <span aria-hidden className="size-2 shrink-0 rounded-full" style={{ background: c.cat.color }} />
-                <span className="truncate">{c.cat.name}</span>
-              </span>
-            )}
             {f.time && c.time && (
               <span className={clsx("tabular flex items-center gap-1 font-semibold whitespace-nowrap", !c.hidden && "text-ambra")}>
                 <Clock className="size-3.5 shrink-0" aria-hidden /> {c.time}
@@ -145,6 +140,8 @@ export function RecipeRow({ recipe }: { recipe: RecipeSummary }) {
             {recipe.tags.slice(0, 4).map((t) => `#${t.name}`).join("  ")}
           </span>
         )}
+        {/* 6.13 · categoria in fondo, come sulla card */}
+        {f.category && <CategoryLabel cats={recipe.categories} muted={c.hidden} className="mt-0.5 text-[0.6875rem]" />}
       </span>
     </Link>
   );

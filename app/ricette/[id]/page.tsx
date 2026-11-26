@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { ExternalLink, CalendarDays, StickyNote, Link2 } from "lucide-react";
+import { ExternalLink, CalendarDays, StickyNote, Link2, Clock, Users } from "lucide-react";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { flattenRecipe, recipeDetailSelect } from "@/lib/api";
@@ -14,6 +14,7 @@ import { RecipeAdminBar } from "./RecipeAdminBar";
 import { formatMinutes, formatServings } from "@/lib/types";
 import { PageHeader } from "@/components/ds/PageHeader";
 import { NoPhoto } from "@/components/recipe/NoPhoto";
+import { HeaderCategories } from "@/components/recipe/CardCategory";
 import type { StepIngredientLink } from "@/lib/step-ingredients";
 import type { Metadata } from "next";
 
@@ -88,13 +89,27 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
   if (recipe.cook && recipe.cook > 0) facts.push({ label: "Cottura", value: formatMinutes(recipe.cook) });
   if (waitTime > 0) facts.push({ label: "Attesa", value: formatMinutes(waitTime) });
   if (totalTime > 0) facts.push({ label: "Totale", value: formatMinutes(totalTime), strong: true });
-  const meta = [
-    recipe.categories.map((c: { name: string }) => c.name).join(", "),
-    totalTime > 0 ? formatMinutes(totalTime) : null,
-    recipe.servings ? formatServings(recipe.servings, recipe.servingsUnit) : null,
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  // Testata (9.5): categorie su una riga (stesso stile delle card), poi tempo e porzioni con le icone
+  const cats = recipe.categories as { name: string; color: string }[];
+  const facts2 = [
+    totalTime > 0 && (
+      <span key="t" className="tabular inline-flex items-center gap-1 whitespace-nowrap">
+        <Clock className="size-[1.05em]" aria-hidden /> {formatMinutes(totalTime)}
+      </span>
+    ),
+    recipe.servings && (
+      <span key="s" className="inline-flex min-w-0 items-center gap-1">
+        <Users className="size-[1.05em] shrink-0" aria-hidden /> {formatServings(recipe.servings, recipe.servingsUnit)}
+      </span>
+    ),
+  ].filter(Boolean);
+  const meta =
+    cats.length > 0 || facts2.length > 0 ? (
+      <>
+        {cats.length > 0 && <HeaderCategories cats={cats} />}
+        {facts2.length > 0 && <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5">{facts2}</span>}
+      </>
+    ) : undefined;
 
   return (
     <article className="flex flex-col gap-4">
@@ -110,7 +125,7 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
           )
         }
         title={recipe.name}
-        meta={meta || undefined}
+        meta={meta}
         actions={<RecipeAdminBar recipeId={recipe.id} published={recipe.published} pdf={pdfData} />}
       />
 
@@ -164,7 +179,7 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
                 href={recipe.links}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex h-(--h-sm) items-center gap-1.5 rounded-full border border-blu-200 bg-white px-3 text-[0.875rem] font-semibold text-blu-600 hover:bg-blu-100"
+                className="inline-flex h-(--h-sm) items-center gap-1.5 rounded-[0.625rem] border border-blu-200 bg-white px-3 text-[0.875rem] font-semibold text-blu-600 hover:bg-blu-100"
               >
                 <Link2 className="size-4" aria-hidden /> Ricetta originale <ExternalLink className="size-3.5" aria-hidden />
               </a>

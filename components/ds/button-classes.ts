@@ -46,3 +46,8 @@ export function buttonClasses(variant: ButtonVariant = "primary", size: ButtonSi
 export const rowIconCls =
   "hit-44 inline-flex size-[1.875rem] shrink-0 items-center justify-center rounded-[0.5625rem] border border-blu-200 bg-white text-blu-800 transition-colors hover:bg-blu-100 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-blu-600/35 [&_svg]:size-4";
 
+
+/** Bottone-icona quadrato della testata (3.10 `sq`): PDF, preferito, elimina (accanto al menù «⋯» 3.14). */
+export const headerIconCls =
+  "hit-44 inline-flex size-(--h-sm) shrink-0 items-center justify-center rounded-[0.625rem] border border-blu-200 bg-white text-blu-800 transition-colors hover:bg-blu-100 disabled:opacity-60 [&_svg]:size-[1.15rem] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-blu-600/35";
+

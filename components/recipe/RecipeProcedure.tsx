@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { clsx } from "clsx";
+import { displayUnit, isLongUnit } from "@/lib/units";
 import { Check, PartyPopper, RotateCcw, Scale, TriangleAlert, X } from "lucide-react";
 import { useRecipeProgress } from "@/lib/recipe-progress";
 import {
@@ -84,11 +85,31 @@ function formatQty(n: number): string {
   return String(r);
 }
 
-/** "500 g" / "q.b." — quantità (già scalata) e unità di un ingrediente. */
-function qtyLabel(ing: Ingredient, scaledQty: (qty: number | null) => string): string {
+/**
+ * Quantità (già scalata) e unità di un ingrediente, separate: `num` null = solo l'unità («q.b.»).
+ * L'unità passa da `displayUnit` (gr → g, qb → q.b., minuscole).
+ */
+function qtyParts(ing: Ingredient, scaledQty: (qty: number | null) => string): { num: string | null; unit: string | null } {
+  const unit = displayUnit(ing.unit);
   // qty 0 (vecchie ricette con «0 q.b.»): non è una quantità, si mostra solo l'unità
-  if (ing.qty != null && ing.qty !== 0) return `${scaledQty(ing.qty)}${ing.unit ? ` ${ing.unit}` : ""}`;
-  return ing.unit ?? "q.b.";
+  if (ing.qty != null && ing.qty !== 0) return { num: scaledQty(ing.qty), unit };
+  return { num: null, unit: unit ?? "q.b." };
+}
+
+/**
+ * 8.6 · quantità nella colonna stretta: unità corte accanto al numero («500 g», «q.b.»), unità
+ * lunghe («cucchiaino», «spicchi») a capo **sotto** il numero, più piccole: nella colonna da 4.5rem
+ * «1 cucchiaino» usciva e finiva sopra il nome dell'ingrediente.
+ */
+function QtyText({ num, unit }: { num: string | null; unit: string | null }) {
+  if (num != null && isLongUnit(unit))
+    return (
+      <span className="flex flex-col leading-tight">
+        <span>{num}</span>
+        <span className="text-[0.75rem] font-semibold break-words">{unit}</span>
+      </span>
+    );
+  return <span className={clsx(num == null && isLongUnit(unit) && "text-[0.8125rem] break-words whitespace-normal")}>{num != null ? `${num}${unit ? ` ${unit}` : ""}` : unit}</span>;
 }
 
 /**
@@ -98,8 +119,9 @@ function qtyLabel(ing: Ingredient, scaledQty: (qty: number | null) => string): s
  */
 function linkQtyLabel(link: StepIngredientLink, ing: Ingredient, split: boolean, scaledQty: (qty: number | null) => string): string {
   const qty = resolveLinkQty(link.qty, ing.qty, split);
-  if (qty != null && qty !== 0) return `${scaledQty(qty)}${ing.unit ? ` ${ing.unit}` : ""}`;
-  return ing.qty ? "il resto" : ing.unit ?? "q.b.";
+  const unit = displayUnit(ing.unit);
+  if (qty != null && qty !== 0) return `${scaledQty(qty)}${unit ? ` ${unit}` : ""}`;
+  return ing.qty ? "il resto" : unit ?? "q.b.";
 }
 
 const caption = "text-xs font-semibold tracking-[0.08em] text-grigio uppercase";
@@ -123,7 +145,7 @@ function IngredientList({
   return (
     <ul className="flex flex-col">
       {items.map((ing) => {
-        const label = qtyLabel(ing, scaledQty);
+        const parts = qtyParts(ing, scaledQty);
         const scalable = ing.qty != null && ing.qty > 0;
         return (
           <li key={ing.id} className="flex min-w-0 items-baseline gap-2.5 border-b border-blu-150 py-2 last:border-0">
@@ -131,7 +153,7 @@ function IngredientList({
               {editingId === ing.id ? (
                 <QtyEditor
                   initial={scaledQty(ing.qty)}
-                  unit={ing.unit}
+                  unit={displayUnit(ing.unit)}
                   onCancel={() => onEdit(null)}
                   onSubmit={(v) => {
                     onApply(ing, v);
@@ -148,10 +170,12 @@ function IngredientList({
                     anchorId === ing.id && "bg-arancio-50"
                   )}
                 >
-                  {label}
+                  <QtyText {...parts} />
                 </button>
               ) : (
-                <span className="tabular font-bold whitespace-nowrap text-arancio">{label}</span>
+                <span className="tabular block font-bold whitespace-nowrap text-arancio">
+                  <QtyText {...parts} />
+                </span>
               )}
             </span>
             <span className="min-w-0 flex-1">
@@ -418,7 +442,7 @@ export function RecipeProcedure({ recipeId, recipeName, recipePhoto, defaultServ
               {anchor && anchor.qty != null && (
                 <>
                   {" "}
-                  su <b>{formatQty(anchor.qty * factor)}{anchor.unit ? ` ${anchor.unit}` : ""} {anchor.name}</b>
+                  su <b>{formatQty(anchor.qty * factor)}{anchor.unit ? ` ${displayUnit(anchor.unit)}` : ""} {anchor.name}</b>
                 </>
               )}
             </span>

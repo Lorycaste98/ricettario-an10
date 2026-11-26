@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useImperativeHandle, useState, type Ref } from "react";
+import { clsx } from "clsx";
+import { headerIconCls } from "@/components/ds/button-classes";
 import { FileDown, Loader2 } from "lucide-react";
 import type { StepIngredientLink } from "@/lib/step-ingredients";
 
@@ -122,7 +124,10 @@ export function safeFileName(name: string, fallback = "ricetta"): string {
 }
 
 /** Bottone tondo con sola icona (tavola 3.10) nella testata del dettaglio ricetta */
-export function RecipePdfButton({ recipe }: { recipe: RecipePdfData }) {
+/** Comando del bottone dall'esterno (voce «Esporta in PDF» del menù «⋯» 3.14 nella testata). */
+export type PdfButtonHandle = { start: () => void };
+
+export function RecipePdfButton({ recipe, ref, className }: { recipe: RecipePdfData; ref?: Ref<PdfButtonHandle>; className?: string }) {
   const [loading, setLoading] = useState(false);
 
   const handleExport = async () => {
@@ -161,6 +166,8 @@ export function RecipePdfButton({ recipe }: { recipe: RecipePdfData }) {
     }
   };
 
+  useImperativeHandle(ref, () => ({ start: () => void handleExport() }));
+
   return (
     <button
       type="button"
@@ -168,15 +175,15 @@ export function RecipePdfButton({ recipe }: { recipe: RecipePdfData }) {
       disabled={loading}
       aria-label="Esporta in PDF"
       title="Esporta in PDF"
-      className="inline-flex size-(--h-icon) shrink-0 items-center justify-center rounded-full border border-blu-200 bg-white text-blu-800 transition-colors hover:bg-blu-100 disabled:opacity-60"
+      className={clsx(headerIconCls, className)}
     >
       {loading ? (
         <Loader2
-          size={20}
+          
           className="animate-spin motion-reduce:animate-none"
         />
       ) : (
-        <FileDown size={20} />
+        <FileDown />
       )}
     </button>
   );

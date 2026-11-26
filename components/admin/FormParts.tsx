@@ -62,19 +62,7 @@ export function FormBar({
         <X className="size-5" aria-hidden />
       </button>
       <h1 className="min-w-0 flex-1 truncate text-(length:--fs-sec) font-bold">{title}</h1>
-      <VisibilityToggle
-        published={published}
-        onToggle={onTogglePublished}
-        labels={publishedLabels}
-        className="@max-[619px]:hidden"
-      />
-      <VisibilityToggle
-        published={published}
-        onToggle={onTogglePublished}
-        labels={publishedLabels}
-        compact
-        className="@min-[620px]:hidden"
-      />
+      <VisibilityToggle published={published} onToggle={onTogglePublished} labels={publishedLabels} iconOnlyNarrow />
       <Button variant="secondary" onClick={onCancel} className="@max-[619px]:hidden">
         Annulla
       </Button>

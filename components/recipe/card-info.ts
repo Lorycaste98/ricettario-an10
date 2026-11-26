@@ -4,7 +4,7 @@ import { useAuth } from "@/components/AuthProvider";
 
 /**
  * Dati comuni a `RecipeCard` (8.1, «Piatto») e `RecipeRow` (8.10, «Carta»): tempo totale,
- * categoria principale, voti, stato «non pronta» (solo admin).
+ * voti, stato «non pronta» (solo admin).
  */
 export function useCardInfo(recipe: RecipeSummary) {
   const { isAdmin } = useAuth();
@@ -12,7 +12,6 @@ export function useCardInfo(recipe: RecipeSummary) {
   return {
     isAdmin,
     time: total > 0 ? formatMinutes(total) : null,
-    cat: recipe.categories[0] ?? null,
     guest: recipe._count.reviews > 0 && recipe.avgRating !== null ? { value: recipe.avgRating!, count: recipe._count.reviews } : null,
     mine: isAdmin && recipe.myRating != null ? recipe.myRating : null,
     hidden: isAdmin && !recipe.published,

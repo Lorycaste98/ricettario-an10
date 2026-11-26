@@ -1,7 +1,7 @@
 "use client";
 
 import { clsx } from "clsx";
-import { Check, Eye, EyeOff } from "lucide-react";
+import { Check } from "lucide-react";
 import type { ReactNode } from "react";
 
 /**
@@ -10,12 +10,51 @@ import type { ReactNode } from "react";
  * la levetta (Switch) è solo per le impostazioni.
  */
 
-/** 4.8 · visibilità pronta / non pronta. `compact` = solo icona (righe di tabella, testate). */
+/**
+ * 4.8 · occhio animato: aperto = pronta, chiuso con la barra = non pronta. Disegnato sulla griglia
+ * di lucide (24, tratto 2): palpebra di sopra e di sotto come due archi, pupilla, tre ciglia e la
+ * barra. Il passaggio è nelle classi `.eye-*` di `app/globals.css` (fermo con «Riduci movimento»).
+ */
+export function AnimatedEye({ closed, className }: { closed: boolean; className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      data-closed={closed}
+      className={clsx("eye", className)}
+    >
+      <path d="M2 12Q12 22 22 12" />
+      <path className="eye-lid" d="M2 12Q12 2 22 12" />
+      <circle className="eye-pupil" cx="12" cy="12" r="3" />
+      <g className="eye-lash">
+        <path d="M7 15.8 5.7 18.3M12 17v2.8M17 15.8l1.3 2.5" />
+      </g>
+      <path className="eye-bar" d="M3.5 3.5 20.5 20.5" pathLength={1} />
+    </svg>
+  );
+}
+
+/**
+ * 4.8 · visibilità pronta / non pronta. Angoli da bottone piccolo (10px, come 3.9 e il «torna
+ * indietro» 9.4): è un'azione, non un'etichetta.
+ * - `compact` = solo icona sempre (righe di tabella);
+ * - `iconOnlyNarrow` = solo icona su contenitore < 620px, con la scritta da lì in su (testate 9.5).
+ * La scritta non cambia di colpo: le due etichette stanno sovrapposte nella stessa cella, quindi il
+ * bottone ha **sempre la larghezza della più lunga** («Non pronta») e non si allarga né si stringe;
+ * al cambio la vecchia esce e la nuova entra rotolando (non pronta sale da sotto, pronta scende da
+ * sopra), insieme all'occhio che si chiude o si apre. Fermo con «Riduci movimento».
+ */
 export function VisibilityToggle({
   published,
   onToggle,
   disabled,
   compact = false,
+  iconOnlyNarrow = false,
   labels = { on: "Pronta", off: "Non pronta" },
   className,
 }: {
@@ -23,31 +62,39 @@ export function VisibilityToggle({
   onToggle: () => void;
   disabled?: boolean;
   compact?: boolean;
+  iconOnlyNarrow?: boolean;
   labels?: { on: string; off: string };
   className?: string;
 }) {
   const text = published ? labels.on : labels.off;
+  const label = "col-start-1 row-start-1 transition-[opacity,translate] duration-[260ms] ease-[cubic-bezier(0.65,0,0.35,1)] motion-reduce:transition-none";
   return (
     <button
       type="button"
       role="switch"
       aria-checked={published}
-      aria-label={compact ? text : undefined}
+      aria-label={text}
       title={published ? `${labels.on}: visibile ai visitatori. Tocca per nasconderla.` : `${labels.off}: nascosta ai visitatori. Tocca per pubblicarla.`}
       disabled={disabled}
       onClick={onToggle}
       className={clsx(
-        "hit-44 inline-flex h-(--h-sm) shrink-0 items-center justify-center gap-[0.4em] rounded-full border text-[0.875rem] font-bold transition-colors disabled:opacity-50",
-        "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-blu-600/35 [&_svg]:size-[1.1em]",
-        compact ? "w-(--h-sm)" : "pr-[0.85em] pl-[0.65em]",
+        "hit-44 inline-flex h-(--h-sm) shrink-0 items-center justify-center gap-[0.4em] overflow-hidden rounded-[0.625rem] border text-[0.875rem] font-bold transition-colors duration-300 disabled:cursor-progress",
+        "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-blu-600/35 [&_svg]:size-[1.2em] [&_svg]:shrink-0",
+        compact ? "w-(--h-sm)" : "pr-[0.85em] pl-[0.6em]",
+        iconOnlyNarrow && !compact && "@max-[620px]:w-(--h-sm) @max-[620px]:px-0",
         published
           ? "border-verde-200 bg-verde-50 text-verde hover:brightness-[.97]"
           : "border-dashed border-blu-200 bg-neutro-50 text-grigio hover:bg-blu-100",
         className
       )}
     >
-      {published ? <Eye aria-hidden /> : <EyeOff aria-hidden />}
-      {!compact && <span>{text}</span>}
+      <AnimatedEye closed={!published} />
+      {!compact && (
+        <span aria-hidden className={clsx("grid", iconOnlyNarrow && "@max-[620px]:hidden")}>
+          <span className={clsx(label, published ? "opacity-100" : "-translate-y-[0.9em] opacity-0")}>{labels.on}</span>
+          <span className={clsx(label, published ? "translate-y-[0.9em] opacity-0" : "opacity-100")}>{labels.off}</span>
+        </span>
+      )}
     </button>
   );
 }

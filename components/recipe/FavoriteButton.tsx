@@ -2,14 +2,16 @@
 import { Heart } from "lucide-react";
 import { clsx } from "clsx";
 import { useFavorites } from "@/lib/favorites";
+import { headerIconCls } from "@/components/ds/button-classes";
 
 interface Props {
   recipeId: number;
   /** card = tondo sulla foto della `RecipeCard` · icon = 3.10/3.11 nella testata del dettaglio */
   variant?: "card" | "icon";
+  className?: string;
 }
 
-export function FavoriteButton({ recipeId, variant = "card" }: Props) {
+export function FavoriteButton({ recipeId, variant = "card", className }: Props) {
   const { isFavorite, toggle, hydrated } = useFavorites();
   const active = hydrated && isFavorite(recipeId);
 
@@ -20,7 +22,7 @@ export function FavoriteButton({ recipeId, variant = "card" }: Props) {
   };
 
   if (variant === "icon") {
-    // 3.10 / 3.11 · tondo con sola icona, per la testata del dettaglio
+    // 3.10 / 3.11 · quadrato con sola icona, per la testata del dettaglio (come PDF ed elimina)
     return (
       <button
         type="button"
@@ -29,11 +31,12 @@ export function FavoriteButton({ recipeId, variant = "card" }: Props) {
         aria-pressed={active}
         title={active ? "Nei preferiti: tocca per toglierla" : "Salva tra i preferiti"}
         className={clsx(
-          "inline-flex size-(--h-icon) shrink-0 items-center justify-center rounded-full border transition-colors",
-          active ? "border-arancio-pieno bg-arancio-pieno text-white" : "border-blu-200 bg-white text-blu-800 hover:bg-blu-100"
+          headerIconCls,
+          active && "border-arancio-pieno! bg-arancio-pieno! text-white! hover:bg-arancio-scuro!",
+          className
         )}
       >
-        <Heart size={20} className={clsx(active && "fill-current")} />
+        <Heart className={clsx(active && "fill-current")} />
       </button>
     );
   }

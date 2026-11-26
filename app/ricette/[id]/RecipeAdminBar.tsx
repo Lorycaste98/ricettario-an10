@@ -1,21 +1,27 @@
 "use client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { Pencil, Trash2 } from "lucide-react";
+import { useRef, useState } from "react";
+import { FileDown, Heart, Pencil, Trash2 } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { ConfirmModal } from "@/components/ui/Modal";
 import { VisibilityToggle } from "@/components/ds/Controls";
-import { IconButton } from "@/components/ds/Button";
+import { ActionMenu } from "@/components/ds/ActionMenu";
+import { headerIconCls } from "@/components/ds/button-classes";
 import { FavoriteButton } from "@/components/recipe/FavoriteButton";
-import { RecipePdfButton, type RecipePdfData } from "@/components/recipe/RecipePdfButton";
+import { RecipePdfButton, type PdfButtonHandle, type RecipePdfData } from "@/components/recipe/RecipePdfButton";
+import { useFavorites } from "@/lib/favorites";
+
+/** Le azioni secondarie compaiono come bottoni solo da questo contenitore in su; sotto vanno nel «⋯». */
+const WIDE = "@max-[620px]:hidden";
 
 /**
- * Azioni della testata del dettaglio ricetta (tavola 9.5).
- * - Tutti: PDF e preferito (bottoni tondi 3.10/3.11).
- * - Admin: pronta/non pronta con l'occhio (4.8, PATCH immediato + refresh), Modifica (3.4),
- *   Elimina (3.10 rosa + conferma 10.1).
- * Gemello di `app/menu/[id]/MenuAdminBar.tsx` (stessa logica di pubblicazione).
+ * Azioni della testata del dettaglio ricetta (9.5, a destra del «torna indietro»).
+ * - Admin: l'occhio pronta/non pronta (4.8) è sempre in vista; Modifica, PDF, preferito ed Elimina
+ *   sono bottoni quadrati da 620px di contenitore, sotto stanno nel menù «⋯» (3.14).
+ * - Visitatore: PDF e preferito, sempre in vista (sono due).
+ * La visibilità cambia subito (l'occhio si anima al tocco) e torna indietro se la PATCH fallisce.
+ * Gemello di `app/menu/[id]/MenuAdminBar.tsx`.
  */
 export function RecipeAdminBar({
   recipeId,
@@ -28,22 +34,28 @@ export function RecipeAdminBar({
 }) {
   const { isAdmin } = useAuth();
   const router = useRouter();
+  const pdfRef = useRef<PdfButtonHandle>(null);
+  const { isFavorite, toggle, hydrated } = useFavorites();
+  const fav = hydrated && isFavorite(recipeId);
   const [isPublished, setIsPublished] = useState(published);
   const [toggling, setToggling] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   const togglePublished = async () => {
-    setToggling(true);
     const next = !isPublished;
+    setIsPublished(next);
+    setToggling(true);
     const res = await fetch(`/api/recipes/${recipeId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ published: next }),
-    });
+    }).catch(() => null);
     setToggling(false);
-    if (!res.ok) return;
-    setIsPublished(next);
+    if (!res?.ok) {
+      setIsPublished(!next);
+      return;
+    }
     router.refresh();
   };
 
@@ -54,28 +66,47 @@ export function RecipeAdminBar({
     router.refresh();
   };
 
+  if (!isAdmin) {
+    return (
+      <>
+        <RecipePdfButton recipe={pdf} />
+        <FavoriteButton recipeId={recipeId} variant="icon" />
+      </>
+    );
+  }
+
   return (
     <>
-      {isAdmin && (
-        <>
-          <VisibilityToggle published={isPublished} onToggle={() => void togglePublished()} disabled={toggling} />
-          <Link
-            href={`/admin/ricette/${recipeId}`}
-            aria-label="Modifica ricetta"
-            className="inline-flex h-(--h-btn) items-center gap-[0.45em] rounded-ctl border border-blu-200 bg-white px-[1.05em] font-semibold text-blu-950 hover:bg-blu-100 [&_svg]:size-[1.15em]"
-          >
-            <Pencil aria-hidden />
-            <span className="hidden @min-[620px]:inline">Modifica</span>
-          </Link>
-        </>
-      )}
-      <RecipePdfButton recipe={pdf} />
-      <FavoriteButton recipeId={recipeId} variant="icon" />
-      {isAdmin && (
-        <IconButton label="Elimina ricetta" tone="danger" onClick={() => setConfirmDelete(true)}>
-          <Trash2 />
-        </IconButton>
-      )}
+      <VisibilityToggle published={isPublished} onToggle={() => void togglePublished()} disabled={toggling} iconOnlyNarrow />
+      <Link href={`/admin/ricette/${recipeId}`} aria-label="Modifica ricetta" title="Modifica ricetta" className={`${headerIconCls} ${WIDE}`}>
+        <Pencil aria-hidden />
+      </Link>
+      <RecipePdfButton ref={pdfRef} recipe={pdf} className={WIDE} />
+      <FavoriteButton recipeId={recipeId} variant="icon" className={WIDE} />
+      <button
+        type="button"
+        aria-label="Elimina ricetta"
+        title="Elimina ricetta"
+        onClick={() => setConfirmDelete(true)}
+        className={`${headerIconCls} ${WIDE} text-rosa!`}
+      >
+        <Trash2 aria-hidden />
+      </button>
+      <div className="@min-[620px]:hidden">
+        <ActionMenu
+          items={[
+            { label: "Modifica", icon: <Pencil />, onSelect: () => router.push(`/admin/ricette/${recipeId}`) },
+            { label: "Esporta in PDF", icon: <FileDown />, onSelect: () => pdfRef.current?.start() },
+            {
+              label: fav ? "Togli dai preferiti" : "Aggiungi ai preferiti",
+              icon: <Heart className={fav ? "fill-current" : undefined} />,
+              active: fav,
+              onSelect: () => toggle(recipeId),
+            },
+            { label: "Elimina ricetta", icon: <Trash2 />, tone: "danger", onSelect: () => setConfirmDelete(true) },
+          ]}
+        />
+      </div>
 
       <ConfirmModal
         open={confirmDelete}

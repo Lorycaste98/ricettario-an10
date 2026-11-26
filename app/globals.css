@@ -32,6 +32,39 @@
   .an10a-draw, .an10a-pin, .an10a-fork, .an10a-blade, .an10a-handle, .an10a-egg, .an10a-yolk { animation: none; stroke-dashoffset: 0; }
 }
 
+/* 8.1 · card ricetta in subgrid (RecipeCard): lo spazio fra le righe della griglia «filtrava» dentro
+   la card fra le sue righe interne (Chrome non applica bene il gap 0 della subgrid). La griglia che
+   contiene le card non ha spazio fra le righe: lo fa il margine sotto ogni card. */
+.grid:has(> [data-recipe-card]) { row-gap: 0; }
+[data-recipe-card] { margin-bottom: var(--gap); }
+
+/* 3.14 · tendina del menù azioni «⋯» (components/ds/ActionMenu.tsx) */
+@keyframes menu-in {
+  from { opacity: 0; transform: scale(0.94) translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* 4.8 · occhio animato della visibilità (VisibilityToggle in components/ds/Controls.tsx).
+   Si chiude: la palpebra di sopra si ribalta su quella di sotto (scaleY 1 → -1, passa da una riga
+   piatta), la pupilla si stringe, spuntano le ciglia e infine si traccia la barra. Si apre: al
+   contrario, la barra sparisce per prima. Solo transform, opacity e stroke-dashoffset. */
+.eye-lid, .eye-pupil, .eye-lash, .eye-bar {
+  transform-box: view-box;
+  transform-origin: 12px 12px;
+  transition-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+}
+.eye-lid { transition: transform 260ms 120ms; }
+.eye-pupil { transition: transform 200ms 140ms, opacity 160ms 140ms; }
+.eye-lash { transition: opacity 140ms, transform 140ms; transform: translateY(-2px); opacity: 0; }
+.eye-bar { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 220ms; }
+.eye[data-closed="true"] .eye-lid { transform: scaleY(-1); transition-delay: 0ms; }
+.eye[data-closed="true"] .eye-pupil { transform: scale(0); opacity: 0; transition-delay: 0ms; }
+.eye[data-closed="true"] .eye-lash { opacity: 1; transform: none; transition-delay: 230ms; }
+.eye[data-closed="true"] .eye-bar { stroke-dashoffset: 0; transition-delay: 300ms; }
+@media (prefers-reduced-motion: reduce) {
+  .eye-lid, .eye-pupil, .eye-lash, .eye-bar { transition: none !important; }
+}
+
 /* Ricerca a pagina intera (SearchOverlay): vetro smerigliato sopra la pagina in cui eri.
    Solo il fondo vuoto è trasparente — campo e risultati stanno su schede piene (niente testo su
    trasparenza). Sfocatura forte: della pagina sotto restano macchie di colore, non scritte.

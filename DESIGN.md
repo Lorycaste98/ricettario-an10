@@ -277,9 +277,15 @@ Piatto per scelta: la profondità la danno il tono (fondo `blu-50` → zone azzu
 
 ## Shapes
 
-Angoli morbidi ma non giocosi: 9px le azioni di riga, 10px i campi, 12px controlli e bottoni, 16px le schede, 20px le finestre, pill per chip, etichette, voto e bottoni tondi. Bordi da 1px; tratteggio per «aggiungi» e per «non pronta». Le icone di progetto sono disegnate sulla griglia di lucide (24, tratto 2, estremi tondi), così forme e icone parlano la stessa lingua.
+Angoli morbidi ma non giocosi: 9px le azioni di riga, 10px i campi e i bottoni piccoli (3.9, torna indietro 9.4, occhio 4.8, icone e «⋯» della testata 9.5), 12px controlli e bottoni, 16px le schede, 20px le finestre, pill solo per chip, etichette e voto. **Ciò che si preme è squadrato** (giro da telefono 26/11/2026: il «torna indietro» a pillola stonava accanto ai bottoni squadrati); restano tondi solo i bottoni che stanno sopra una foto o un piatto (cuore e pentola delle card). Bordi da 1px; tratteggio per «aggiungi» e per «non pronta». Le icone di progetto sono disegnate sulla griglia di lucide (24, tratto 2, estremi tondi), così forme e icone parlano la stessa lingua.
 
 ## Components
+
+- **Testata dei dettagli (9.5, rifatta il 26/11/2026)**: due piani. In alto la barra: «torna indietro» 9.4 a sinistra, azioni a destra. Sotto: miniatura · titolo · categorie (etichette 6.13) · tempo e porzioni con le icone. Su contenitore < 620px l'admin vede solo l'occhio 4.8 **senza scritta** e il **menù azioni «⋯» 3.14** (`ActionMenu`: tendina bianca nostra, non nativa, voci da 44px, Elimina in rosa sotto un filetto); da 620px le stesse azioni sono bottoni quadrati (`headerIconCls`). Il visitatore vede PDF e cuore.
+- **Quantità degli ingredienti (8.6)**: unità uniformate solo a schermo (`lib/units.ts`: gr → g, qb → q.b., minuscole); le unità-parola («cucchiaino», «spicchi») vanno a capo sotto il numero, più piccole, invece di uscire dalla colonna.
+- **Card ricetta 8.1 allineate**: le card della stessa riga condividono le righe della griglia (subgrid), così nome, dettagli, tag e categoria stanno alla stessa altezza in tutte.
+- **6.13 · etichetta di categoria** (scelta il 26/11/2026 fra pallino, occhiello, filetto e fascia): nome su fondo tinto col colore della categoria, identica su card 8.1, riga 8.10 e testata 9.5. Nelle liste sta **in fondo** (una riga: prima categoria + «+N»): dice a che categoria appartiene la ricetta ma non è l'informazione principale.
+- **Occhio 4.8 con la scritta**: le due scritte stanno sovrapposte, il bottone ha sempre la larghezza della più lunga e al cambio la scritta rotola (non pronta sale, pronta scende) insieme all'occhio. Mai più cambio di larghezza di colpo.
 
 Ogni componente vive una volta sola in `components/ds/` (o nella cartella della sua area) con il codice della tavola nel commento.
 
@@ -356,9 +362,9 @@ Sfondo di pagina **pieno** `#F4F9FB` (1.6): niente più gradiente fisso (vedi pr
 
 ### D4 · Misure e tocco
 - Le misure sono **fluide** e in **rem**: crescono con lo spazio disponibile, da 390px (iPhone) a 1440px (PC), con `clamp(min rem, rem + quota di larghezza, max rem)`, e seguono anche la dimensione del testo scelta dall'utente. **Dentro i componenti** padding, spazi e icone sono in **em**, così seguono il testo del componente; bordi, linee sottili e ombre restano in px. Token in `app/design-tokens.css`. Valori di partenza: campi 34→40px (4.x, **sottili**), bottoni 38→44 (3.2–3.9), bottone di cucina 44→54 (3.1), bottoni piccoli 30→34, titolo pagina 22→30, passo corrente 17→22, timer 26→36. Al telefono il dito ha comunque un'area utile di almeno 44px: si allarga l'area toccabile, non il disegno (classe `hit-44`, fase 8).
-- Angoli: 12px controlli, 14–16px schede, 20px finestre, pill per chip ed etichette.
+- Angoli: 10px bottoni piccoli e testata (9.4, 4.8, 3.14), 12px controlli, 14–16px schede, 20px finestre, pill solo per chip ed etichette: ciò che si preme è squadrato.
 - Campi a 16px su iPhone/iPad (niente zoom al focus); padding interno ridotto (9→12px).
-- **Due interruttori diversi per due cose diverse**: la visibilità «pronta / non pronta» di ricette e menù è sempre l'**occhio** (4.8, con o senza testo), ovunque compaia (form 11.1, testata 9.5, tabella 12.1). L'interruttore a levetta (4.13) resta solo per le **impostazioni** (schermo acceso, sezioni negli ingredienti, ingrediente nelle statistiche 12.2).
+- **Due interruttori diversi per due cose diverse**: la visibilità «pronta / non pronta» di ricette e menù è sempre l'**occhio** (4.8, con o senza testo), ovunque compaia (form 11.1, testata 9.5, tabella 12.1). L'occhio è **animato** (`AnimatedEye`): la palpebra si chiude, spuntano le ciglia e si traccia la barra; al contrario quando si apre. Nella testata cambia subito al tocco e torna indietro se il salvataggio fallisce. L'interruttore a levetta (4.13) resta solo per le **impostazioni** (schermo acceso, sezioni negli ingredienti, ingrediente nelle statistiche 12.2).
 
 ### D5 · Icone
 - Azioni generiche: **lucide** (5.1–5.18).

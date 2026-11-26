@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useImperativeHandle, useState, type Ref } from "react";
+import { clsx } from "clsx";
+import { headerIconCls } from "@/components/ds/button-classes";
 import { ChevronRight, Download, FileDown, Loader2, Share2 } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ds/Button";
@@ -12,6 +14,7 @@ import {
   urlToDataUrl,
   logoPngDataUrl,
   safeFileName,
+  type PdfButtonHandle,
   type RecipePdfData,
 } from "@/components/recipe/RecipePdfButton";
 import type { StepIngredientLink } from "@/lib/step-ingredients";
@@ -107,7 +110,7 @@ function canShareFile(file: File): boolean {
  *   c'è). Il file si genera prima e si condivide dopo, con un tocco a parte: iOS accetta
  *   `navigator.share` solo dentro un gesto dell'utente, non al termine di un'attesa.
  */
-export function MenuPdfButton({ menu }: MenuPdfProps) {
+export function MenuPdfButton({ menu, ref, className }: MenuPdfProps & { ref?: Ref<PdfButtonHandle>; className?: string }) {
   const { isAdmin } = useAuth();
   const [step, setStep] = useState<Step | null>(null);
   const [busy, setBusy] = useState<"kitchen" | "guest" | null>(null);
@@ -305,6 +308,8 @@ export function MenuPdfButton({ menu }: MenuPdfProps) {
     } else void exportKitchen();
   };
 
+  useImperativeHandle(ref, () => ({ start: () => { if (busy === null && menu.recipes.length > 0) onButton(); } }));
+
   const shareable = ready ? canShareFile(new File([ready.blob], ready.fileName, { type: "application/pdf" })) : false;
   const canSkip = missing?.loaded.some((r) => !r.quick) ?? false;
 
@@ -422,9 +427,9 @@ export function MenuPdfButton({ menu }: MenuPdfProps) {
         disabled={busy !== null || menu.recipes.length === 0}
         aria-label="Esporta in PDF"
         title="Esporta in PDF"
-        className="inline-flex size-(--h-icon) shrink-0 items-center justify-center rounded-full border border-blu-200 bg-white text-blu-800 transition-colors hover:bg-blu-100 disabled:opacity-60"
+        className={clsx(headerIconCls, className)}
       >
-        {busy && step === null ? <Loader2 size={20} className="animate-spin motion-reduce:animate-none" /> : <FileDown size={20} />}
+        {busy && step === null ? <Loader2 className="animate-spin motion-reduce:animate-none" /> : <FileDown />}
       </button>
     </>
   );
