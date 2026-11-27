@@ -522,16 +522,23 @@ export function RecipeProcedure({ recipeId, recipeName, recipePhoto, recipeCateg
       {session.hydrated &&
         steps.length > 0 &&
         (cooking ? (
-          <div className="flex flex-wrap items-center gap-2 rounded-ctl border border-blu-200 bg-blu-100 px-3 py-2">
-            <PotIcon className="size-5 shrink-0 text-blu-700" aria-hidden />
-            <p className="min-w-0 flex-1 text-[0.875rem] font-semibold text-blu-800">Stai cucinando questa ricetta</p>
-            <Button size="sm" variant="secondary" icon={<X />} onClick={() => removeRecipe(recipeId)} title="Toglie la ricetta dalla lista senza registrare la cottura">
-              Togli
-            </Button>
-            <Button size="sm" variant="tonal" icon={<Check />} onClick={finishAndRemove} loading={finishing} title={isAdmin ? "Registra una cottura e toglie la ricetta dalla lista" : "Toglie la ricetta dalla lista"}>
-              Finito e rimuovi
-            </Button>
-            {finishError && <p className="w-full text-xs text-rosa">Non sono riuscito a registrare la cottura, riprova.</p>}
+          // stretto: scritta sopra, i due bottoni sotto a larghezza uguale; largo: tutto su una riga
+          <div className="@container/cook rounded-ctl border border-blu-200 bg-blu-100 px-3 py-2">
+            <div className="flex flex-col gap-2 @min-[30rem]/cook:flex-row @min-[30rem]/cook:items-center">
+              <p className="flex min-w-0 flex-1 items-center gap-2 text-[0.875rem] font-semibold text-blu-800">
+                <PotIcon className="size-5 shrink-0 text-blu-700" aria-hidden />
+                Stai cucinando questa ricetta
+              </p>
+              <div className="grid grid-cols-2 gap-2 @min-[30rem]/cook:flex">
+                <Button size="sm" variant="secondary" icon={<X />} onClick={() => removeRecipe(recipeId)} title="Toglie la ricetta dalla lista senza registrare la cottura" className="w-full @min-[30rem]/cook:w-auto">
+                  Togli
+                </Button>
+                <Button size="sm" variant="tonal" icon={<Check />} onClick={finishAndRemove} loading={finishing} title={isAdmin ? "Registra una cottura e toglie la ricetta dalla lista" : "Toglie la ricetta dalla lista"} className="w-full @min-[30rem]/cook:w-auto">
+                  Finito e rimuovi
+                </Button>
+              </div>
+            </div>
+            {finishError && <p className="mt-1.5 text-xs text-rosa">Non sono riuscito a registrare la cottura, riprova.</p>}
           </div>
         ) : (
           <div>

@@ -9,12 +9,12 @@ import { RecipeRow } from "./RecipeRow";
 import { CollectionBody, pageSizeFor, useCollectionView } from "@/components/ui/CollectionView";
 import {
   ActiveFilters,
-  CategoryChips,
   computeFacets,
   FilterPopover,
   FilterSearch,
   FilterSectionTitle,
-  TagChecklist,
+  FilterChecklist,
+  FilterPicker,
 } from "./RecipeFilters";
 import { normalizeSearchText } from "@/lib/search";
 import { type RecipeSummary, type Category, type Tag } from "@/lib/types";
@@ -278,7 +278,7 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
                 resetPage();
               }}
             >
-              <CategoryChips categories={categories} facets={facets} activeCats={activeCats} onToggle={toggleCat} />
+              <FilterChecklist items={categories} counts={facets.catCount} active={activeCats} onToggle={toggleCat} noun="categorie" />
             </FilterPopover>
           )}
           {tags.length > 0 && (
@@ -292,7 +292,7 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
                 resetPage();
               }}
             >
-              <TagChecklist tags={tags} facets={facets} activeTags={activeTags} onToggle={toggleTag} />
+              <FilterChecklist items={tags} counts={facets.tagCount} active={activeTags} onToggle={toggleTag} noun="tag" />
             </FilterPopover>
           )}
           {visibilityControl}
@@ -392,42 +392,8 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
           </>
         }
       >
+        {/* visibilità e ordine in cima (si toccano spesso), poi categorie e tag chiusi: si aprono col «+» */}
         <div className="flex flex-col gap-5">
-          {categories.length > 0 && (
-            <section className="flex flex-col gap-1.5">
-              <FilterSectionTitle>Categorie</FilterSectionTitle>
-              <CategoryChips categories={categories} facets={facets} activeCats={activeCats} onToggle={toggleCat} />
-            </section>
-          )}
-          {tags.length > 0 && (
-            <section className="flex flex-col gap-1.5">
-              <FilterSectionTitle
-                aside={
-                  activeTags.length > 0 ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setActiveTags([]);
-                        resetPage();
-                      }}
-                    >
-                      Togli
-                    </Button>
-                  ) : undefined
-                }
-              >
-                Tag{activeTags.length > 0 ? ` · ${activeTags.length} scelt${activeTags.length === 1 ? "o" : "i"}` : ""}
-              </FilterSectionTitle>
-              <TagChecklist
-                tags={tags}
-                facets={facets}
-                activeTags={activeTags}
-                onToggle={toggleTag}
-                listClassName="max-h-[min(16rem,38dvh)]"
-              />
-            </section>
-          )}
           {visibilityControl && (
             <section className="flex flex-col gap-1.5">
               <FilterSectionTitle>Visibilità</FilterSectionTitle>
@@ -438,6 +404,36 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
             <FilterSectionTitle>Ordina per</FilterSectionTitle>
             <div className="flex gap-2">{sortControls("flex-1")}</div>
           </section>
+          {categories.length > 0 && (
+            <FilterPicker
+              title="Categorie"
+              items={categories}
+              counts={facets.catCount}
+              active={activeCats}
+              onToggle={toggleCat}
+              onClear={() => {
+                setActiveCats([]);
+                resetPage();
+              }}
+              noun="categorie"
+              listClassName="max-h-[min(16rem,38dvh)]"
+            />
+          )}
+          {tags.length > 0 && (
+            <FilterPicker
+              title="Tag"
+              items={tags}
+              counts={facets.tagCount}
+              active={activeTags}
+              onToggle={toggleTag}
+              onClear={() => {
+                setActiveTags([]);
+                resetPage();
+              }}
+              noun="tag"
+              listClassName="max-h-[min(16rem,38dvh)]"
+            />
+          )}
         </div>
       </Modal>
     </div>

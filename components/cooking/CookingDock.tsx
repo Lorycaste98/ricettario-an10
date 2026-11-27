@@ -135,6 +135,12 @@ function KeepAwakeToggle() {
   );
 }
 
+/** Fondo della testata: colore della categoria; con più categorie un gradiente fra i loro colori (in oklch). */
+function headerBackground(cats: { color: string }[]): string {
+  const tints = cats.slice(0, 4).map((c) => `color-mix(in oklch, ${c.color} 30%, white)`);
+  return tints.length > 1 ? `linear-gradient(100deg in oklch, ${tints.join(", ")})` : tints[0];
+}
+
 const NEXT_PREVIEW = 2;
 
 /**
@@ -230,12 +236,12 @@ function CookingRecipeCard({
   const cat = recipe.categories?.[0];
   return (
     <article className={cardCls}>
-      {/* Testata colorata: colore della prima categoria (fondo tinto, testo scurito), foto, nome, categorie e tag */}
+      {/* Testata colorata: colore della categoria (gradiente se sono più d'una) (fondo tinto, testo scurito), foto, nome, categorie e tag */}
       <header
         className={clsx("-mx-[0.875em] -mt-[0.875em] flex items-center gap-3 rounded-t-[inherit] border-b px-[0.875em] py-3", !cat && "border-blu-150 bg-blu-100")}
         style={
           cat
-            ? { background: `color-mix(in oklch, ${cat.color} 30%, white)`, borderColor: `color-mix(in oklch, ${cat.color} 45%, white)`, color: categoryInk(cat.color) }
+            ? { background: headerBackground(recipe.categories ?? []), borderColor: `color-mix(in oklch, ${cat.color} 45%, white)`, color: categoryInk(cat.color) }
             : undefined
         }
       >

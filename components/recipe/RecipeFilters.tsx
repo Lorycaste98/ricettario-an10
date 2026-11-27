@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { clsx } from "clsx";
-import { Check, ChevronDown, Hash } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, Hash, Plus } from "lucide-react";
 import { Chip } from "@/components/ds/Controls";
 import { SearchField } from "@/components/ds/Field";
 import { Button } from "@/components/ds/Button";
@@ -13,10 +13,11 @@ import type { Category, RecipeSummary, Tag } from "@/lib/types";
 /**
  * Filtri della libreria ricette (fase 9, rifatti sulla struttura della versione di `main`).
  * - 4.14 · filtri a tendina: `FilterPopover` (bottone «Categorie ▾» / «Tag ▾» col numero di scelti
- *   + tendina in portale su `body`, non tagliata dai contenitori) con dentro `CategoryChips`
- *   (chip 4.11 col pallino e il numero di ricette) o `TagChecklist` (ricerca 4.5 + elenco a caselle
- *   **ad altezza fissa** che scorre: 100 tag occupano sempre lo stesso spazio). Su contenitore
- *   stretto gli stessi due componenti stanno nel foglio dal basso «Filtri» (`Modal variant="sheet"`).
+ *   + tendina in portale su `body`, non tagliata dai contenitori) con dentro `FilterChecklist`
+ *   (categorie e tag nello stesso elenco: ricerca 4.5 + caselle **ad altezza fissa** che scorre, col
+ *   pallino del colore per le categorie). Su contenitore stretto stanno nel foglio dal basso «Filtri»
+ *   (`Modal variant="sheet"`) dentro `FilterPicker`: chiusi, gli scelti come chip e un «+» che apre
+ *   l'elenco; visibilità e ordinamento stanno in cima.
  * - 4.15 · `FilterSearch`: la ricerca della lista che, mentre scrivi, propone le categorie e i tag
  *   che corrispondono; sceglierne uno lo trasforma in un filtro e svuota il campo.
  * - `ActiveFilters`: fila dei filtri attivi, togliibili con la ✕.
@@ -54,54 +55,35 @@ export function FilterSectionTitle({ children, aside }: { children: ReactNode; a
   );
 }
 
-/** Le categorie come chip 4.11 col pallino del colore e il numero di ricette (scelta immediata) */
-export function CategoryChips({
-  categories,
-  facets,
-  activeCats,
-  onToggle,
-}: {
-  categories: Category[];
-  facets: Facets;
-  activeCats: number[];
-  onToggle: (id: number) => void;
-}) {
-  return (
-    <div className="flex flex-wrap gap-1.5">
-      {categories.map((c) => {
-        const on = activeCats.includes(c.id);
-        const n = facets.catCount.get(c.id) ?? 0;
-        return (
-          <Chip key={c.id} active={on} disabled={!on && n === 0} dot={c.color} count={n} onClick={() => onToggle(c.id)}>
-            {c.name}
-          </Chip>
-        );
-      })}
-    </div>
-  );
-}
+type CheckItem = { id: number; name: string; color?: string };
 
 /**
- * Tag: ricerca + elenco a caselle ad altezza fissa. I tag scelti stanno in cima (ordine fissato
+ * Categorie e tag (stesso elenco dal 27/11/2026): ricerca + elenco a caselle ad altezza fissa,
+ * col pallino del colore per le categorie. Gli elementi scelti stanno in cima (ordine fissato
  * all'apertura e a ogni cambio di ricerca, così una riga non salta via sotto il dito), poi gli altri
  * dalla A alla Z, quelli a 0 in fondo e spenti. Tastiera: frecce dal campo, Invio (o Spazio a campo
  * vuoto) sceglie la riga evidenziata.
  */
-export function TagChecklist({
-  tags,
-  facets,
-  activeTags,
+export function FilterChecklist({
+  items: all,
+  counts,
+  active: activeTags,
   onToggle,
+  noun,
   autoFocus,
   listClassName = "max-h-[min(18rem,45dvh)]",
 }: {
-  tags: Tag[];
-  facets: Facets;
-  activeTags: number[];
+  items: CheckItem[];
+  /** numero di ricette per id (faccette) */
+  counts: Map<number, number>;
+  active: number[];
   onToggle: (id: number) => void;
+  /** «tag», «categorie»: segnaposto ed etichette */
+  noun: string;
   autoFocus?: boolean;
   listClassName?: string;
 }) {
+  const tags = all;
   const listId = useId();
   const [query, setQuery] = useState("");
   const [hi, setHi] = useState(-1);
@@ -110,17 +92,17 @@ export function TagChecklist({
   const q = normalizeSearchText(query);
 
   const items = useMemo(() => {
-    const n = (t: Tag) => facets.tagCount.get(t.id) ?? 0;
+    const n = (t: CheckItem) => counts.get(t.id) ?? 0;
     const match = q ? tags.filter((t) => normalizeSearchText(t.name).includes(q)) : tags;
-    const byName = (a: Tag, b: Tag) => a.name.localeCompare(b.name, "it");
+    const byName = (a: CheckItem, b: CheckItem) => a.name.localeCompare(b.name, "it");
     const top = match.filter((t) => pinned.includes(t.id)).sort(byName);
     const rest = match.filter((t) => !pinned.includes(t.id));
     const live = rest.filter((t) => n(t) > 0 || activeTags.includes(t.id)).sort(byName);
     const dead = rest.filter((t) => n(t) === 0 && !activeTags.includes(t.id)).sort(byName);
     return [...top, ...live, ...dead];
-  }, [tags, q, pinned, facets, activeTags]);
+  }, [tags, q, pinned, counts, activeTags]);
 
-  const isOff = (t: Tag) => !activeTags.includes(t.id) && (facets.tagCount.get(t.id) ?? 0) === 0;
+  const isOff = (t: CheckItem) => !activeTags.includes(t.id) && (counts.get(t.id) ?? 0) === 0;
 
   // tiene la riga evidenziata dentro l'elenco che scorre
   useEffect(() => {
@@ -165,8 +147,8 @@ export function TagChecklist({
             toggleAt(hi);
           }
         }}
-        placeholder={`Cerca fra ${tags.length} tag…`}
-        aria-label="Cerca un tag"
+        placeholder={`Cerca fra ${tags.length} ${noun}…`}
+        aria-label={`Cerca fra ${noun}`}
         role="combobox"
         aria-expanded
         aria-controls={listId}
@@ -177,17 +159,17 @@ export function TagChecklist({
       <div
         id={listId}
         role="listbox"
-        aria-label="Tag"
+        aria-label={noun}
         aria-multiselectable
         className={clsx("overflow-y-auto overscroll-contain rounded-ctl border border-blu-150 bg-white", listClassName)}
       >
         {items.length === 0 ? (
-          <p className="px-3 py-4 text-center text-[0.875rem] text-grigio">Nessun tag con «{query.trim()}»</p>
+          <p className="px-3 py-4 text-center text-[0.875rem] text-grigio">Nessun risultato per «{query.trim()}»</p>
         ) : (
           items.map((t, i) => {
             const sel = activeTags.includes(t.id);
             const off = isOff(t);
-            const n = facets.tagCount.get(t.id) ?? 0;
+            const n = counts.get(t.id) ?? 0;
             return (
               <div
                 key={t.id}
@@ -218,6 +200,7 @@ export function TagChecklist({
                 >
                   {sel && <Check className="size-3.5" strokeWidth={3} />}
                 </span>
+                {t.color && <span aria-hidden className="size-2.5 shrink-0 rounded-full" style={{ background: off ? "var(--color-blu-200)" : t.color }} />}
                 <span className="min-w-0 flex-1 truncate">{t.name}</span>
                 <span className={clsx("tabular text-[0.8125rem] font-normal", off ? "text-grigio-chiaro" : "text-grigio")}>{n}</span>
               </div>
@@ -226,6 +209,68 @@ export function TagChecklist({
         )}
       </div>
     </div>
+  );
+}
+
+
+/**
+ * Sezione filtro del foglio (contenitore stretto): parte **chiusa**, mostra solo gli scelti come chip
+ * con la ✕ e un chip tratteggiato «+» che apre l'elenco (`FilterChecklist`). Stessa forma per
+ * categorie e tag.
+ */
+export function FilterPicker({
+  title,
+  items,
+  counts,
+  active,
+  onToggle,
+  onClear,
+  noun,
+  listClassName,
+}: {
+  title: string;
+  items: CheckItem[];
+  counts: Map<number, number>;
+  active: number[];
+  onToggle: (id: number) => void;
+  onClear: () => void;
+  noun: string;
+  listClassName?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const chosen = items.filter((i) => active.includes(i.id));
+  return (
+    <section className="flex flex-col gap-1.5">
+      <FilterSectionTitle
+        aside={
+          chosen.length > 0 ? (
+            <Button variant="ghost" size="sm" onClick={onClear}>
+              Togli
+            </Button>
+          ) : undefined
+        }
+      >
+        {title}
+        {chosen.length > 0 ? ` · ${chosen.length}` : ""}
+      </FilterSectionTitle>
+      <div className="flex flex-wrap gap-1.5">
+        {chosen.map((i) => (
+          <Chip key={i.id} active dot={i.color} onRemove={() => onToggle(i.id)} removeLabel={`Togli ${i.name}`}>
+            {i.name}
+          </Chip>
+        ))}
+        <button
+          type="button"
+          onClick={() => setOpen(!open)}
+          aria-expanded={open}
+          className="hit-44 inline-flex h-(--h-sm) items-center gap-[0.4em] rounded-full border border-dashed border-blu-250 bg-white px-[0.85em] text-[0.875rem] font-semibold whitespace-nowrap text-blu-600 transition-colors hover:bg-blu-100 [&_svg]:size-[1.05em]"
+        >
+          {open ? <ChevronUp aria-hidden /> : <Plus aria-hidden />}
+          {open ? "Chiudi" : chosen.length > 0 ? "Altre" : `Scegli ${noun}`}
+        </button>
+      </div>
+      {open && <FilterChecklist items={items} counts={counts} active={active} onToggle={onToggle} noun={noun} listClassName={listClassName} />}
+    </section>
   );
 }
 
