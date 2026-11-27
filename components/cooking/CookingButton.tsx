@@ -3,6 +3,7 @@ import { useState } from "react";
 import { clsx } from "clsx";
 import { Loader2 } from "lucide-react";
 import { PotIcon } from "@/components/icons";
+import { flyToCookingBar } from "@/lib/cooking-fly";
 import { addRecipeById, isCooking, openCookingDock, useCookingSession } from "@/lib/cooking-session";
 
 /**
@@ -23,11 +24,14 @@ export function CookingButton({ recipeId }: { recipeId: number }) {
       openCookingDock();
       return;
     }
+    const button = e.currentTarget;
     setLoading(true);
     setFailed(false);
     const ok = await addRecipeById(recipeId);
     setLoading(false);
     if (!ok) setFailed(true);
+    // la pentola vola nella fila «Sto cucinando» in cima
+    else flyToCookingBar(button);
   };
 
   const label = active

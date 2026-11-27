@@ -26,6 +26,22 @@ const SIZE_PX = { sm: 360, md: 560, lg: 720, xl: 900 } as const;
 
 const noopSubscribe = () => () => {};
 
+// Blocco dello scroll della pagina finché c'è almeno una finestra aperta (anche annidate: conferma dentro
+// il pannello). Senza, su iPhone lo scroll arrivato in fondo al corpo della finestra passa alla pagina dietro
+// e a volte il corpo resta «agganciato» alla pagina e smette di scorrere.
+let lockCount = 0;
+let savedOverflow = "";
+function lockScroll() {
+  if (lockCount++ === 0) {
+    const html = document.documentElement;
+    savedOverflow = html.style.overflow;
+    html.style.overflow = "hidden";
+  }
+  return () => {
+    if (--lockCount === 0) document.documentElement.style.overflow = savedOverflow;
+  };
+}
+
 export function Modal({ open, onClose, title, children, size = "md", bodyClassName = "", footer, variant = "dialog" }: Props) {
   const sheet = variant === "sheet";
   const ref = useRef<HTMLDialogElement>(null);
@@ -41,6 +57,8 @@ export function Modal({ open, onClose, title, children, size = "md", bodyClassNa
     if (open) el.showModal();
     else el.close();
   }, [open]);
+
+  useEffect(() => (open ? lockScroll() : undefined), [open]);
 
   if (!open || !mounted) return null;
 
@@ -86,7 +104,7 @@ export function Modal({ open, onClose, title, children, size = "md", bodyClassNa
       {/* `flex-auto`, NON `flex-1`: il dialog ha altezza automatica (solo maxHeight) e con
           `flex-basis: 0%` + overflow Safari/iPad collassa il corpo a 0 (si vedeva solo il titolo).
           Base = contenuto; `min-h-0` lo lascia restringere e scorrere quando tocca maxHeight. */}
-      <div className={`min-h-0 flex-auto overflow-y-auto p-5 sm:p-6 ${bodyClassName}`}>{children}</div>
+      <div className={`min-h-0 flex-auto overflow-y-auto overscroll-contain p-5 sm:p-6 ${bodyClassName}`}>{children}</div>
       {footer && (
         <div
           className="flex shrink-0 gap-2 border-t border-blu-150 px-5 pt-3 sm:px-6"

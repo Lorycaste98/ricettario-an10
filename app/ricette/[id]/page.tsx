@@ -135,6 +135,8 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
           recipeId={recipe.id}
           recipeName={recipe.name}
           recipePhoto={allPhotos[0] ?? null}
+          recipeCategories={cats}
+          recipeTags={(recipe.tags as { name: string }[]).map((t) => t.name)}
           defaultServings={recipe.servings ?? null}
           servingsUnit={recipe.servingsUnit ?? null}
           ingredients={recipe.ingredients}

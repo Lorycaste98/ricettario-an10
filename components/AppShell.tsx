@@ -7,7 +7,7 @@ import { useCompactAttribute, usePreferenceSync } from "@/lib/preferences";
 import { NavRail, TabBar, navToneFor } from "@/components/shell/AppNav";
 import { useAuth } from "@/components/AuthProvider";
 import { ADMIN_FORM_ROUTE } from "@/components/admin/admin-sections";
-import { CookingMiniBar, CookingRow } from "@/components/shell/CookingBar";
+import { CookingRow } from "@/components/shell/CookingBar";
 import { An10Logo } from "@/components/brand/An10Logo";
 
 // Pagine senza il logo di testata: la vetrina e l'accesso hanno il loro logo grande, i form la barra 11.1 in cima
@@ -18,7 +18,7 @@ const NO_BRAND_ROUTE = /^\/(login\/?)?$/;
  * - Navigazione: barra laterale da 700px in su, barra in basso sotto (unico punto di rottura
  *   legato allo schermo). Tutto il resto decide in base allo spazio del contenitore: `main` è
  *   un container (`@container`), quindi le pagine usano le varianti `@min-[620px]:` ecc.
- * - «Sto cucinando»: fila blu in cima (contenitore largo) o mini-barra (stretto).
+ * - «Sto cucinando»: fila blu in cima, una scheda per ricetta.
  * - Sfondo pieno `blu-50` (in Gestione `adm-50`).
  * - Tono della navigazione = chi sei (D9, `navToneFor` in AppNav): visitatore barra chiara,
  *   entrato blu scuro, «dietro le quinte» (`/admin/*` e, per l'admin, `/impostazioni`, D7) indaco
@@ -49,8 +49,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       className={clsx("flex min-h-dvh [--tabs-h:3.75rem]", admin ? "bg-adm-50" : "bg-blu-50")}
       style={
         {
-          // spazio in fondo su telefono: barra in basso (la mini-barra «Sto cucinando» sta in cima)
-          "--bottom-space": "calc(var(--tabs-h) + env(safe-area-inset-bottom, 0px) + 1rem)",
+          // spazio in fondo su telefono: barra in basso + la collinetta della lente al centro, che sale sopra la barra
+          "--bottom-space": "calc(var(--tabs-h) + env(safe-area-inset-bottom, 0px) + 2.5rem)",
         } as CSSProperties
       }
     >
@@ -63,10 +63,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       />
       <NavRail tone={tone} />
       <div className="@container flex min-w-0 flex-1 flex-col">
-        {/* nei form la barra 11.1 resta in alto: la fila «Sto cucinando» lì scorre via con la pagina */}
+        {/* «Sto cucinando» (8.4) a tutte le larghezze; nei form la barra 11.1 resta in alto: la fila lì scorre via con la pagina */}
         <CookingRow sticky={!ADMIN_FORM_ROUTE.test(pathname)} />
-        {/* contenitore stretto: la mini-barra 9.3 è un banner in cima (in basso c'è la collinetta della lente) */}
-        <CookingMiniBar sticky={!ADMIN_FORM_ROUTE.test(pathname)} />
         <main
           className={clsx(
             // --main-px = margine laterale; a destra si allarga sotto il notch (iPhone in orizzontale).

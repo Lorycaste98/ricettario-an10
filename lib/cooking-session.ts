@@ -45,6 +45,9 @@ export interface CookingRecipe {
   recipeId: number;
   name: string;
   photo: string | null;
+  /** Categorie (nome + colore) e tag, per la testata della card nel pannello. Assenti negli snapshot vecchi. */
+  categories?: { name: string; color: string }[];
+  tags?: string[];
   steps: CookingStep[];
   addedAt: number;
   /** null = quantità originali */
@@ -109,6 +112,13 @@ function parseState(raw: string | null): CookingState {
         recipeId: r.recipeId as number,
         name: r.name as string,
         photo: typeof r.photo === "string" ? r.photo : null,
+        categories: Array.isArray(r.categories)
+          ? r.categories
+              .filter(isObj)
+              .filter((c) => typeof c.name === "string" && typeof c.color === "string")
+              .map((c) => ({ name: c.name as string, color: c.color as string }))
+          : [],
+        tags: Array.isArray(r.tags) ? r.tags.filter((t): t is string => typeof t === "string") : [],
         steps: (r.steps as unknown[]).filter(isObj).map((s) => ({
           text: typeof s.text === "string" ? s.text : "",
           mins: typeof s.mins === "number" ? s.mins : null,
@@ -285,6 +295,8 @@ export function addRecipe(r: CookingRecipeInput, scale?: CookingScale | null) {
     recipeId: r.recipeId,
     name: r.name,
     photo: r.photo,
+    categories: r.categories ?? existing?.categories ?? [],
+    tags: r.tags ?? existing?.tags ?? [],
     steps,
     addedAt: existing?.addedAt ?? Date.now(),
     scale: existing ? existing.scale : (scale ?? null),
@@ -583,6 +595,8 @@ interface RecipeDetailPayload {
   name: string;
   photo?: string | null;
   photos?: { url: string }[];
+  categories?: { name: string; color: string }[];
+  tags?: { name: string }[];
   steps?: { text: string; mins: number | null; kind?: string }[];
 }
 
@@ -601,6 +615,8 @@ export async function addRecipeById(recipeId: number): Promise<boolean> {
       recipeId,
       name: data.name,
       photo: data.photo ?? data.photos?.[0]?.url ?? null,
+      categories: (data.categories ?? []).map((c) => ({ name: c.name, color: c.color })),
+      tags: (data.tags ?? []).map((t) => t.name),
       steps: (data.steps ?? []).map((s) => ({ text: s.text, mins: s.mins, kind: toStepKind(s.kind) })),
     });
     return true;

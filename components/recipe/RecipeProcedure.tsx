@@ -29,6 +29,7 @@ import { CurrentStep } from "@/components/cooking/CurrentStep";
 import { StepNumber, StepProgress } from "@/components/ds/Progress";
 import { Banner } from "@/components/ds/Feedback";
 import { PotIcon } from "@/components/icons";
+import { flyToCookingBar } from "@/lib/cooking-fly";
 
 /**
  * Ingredienti + procedura del dettaglio ricetta (restyle fase 3, prototipo `docs/design/ricetta.html`).
@@ -65,6 +66,9 @@ interface Props {
   /** Nome e foto di copertina: servono allo snapshot di «Sto cucinando» */
   recipeName: string;
   recipePhoto: string | null;
+  /** per la testata della card in «Sto cucinando» */
+  recipeCategories?: { name: string; color: string }[];
+  recipeTags?: string[];
   defaultServings: number | null;
   /** Unità delle porzioni (es. "teglie da 28cm"); nulla = persone/porzioni */
   servingsUnit?: string | null;
@@ -240,7 +244,7 @@ function QtyEditor({
 
 // ─── component ────────────────────────────────────────────────────────────────
 
-export function RecipeProcedure({ recipeId, recipeName, recipePhoto, defaultServings, servingsUnit, ingredients, steps }: Props) {
+export function RecipeProcedure({ recipeId, recipeName, recipePhoto, recipeCategories, recipeTags, defaultServings, servingsUnit, ingredients, steps }: Props) {
   const router = useRouter();
   const { isAdmin } = useAuth();
 
@@ -300,9 +304,11 @@ export function RecipeProcedure({ recipeId, recipeName, recipePhoto, defaultServ
       recipeId,
       name: recipeName,
       photo: recipePhoto,
+      categories: recipeCategories,
+      tags: recipeTags,
       steps: steps.map((s) => ({ text: s.text, mins: s.mins, kind: toStepKind(s.kind) })),
     }),
-    [recipeId, recipeName, recipePhoto, steps]
+    [recipeId, recipeName, recipePhoto, recipeCategories, recipeTags, steps]
   );
   // Visita del dettaglio: se la ricetta è già in lista ne rinfresca i passi (modifiche alla ricetta)
   useEffect(() => {
@@ -312,13 +318,15 @@ export function RecipeProcedure({ recipeId, recipeName, recipePhoto, defaultServ
   // Ingresso in lista: si porta dietro un eventuale ricalcolo già fatto a schermo
   // (da qui in poi lo tiene la sessione; lo stato locale si azzera così all'uscita
   // dalla lista si torna alle quantità originali)
-  const enterCooking = () => {
+  // `from` = elemento toccato, da cui parte la pentola che vola nella fila in cima (lib/cooking-fly.ts)
+  const enterCooking = (from?: Element | null) => {
     if (cooking) return;
     addRecipe(snapshot, localScale);
     setLocalScale(null);
+    flyToCookingBar(from ?? (document.activeElement instanceof HTMLButtonElement ? document.activeElement : null));
   };
-  const startCooking = () => {
-    enterCooking();
+  const startCooking = (e: React.MouseEvent<HTMLElement>) => {
+    enterCooking(e.currentTarget);
     setTab("proc");
   };
 
@@ -556,7 +564,7 @@ export function RecipeProcedure({ recipeId, recipeName, recipePhoto, defaultServ
                 needs={stepChips(step, false)}
                 actions={
                   <>
-                    {timerStep && <StepTimer recipeId={recipeId} stepIndex={i} mins={step.mins!} ensureRecipe={enterCooking} size="lg" />}
+                    {timerStep && <StepTimer recipeId={recipeId} stepIndex={i} mins={step.mins!} ensureRecipe={() => enterCooking()} size="lg" />}
                     <Button size="lg" icon={<Check />} onClick={() => handleStepClick(i)} className={timerStep ? "" : "ml-auto"}>
                       Fatto
                     </Button>
@@ -610,7 +618,7 @@ export function RecipeProcedure({ recipeId, recipeName, recipePhoto, defaultServ
               {/* Timer di un passo non corrente: solo se è già partito (es. lievitazione mentre vai avanti) */}
               {timerStep && hasTimer && (
                 <div className="pl-[2.875rem]">
-                  <StepTimer recipeId={recipeId} stepIndex={i} mins={step.mins!} ensureRecipe={enterCooking} />
+                  <StepTimer recipeId={recipeId} stepIndex={i} mins={step.mins!} ensureRecipe={() => enterCooking()} />
                 </div>
               )}
               {isPending && (

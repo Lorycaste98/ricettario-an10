@@ -60,6 +60,14 @@ html[data-compact] .cx-clamp:not([data-open]) {
   white-space: normal;
 }
 
+/* 8.4 · una scheda nuova nella fila «Sto cucinando» entra crescendo (arriva insieme alla pentola che vola) */
+@keyframes ticket-in {
+  from { opacity: 0; transform: scale(0.85); }
+  to { opacity: 1; transform: none; }
+}
+.ticket-in { animation: ticket-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+@media (prefers-reduced-motion: reduce) { .ticket-in { animation: none; } }
+
 /* 3.14 · tendina del menù azioni «⋯» (components/ds/ActionMenu.tsx) */
 @keyframes menu-in {
   from { opacity: 0; transform: scale(0.94) translateY(-4px); }

@@ -15,10 +15,7 @@ import { useRecipeProgress } from "@/lib/recipe-progress";
 import { PotIcon } from "@/components/icons";
 
 /**
- * «Sto cucinando» nella cornice (tavola 8.4 e 9.3). Sostituisce il vecchio bottone flottante:
- * - pagina larga (≥ 620px di contenitore): fila blu in cima, una scheda per ricetta in corso;
- * - pagina stretta: mini-barra blu in cima come un banner (24/11/2026: prima stava sopra la barra in
- *   basso, ma lì ora c'è la collinetta della lente «Cerca»).
+ * «Sto cucinando» nella cornice (tavola 8.4): fila blu in cima, una scheda per ricetta in corso.
  * Toccando si apre il pannello di sempre (`CookingDock`, via `openCookingDock`).
  * I dati vengono da `lib/cooking-session.ts` e `lib/recipe-progress.ts`, che non cambiano.
  */
@@ -44,7 +41,7 @@ function TimerText({ timer, now, className }: { timer: CookingTimer | undefined;
   return <span className={clsx("tabular font-bold", className)}>{formatCountdown(remainingMs(timer, now))}</span>;
 }
 
-/** 8.4 · scheda di una ricetta in corso */
+/** 8.4 · scheda di una ricetta in corso: nome in evidenza, sotto il passo corrente; a destra il timer */
 function Ticket({ recipe, timers, now }: { recipe: CookingRecipe; timers: CookingTimer[]; now: number }) {
   const [done] = useRecipeProgress(recipe.recipeId, recipe.steps.length);
   const current = recipe.steps.findIndex((_, i) => !done.has(i));
@@ -56,73 +53,61 @@ function Ticket({ recipe, timers, now }: { recipe: CookingRecipe; timers: Cookin
       type="button"
       onClick={openCookingDock}
       className={clsx(
-        "flex w-[clamp(12.5rem,30cqi,17rem)] shrink-0 items-center gap-2 rounded-[0.625rem] border-l-4 bg-white px-2.5 py-1.5 text-left text-[0.875rem] text-blu-950 hover:bg-blu-50",
+        // stretta: due schede quasi intere in vista, la terza si intravede (si capisce che scorre)
+        "ticket-in flex w-[clamp(9.5rem,42cqi,17rem)] shrink-0 items-center gap-2 rounded-[0.625rem] border-l-4 bg-white px-2.5 py-1.5 text-left text-blu-950 hover:bg-blu-50",
         border
       )}
     >
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[0.6875rem] text-grigio">
-          {recipe.name}
-          {step ? ` · ${current + 1} di ${recipe.steps.length}` : ""}
+        <span className="block truncate text-[0.8125rem] leading-snug font-bold">{recipe.name}</span>
+        <span className="block truncate text-[0.6875rem] leading-snug text-grigio">
+          {recipe.steps.length === 0
+            ? "Nessuna procedura"
+            : step
+              ? `${current + 1}/${recipe.steps.length} · ${step.text}`
+              : "Tutti i passi fatti"}
         </span>
-        <span className="block truncate">{step ? step.text : "Tutti i passi fatti"}</span>
       </span>
-      <TimerText timer={timer} now={now} className="text-ambra" />
+      <TimerText timer={timer} now={now} className="text-[0.875rem] text-ambra" />
     </button>
   );
 }
 
-/** Fila in cima alla pagina (contenitori larghi). Resta in vista mentre si scorre. */
+/**
+ * Fila in cima alla pagina (8.4 · a tutte le larghezze dal 27/11/2026: la vecchia mini-barra 9.3
+ * mostrava solo la prima ricetta e un contatore). Una scheda per ricetta, scorre in orizzontale.
+ * La pentola a sinistra porta il numero dei timer finiti ed è il punto d'arrivo dell'animazione
+ * «vola in cucina» (`data-cooking-target`, vedi `lib/cooking-fly.ts`). Resta in vista mentre si scorre.
+ */
 export function CookingRow({ sticky = true }: { sticky?: boolean }) {
-  const { session, recipes, now } = useCookingData();
+  const { session, recipes, now, finished } = useCookingData();
   if (!session.hydrated || recipes.length === 0) return null;
   return (
     <div
       role="region"
-      aria-label={`Sto cucinando: ${recipes.length} ricette`}
-      className={clsx(sticky && "sticky top-0 z-30", "hidden gap-2 overflow-x-auto bg-blu-600 px-(--pad) py-2 [scrollbar-width:none] @min-[620px]:flex")}
+      aria-label={`Sto cucinando: ${recipes.length} ${recipes.length === 1 ? "ricetta" : "ricette"}${finished ? `, ${finished} timer finiti` : ""}`}
+      className={clsx(sticky && "sticky top-0 z-30", "flex gap-2 overflow-x-auto bg-blu-600 px-(--pad) py-2 [scrollbar-width:none]")}
       style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.5rem)" }}
     >
-      <span className="flex shrink-0 items-center text-white" aria-hidden>
-        <PotIcon className="size-6" />
-      </span>
+      <button
+        type="button"
+        onClick={openCookingDock}
+        aria-label="Apri il pannello «Sto cucinando»"
+        className="relative flex shrink-0 items-center px-0.5 text-white"
+      >
+        <span data-cooking-target className="flex">
+          <PotIcon className="size-6" />
+        </span>
+        {finished > 0 && (
+          <span className="tabular absolute top-0 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rosa px-1 text-[10px] font-bold ring-2 ring-blu-600">
+            {finished}
+          </span>
+        )}
+      </button>
       {recipes.map((r) => (
         <Ticket key={r.recipeId} recipe={r} timers={session.timers.filter((t) => t.recipeId === r.recipeId)} now={now} />
       ))}
     </div>
-  );
-}
-
-/** 9.3 · mini-barra in cima alla pagina, come un banner (contenitori stretti). Resta in vista mentre si scorre. */
-export function CookingMiniBar({ sticky = true }: { sticky?: boolean }) {
-  const { session, recipes, now, finished } = useCookingData();
-  if (!session.hydrated || recipes.length === 0) return null;
-  const timer = pickTimer(session.timers);
-  const lead = timer ? recipes.find((r) => r.recipeId === timer.recipeId) ?? recipes[0] : recipes[0];
-  return (
-    <button
-      type="button"
-      onClick={openCookingDock}
-      aria-label={`Sto cucinando: ${recipes.length} ricette${finished ? `, ${finished} timer finiti` : ""}. Apri il pannello`}
-      className={clsx(sticky && "sticky top-0 z-30", "flex w-full items-center gap-2.5 bg-blu-600 px-(--pad) pb-2 text-left text-white @min-[620px]:hidden")}
-      style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.5rem)" }}
-    >
-      <span className="relative shrink-0">
-        <PotIcon className="size-6" />
-        {finished > 0 && (
-          <span className="tabular absolute -top-1.5 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-rosa px-1 text-[10px] font-bold ring-2 ring-blu-600">
-            {finished}
-          </span>
-        )}
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block text-[0.6875rem] text-nav-ink">
-          Sto cucinando · {recipes.length} {recipes.length === 1 ? "ricetta" : "ricette"}
-        </span>
-        <span className="block truncate font-semibold">{timer?.label ?? lead.name}</span>
-      </span>
-      <TimerText timer={timer} now={now} className="text-[1.1875rem] text-giallo-400" />
-    </button>
   );
 }
 

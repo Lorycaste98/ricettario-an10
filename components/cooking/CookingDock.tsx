@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useState, useSyncExternalStore } from "react";
 import Image from "next/image";
+import { clsx } from "clsx";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Check, ChevronLeft, PartyPopper, Scale, X } from "lucide-react";
@@ -29,6 +30,7 @@ import { Switch } from "@/components/ds/Controls";
 import { StepNumber, StepProgress } from "@/components/ds/Progress";
 import { StepKindTag, Tag } from "@/components/ds/Tag";
 import { TimerAlert } from "@/components/ds/Feedback";
+import { categoryInk } from "@/components/recipe/CardCategory";
 
 /**
  * «Sto cucinando»: pannello (dialog) con una card per ricetta in corso, montato una volta in
@@ -38,7 +40,7 @@ import { TimerAlert } from "@/components/ds/Feedback";
  */
 
 // Card ricetta del pannello (restyle fase 4): stessa scheda bianca della modalità cucina
-const cardCls = "flex min-w-0 flex-col gap-3 rounded-card border border-blu-150 bg-white p-[0.875em]";
+const cardCls = "flex min-w-0 shrink-0 flex-col gap-3 overflow-hidden rounded-card border border-blu-150 bg-white p-[0.875em]";
 
 const noopSubscribe = () => () => {};
 
@@ -225,35 +227,65 @@ function CookingRecipeCard({
     if (isAdmin) router.refresh(); // contatore cotture sulla pagina ricetta, se aperta
   };
 
+  const cat = recipe.categories?.[0];
   return (
     <article className={cardCls}>
-      <div className="flex items-center gap-3">
-        <span className="relative flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-ctl bg-blu-100 text-blu-600">
+      {/* Testata colorata: colore della prima categoria (fondo tinto, testo scurito), foto, nome, categorie e tag */}
+      <header
+        className={clsx("-mx-[0.875em] -mt-[0.875em] flex items-center gap-3 rounded-t-[inherit] border-b px-[0.875em] py-3", !cat && "border-blu-150 bg-blu-100")}
+        style={
+          cat
+            ? { background: `color-mix(in oklch, ${cat.color} 30%, white)`, borderColor: `color-mix(in oklch, ${cat.color} 45%, white)`, color: categoryInk(cat.color) }
+            : undefined
+        }
+      >
+        <span className="relative flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-ctl bg-white text-blu-600 shadow-sm">
           {recipe.photo ? (
-            <Image src={recipe.photo} alt="" fill sizes="44px" className="object-cover" />
+            <Image src={recipe.photo} alt="" fill sizes="56px" className="object-cover" />
           ) : (
             <An10Logo variant="simbolo" title="" className="w-1/2" />
           )}
         </span>
-        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <Link href={`/ricette/${recipeId}`} onClick={onNavigate} className="truncate font-bold hover:text-blu-700">
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <Link
+            href={`/ricette/${recipeId}`}
+            onClick={onNavigate}
+            className="line-clamp-2 text-(length:--fs-sec) leading-tight font-bold text-blu-950 hover:underline"
+          >
             {recipe.name}
           </Link>
-          <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-(length:--fs-meta) text-grigio">
-            {steps.length > 0 && (
-              <span className="tabular">{allDone ? "Tutti i passi fatti" : `Passo ${current + 1} di ${steps.length}`}</span>
-            )}
-            {scaleFactor && (
-              <Tag tone="scale" icon={<Scale />} title="Quantità ricalcolate sul dettaglio ricetta">
-                dosi ×{Math.round(scaleFactor * 100) / 100}
-              </Tag>
-            )}
-          </span>
+          {((recipe.categories?.length ?? 0) > 0 || (recipe.tags?.length ?? 0) > 0) && (
+            <span className="flex flex-wrap items-center gap-1 text-[0.75rem] leading-tight">
+              {recipe.categories?.map((c) => (
+                <span key={c.name} className="rounded-[0.375rem] bg-white px-[0.5em] py-[0.15em] font-bold" style={{ color: categoryInk(c.color) }}>
+                  {c.name}
+                </span>
+              ))}
+              {recipe.tags?.slice(0, 4).map((t) => (
+                <span key={t} className="font-semibold">
+                  #{t}
+                </span>
+              ))}
+            </span>
+          )}
         </div>
         <IconButton size="row" tone="danger" label="Togli dalla lista" onClick={remove}>
           <X />
         </IconButton>
-      </div>
+      </header>
+
+      {(steps.length > 0 || scaleFactor) && (
+        <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-(length:--fs-meta) text-grigio">
+          {steps.length > 0 && (
+            <span className="tabular">{allDone ? "Tutti i passi fatti" : `Passo ${current + 1} di ${steps.length}`}</span>
+          )}
+          {scaleFactor && (
+            <Tag tone="scale" icon={<Scale />} title="Quantità ricalcolate sul dettaglio ricetta">
+              dosi ×{Math.round(scaleFactor * 100) / 100}
+            </Tag>
+          )}
+        </span>
+      )}
 
       {steps.length > 0 && <StepProgress total={steps.length} done={done.size} current={current >= 0 ? current : undefined} />}
 
