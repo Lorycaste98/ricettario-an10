@@ -26,6 +26,7 @@
     "cloudinary": "^2.10.0",
     "clsx": "^2.1.1",
     "dotenv": "^17.4.2",
+    "html-to-image": "1.11.11",
     "jose": "^6.2.3",
     "lucide-react": "^1.17.0",
     "motion": "^12.40.0",

@@ -1,11 +1,11 @@
-import { Svg, G, Path, Circle, Ellipse, Line, Polygon, Rect } from "@react-pdf/renderer";
-import { PDF } from "@/components/recipe/RecipePdfDocument";
+import { Svg, G, Path, Circle, Ellipse, Line, Polygon, Rect } from "./guest-svg";
+import { PDF } from "@/components/recipe/pdf-colors";
 import { GUEST_THEME_INK, type GuestTheme } from "@/lib/menu-guest-card";
 
 /**
  * Temi del cartoncino «Per gli ospiti» (`GuestMenuPdfDocument`): colori e decori disegnati.
  *
- * I decori sono forme SVG di react-pdf **calcolate** (foglie, aghi, bandierine, coriandoli…):
+ * I decori sono forme SVG **calcolate** (`guest-svg.tsx`: le stesse forme nel PDF e nella pagina web) (foglie, aghi, bandierine, coriandoli…):
  * niente immagini da scaricare, nitidi a ogni misura, e cambiano con una costante. Le posizioni
  * «a caso» (fiocchi, coriandoli) vengono da un generatore con seme fisso: lo stesso menù dà
  * sempre lo stesso cartoncino.

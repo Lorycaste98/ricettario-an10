@@ -99,7 +99,7 @@ export function MenuAdminBar({
       <ActionMenu
         items={[
           { label: "Modifica", icon: <Pencil />, narrowOnly: true, onSelect: () => router.push(`/admin/menu/${menuId}/modifica`) },
-          { label: "Esporta in PDF", icon: <FileDown />, narrowOnly: true, onSelect: () => pdfRef.current?.start(), disabled: pdf.recipes.length === 0 },
+          { label: "Esporta", icon: <FileDown />, narrowOnly: true, onSelect: () => pdfRef.current?.start(), disabled: pdf.recipes.length === 0 },
           compactItem,
           { label: "Elimina menù", icon: <Trash2 />, tone: "danger", narrowOnly: true, onSelect: () => setConfirmDelete(true) },
         ]}

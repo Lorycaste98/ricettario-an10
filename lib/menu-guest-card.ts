@@ -1,6 +1,7 @@
 /**
  * PDF «Per gli ospiti» di un menù: tema del cartoncino e come sono organizzati i piatti (portate, voci scritte a mano,
- * ricette nascoste) e in che formato si stampa. Salvato per menù in `MenuGuestCard.data`
+ * ricette nascoste). Il formato non si sceglie più (27/11/2026): il PDF è sempre A4, per il telefono ci
+ * sono l'immagine e il link (`/ospiti/[token]`). Salvato per menù in `MenuGuestCard.data`
  * (GET/PUT `/api/menus/[id]/guest-card`), così al secondo invio non si rifà tutto.
  *
  * Le ricette sono riferite per id: il menù può cambiare dopo il salvataggio, quindi ogni lettura
@@ -9,14 +10,6 @@
  *
  * Modulo senza "use client": lo usano sia l'API sia la finestra del PDF.
  */
-
-export type GuestFormat = "a4" | "a5" | "phone";
-
-export const GUEST_FORMATS: { value: GuestFormat; label: string; hint: string }[] = [
-  { value: "a4", label: "A4", hint: "Foglio intero, da stampare o appendere" },
-  { value: "a5", label: "A5", hint: "Mezzo foglio, un cartoncino da mettere in tavola" },
-  { value: "phone", label: "Telefono", hint: "Una pagina lunga, da mandare in chat" },
-];
 
 /**
  * Tema del cartoncino: decori, colori e sfondo del PDF (components/menu/guest-themes.tsx).
@@ -70,7 +63,6 @@ export interface GuestCourse {
 
 export interface GuestCard {
   theme: GuestTheme;
-  format: GuestFormat;
   courses: GuestCourse[];
   /** Ricette del menù che non compaiono nel foglio degli ospiti (es. una salsa) */
   hidden: number[];
@@ -128,7 +120,7 @@ export function defaultGuestCard(recipes: GuestRecipe[], theme: GuestTheme = "ev
     byCourse.set(course, [...(byCourse.get(course) ?? []), { type: "recipe", recipeId: r.id }]);
   }
   const courses = COURSE_PRESETS.filter((p) => byCourse.has(p)).map((p) => ({ name: p, items: byCourse.get(p)! }));
-  return { theme, format: "a4", courses, hidden: [] };
+  return { theme, courses, hidden: [] };
 }
 
 /**
@@ -141,11 +133,11 @@ export function normalizeGuestCard(
   fallbackTheme: GuestTheme = "evento"
 ): GuestCard | null {
   if (!raw || typeof raw !== "object") return null;
-  const r = raw as { theme?: unknown; format?: unknown; courses?: unknown; hidden?: unknown };
+  // un vecchio `format` salvato (a4/a5/phone) si ignora
+  const r = raw as { theme?: unknown; courses?: unknown; hidden?: unknown };
   // gli stili di Natale provati e scartati («natale-nordico», …) tornano al Natale di oggi
   const rawTheme = typeof r.theme === "string" && r.theme.startsWith("natale") ? "natale" : r.theme;
   const theme: GuestTheme = GUEST_THEMES.some((t) => t.value === rawTheme) ? (rawTheme as GuestTheme) : fallbackTheme;
-  const format: GuestFormat = GUEST_FORMATS.some((f) => f.value === r.format) ? (r.format as GuestFormat) : "a4";
   const seen = new Set<number>();
   const courses: GuestCourse[] = [];
   for (const c of Array.isArray(r.courses) ? r.courses : []) {
@@ -167,7 +159,7 @@ export function normalizeGuestCard(
   const hidden = (Array.isArray(r.hidden) ? r.hidden : []).filter(
     (id): id is number => typeof id === "number" && recipeIds.has(id) && !seen.has(id)
   );
-  return { theme, format, courses: courses.slice(0, 20), hidden: [...new Set(hidden)] };
+  return { theme, courses: courses.slice(0, 20), hidden: [...new Set(hidden)] };
 }
 
 /** Ricette del menù che non stanno in nessuna portata e non sono nascoste */
@@ -180,7 +172,6 @@ export function unassignedRecipes(card: GuestCard, recipes: GuestRecipe[]): Gues
 /** Foglio pronto per il PDF: nomi al posto degli id, portate vuote tolte */
 export interface GuestSheet {
   theme: GuestTheme;
-  format: GuestFormat;
   /** Piatti «da sistemare»: in cima, senza titolo di portata */
   loose: string[];
   courses: { name: string; dishes: string[] }[];
@@ -196,5 +187,5 @@ export function guestSheet(card: GuestCard, recipes: GuestRecipe[]): GuestSheet 
         .filter((d): d is string => !!d),
     }))
     .filter((c) => c.dishes.length > 0);
-  return { theme: card.theme, format: card.format, loose: unassignedRecipes(card, recipes).map((r) => r.name), courses };
+  return { theme: card.theme, loose: unassignedRecipes(card, recipes).map((r) => r.name), courses };
 }

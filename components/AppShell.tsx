@@ -12,6 +12,9 @@ import { CookingRow, useCookingPresence } from "@/components/shell/CookingBar";
 import { An10LogoAnimated } from "@/components/brand/An10LogoAnimated";
 import { An10Logo } from "@/components/brand/An10Logo";
 
+// Pagine fuori dalla cornice: il menù per gli ospiti (link pubblico) deve sembrare un menù, non il ricettario
+const BARE_ROUTE = /^\/ospiti\//;
+
 // Pagine senza il logo di testata: la vetrina e l'accesso hanno il loro logo grande, i form la barra 11.1 in cima
 const NO_BRAND_ROUTE = /^\/(login\/?)?$/;
 
@@ -42,6 +45,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   useCompactAttribute();
   const { isAdmin, loading } = useAuth();
   const { cooking, changed } = useCookingPresence();
+
+  if (BARE_ROUTE.test(pathname)) return <>{children}</>;
 
   // Tono della navigazione (D9); dietro le quinte (D7) anche fondi freddi
   const tone = navToneFor(pathname, isAdmin, loading);

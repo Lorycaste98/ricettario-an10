@@ -1,7 +1,8 @@
-import { Document, Page, View, Text, Image, StyleSheet } from "@react-pdf/renderer";
+import { Document, Page, View, Text, Image, StyleSheet, Svg, G, Path, Circle, Ellipse, Line, Polygon, Rect } from "@react-pdf/renderer";
+import { SvgShapesContext, type SvgShapes } from "./guest-svg";
 import type { GuestSheet } from "@/lib/menu-guest-card";
 import type { MenuPdfMeta } from "./MenuPdfDocument";
-import { BAND_TEXT_RIGHT, BandDecor, BottomOrnament, Divider, SheetDecor, THEME, TopOrnament } from "./guest-themes";
+import { Divider, SheetDecor, THEME, TopOrnament } from "./guest-themes";
 
 /**
  * PDF «Per gli ospiti»: il cartoncino del menù da mettere in tavola o mandare ad amici e parenti.
@@ -9,14 +10,11 @@ import { BAND_TEXT_RIGHT, BandDecor, BottomOrnament, Divider, SheetDecor, THEME,
  * comprese): niente ingredienti, passi, costi né note private.
  *
  * Il **tema** (`GuestSheet.theme`: Natale in cinque stili, Compleanno, Evento) sceglie colori, fondo e decori
- * (`guest-themes.tsx`). Tre impaginazioni (`GuestSheet.format`):
- * - **A4 / A5**: cartoncino da stampare, tutto centrato dentro una doppia cornice, decori lungo i
- *   bordi; in cima l'ornamento del tema e il logo AN10 nel colore del titolo (una volta sola,
- *   niente piede); nomi dei piatti in Times (il carattere «da carta del
- *   ristorante» che react-pdf ha già). Le misure si stringono se i piatti sono tanti.
- * - **Telefono**: una pagina larga come uno schermo e alta quanto serve (react-pdf accetta una
- *   pagina senza altezza), fascia colorata col logo bianco e i decori, foto del menù se c'è,
- *   ornamento in fondo e nessun piede.
+ * (`guest-themes.tsx`, forme date da `PDF_SHAPES`). Solo **A4** (27/11/2026: A5 e Telefono tolti;
+ * per il telefono ci sono immagine e link, `GuestMenuSheet`): cartoncino da stampare, tutto
+ * centrato dentro una doppia cornice, decori lungo i bordi; in cima l'ornamento del tema e il logo
+ * AN10 nel colore del titolo (una volta sola, niente piede); nomi dei piatti in Times (il carattere
+ * «da carta del ristorante» che react-pdf ha già). Le misure si stringono se i piatti sono tanti.
  */
 
 const TIMES = "Times-Roman";
@@ -42,37 +40,32 @@ export function GuestMenuPdfDocument({
   menu,
   sheet,
   logo,
-  logoBianco,
-  photo,
 }: {
   menu: MenuPdfMeta;
   sheet: GuestSheet;
-  /** logo orizzontale nel colore del tema (A4/A5) */
+  /** logo orizzontale nel colore del tema */
   logo?: string;
-  /** logo bianco per la fascia del telefono */
-  logoBianco?: string;
-  photo?: string;
 }) {
   return (
+    <SvgShapesContext value={PDF_SHAPES}>
     <Document title={menu.name} author="Ricettario AN10">
-      {sheet.format === "phone" ? (
-        <PhonePage menu={menu} sheet={sheet} logoBianco={logoBianco} photo={photo} />
-      ) : (
-        <SheetPage menu={menu} sheet={sheet} logo={logo} />
-      )}
+      <SheetPage menu={menu} sheet={sheet} logo={logo} />
     </Document>
+    </SvgShapesContext>
   );
 }
 
-/* ───────────── A4 · A5 ───────────── */
+/** I decori (`guest-themes.tsx`) disegnati con le forme di react-pdf */
+const PDF_SHAPES: SvgShapes = { Svg, G, Path, Circle, Ellipse, Line, Polygon, Rect };
 
-const PAGE = { a4: { w: 595.28, h: 841.89 }, a5: { w: 419.53, h: 595.28 } } as const;
+/* ───────────── A4 ───────────── */
+
+const PAGE = { w: 595.28, h: 841.89 } as const;
 
 function SheetPage({ menu, sheet, logo }: { menu: MenuPdfMeta; sheet: GuestSheet; logo?: string }) {
-  const format = sheet.format === "a5" ? "a5" : "a4";
-  const { w: W, h: H } = PAGE[format];
-  // A5 = A4 ridotto di √2
-  const k = format === "a5" ? 0.705 : 1;
+  const { w: W, h: H } = PAGE;
+  // scala delle misure (era < 1 per l'A5, tolto): i decori la ricevono ancora
+  const k = 1;
   const t = THEME[sheet.theme];
   const when = serveLine(menu.date, menu.servingTime);
   // Il festone del compleanno occupa la fascia in alto, i palloncini gli angoli in basso
@@ -121,7 +114,7 @@ function SheetPage({ menu, sheet, logo }: { menu: MenuPdfMeta; sheet: GuestSheet
   const allCourses = [...(sheet.loose.length ? [{ name: "", dishes: sheet.loose }] : []), ...sheet.courses];
 
   return (
-    <Page size={format === "a5" ? "A5" : "A4"} style={st.page}>
+    <Page size="A4" style={st.page}>
       <SheetDecor theme={sheet.theme} W={W} H={H} k={k} />
       <View style={st.frame} fixed />
       <View style={st.frameIn} fixed />
@@ -144,95 +137,6 @@ function SheetPage({ menu, sheet, logo }: { menu: MenuPdfMeta; sheet: GuestSheet
             ))}
           </View>
         ))}
-      </View>
-    </Page>
-  );
-}
-
-/* ───────────── Telefono ───────────── */
-
-const PHONE_W = 400;
-const BAND_DECOR_H = 170;
-
-function PhonePage({
-  menu,
-  sheet,
-  logoBianco,
-  photo,
-}: {
-  menu: MenuPdfMeta;
-  sheet: GuestSheet;
-  logoBianco?: string;
-  photo?: string;
-}) {
-  const t = THEME[sheet.theme];
-  const when = serveLine(menu.date, menu.servingTime);
-  const ph = StyleSheet.create({
-    page: { width: PHONE_W, fontFamily: TIMES, color: t.ink, backgroundColor: t.bg, paddingBottom: 30 },
-    band: {
-      backgroundColor: t.band,
-      paddingHorizontal: 28,
-      paddingTop: t.bandTop ?? 32,
-      paddingBottom: 26,
-      minHeight: BAND_DECOR_H,
-    },
-    logo: { width: 73, height: 24, marginBottom: 18 },
-    kicker: { fontFamily: SANS_B, fontSize: 8.5, letterSpacing: 3, color: t.bandSoft, textTransform: "uppercase", marginBottom: 6 },
-    title: { fontFamily: t.titleFont, fontSize: 30 * (t.titleScale ?? 1), lineHeight: 1.12, color: "#ffffff", maxWidth: BAND_TEXT_RIGHT - 28 },
-    when: { fontFamily: TIMES_I, fontSize: 14, color: t.bandSoft, marginTop: 10, maxWidth: BAND_TEXT_RIGHT - 28 },
-    photo: { width: PHONE_W, height: 220, objectFit: "cover" },
-    body: { paddingHorizontal: 28, paddingTop: 24 },
-    desc: { fontFamily: TIMES_I, fontSize: 13, lineHeight: 1.45, color: t.soft, marginBottom: 20 },
-    course: { marginBottom: 22 },
-    courseHead: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 9 },
-    courseName: { fontFamily: SANS_B, fontSize: 9.5, letterSpacing: 2.5, color: t.course, textTransform: "uppercase" },
-    courseLine: { flex: 1, height: 0.8, backgroundColor: t.frameIn },
-    dish: { fontSize: 17, lineHeight: 1.3, marginBottom: 6 },
-    end: { alignItems: "center", marginTop: 6 },
-  });
-
-  return (
-    // Solo la larghezza: l'altezza la decide il contenuto (una pagina sola, da scorrere)
-    <Page size={{ width: PHONE_W }} style={ph.page}>
-      <View style={ph.band}>
-        <BandDecor theme={sheet.theme} W={PHONE_W} H={BAND_DECOR_H} />
-        {/* eslint-disable-next-line jsx-a11y/alt-text -- componente PDF di react-pdf */}
-        {logoBianco && <Image src={logoBianco} style={ph.logo} />}
-        <Text style={ph.kicker}>Menù</Text>
-        <Text style={ph.title}>{menu.name}</Text>
-        {when ? <Text style={ph.when}>{when}</Text> : null}
-      </View>
-      {/* eslint-disable-next-line jsx-a11y/alt-text -- componente PDF di react-pdf */}
-      {photo && <Image src={photo} style={ph.photo} />}
-      <View style={ph.body}>
-        {menu.description ? <Text style={ph.desc}>{menu.description}</Text> : null}
-        {sheet.loose.length > 0 && (
-          <View style={ph.course}>
-            {sheet.loose.map((d, j) => (
-              <Text key={j} style={ph.dish}>
-                {d}
-              </Text>
-            ))}
-          </View>
-        )}
-        {sheet.courses.map((c, i) => (
-          <View key={i} style={ph.course} wrap={false}>
-            {c.name ? (
-              <View style={ph.courseHead}>
-                <Text style={ph.courseName}>{c.name}</Text>
-                <View style={ph.courseLine} />
-              </View>
-            ) : null}
-            {c.dishes.map((d, j) => (
-              <Text key={j} style={ph.dish}>
-                {d}
-              </Text>
-            ))}
-          </View>
-        ))}
-      </View>
-      <View style={ph.end}>
-        <BottomOrnament theme={sheet.theme} />
       </View>
     </Page>
   );

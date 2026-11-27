@@ -8,11 +8,9 @@ import { MiniChip, rowFieldCls } from "@/components/admin/FormParts";
 import { ReorderList, ReorderRow } from "@/components/ui/ReorderList";
 import {
   COURSE_PRESETS,
-  GUEST_FORMATS,
   GUEST_THEMES,
   unassignedRecipes,
   type GuestCard,
-  type GuestFormat,
   type GuestItem,
   type GuestRecipe,
   type GuestTheme,
@@ -21,8 +19,8 @@ import {
 const THEME_ICON = { natale: TreePine, compleanno: Cake, evento: Sparkles } as const;
 
 /**
- * Finestra «Per gli ospiti» del PDF del menù (solo admin): tema del cartoncino (decori e colori),
- * formato della pagina e piatti divisi
+ * Finestra «Per gli ospiti» dell'esportazione del menù (solo admin): tema del cartoncino (decori e
+ * colori) e piatti divisi
  * per portata. Ogni portata ha nome modificabile, si riordina col trascinamento e tiene le
  * ricette del menù e le voci scritte a mano (vini, bevande…). Una ricetta si sposta con la
  * tendina della sua riga: in un'altra portata, fra le «da sistemare» (stampate in cima senza
@@ -40,7 +38,6 @@ interface Course {
 }
 export interface GuestEditorState {
   theme: GuestTheme;
-  format: GuestFormat;
   courses: Course[];
   hidden: number[];
 }
@@ -50,7 +47,6 @@ const uid = () => crypto.randomUUID();
 export function toEditorState(card: GuestCard): GuestEditorState {
   return {
     theme: card.theme,
-    format: card.format,
     hidden: card.hidden,
     courses: card.courses.map((c) => ({ uid: uid(), name: c.name, items: c.items.map((i) => ({ ...i, uid: uid() })) })),
   };
@@ -59,7 +55,6 @@ export function toEditorState(card: GuestCard): GuestEditorState {
 export function toGuestCard(s: GuestEditorState): GuestCard {
   return {
     theme: s.theme,
-    format: s.format,
     hidden: s.hidden,
     courses: s.courses.map((c) => ({
       name: c.name.trim(),
@@ -164,18 +159,6 @@ export function GuestMenuEditor({
           })}
         />
         <p className="text-xs text-grigio">{GUEST_THEMES.find((t) => t.value === value.theme)?.hint}</p>
-      </div>
-
-      {/* Formato */}
-      <div className="flex flex-col gap-1.5">
-        <span className="text-[0.8125rem] font-semibold text-grigio">Formato</span>
-        <Segmented
-          label="Formato del foglio"
-          value={value.format}
-          onChange={(format) => onChange({ ...value, format })}
-          options={GUEST_FORMATS.map((f) => ({ value: f.value, label: f.label }))}
-        />
-        <p className="text-xs text-grigio">{GUEST_FORMATS.find((f) => f.value === value.format)?.hint}</p>
       </div>
 
       {/* Ricette senza portata: in cima al foglio, senza titolo */}
