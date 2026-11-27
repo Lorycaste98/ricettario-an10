@@ -272,18 +272,19 @@ export function MenuGrid({ menus }: Props) {
   );
 }
 
-/** Bottone «Nuovo menù» della testata (solo admin): pieno da contenitore largo, «Nuovo» su stretto */
+/** Bottone «Nuovo menù» della testata (solo admin), a destra del titolo: quadrato col solo + su contenitore stretto, «+ Nuovo menù» da 620px. Gemello di `NewRecipeLink` */
 export function NewMenuLink() {
   const { isAdmin } = useAuth();
   if (!isAdmin) return null;
   return (
     <Link
       href="/admin/menu/nuovo"
-      className="inline-flex h-(--h-btn) items-center justify-center gap-[0.45em] rounded-ctl bg-arancio-pieno px-[1.05em] font-semibold text-white hover:bg-arancio-scuro [&_svg]:size-[1.15em]"
+      aria-label="Nuovo menù"
+      title="Nuovo menù"
+      className="inline-flex h-(--h-btn) shrink-0 items-center justify-center gap-[0.45em] rounded-ctl bg-arancio-pieno font-semibold text-white hover:bg-arancio-scuro focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-blu-600/35 [&_svg]:size-[1.25em] w-(--h-btn) @min-[620px]:w-auto @min-[620px]:px-[1.05em]"
     >
       <Plus aria-hidden />
       <span className="hidden @min-[620px]:inline">Nuovo menù</span>
-      <span className="@min-[620px]:hidden">Nuovo</span>
     </Link>
   );
 }

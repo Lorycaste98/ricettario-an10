@@ -22,7 +22,7 @@ export default async function RicettePage() {
       <PageHeader
         title="Ricette"
         meta={session ? `${recipes.length} ricette nel ricettario` : "Le ricette del ricettario AN10"}
-        actions={<NewRecipeLink />}
+        actions={session ? <NewRecipeLink /> : undefined}
       />
       <RecipeGrid recipes={recipes} categories={categories} tags={tags} />
     </div>

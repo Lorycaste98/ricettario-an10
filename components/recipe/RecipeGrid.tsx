@@ -444,7 +444,7 @@ export function RecipeGrid({ recipes, categories, tags }: Props) {
   );
 }
 
-/** Bottone «Nuova ricetta» della testata (solo admin): pieno da contenitore largo, solo + su stretto */
+/** Bottone «Nuova ricetta» della testata (solo admin), a destra del titolo: quadrato col solo + su contenitore stretto, «+ Nuova ricetta» da 620px. Gemello di `NewMenuLink` */
 export function NewRecipeLink() {
   const { isAdmin } = useAuth();
   if (!isAdmin) return null;
@@ -452,7 +452,8 @@ export function NewRecipeLink() {
     <Link
       href="/admin/ricette/nuova"
       aria-label="Nuova ricetta"
-      className="inline-flex h-(--h-btn) items-center justify-center gap-[0.45em] rounded-ctl bg-arancio-pieno px-[1.05em] font-semibold text-white hover:bg-arancio-scuro [&_svg]:size-[1.15em]"
+      title="Nuova ricetta"
+      className="inline-flex h-(--h-btn) shrink-0 items-center justify-center gap-[0.45em] rounded-ctl bg-arancio-pieno font-semibold text-white hover:bg-arancio-scuro focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-blu-600/35 [&_svg]:size-[1.25em] w-(--h-btn) @min-[620px]:w-auto @min-[620px]:px-[1.05em]"
     >
       <Plus aria-hidden />
       <span className="hidden @min-[620px]:inline">Nuova ricetta</span>

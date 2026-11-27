@@ -23,7 +23,7 @@ export default async function MenuListPage() {
       <PageHeader
         title="Menù"
         meta={`${menus.length} menù${upcoming ? ` · ${upcoming} in programma` : ""}`}
-        actions={<NewMenuLink />}
+        actions={isAdmin ? <NewMenuLink /> : undefined}
       />
       {next && <NextMenuCard menu={next} />}
       <MenuGrid menus={menus} />
