@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { clsx } from "clsx";
 import { displayUnit, isLongUnit } from "@/lib/units";
-import { Check, PartyPopper, RotateCcw, Scale, TriangleAlert, X } from "lucide-react";
+import { Check, ChevronDown, PartyPopper, RotateCcw, Scale, TriangleAlert, X } from "lucide-react";
 import { useRecipeProgress } from "@/lib/recipe-progress";
 import {
   addRecipe,
@@ -283,6 +283,14 @@ export function RecipeProcedure({ recipeId, recipeName, recipePhoto, defaultServ
   // Progresso per INDICE di step, persistito: admin → DB, visitatori → localStorage
   const [done, setDone] = useRecipeProgress(recipeId, steps.length);
   const [pendingIdx, setPendingIdx] = useState<number | null>(null); // step index in attesa di conferma
+  // vista compatta: passi aperti a mano (gli altri restano su una riga)
+  const [openSteps, setOpenSteps] = useState<Set<number>>(() => new Set());
+  const toggleOpenStep = (i: number) => {
+    const next = new Set(openSteps);
+    if (next.has(i)) next.delete(i);
+    else next.add(i);
+    setOpenSteps(next);
+  };
   const [dismissed, setDismissed] = useState(false); // ha chiuso il banner (con "No" o dopo conferma cottura)
   const [cookConfirmed, setCookConfirmed] = useState(false); // la cottura è stata davvero registrata
   const [cookLoading, setCookLoading] = useState(false);
@@ -449,7 +457,7 @@ export function RecipeProcedure({ recipeId, recipeName, recipePhoto, defaultServ
           </span>
         </Banner>
       ) : (
-        hasScalable && <p className="text-[0.8125rem] text-grigio">Tocca una quantità per scrivere quella che hai: il resto si ricalcola.</p>
+        hasScalable && <p className="cx-hide text-[0.8125rem] text-grigio">Tocca una quantità per scrivere quella che hai: il resto si ricalcola.</p>
       )}
       {sections.length <= 1 ? (
         <IngredientList items={ingredients} scaledQty={scaledQty} editingId={editingId} onEdit={setEditingId} onApply={applyIngredientQty} anchorId={anchorId} />
@@ -558,29 +566,47 @@ export function RecipeProcedure({ recipeId, recipeName, recipePhoto, defaultServ
             );
           }
 
+          // vista compatta: passo su una riga (.cx-clamp), la freccia (.cx-only) lo apre e mostra «Ti servono»
+          const open = openSteps.has(i);
+          const long = step.text.length > 38 || step.text.includes("\n") || (step.stepIngredients?.length ?? 0) > 0;
           return (
             <li key={step.id} className="flex flex-col gap-1.5">
+              <div className="flex items-start">
               <button
                 type="button"
                 onClick={() => handleStepClick(i)}
                 aria-pressed={checked}
                 title={checked ? "Tocca per rimetterlo da fare (anche i successivi)" : "Tocca per segnarlo fatto"}
                 className={clsx(
-                  "flex w-full gap-2.5 rounded-ctl px-1.5 py-2 text-left transition-colors hover:bg-blu-100",
+                  "flex min-w-0 flex-1 gap-2.5 rounded-ctl px-1.5 py-2 text-left transition-colors hover:bg-blu-100",
                   isPending && "bg-giallo-100 hover:bg-giallo-100"
                 )}
               >
                 <StepNumber n={i + 1} state={checked ? "done" : "todo"} />
                 <span className="flex min-w-0 flex-1 flex-col gap-1">
-                  <span className={clsx("whitespace-pre-line", checked ? "text-grigio" : "text-blu-950")}>{step.text}</span>
+                  <span data-open={open || undefined} className={clsx("cx-clamp whitespace-pre-line", checked ? "text-grigio" : "text-blu-950")}>
+                    {step.text}
+                  </span>
                   {(kind !== "PREP" || step.mins) && !checked && (
                     <span>
                       <StepKindTag kind={kind} duration={step.mins ? formatMinutes(step.mins) : undefined} />
                     </span>
                   )}
-                  {!checked && stepChips(step, false)}
+                  {!checked && <span className={clsx(!open && "cx-hide")}>{stepChips(step, false)}</span>}
                 </span>
               </button>
+              {long && (
+                <button
+                  type="button"
+                  onClick={() => toggleOpenStep(i)}
+                  aria-expanded={open}
+                  aria-label={open ? `Chiudi il passo ${i + 1}` : `Apri il passo ${i + 1}`}
+                  className="cx-only hit-44 mt-1.5 inline-flex size-8 shrink-0 items-center justify-center rounded-[0.5625rem] text-blu-700 hover:bg-blu-100 [&_svg]:size-4"
+                >
+                  <ChevronDown className={clsx("transition-transform motion-reduce:transition-none", open && "rotate-180")} aria-hidden />
+                </button>
+              )}
+              </div>
               {/* Timer di un passo non corrente: solo se è già partito (es. lievitazione mentre vai avanti) */}
               {timerStep && hasTimer && (
                 <div className="pl-[2.875rem]">
@@ -639,15 +665,15 @@ export function RecipeProcedure({ recipeId, recipeName, recipePhoto, defaultServ
         label="Sezione della ricetta"
         value={activeTab}
         onChange={setTab}
-        className="mb-3 @min-[620px]:hidden"
+        className="cx-tabs mb-3 @min-[620px]:hidden"
         options={[
           { value: "ing", label: "Ingredienti" },
           { value: "proc", label: "Procedura" },
         ]}
       />
       <div className="grid gap-x-(--gap) gap-y-4 @min-[620px]:grid-cols-[clamp(13rem,36%,20rem)_1fr]">
-        <div className={clsx("rounded-card bg-blu-100 p-3.5 @min-[620px]:block", activeTab === "ing" ? "block" : "hidden")}>{ingredientsColumn}</div>
-        <div className={clsx("@min-[620px]:block", activeTab === "proc" ? "block" : "hidden")}>{procedureColumn}</div>
+        <div className={clsx("cx-panel rounded-card bg-blu-100 p-3.5 @min-[620px]:block", activeTab === "ing" ? "block" : "hidden")}>{ingredientsColumn}</div>
+        <div className={clsx("cx-panel @min-[620px]:block", activeTab === "proc" ? "block" : "hidden")}>{procedureColumn}</div>
       </div>
     </div>
   );

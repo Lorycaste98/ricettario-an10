@@ -1,6 +1,6 @@
 "use client";
 import { clsx } from "clsx";
-import { MoreHorizontal } from "lucide-react";
+import { Check, MoreHorizontal } from "lucide-react";
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
@@ -13,12 +13,20 @@ export type ActionMenuItem = {
   /** voce accesa (es. «Nei preferiti»): icona arancio */
   active?: boolean;
   disabled?: boolean;
+  /** voce a interruttore (es. «Vista compatta»): spunta a destra quando è accesa */
+  checked?: boolean;
+  /** solo su contenitore stretto (< 620px): da lì in su la stessa azione è già un bottone in vista */
+  narrowOnly?: boolean;
 };
 
 /**
  * 3.14 · menù azioni «⋯»: bottone quadrato (3.10 `sq`) che apre una tendina bianca nel nostro stile
  * (non il menù nativo). Usato nelle testate dei dettagli quando lo spazio è stretto: lì resta in
  * vista solo l'azione che conta (l'occhio 4.8) e le altre stanno qui.
+ *
+ * Le voci `narrowOnly` compaiono solo quando la testata è stretta: lo si legge all'apertura dalla
+ * variabile `--wide` del bottone, impostata con una container query (la tendina sta in un portale,
+ * fuori dal contenitore, e lì le container query non arrivano).
  *
  * Tendina in portale su `body`, posizione fissa calcolata dal bottone e allineata al suo bordo
  * destro (come `FilterPopover` 4.14); chiusura con tocco fuori, Esc (il focus torna al bottone) o
@@ -29,6 +37,7 @@ export function ActionMenu({ label = "Altre azioni", items, className }: { label
   const menuId = useId();
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
+  const [wide, setWide] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -83,20 +92,21 @@ export function ActionMenu({ label = "Altre azioni", items, className }: { label
   // all'apertura il focus va alla prima voce
   useEffect(() => {
     if (!open || !pos) return;
-    panelRef.current?.querySelector<HTMLElement>("[role=menuitem]:not([disabled])")?.focus();
+    panelRef.current?.querySelector<HTMLElement>("[role^=menuitem]:not([disabled])")?.focus();
   }, [open, pos]);
 
   const onPanelKey = (e: React.KeyboardEvent) => {
     if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
     e.preventDefault();
-    const list = Array.from(panelRef.current?.querySelectorAll<HTMLElement>("[role=menuitem]:not([disabled])") ?? []);
+    const list = Array.from(panelRef.current?.querySelectorAll<HTMLElement>("[role^=menuitem]:not([disabled])") ?? []);
     const i = list.indexOf(document.activeElement as HTMLElement);
     const next = e.key === "ArrowDown" ? (i + 1) % list.length : (i - 1 + list.length) % list.length;
     list[next]?.focus();
   };
 
-  const normal = items.filter((i) => i.tone !== "danger");
-  const danger = items.filter((i) => i.tone === "danger");
+  const shown = items.filter((i) => !(wide && i.narrowOnly));
+  const normal = shown.filter((i) => i.tone !== "danger");
+  const danger = shown.filter((i) => i.tone === "danger");
 
   return (
     <>
@@ -108,8 +118,14 @@ export function ActionMenu({ label = "Altre azioni", items, className }: { label
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
-        onClick={() => (open ? close(false) : setOpen(true))}
+        onClick={() => {
+          if (open) return close(false);
+          const b = btnRef.current;
+          setWide(!!b && getComputedStyle(b).getPropertyValue("--wide").trim() === "1");
+          setOpen(true);
+        }}
         className={clsx(
+          "[--wide:0] @min-[620px]:[--wide:1]",
           "hit-44 inline-flex size-(--h-sm) shrink-0 items-center justify-center rounded-[0.625rem] border transition-colors [&_svg]:size-[1.15rem]",
           "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-blu-600/35",
           open ? "border-blu-800 bg-blu-800 text-white" : "border-blu-200 bg-white text-blu-800 hover:bg-blu-100",
@@ -152,7 +168,8 @@ function MenuRow({ item, onDone }: { item: ActionMenuItem; onDone: () => void })
   return (
     <button
       type="button"
-      role="menuitem"
+      role={item.checked === undefined ? "menuitem" : "menuitemcheckbox"}
+      aria-checked={item.checked}
       disabled={item.disabled}
       onClick={() => {
         onDone();
@@ -167,7 +184,8 @@ function MenuRow({ item, onDone }: { item: ActionMenuItem; onDone: () => void })
       <span aria-hidden className={clsx("flex", item.tone !== "danger" && (item.active ? "text-arancio-pieno" : "text-blu-700"))}>
         {item.icon}
       </span>
-      {item.label}
+      <span className="flex-1">{item.label}</span>
+      {item.checked && <Check className="text-blu-800" aria-hidden />}
     </button>
   );
 }

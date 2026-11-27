@@ -3,7 +3,7 @@ import { usePathname } from "next/navigation";
 import { clsx } from "clsx";
 import type { CSSProperties, ReactNode } from "react";
 import { useNavHistoryTracker } from "@/lib/nav-history";
-import { usePreferenceSync } from "@/lib/preferences";
+import { useCompactAttribute, usePreferenceSync } from "@/lib/preferences";
 import { NavRail, TabBar, navToneFor } from "@/components/shell/AppNav";
 import { useAuth } from "@/components/AuthProvider";
 import { ADMIN_FORM_ROUTE } from "@/components/admin/admin-sections";
@@ -37,6 +37,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   useNavHistoryTracker();
   // admin: preferenze della pagina Impostazioni allineate con l'account
   usePreferenceSync();
+  useCompactAttribute();
   const { isAdmin, loading } = useAuth();
 
   // Tono della navigazione (D9); dietro le quinte (D7) anche fondi freddi

@@ -94,7 +94,7 @@ export default async function MenuDetailPage({ params }: Params) {
     .join(" · ");
 
   return (
-    <article className="flex flex-col gap-4">
+    <article className="cx-page flex flex-col gap-4">
       <PageHeader
         back={<BackLink href="/menu" label="Tutti i menù" />}
         thumb={
@@ -133,24 +133,28 @@ export default async function MenuDetailPage({ params }: Params) {
             <PotIcon aria-hidden /> Modalità cucina
           </Link>
           {reviewUrl && reviewQr && (
+            <span className="cx-hide contents">
             <ShareReviewLink
               url={reviewUrl}
               qrDataUrl={reviewQr}
               menuName={menu.name}
             />
+            </span>
           )}
         </div>
       )}
 
       {session && menu.notes && (
-        <MenuNoteQuickLink note={menu.notes} targetId="note-menu" />
+        <div className="cx-hide">
+          <MenuNoteQuickLink note={menu.notes} targetId="note-menu" />
+        </div>
       )}
 
       {/* Corpo: ricette + spesa · da 1000px colonna laterale con foto, costi e note */}
       <div
         className={
           session || menu.photo
-            ? "grid items-start gap-(--gap) @min-[1000px]:grid-cols-[1fr_clamp(18rem,32cqi,25rem)]"
+            ? "cx-one grid items-start gap-(--gap) @min-[1000px]:grid-cols-[1fr_clamp(18rem,32cqi,25rem)]"
             : "grid gap-(--gap) @min-[1000px]:max-w-[52rem]"
         }
       >
@@ -173,10 +177,12 @@ export default async function MenuDetailPage({ params }: Params) {
                 Le ricette
               </h2>
               {menu.avgRating !== null && (
-                <GuestRatingTag
-                  value={menu.avgRating}
-                  count={menu._count.reviews}
-                />
+                <span className="cx-hide">
+                  <GuestRatingTag
+                    value={menu.avgRating}
+                    count={menu._count.reviews}
+                  />
+                </span>
               )}
             </div>
             <ol className="flex flex-col overflow-hidden rounded-card border border-blu-150 bg-white">
@@ -191,7 +197,7 @@ export default async function MenuDetailPage({ params }: Params) {
                     <span className="tabular flex size-7 shrink-0 items-center justify-center rounded-full bg-blu-120 text-[0.8125rem] font-bold text-blu-800">
                       {order + 1}
                     </span>
-                    <span className="relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-ctl">
+                    <span className="cx-hide relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-ctl">
                       {recipe.photo ? (
                         <Image
                           src={recipe.photo}
@@ -246,7 +252,9 @@ export default async function MenuDetailPage({ params }: Params) {
                           </span>
                         )}
                         {recipe.avgRating !== null && (
-                          <GuestRatingTag value={recipe.avgRating} />
+                          <span className="cx-hide">
+                            <GuestRatingTag value={recipe.avgRating} />
+                          </span>
                         )}
                         {startInfo && serve && (
                           <Tag tone="wait" icon={<AlarmClock />}>
@@ -296,7 +304,8 @@ export default async function MenuDetailPage({ params }: Params) {
         </div>
 
         {(session || menu.photo) && (
-          <aside className="flex min-w-0 flex-col gap-(--gap)">
+          // vista compatta: foto, costi e note spariscono (.cx-hide)
+          <aside className="cx-hide flex min-w-0 flex-col gap-(--gap)">
             {menu.photo && (
               <div className="relative hidden aspect-4/3 overflow-hidden rounded-card bg-blu-100 @min-[1000px]:block">
                 <ViewerImage
@@ -330,10 +339,12 @@ export default async function MenuDetailPage({ params }: Params) {
 
       {/* Recensioni ricevute tramite il link di recensione (solo admin) */}
       {session && (
-        <MenuReceivedReviews
-          initialReviews={menu.recipeReviews}
-          avgRating={menu.avgRating}
-        />
+        <div className="cx-hide">
+          <MenuReceivedReviews
+            initialReviews={menu.recipeReviews}
+            avgRating={menu.avgRating}
+          />
+        </div>
       )}
     </article>
   );

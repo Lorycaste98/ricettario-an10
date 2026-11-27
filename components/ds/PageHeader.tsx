@@ -37,7 +37,8 @@ export function PageHeader({
         </div>
       )}
       <div className="flex items-center gap-3.5">
-        {thumb && <div className="size-[clamp(3.75rem,12cqi,5rem)] shrink-0 overflow-hidden rounded-ctl">{thumb}</div>}
+        {/* cx-hide: nella vista compatta dei dettagli la miniatura sparisce */}
+        {thumb && <div className="cx-hide size-[clamp(3.75rem,12cqi,5rem)] shrink-0 overflow-hidden rounded-ctl">{thumb}</div>}
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <h1 className="text-(length:--fs-page) leading-tight font-bold text-pretty">{title}</h1>
           {meta && <div className="flex flex-col gap-1 text-(length:--fs-meta) text-grigio">{meta}</div>}

@@ -1,3 +1,4 @@
+import { COMPACT_BOOT_SCRIPT } from "@/lib/preference-keys";
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AppShell } from "@/components/AppShell";
@@ -54,7 +55,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // informazioni delle card decise dall'admin per tutti (Impostazioni), cachate a tag
   const cardConfig = await getCardConfig();
   return (
-    <html lang="it" className="h-full antialiased">
+    // suppressHydrationWarning: lo script qui sotto può aggiungere `data-compact` prima di React
+    <html lang="it" className="h-full antialiased" suppressHydrationWarning>
+      <head>
+        {/* vista compatta dei dettagli già al primo disegno, niente scatto (lib/preferences.ts) */}
+        <script dangerouslySetInnerHTML={{ __html: COMPACT_BOOT_SCRIPT }} />
+      </head>
       <body className="ds min-h-screen">
         <AuthProvider>
           <CardConfigProvider value={cardConfig}>

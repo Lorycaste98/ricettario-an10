@@ -38,6 +38,28 @@
 .grid:has(> [data-recipe-card]) { row-gap: 0; }
 [data-recipe-card] { margin-bottom: var(--gap); }
 
+/* Vista compatta dei dettagli di ricetta e menù (`useCompactDetail`, lib/preferences.ts).
+   `html[data-compact]` lo accende lo script in <head> (app/layout.tsx) e lo tiene allineato AppShell.
+   - .cx-page    la pagina del dettaglio: tutto un po' più piccolo (zoom: testo, spazi e icone insieme)
+   - .cx-hide    foto ed extra (voti, recensioni, note, tempi, costi) spariscono
+   - .cx-only    c'è solo in compatta (es. la freccia che apre un passo)
+   - .cx-one     la griglia con la colonna laterale torna a una colonna (la laterale è sparita)
+   - .cx-tabs / .cx-panel  niente schede Ingredienti/Procedura: i due blocchi uno sotto l'altro
+   - .cx-clamp   testo del passo su una riga, finché non lo si apre (data-open) */
+html[data-compact] .cx-page { zoom: 0.92; }
+html[data-compact] .cx-hide,
+html[data-compact] .cx-tabs { display: none !important; }
+html:not([data-compact]) .cx-only { display: none !important; }
+html[data-compact] .cx-one { grid-template-columns: minmax(0, 1fr) !important; }
+html[data-compact] .cx-panel { display: block !important; }
+html[data-compact] .cx-clamp:not([data-open]) {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  overflow: hidden;
+  white-space: normal;
+}
+
 /* 3.14 · tendina del menù azioni «⋯» (components/ds/ActionMenu.tsx) */
 @keyframes menu-in {
   from { opacity: 0; transform: scale(0.94) translateY(-4px); }

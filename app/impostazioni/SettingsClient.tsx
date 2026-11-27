@@ -33,6 +33,7 @@ import {
   MENU_SORT_OPTIONS,
   RECIPE_SORT_OPTIONS,
   SEARCH_RECENT_KEY,
+  useCompactDetail,
   clearRecentSearches,
   recipeSortFor,
   resetPreferences,
@@ -330,6 +331,7 @@ function useNotificationPermission(): [
 
 function KitchenPanel() {
   const [keepAwake, setKeepAwake] = useKeepAwake();
+  const [compact, setCompact] = useCompactDetail();
   const wakeLock = useSyncExternalStore(
     noopSubscribe,
     wakeLockSupported,
@@ -340,9 +342,15 @@ function KitchenPanel() {
     <Panel
       title="In cucina"
       icon={<PotIcon />}
-      meta="Timer dei passi e «Sto cucinando»"
+      meta="Vista delle ricette, timer dei passi e «Sto cucinando»"
     >
       <div>
+        <SettingRow
+          label="Vista compatta di ricette e menù"
+          hint="Solo ciò che serve per cucinare: niente foto, voti, recensioni e note, ingredienti e procedura uno sotto l'altro, passi su una riga (la freccia li apre). Si cambia anche dal «⋯» in cima a una ricetta o a un menù."
+        >
+          <Switch checked={compact} onChange={setCompact} label="Vista compatta" hideLabel />
+        </SettingRow>
         <SettingRow
           label="Schermo acceso durante i timer"
           hint={

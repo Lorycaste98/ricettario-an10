@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
-import { FileDown, Heart, Pencil, Trash2 } from "lucide-react";
+import { FileDown, Heart, Minimize2, Pencil, Trash2 } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { ConfirmModal } from "@/components/ui/Modal";
 import { VisibilityToggle } from "@/components/ds/Controls";
@@ -11,6 +11,7 @@ import { headerIconCls } from "@/components/ds/button-classes";
 import { FavoriteButton } from "@/components/recipe/FavoriteButton";
 import { RecipePdfButton, type PdfButtonHandle, type RecipePdfData } from "@/components/recipe/RecipePdfButton";
 import { useFavorites } from "@/lib/favorites";
+import { useCompactDetail } from "@/lib/preferences";
 
 /** Le azioni secondarie compaiono come bottoni solo da questo contenitore in su; sotto vanno nel «⋯». */
 const WIDE = "@max-[620px]:hidden";
@@ -19,7 +20,9 @@ const WIDE = "@max-[620px]:hidden";
  * Azioni della testata del dettaglio ricetta (9.5, a destra del «torna indietro»).
  * - Admin: l'occhio pronta/non pronta (4.8) è sempre in vista; Modifica, PDF, preferito ed Elimina
  *   sono bottoni quadrati da 620px di contenitore, sotto stanno nel menù «⋯» (3.14).
- * - Visitatore: PDF e preferito, sempre in vista (sono due).
+ * - Visitatore: PDF e preferito sempre in vista, nel «⋯» la vista compatta.
+ * - Il «⋯» c'è sempre: «Vista compatta» (preferenza unica, `useCompactDetail`) e, su contenitore
+ *   stretto, anche le azioni nascoste (`narrowOnly`).
  * La visibilità cambia subito (l'occhio si anima al tocco) e torna indietro se la PATCH fallisce.
  * Gemello di `app/menu/[id]/MenuAdminBar.tsx`.
  */
@@ -37,6 +40,8 @@ export function RecipeAdminBar({
   const pdfRef = useRef<PdfButtonHandle>(null);
   const { isFavorite, toggle, hydrated } = useFavorites();
   const fav = hydrated && isFavorite(recipeId);
+  const [compact, setCompact] = useCompactDetail();
+  const compactItem = { label: "Vista compatta", icon: <Minimize2 />, checked: compact, onSelect: () => setCompact(!compact) };
   const [isPublished, setIsPublished] = useState(published);
   const [toggling, setToggling] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -71,6 +76,7 @@ export function RecipeAdminBar({
       <>
         <RecipePdfButton recipe={pdf} />
         <FavoriteButton recipeId={recipeId} variant="icon" />
+        <ActionMenu items={[compactItem]} />
       </>
     );
   }
@@ -92,21 +98,21 @@ export function RecipeAdminBar({
       >
         <Trash2 aria-hidden />
       </button>
-      <div className="@min-[620px]:hidden">
-        <ActionMenu
-          items={[
-            { label: "Modifica", icon: <Pencil />, onSelect: () => router.push(`/admin/ricette/${recipeId}`) },
-            { label: "Esporta in PDF", icon: <FileDown />, onSelect: () => pdfRef.current?.start() },
-            {
-              label: fav ? "Togli dai preferiti" : "Aggiungi ai preferiti",
-              icon: <Heart className={fav ? "fill-current" : undefined} />,
-              active: fav,
-              onSelect: () => toggle(recipeId),
-            },
-            { label: "Elimina ricetta", icon: <Trash2 />, tone: "danger", onSelect: () => setConfirmDelete(true) },
-          ]}
-        />
-      </div>
+      <ActionMenu
+        items={[
+          { label: "Modifica", icon: <Pencil />, narrowOnly: true, onSelect: () => router.push(`/admin/ricette/${recipeId}`) },
+          { label: "Esporta in PDF", icon: <FileDown />, narrowOnly: true, onSelect: () => pdfRef.current?.start() },
+          {
+            label: fav ? "Togli dai preferiti" : "Aggiungi ai preferiti",
+            icon: <Heart className={fav ? "fill-current" : undefined} />,
+            active: fav,
+            narrowOnly: true,
+            onSelect: () => toggle(recipeId),
+          },
+          compactItem,
+          { label: "Elimina ricetta", icon: <Trash2 />, tone: "danger", narrowOnly: true, onSelect: () => setConfirmDelete(true) },
+        ]}
+      />
 
       <ConfirmModal
         open={confirmDelete}

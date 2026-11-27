@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
-import { FileDown, Pencil, Trash2 } from "lucide-react";
+import { FileDown, Minimize2, Pencil, Trash2 } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { ConfirmModal } from "@/components/ui/Modal";
 import { VisibilityToggle } from "@/components/ds/Controls";
@@ -10,6 +10,7 @@ import { ActionMenu } from "@/components/ds/ActionMenu";
 import { headerIconCls } from "@/components/ds/button-classes";
 import { MenuPdfButton, type MenuPdfProps } from "@/components/menu/MenuPdfButton";
 import type { PdfButtonHandle } from "@/components/recipe/RecipePdfButton";
+import { useCompactDetail } from "@/lib/preferences";
 
 /** Le azioni secondarie compaiono come bottoni solo da questo contenitore in su; sotto vanno nel «⋯». */
 const WIDE = "@max-[620px]:hidden";
@@ -18,7 +19,8 @@ const WIDE = "@max-[620px]:hidden";
  * Azioni della testata del dettaglio menù (9.5), gemelle di `RecipeAdminBar`:
  * - admin: l'occhio pronto/non pronto (4.8) sempre in vista; Modifica, PDF ed Elimina come bottoni
  *   quadrati da 620px di contenitore, sotto nel menù «⋯» (3.14);
- * - visitatore: PDF.
+ * - visitatore: PDF;
+ * - il «⋯» c'è sempre, con «Vista compatta» (`useCompactDetail`).
  * La visibilità cambia subito (l'occhio si anima al tocco) e torna indietro se la PATCH fallisce.
  */
 export function MenuAdminBar({
@@ -33,6 +35,8 @@ export function MenuAdminBar({
   const { isAdmin } = useAuth();
   const router = useRouter();
   const pdfRef = useRef<PdfButtonHandle>(null);
+  const [compact, setCompact] = useCompactDetail();
+  const compactItem = { label: "Vista compatta", icon: <Minimize2 />, checked: compact, onSelect: () => setCompact(!compact) };
   const [isPublished, setIsPublished] = useState(published);
   const [toggling, setToggling] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -62,7 +66,13 @@ export function MenuAdminBar({
     router.refresh();
   };
 
-  if (!isAdmin) return <MenuPdfButton menu={pdf} />;
+  if (!isAdmin)
+    return (
+      <>
+        <MenuPdfButton menu={pdf} />
+        <ActionMenu items={[compactItem]} />
+      </>
+    );
 
   return (
     <>
@@ -86,15 +96,14 @@ export function MenuAdminBar({
       >
         <Trash2 aria-hidden />
       </button>
-      <div className="@min-[620px]:hidden">
-        <ActionMenu
-          items={[
-            { label: "Modifica", icon: <Pencil />, onSelect: () => router.push(`/admin/menu/${menuId}/modifica`) },
-            { label: "Esporta in PDF", icon: <FileDown />, onSelect: () => pdfRef.current?.start(), disabled: pdf.recipes.length === 0 },
-            { label: "Elimina menù", icon: <Trash2 />, tone: "danger", onSelect: () => setConfirmDelete(true) },
-          ]}
-        />
-      </div>
+      <ActionMenu
+        items={[
+          { label: "Modifica", icon: <Pencil />, narrowOnly: true, onSelect: () => router.push(`/admin/menu/${menuId}/modifica`) },
+          { label: "Esporta in PDF", icon: <FileDown />, narrowOnly: true, onSelect: () => pdfRef.current?.start(), disabled: pdf.recipes.length === 0 },
+          compactItem,
+          { label: "Elimina menù", icon: <Trash2 />, tone: "danger", narrowOnly: true, onSelect: () => setConfirmDelete(true) },
+        ]}
+      />
 
       <ConfirmModal
         open={confirmDelete}

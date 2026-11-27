@@ -2,7 +2,7 @@
 import { useEffect } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { clearLocalStore, localStoreEvent, setLocalStoreRaw, useLocalStore } from "@/lib/local-store";
-import { DEVICE_PREF_KEYS, PREF_KEYS } from "@/lib/preference-keys";
+import { COMPACT_KEY, DEVICE_PREF_KEYS, PREF_KEYS } from "@/lib/preference-keys";
 
 /**
  * Preferenze della pagina **Impostazioni** in un posto solo: le usano le liste (Ricette, Preferiti,
@@ -147,6 +147,29 @@ export function clearRecentSearches() {
 // ── Schermo acceso durante i timer ──────────────────────────────────────────
 
 export const KEEP_AWAKE_KEY = "ricettario:cooking-keep-awake";
+
+// ── Vista compatta di ricette e menù ────────────────────────────────────────
+
+/**
+ * Vista compatta dei dettagli di ricetta e menù: una sola scelta per tutto il sito (Impostazioni →
+ * In cucina, oppure «Vista compatta» nel menù «⋯» della testata). Accesa: niente foto né extra
+ * (voti, recensioni, note, tempi, costi), ingredienti e procedura uno sotto l'altro senza schede,
+ * passi non correnti su una riga, tutto un po' più piccolo. Il disegno lo fa il CSS (`.cx-*` in
+ * `globals.css`) leggendo `html[data-compact]`: così vale già al primo disegno (lo scrive lo script
+ * in `app/layout.tsx` prima che la pagina compaia) e i server component non devono saperne nulla.
+ */
+export function useCompactDetail() {
+  return useLocalStore<boolean>(COMPACT_KEY, false, (raw) => raw === "true", (v) => String(v));
+}
+
+/** Montato una volta (in `AppShell`): tiene `html[data-compact]` allineato alla scelta (anche dopo sync e ripristino). */
+export function useCompactAttribute() {
+  const [compact] = useCompactDetail();
+  useEffect(() => {
+    if (compact) document.documentElement.dataset.compact = "";
+    else delete document.documentElement.dataset.compact;
+  }, [compact]);
+}
 
 // ── Ripristino ──────────────────────────────────────────────────────────────
 

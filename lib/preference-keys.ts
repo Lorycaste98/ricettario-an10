@@ -12,6 +12,7 @@ export const PREF_KEYS = [
   "ricettario:list-view:menus:view",
   "ricettario:menu-costs-outputs",
   "ricettario:cooking-keep-awake",
+  "ricettario:compact-detail",
 ] as const;
 
 export type PrefKey = (typeof PREF_KEYS)[number];
@@ -22,3 +23,9 @@ export type PrefKey = (typeof PREF_KEYS)[number];
  * Non vanno all'account; «Ripristina» le azzera insieme alle altre.
  */
 export const DEVICE_PREF_KEYS = ["ricettario:list-view:recipes:cols", "ricettario:list-view:menus:cols"] as const;
+
+/** Vista compatta dei dettagli (vedi `useCompactDetail` in `lib/preferences.ts`). */
+export const COMPACT_KEY = "ricettario:compact-detail";
+
+/** Script prima del disegno (in `<head>` di `app/layout.tsx`): accende `html[data-compact]` se la scelta è salvata. */
+export const COMPACT_BOOT_SCRIPT = `try{if(localStorage.getItem("${COMPACT_KEY}")==="true")document.documentElement.dataset.compact=""}catch(e){}`;

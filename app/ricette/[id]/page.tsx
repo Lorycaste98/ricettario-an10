@@ -112,7 +112,7 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
     ) : undefined;
 
   return (
-    <article className="flex flex-col gap-4">
+    <article className="cx-page flex flex-col gap-4">
       <PageHeader
         back={<BackLink href="/ricette" label="Tutte le ricette" />}
         thumb={
@@ -130,7 +130,7 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
       />
 
       {/* Corpo: ingredienti + procedura (2 colonne da 620px) · da 1000px terza colonna con foto e dettagli */}
-      <div className="grid items-start gap-(--gap) @min-[1000px]:grid-cols-[1fr_clamp(16rem,26cqi,20rem)]">
+      <div className="cx-one grid items-start gap-(--gap) @min-[1000px]:grid-cols-[1fr_clamp(16rem,26cqi,20rem)]">
         <RecipeProcedure
           recipeId={recipe.id}
           recipeName={recipe.name}
@@ -141,7 +141,8 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
           steps={recipe.steps}
         />
 
-        <aside className="flex flex-col gap-3">
+        {/* vista compatta: foto, tempi, note, link, cotture e voto spariscono (.cx-hide) */}
+        <aside className="cx-hide flex flex-col gap-3">
           {allPhotos.length > 0 && (
             <div className="grid grid-cols-3 gap-2">
               <div className="relative col-span-3 aspect-4/3 overflow-hidden rounded-card bg-blu-100">
@@ -201,7 +202,9 @@ export default async function RecipePage({ params }: PageProps<"/ricette/[id]">)
         </aside>
       </div>
 
-      <ReviewSection initialReviews={recipe.reviews} />
+      <div className="cx-hide">
+        <ReviewSection initialReviews={recipe.reviews} />
+      </div>
     </article>
   );
 }
