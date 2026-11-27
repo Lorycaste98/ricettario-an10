@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { clsx } from "clsx";
 import {
   finishedCount,
@@ -12,7 +13,9 @@ import {
   type CookingTimer,
 } from "@/lib/cooking-session";
 import { useRecipeProgress } from "@/lib/recipe-progress";
+import { motion, useIsPresent } from "motion/react";
 import { PotIcon } from "@/components/icons";
+import { An10LogoAnimated } from "@/components/brand/An10LogoAnimated";
 
 /**
  * «Sto cucinando» nella cornice (tavola 8.4): fila blu in cima, una scheda per ricetta in corso.
@@ -75,39 +78,59 @@ function Ticket({ recipe, timers, now }: { recipe: CookingRecipe; timers: Cookin
 
 /**
  * Fila in cima alla pagina (8.4 · a tutte le larghezze dal 27/11/2026: la vecchia mini-barra 9.3
- * mostrava solo la prima ricetta e un contatore). Una scheda per ricetta, scorre in orizzontale.
- * La pentola a sinistra porta il numero dei timer finiti ed è il punto d'arrivo dell'animazione
- * «vola in cucina» (`data-cooking-target`, vedi `lib/cooking-fly.ts`). Resta in vista mentre si scorre.
+ * mostrava solo la prima ricetta e un contatore). A sinistra, fermi, il **logo AN10** (quando la fila
+ * c'è, il logo della testata sparisce: il logo resta uno per pagina) e la pentola col numero dei timer
+ * finiti, punto d'arrivo della pentola che vola (`data-cooking-target`, `lib/cooking-fly.ts`); poi
+ * una scheda per ricetta, che scorre in orizzontale. Resta in vista mentre si scorre.
+ *
+ * La monta AppShell dentro `AnimatePresence`: `animate` = è comparsa ora (prima ricetta aggiunta) e
+ * il logo si disegna; quando esce (ultima ricetta tolta) il logo si smonta al contrario e poi la fila
+ * si chiude. Con «Riduci movimento» niente di tutto questo.
  */
-export function CookingRow({ sticky = true }: { sticky?: boolean }) {
-  const { session, recipes, now, finished } = useCookingData();
-  if (!session.hydrated || recipes.length === 0) return null;
+export function CookingRow({ sticky = true, animate = false }: { sticky?: boolean; animate?: boolean }) {
+  const { recipes, now, finished, session } = useCookingData();
+  const present = useIsPresent();
   return (
-    <div
-      role="region"
-      aria-label={`Sto cucinando: ${recipes.length} ${recipes.length === 1 ? "ricetta" : "ricette"}${finished ? `, ${finished} timer finiti` : ""}`}
-      className={clsx(sticky && "sticky top-0 z-30", "flex gap-2 overflow-x-auto bg-blu-600 px-(--pad) py-2 [scrollbar-width:none]")}
-      style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.5rem)" }}
+    <motion.div
+      // all'apertura della pagina (animate falso) compare e sparisce senza animazioni
+      initial={animate ? { height: 0 } : false}
+      animate={{ height: "auto", transition: { duration: 0.32, ease: [0.22, 1, 0.36, 1] } }}
+      exit={{ height: 0, transition: animate ? { duration: 0.28, ease: [0.4, 0, 1, 1], delay: 0.6 } : { duration: 0 } }}
+      className={clsx(sticky && "sticky top-0 z-30", "shrink-0 overflow-hidden bg-blu-600")}
     >
-      <button
-        type="button"
-        onClick={openCookingDock}
-        aria-label="Apri il pannello «Sto cucinando»"
-        className="relative flex shrink-0 items-center px-0.5 text-white"
+      <div
+        role="region"
+        aria-label={`Sto cucinando: ${recipes.length} ${recipes.length === 1 ? "ricetta" : "ricette"}${finished ? `, ${finished} timer finiti` : ""}`}
+        className="flex items-center gap-2 py-2 pl-(--pad)"
+        style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.5rem)" }}
       >
-        <span data-cooking-target className="flex">
-          <PotIcon className="size-6" />
-        </span>
-        {finished > 0 && (
-          <span className="tabular absolute top-0 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rosa px-1 text-[10px] font-bold ring-2 ring-blu-600">
-            {finished}
+        <An10LogoAnimated
+          title="Ricettario AN10"
+          play={!present ? (animate ? "out" : "still") : animate ? "in" : "still"}
+          className="h-6 w-auto shrink-0 text-white"
+        />
+        <button
+          type="button"
+          onClick={openCookingDock}
+          aria-label="Apri il pannello «Sto cucinando»"
+          className="relative ml-1 flex h-11 shrink-0 items-center border-l border-blu-300 pr-0.5 pl-2.5 text-white"
+        >
+          <span data-cooking-target className="flex">
+            <PotIcon className="size-6" />
           </span>
-        )}
-      </button>
-      {recipes.map((r) => (
-        <Ticket key={r.recipeId} recipe={r} timers={session.timers.filter((t) => t.recipeId === r.recipeId)} now={now} />
-      ))}
-    </div>
+          {finished > 0 && (
+            <span className="tabular absolute top-1 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rosa px-1 text-[10px] font-bold ring-2 ring-blu-600">
+              {finished}
+            </span>
+          )}
+        </button>
+        <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto pr-(--pad) [scrollbar-width:none]">
+          {recipes.map((r) => (
+            <Ticket key={r.recipeId} recipe={r} timers={session.timers.filter((t) => t.recipeId === r.recipeId)} now={now} />
+          ))}
+        </div>
+      </div>
+    </motion.div>
   );
 }
 
@@ -115,4 +138,20 @@ export function CookingRow({ sticky = true }: { sticky?: boolean }) {
 export function useHasCooking() {
   const session = useCookingSession();
   return session.hydrated && session.recipes.length > 0;
+}
+
+/**
+ * Per le animazioni della cornice: `cooking` e `changed` = la fila è comparsa o sparita **dopo** il
+ * primo caricamento (all'apertura della pagina, con ricette già in corso, niente animazioni).
+ */
+export function useCookingPresence() {
+  const session = useCookingSession();
+  const cooking = session.hydrated && session.recipes.length > 0;
+  const [prev, setPrev] = useState<boolean | null>(null);
+  const [changed, setChanged] = useState(false);
+  if (session.hydrated && prev !== cooking) {
+    if (prev !== null) setChanged(true);
+    setPrev(cooking);
+  }
+  return { hydrated: session.hydrated, cooking, changed };
 }

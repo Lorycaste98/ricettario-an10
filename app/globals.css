@@ -28,8 +28,24 @@
   72% { transform: translateY(-16px); }
   100% { transform: none; }
 }
+/* fermo (`play="still"`) e uscita al contrario (`play="out"`): prima tuorlo e uovo, poi coltello e
+   forchetta, il mattarello, infine le lettere si cancellano */
+.an10a-still :is(.an10a-draw, .an10a-pin, .an10a-fork, .an10a-blade, .an10a-handle, .an10a-egg, .an10a-yolk) {
+  animation: none !important; stroke-dashoffset: 0;
+}
+.an10a-out .an10a-draw { animation: an10a-undraw .35s cubic-bezier(.6,0,.2,1) .3s both; }
+.an10a-out .an10a-d2 { animation-delay: .22s; }
+.an10a-out :is(.an10a-pin, .an10a-fork, .an10a-blade, .an10a-handle, .an10a-egg, .an10a-yolk) {
+  animation: an10a-leave .28s cubic-bezier(.5,0,.75,0) both;
+}
+.an10a-out .an10a-egg { --an10a-from: translateY(-120px); animation-delay: .04s; }
+.an10a-out :is(.an10a-blade, .an10a-handle) { animation-delay: .1s; }
+.an10a-out .an10a-fork { animation-delay: .14s; }
+.an10a-out .an10a-pin { animation-delay: .18s; }
+@keyframes an10a-undraw { from { stroke-dashoffset: 0; } to { stroke-dashoffset: 1; } }
+@keyframes an10a-leave { from { transform: none; opacity: 1; } to { transform: var(--an10a-from); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {
-  .an10a-draw, .an10a-pin, .an10a-fork, .an10a-blade, .an10a-handle, .an10a-egg, .an10a-yolk { animation: none; stroke-dashoffset: 0; }
+  .an10a-draw, .an10a-pin, .an10a-fork, .an10a-blade, .an10a-handle, .an10a-egg, .an10a-yolk { animation: none !important; stroke-dashoffset: 0; }
 }
 
 /* 8.1 · card ricetta in subgrid (RecipeCard): lo spazio fra le righe della griglia «filtrava» dentro

@@ -7,12 +7,25 @@ import { useId } from "react";
  * Con `prefers-reduced-motion` il logo è fermo. Stessa geometria di `An10Logo` e di `public/brand/`.
  * Colore = `currentColor`. Classi e animazioni in `app/globals.css` (prefisso `an10a-`).
  */
-export function An10LogoAnimated({ className, title = "AN10" }: { className?: string; title?: string }) {
+export function An10LogoAnimated({
+  className,
+  title = "AN10",
+  play = "in",
+}: {
+  className?: string;
+  title?: string;
+  /**
+   * `in` = si disegna (default); `out` = al contrario, in ~0,65 s (uovo e posate escono, le lettere si
+   * cancellano); `still` = fermo e intero (stesso disegno, per poterlo poi far uscire con `out`).
+   * Usato anche dal logo che passa fra testata e fila «Sto cucinando» (`ShellBrand` in AppShell).
+   */
+  play?: "in" | "out" | "still";
+}) {
   const id = useId().replace(/:/g, "");
   const m1 = `${id}-m1`;
   const m2 = `${id}-m2`;
   return (
-    <svg viewBox="0 10 720 236" className={`overflow-visible ${className ?? ""}`} role="img" aria-label={title}>
+    <svg viewBox="0 10 720 236" className={`overflow-visible ${play === "out" ? "an10a-out" : play === "still" ? "an10a-still" : ""} ${className ?? ""}`} role="img" aria-label={title}>
       <defs>
         <mask id={m1} maskUnits="userSpaceOnUse" x={-400} y={-400} width={1600} height={1000}>
           <rect x={-400} y={-400} width={1600} height={1000} fill="#fff" />

@@ -7,7 +7,9 @@ import { useCompactAttribute, usePreferenceSync } from "@/lib/preferences";
 import { NavRail, TabBar, navToneFor } from "@/components/shell/AppNav";
 import { useAuth } from "@/components/AuthProvider";
 import { ADMIN_FORM_ROUTE } from "@/components/admin/admin-sections";
-import { CookingRow } from "@/components/shell/CookingBar";
+import { AnimatePresence, MotionConfig, motion, useIsPresent } from "motion/react";
+import { CookingRow, useCookingPresence } from "@/components/shell/CookingBar";
+import { An10LogoAnimated } from "@/components/brand/An10LogoAnimated";
 import { An10Logo } from "@/components/brand/An10Logo";
 
 // Pagine senza il logo di testata: la vetrina e l'accesso hanno il loro logo grande, i form la barra 11.1 in cima
@@ -39,12 +41,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   usePreferenceSync();
   useCompactAttribute();
   const { isAdmin, loading } = useAuth();
+  const { cooking, changed } = useCookingPresence();
 
   // Tono della navigazione (D9); dietro le quinte (D7) anche fondi freddi
   const tone = navToneFor(pathname, isAdmin, loading);
   const admin = tone === "backstage";
 
   return (
+    <MotionConfig reducedMotion="user">
     <div
       className={clsx("flex min-h-dvh [--tabs-h:3.75rem]", admin ? "bg-adm-50" : "bg-blu-50")}
       style={
@@ -64,7 +68,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       <NavRail tone={tone} />
       <div className="@container flex min-w-0 flex-1 flex-col">
         {/* «Sto cucinando» (8.4) a tutte le larghezze; nei form la barra 11.1 resta in alto: la fila lì scorre via con la pagina */}
-        <CookingRow sticky={!ADMIN_FORM_ROUTE.test(pathname)} />
+        <AnimatePresence initial={false}>
+          {cooking && <CookingRow key="cooking" sticky={!ADMIN_FORM_ROUTE.test(pathname)} animate={changed} />}
+        </AnimatePresence>
         <main
           className={clsx(
             // --main-px = margine laterale; a destra si allarga sotto il notch (iPhone in orizzontale).
@@ -79,13 +85,40 @@ export function AppShell({ children }: { children: ReactNode }) {
           }}
         >
           {!NO_BRAND_ROUTE.test(pathname) && !ADMIN_FORM_ROUTE.test(pathname) && (
-            <BrandHeader className={clsx("mb-4", admin ? "text-adm-900" : "text-blu-800")} />
+            // con la fila «Sto cucinando» il logo sta lì: uno solo per pagina
+            <AnimatePresence initial={false}>
+              {!cooking && <ShellBrand key="brand" animate={changed} className={admin ? "text-adm-900" : "text-blu-800"} />}
+            </AnimatePresence>
           )}
           {children}
         </main>
       </div>
       <TabBar tone={tone} />
     </div>
+    </MotionConfig>
+  );
+}
+
+/**
+ * 9.7 · logo di testata nella cornice. Quando parte la prima ricetta in «Sto cucinando» si smonta al
+ * contrario e poi lo spazio si chiude (il logo va nella fila); quando l'ultima ricetta esce torna e
+ * si disegna. `animate` = cambio avvenuto ora: all'apertura della pagina è fermo.
+ */
+function ShellBrand({ animate, className }: { animate: boolean; className?: string }) {
+  const present = useIsPresent();
+  return (
+    <motion.div
+      // all'apertura della pagina (animate falso) compare e sparisce senza animazioni
+      initial={animate ? { height: 0 } : false}
+      animate={{ height: "auto", transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] } }}
+      exit={{ height: 0, transition: animate ? { duration: 0.28, ease: [0.4, 0, 1, 1], delay: 0.6 } : { duration: 0 } }}
+      className={clsx("-mt-3 flex justify-center overflow-hidden", className)}
+    >
+      {/* il margine sotto sta dentro: chiudendo l'altezza va via anche lui */}
+      <div className="pb-4">
+        <An10LogoAnimated title="Ricettario AN10" play={!present ? (animate ? "out" : "still") : animate ? "in" : "still"} className="h-8 w-auto" />
+      </div>
+    </motion.div>
   );
 }
 

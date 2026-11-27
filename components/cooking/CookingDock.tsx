@@ -65,6 +65,9 @@ export function CookingDock() {
   // Apertura da fuori (es. bottone pentola sulle card delle liste)
   useOpenCookingDockListener(useCallback(() => setOpen(true), []));
   const count = session.recipes.length;
+  // Lista svuotata dal pannello stesso (Togli / Finito): il pannello sparisce e va anche chiuso,
+  // altrimenti alla prossima ricetta aggiunta (dalle card) si riaprirebbe da solo.
+  if (open && session.hydrated && count === 0) setOpen(false);
 
   if (!session.hydrated || session.recipes.length === 0) return null;
 
