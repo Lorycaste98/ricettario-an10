@@ -5,6 +5,7 @@ import { clsx } from "clsx";
 import {
   finishedCount,
   formatCountdown,
+  groupByMenu,
   openCookingDock,
   remainingMs,
   useCookingSession,
@@ -14,7 +15,8 @@ import {
 } from "@/lib/cooking-session";
 import { useRecipeProgress } from "@/lib/recipe-progress";
 import { motion, useIsPresent } from "motion/react";
-import { PotIcon } from "@/components/icons";
+import Link from "next/link";
+import { ClocheIcon, PotIcon } from "@/components/icons";
 import { An10LogoAnimated } from "@/components/brand/An10LogoAnimated";
 
 /**
@@ -125,9 +127,26 @@ export function CookingRow({ sticky = true, animate = false }: { sticky?: boolea
           )}
         </button>
         <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto pr-(--pad) [scrollbar-width:none]">
-          {recipes.map((r) => (
-            <Ticket key={r.recipeId} recipe={r} timers={session.timers.filter((t) => t.recipeId === r.recipeId)} now={now} />
-          ))}
+          {groupByMenu(recipes).map((g) => {
+            const tickets = g.recipes.map((r) => (
+              <Ticket key={r.recipeId} recipe={r} timers={session.timers.filter((t) => t.recipeId === r.recipeId)} now={now} />
+            ));
+            if (!g.menu) return tickets;
+            // ricette di un menù: insieme, dietro l'etichetta del menù (porta alla modalità cucina)
+            return (
+              <div key={`menu-${g.menu.id}`} className="ticket-in flex shrink-0 items-stretch gap-1.5 rounded-[0.75rem] bg-blu-700 p-1">
+                <Link
+                  href={`/menu/${g.menu.id}/cucina`}
+                  aria-label={`Menù ${g.menu.name}: apri la modalità cucina`}
+                  className="flex w-[4.75rem] shrink-0 flex-col justify-center gap-0.5 px-1 text-white"
+                >
+                  <ClocheIcon className="size-4" aria-hidden />
+                  <span className="line-clamp-2 text-[0.6875rem] leading-tight font-bold">{g.menu.name}</span>
+                </Link>
+                {tickets}
+              </div>
+            );
+          })}
         </div>
       </div>
     </motion.div>

@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation";
 import { Check, ChevronLeft, PartyPopper, Scale, X } from "lucide-react";
 import {
   finishRecipe,
+  groupByMenu,
+  removeMenu,
   isTimerStep,
   removeRecipe,
   requestNotificationPermission,
@@ -31,6 +33,8 @@ import { StepNumber, StepProgress } from "@/components/ds/Progress";
 import { StepKindTag, Tag } from "@/components/ds/Tag";
 import { TimerAlert } from "@/components/ds/Feedback";
 import { categoryInk } from "@/components/recipe/CardCategory";
+import { ClocheIcon } from "@/components/icons";
+import { buttonClasses } from "@/components/ds/button-classes";
 
 /**
  * «Sto cucinando»: pannello (dialog) con una card per ricetta in corso, montato una volta in
@@ -75,20 +79,74 @@ export function CookingDock() {
     <>
       <Modal open={open} onClose={() => setOpen(false)} title={`Sto cucinando · ${count}`} size="md" bodyClassName="flex flex-col gap-3 bg-blu-50">
         <FinishedTimers timers={session.timers.filter((t) => t.status === "done")} />
-        {[...session.recipes]
-          .sort((a, b) => a.addedAt - b.addedAt)
-          .map((r) => (
+        {groupByMenu(session.recipes).map((g) => {
+          const cards = g.recipes.map((r) => (
             <CookingRecipeCard
               key={r.recipeId}
               recipe={r}
               timers={session.timers.filter((t) => t.recipeId === r.recipeId)}
               onNavigate={() => setOpen(false)}
             />
-          ))}
+          ));
+          if (!g.menu) return cards;
+          return (
+            <MenuGroup
+              key={`menu-${g.menu.id}`}
+              menu={g.menu}
+              hasTimers={session.timers.some((t) => t.status !== "done" && g.recipes.some((r) => r.recipeId === t.recipeId))}
+              onNavigate={() => setOpen(false)}
+            >
+              {cards}
+            </MenuGroup>
+          );
+        })}
         <KeepAwakeToggle />
         <NotificationHint />
       </Modal>
     </>
+  );
+}
+
+/** Ricette di un menù (modalità cucina): testata col nome, link alla modalità cucina e «Togli il menù» */
+function MenuGroup({
+  menu,
+  hasTimers,
+  onNavigate,
+  children,
+}: {
+  menu: { id: number; name: string };
+  hasTimers: boolean;
+  onNavigate: () => void;
+  children: React.ReactNode;
+}) {
+  const [confirm, setConfirm] = useState(false);
+  return (
+    <section aria-label={`Menù ${menu.name}`} className="flex flex-col gap-2 rounded-card bg-blu-100 p-2">
+      <div className="flex items-start gap-2 px-1 pt-0.5">
+        <ClocheIcon className="mt-0.5 size-5 shrink-0 text-blu-800" aria-hidden />
+        <div className="flex min-w-0 flex-1 flex-col items-start">
+          <h3 className="line-clamp-2 leading-tight font-bold">{menu.name}</h3>
+          <Link href={`/menu/${menu.id}/cucina`} onClick={onNavigate} className={clsx(buttonClasses("ghost", "sm"), "-ml-2")}>
+            Apri la modalità cucina
+          </Link>
+        </div>
+        <IconButton size="row" tone="danger" label="Togli il menù" onClick={() => (hasTimers ? setConfirm(true) : removeMenu(menu.id))}>
+          <X />
+        </IconButton>
+      </div>
+      {children}
+      <ConfirmModal
+        open={confirm}
+        onClose={() => setConfirm(false)}
+        onConfirm={() => {
+          setConfirm(false);
+          removeMenu(menu.id);
+        }}
+        title="Togliere il menù?"
+        message={`Le ricette di «${menu.name}» escono da «Sto cucinando» e i loro timer attivi vengono annullati.`}
+        confirmLabel="Togli"
+      />
+    </section>
   );
 }
 

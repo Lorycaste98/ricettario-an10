@@ -13,6 +13,8 @@ import {
 } from "@/lib/step-ingredients";
 import { formatClock } from "@/lib/cook-timeline";
 import { useLocalStore } from "@/lib/local-store";
+import { useRecipeProgress } from "@/lib/recipe-progress";
+import { addRecipe, finishRecipe, isCooking, useCookingSession } from "@/lib/cooking-session";
 import { StartTimeEditor } from "@/components/menu/StartTimeEditor";
 import { CurrentStep, StepNeeds } from "@/components/cooking/CurrentStep";
 import { An10Logo } from "@/components/brand/An10Logo";
@@ -54,6 +56,10 @@ interface Recipe {
   photo: string | null;
   cookCount: number;
   quick?: boolean;
+  categories?: { name: string; color: string }[];
+  tags?: string[];
+  /** porzioni del menù ÷ porzioni della ricetta (le quantità mostrate qui sono già scalate) */
+  scaleFactor?: number;
   ingredients?: CookIngredient[];
   steps: Step[];
 }
@@ -74,8 +80,12 @@ function ingredientParts(ing: CookIngredient, qty: number | null, split: boolean
   return { amount, name: ing.name };
 }
 
+/**
+ * Qui resta solo «cucinata» (per menù, nel dispositivo). I **passi fatti** non stanno più qui
+ * (27/11/2026): sono quelli di `useRecipeProgress`, gli stessi della pagina ricetta e del
+ * pannello «Sto cucinando». Un vecchio `stepIdx` salvato si ignora.
+ */
 interface Progress {
-  stepIdx: number;
   cooked: boolean;
 }
 
@@ -99,6 +109,7 @@ export interface RecipeStart {
 
 export function MenuCookMode({
   menuId,
+  menuName,
   recipes,
   stepTimes,
   starts,
@@ -107,6 +118,7 @@ export function MenuCookMode({
   onStartReset,
 }: {
   menuId: number;
+  menuName: string;
   recipes: Recipe[];
   /** Orario di inizio di ogni step per ricetta (dalla timeline del CookPlanner) */
   stepTimes?: Record<number, Date[]>;
@@ -123,7 +135,7 @@ export function MenuCookMode({
   );
 
   const update = (recipeId: number, patch: Partial<Progress>) => {
-    const current = progress[recipeId] ?? { stepIdx: 0, cooked: false };
+    const current = progress[recipeId] ?? { cooked: false };
     setProgress({ ...progress, [recipeId]: { ...current, ...patch } });
   };
 
@@ -145,8 +157,9 @@ export function MenuCookMode({
           <RecipeCookCard
             key={recipe.id}
             recipe={recipe}
-            progress={progress[recipe.id] ?? { stepIdx: 0, cooked: false }}
-            onChange={(patch) => update(recipe.id, patch)}
+            menu={{ id: menuId, name: menuName }}
+            cooked={progress[recipe.id]?.cooked ?? false}
+            onCookedChange={(cooked) => update(recipe.id, { cooked })}
             stepTimes={stepTimes?.[recipe.id]}
             start={starts?.[recipe.id]}
             serveAt={serveAt}
@@ -228,8 +241,9 @@ function Thumb({ photo }: { photo: string | null }) {
 
 function RecipeCookCard({
   recipe,
-  progress,
-  onChange,
+  menu,
+  cooked,
+  onCookedChange,
   stepTimes,
   start,
   serveAt,
@@ -237,8 +251,9 @@ function RecipeCookCard({
   onStartReset,
 }: {
   recipe: Recipe;
-  progress: Progress;
-  onChange: (patch: Partial<Progress>) => void;
+  menu: { id: number; name: string };
+  cooked: boolean;
+  onCookedChange: (cooked: boolean) => void;
   stepTimes?: Date[];
   start?: RecipeStart;
   serveAt?: Date;
@@ -248,8 +263,15 @@ function RecipeCookCard({
   const [cookLoading, setCookLoading] = useState(false);
   const { steps } = recipe;
   const total = steps.length;
-  const atCompletion = progress.stepIdx >= total;
-  const step = atCompletion ? null : steps[progress.stepIdx];
+  // Passi fatti: gli stessi della pagina ricetta e del pannello «Sto cucinando»
+  const [done, setDone] = useRecipeProgress(recipe.id, total);
+  const session = useCookingSession();
+  const inSession = session.hydrated && isCooking(session, recipe.id);
+  const firstTodo = steps.findIndex((_, i) => !done.has(i));
+  const stepIdx = firstTodo === -1 ? total : firstTodo;
+  const atCompletion = stepIdx >= total;
+  const step = atCompletion ? null : steps[stepIdx];
+  const lastDone = [...done].filter((i) => i < total).sort((a, b) => b - a)[0];
   // Ingredienti del passo corrente: si guarda la lista sotto mano, quindi la
   // card dice quali servono adesso (quantità già scalate sulle porzioni del menù)
   const splitIds = splitIngredientIds(steps);
@@ -261,25 +283,57 @@ function RecipeCookCard({
         })
         .filter((x): x is { ing: CookIngredient; qty: number | null } => !!x)
     : [];
-  const stepAt = !atCompletion ? stepTimes?.[progress.stepIdx] : undefined;
-  const nextAt = !atCompletion ? stepTimes?.[progress.stepIdx + 1] : undefined;
+  const stepAt = !atCompletion ? stepTimes?.[stepIdx] : undefined;
+  const nextAt = !atCompletion ? stepTimes?.[stepIdx + 1] : undefined;
 
-  const goBack = () => onChange({ stepIdx: Math.max(0, progress.stepIdx - 1) });
-  const goNext = () => onChange({ stepIdx: Math.min(total, progress.stepIdx + 1) });
-  const restart = () => onChange({ stepIdx: 0, cooked: false });
+  /** «Inizia»: la ricetta entra in «Sto cucinando» sotto il menù, con le porzioni del menù */
+  const startCooking = () => {
+    if (inSession) return;
+    const factor = recipe.scaleFactor ?? 1;
+    addRecipe(
+      {
+        recipeId: recipe.id,
+        name: recipe.name,
+        photo: recipe.photo,
+        categories: recipe.categories,
+        tags: recipe.tags,
+        menu,
+        steps: steps.map((s) => ({ text: s.text, mins: s.mins, kind: toStepKind(s.kind) })),
+      },
+      Math.abs(factor - 1) > 1e-9 ? { factor, anchorId: null } : null
+    );
+  };
 
+  const goBack = () => {
+    if (lastDone === undefined) return;
+    const next = new Set(done);
+    next.delete(lastDone);
+    setDone(next);
+  };
+  const goNext = () => {
+    if (atCompletion) return;
+    setDone(new Set(done).add(stepIdx));
+    // il primo passo fatto la fa entrare in «Sto cucinando», come sulla pagina ricetta
+    startCooking();
+  };
+  const restart = () => {
+    setDone(new Set());
+    onCookedChange(false);
+  };
+
+  // «Segna cucinata»: registra la cottura e, se era in «Sto cucinando», la toglie (finita)
   const markCooked = async () => {
     setCookLoading(true);
-    const res = await fetch(`/api/recipes/${recipe.id}/cook`, { method: "POST" });
+    const ok = inSession ? await finishRecipe(recipe.id, true) : (await fetch(`/api/recipes/${recipe.id}/cook`, { method: "POST" })).ok;
     setCookLoading(false);
-    if (res.ok) onChange({ cooked: true });
+    if (ok) onCookedChange(true);
   };
 
   const undoCooked = async () => {
     setCookLoading(true);
     const res = await fetch(`/api/recipes/${recipe.id}/cook`, { method: "DELETE" });
     setCookLoading(false);
-    if (res.ok) onChange({ cooked: false });
+    if (res.ok) onCookedChange(false);
   };
 
   const needs = stepIngredients.map(({ ing, qty }) => {
@@ -298,7 +352,7 @@ function RecipeCookCard({
           <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
             {total > 0 && (
               <span className="tabular text-(length:--fs-meta) text-grigio">
-                {atCompletion ? "Procedura completata" : `Passo ${progress.stepIdx + 1} di ${total}`}
+                {atCompletion ? "Procedura completata" : `Passo ${stepIdx + 1} di ${total}`}
               </span>
             )}
             {/* Ora di inizio: modificabile a mano anche da qui (stesso editor della timeline) */}
@@ -316,7 +370,19 @@ function RecipeCookCard({
             )}
           </div>
         </div>
-        {(progress.stepIdx > 0 || progress.cooked) && (
+        {inSession ? (
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-arancio-50 px-2 py-0.5 text-xs font-bold text-arancio-scuro">
+            <PotIcon className="size-3.5" aria-hidden /> In corso
+          </span>
+        ) : (
+          !atCompletion &&
+          !cooked && (
+            <Button size="sm" variant="tonal" icon={<PotIcon />} onClick={startCooking}>
+              Inizia
+            </Button>
+          )
+        )}
+        {(done.size > 0 || cooked) && (
           <IconButton size="row" label="Ricomincia" onClick={restart}>
             <RotateCcw />
           </IconButton>
@@ -324,14 +390,14 @@ function RecipeCookCard({
       </div>
 
       {total > 0 && (
-        <StepProgress total={total} done={Math.min(progress.stepIdx, total)} current={atCompletion ? undefined : progress.stepIdx} />
+        <StepProgress total={total} done={done.size} current={atCompletion ? undefined : stepIdx} />
       )}
 
       {step ? (
         <CurrentStep
           size="sm"
           className="flex-1"
-          n={progress.stepIdx + 1}
+          n={stepIdx + 1}
           kind={toStepKind(step.kind)}
           mins={step.mins}
           text={step.text}
@@ -352,7 +418,7 @@ function RecipeCookCard({
           }
           actions={
             <>
-              <Button variant="secondary" icon={<ChevronLeft />} onClick={goBack} disabled={progress.stepIdx === 0}>
+              <Button variant="secondary" icon={<ChevronLeft />} onClick={goBack} disabled={lastDone === undefined}>
                 Indietro
               </Button>
               <Button size="lg" icon={<Check />} onClick={goNext} className="ml-auto">
@@ -365,15 +431,15 @@ function RecipeCookCard({
         <div
           className={clsx(
             "flex flex-1 flex-wrap items-center gap-3 rounded-card border p-[0.875em]",
-            progress.cooked ? "border-verde-200 bg-verde-50" : "border-blu-150 bg-blu-50"
+            cooked ? "border-verde-200 bg-verde-50" : "border-blu-150 bg-blu-50"
           )}
         >
-          <PartyPopper className={clsx("size-6 shrink-0", progress.cooked ? "text-verde" : "text-blu-700")} aria-hidden />
+          <PartyPopper className={clsx("size-6 shrink-0", cooked ? "text-verde" : "text-blu-700")} aria-hidden />
           <div className="min-w-0 flex-1">
-            <p className="font-bold">{progress.cooked ? "Cottura registrata" : "Tutti i passi fatti"}</p>
-            {!progress.cooked && <p className="text-[0.875rem] text-grigio">La segno come cucinata?</p>}
+            <p className="font-bold">{cooked ? "Cottura registrata" : "Tutti i passi fatti"}</p>
+            {!cooked && <p className="text-[0.875rem] text-grigio">La segno come cucinata?</p>}
           </div>
-          {progress.cooked ? (
+          {cooked ? (
             <Button size="sm" variant="secondary" onClick={() => void undoCooked()} loading={cookLoading}>
               Annulla
             </Button>

@@ -15,6 +15,9 @@ import { An10Logo } from "@/components/brand/An10Logo";
 // Pagine fuori dalla cornice: il menù per gli ospiti (link pubblico) deve sembrare un menù, non il ricettario
 const BARE_ROUTE = /^\/ospiti\//;
 
+// Modalità cucina del menù: è già «Sto cucinando» a pagina intera, la fila in cima sparisce
+const COOK_MODE_ROUTE = /^\/menu\/\d+\/cucina/;
+
 // Pagine senza il logo di testata: la vetrina e l'accesso hanno il loro logo grande, i form la barra 11.1 in cima
 const NO_BRAND_ROUTE = /^\/(login\/?)?$/;
 
@@ -74,7 +77,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="@container flex min-w-0 flex-1 flex-col">
         {/* «Sto cucinando» (8.4) a tutte le larghezze; nei form la barra 11.1 resta in alto: la fila lì scorre via con la pagina */}
         <AnimatePresence initial={false}>
-          {cooking && <CookingRow key="cooking" sticky={!ADMIN_FORM_ROUTE.test(pathname)} animate={changed} />}
+          {cooking && !COOK_MODE_ROUTE.test(pathname) && <CookingRow key="cooking" sticky={!ADMIN_FORM_ROUTE.test(pathname)} animate={changed} />}
         </AnimatePresence>
         <main
           className={clsx(
@@ -92,7 +95,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {!NO_BRAND_ROUTE.test(pathname) && !ADMIN_FORM_ROUTE.test(pathname) && (
             // con la fila «Sto cucinando» il logo sta lì: uno solo per pagina
             <AnimatePresence initial={false}>
-              {!cooking && <ShellBrand key="brand" animate={changed} className={admin ? "text-adm-900" : "text-blu-800"} />}
+              {(!cooking || COOK_MODE_ROUTE.test(pathname)) && <ShellBrand key="brand" animate={changed} className={admin ? "text-adm-900" : "text-blu-800"} />}
             </AnimatePresence>
           )}
           {children}

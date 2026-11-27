@@ -22,6 +22,9 @@ import {
 
 interface CookRecipe extends TimelineRecipe {
   cookCount: number;
+  categories?: { name: string; color: string }[];
+  tags?: string[];
+  scaleFactor?: number;
   /** Ingredienti della ricetta, quantità già scalate sulle porzioni del menù */
   ingredients?: CookIngredient[];
   /** Come TimelineStep, più i legami con gli ingredienti (mostrati nello stepper) */
@@ -32,11 +35,13 @@ const noopSubscribe = () => () => {};
 
 export function CookPlanner({
   menuId,
+  menuName,
   date,
   servingTime,
   recipes,
 }: {
   menuId: number;
+  menuName: string;
   date: string | null;
   servingTime: string | null;
   recipes: CookRecipe[];
@@ -136,6 +141,7 @@ export function CookPlanner({
 
       <MenuCookMode
         menuId={menuId}
+        menuName={menuName}
         recipes={recipes}
         stepTimes={stepTimes}
         starts={starts}

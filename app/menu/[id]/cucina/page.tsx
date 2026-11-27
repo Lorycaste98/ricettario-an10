@@ -46,6 +46,9 @@ export default async function MenuCookModePage({ params }: Params) {
               photo: true,
               cookCount: true,
               quick: true,
+              // per la testata della card in «Sto cucinando»
+              categories: { select: { category: { select: { name: true, color: true } } } },
+              tags: { select: { tag: { select: { name: true } } } },
               prep: true,
               cook: true,
               servings: true,
@@ -77,10 +80,15 @@ export default async function MenuCookModePage({ params }: Params) {
     const base = mr.recipe.servings;
     const factor = mr.servings && base && base > 0 ? mr.servings / base : 1;
     const scale = (qty: number | null) => (qty != null ? Math.round(qty * factor * 100) / 100 : null);
+    const { categories, tags, ...recipe } = mr.recipe;
     return {
-      ...mr.recipe,
-      ingredients: mr.recipe.ingredients.map((i) => ({ ...i, qty: scale(i.qty) })),
-      steps: mr.recipe.steps.map(({ ingredients, ...s }) => ({
+      ...recipe,
+      categories: categories.map((c) => c.category),
+      tags: tags.map((t) => t.tag.name),
+      // porzioni del menù: entrando in «Sto cucinando» la ricetta si porta dietro il ricalcolo
+      scaleFactor: factor,
+      ingredients: recipe.ingredients.map((i) => ({ ...i, qty: scale(i.qty) })),
+      steps: recipe.steps.map(({ ingredients, ...s }) => ({
         ...s,
         // Anche le quantità del singolo passo vanno scalate, non solo i totali:
         // altrimenti il passo dichiara grammi non scalati mentre la lista spesa sì
@@ -117,6 +125,7 @@ export default async function MenuCookModePage({ params }: Params) {
 
       <CookPlanner
         menuId={menu.id}
+        menuName={menu.name}
         date={menu.date ? menu.date.toISOString() : null}
         servingTime={menu.servingTime}
         recipes={recipes}

@@ -48,6 +48,11 @@ export interface CookingRecipe {
   /** Categorie (nome + colore) e tag, per la testata della card nel pannello. Assenti negli snapshot vecchi. */
   categories?: { name: string; color: string }[];
   tags?: string[];
+  /**
+   * Menù da cui è partita (modalità cucina del menù): nella fila e nel pannello le ricette dello
+   * stesso menù stanno insieme. Nullo/assente = ricetta cucinata da sola.
+   */
+  menu?: { id: number; name: string } | null;
   steps: CookingStep[];
   addedAt: number;
   /** null = quantità originali */
@@ -119,6 +124,10 @@ function parseState(raw: string | null): CookingState {
               .map((c) => ({ name: c.name as string, color: c.color as string }))
           : [],
         tags: Array.isArray(r.tags) ? r.tags.filter((t): t is string => typeof t === "string") : [],
+        menu:
+          isObj(r.menu) && typeof r.menu.id === "number" && typeof r.menu.name === "string"
+            ? { id: r.menu.id, name: r.menu.name }
+            : null,
         steps: (r.steps as unknown[]).filter(isObj).map((s) => ({
           text: typeof s.text === "string" ? s.text : "",
           mins: typeof s.mins === "number" ? s.mins : null,
@@ -297,6 +306,8 @@ export function addRecipe(r: CookingRecipeInput, scale?: CookingScale | null) {
     photo: r.photo,
     categories: r.categories ?? existing?.categories ?? [],
     tags: r.tags ?? existing?.tags ?? [],
+    // la visita del dettaglio (che non sa del menù) non la stacca dal menù
+    menu: r.menu ?? existing?.menu ?? null,
     steps,
     addedAt: existing?.addedAt ?? Date.now(),
     scale: existing ? existing.scale : (scale ?? null),
@@ -325,6 +336,39 @@ export function removeRecipe(recipeId: number) {
     recipes: s.recipes.filter((r) => r.recipeId !== recipeId),
     timers: s.timers.filter((t) => t.recipeId !== recipeId),
   });
+}
+
+/** Toglie tutte le ricette di un menù (e i loro timer): «Togli il menù» nel pannello. */
+export function removeMenu(menuId: number) {
+  const s = current();
+  const ids = new Set(s.recipes.filter((r) => r.menu?.id === menuId).map((r) => r.recipeId));
+  commit({
+    recipes: s.recipes.filter((r) => !ids.has(r.recipeId)),
+    timers: s.timers.filter((t) => !ids.has(t.recipeId)),
+  });
+}
+
+/**
+ * Ricette in corso raggruppate per menù, nell'ordine d'ingresso: un gruppo per menù (dove entra la
+ * sua prima ricetta) e un gruppo «senza menù» per ogni ricetta cucinata da sola.
+ */
+export function groupByMenu(recipes: CookingRecipe[]): { menu: { id: number; name: string } | null; recipes: CookingRecipe[] }[] {
+  const groups: { menu: { id: number; name: string } | null; recipes: CookingRecipe[] }[] = [];
+  const byMenu = new Map<number, CookingRecipe[]>();
+  for (const r of [...recipes].sort((a, b) => a.addedAt - b.addedAt)) {
+    if (!r.menu) {
+      groups.push({ menu: null, recipes: [r] });
+      continue;
+    }
+    const list = byMenu.get(r.menu.id);
+    if (list) list.push(r);
+    else {
+      const fresh = [r];
+      byMenu.set(r.menu.id, fresh);
+      groups.push({ menu: r.menu, recipes: fresh });
+    }
+  }
+  return groups;
 }
 
 /** Salva il riproporzionamento di una ricetta in lista (fattore 1 = quantità originali). */
